@@ -1,0 +1,168 @@
+[user]
+	name = Michael Ernst
+
+[github]
+	user = mernst
+
+[push]
+	default = simple
+	autoSetupRemote = true
+
+[core]
+	excludesfile = ~/.gitignore-global
+# Automatically accept the auto-generated merge commit message.
+	mergeoptions = --no-edit -Xignore-space-change
+# Speed up commit operations on NFS.
+	preloadindex = true
+
+[core]
+	whitespace = trailing-space,space-before-tab
+	attributesfile = ~/.gitattributes
+# Should be "false" unless cloning on Windows system and coding tools depend on native EOL style.
+#	autocrlf = true
+#	pager = less -FMRiX
+[apply]
+	whitespace = fix
+
+# If the alias expansion is prefixed with an exclamation point,
+# it will be treated as a shell command.
+# An alias such as this has no effect:
+#	log = log --follow
+# You have to hope for a git configuration variable such as "log.follow".
+# There isn't one for blame, so far as I know.
+[alias]
+## Alternative definitions of out:  "git log FETCH_HEAD.." (in which case it is essential to fetch first, which requires a network connection); "git log @{upstream}.." (not sure about pros and cons of it)
+	out = log --branches --not --remotes
+	outgoing = log --branches --not --remotes
+	in = !git fetch && git log ..FETCH_HEAD
+	incoming = !git fetch && git log ..FETCH_HEAD
+	unstage = reset HEAD
+	uncommit = reset --soft HEAD^
+	rollback = reset --soft HEAD^
+	amend = commit --amend --no-edit
+	stat = status
+	s = status
+	blamex = git blame -M -C
+
+# The parent branch of the current branch.  From
+# https://stackoverflow.com/questions/3161204/find-the-parent-branch-of-a-git-branch/3162929 .
+[alias]
+	parent = "!git show-branch | grep '*' | grep -v \"$(git rev-parse --abbrev-ref HEAD)\" | head -n1 | sed 's/.*\\[\\(.*\\)\\].*/\\1/' | sed 's/[\\^~].*//' #"
+	dog = log --decorate --oneline --graph
+#	dag = log --graph --format='format:%C(yellow)%h%C(reset) %C(blue)%an <%ae>%C(reset) %C(magenta)%cr%C(reset)%C(auto)%d%C(reset)%n%s' --date-order
+
+###
+### Diff and merge
+###
+
+[diff]
+	renames = copies
+	renameLimit = 10000
+
+# From https://difftastic.wilfred.me.uk/git.html.
+# Use `git difftool` or `git dft` to see current changes with difftastic.
+[diff]
+        tool = difftastic
+	colorMoved = dimmed-zebra
+[difftool]
+        prompt = false
+[difftool "difftastic"]
+        cmd = difft "$LOCAL" "$REMOTE"
+# Use a pager for large output, just like other git commands.
+[pager]
+        difftool = true
+# `git dft` is less to type than `git difftool`.
+[alias]
+        dft = difftool
+	conflicts = !git --no-pager diff --name-only --diff-filter=U --relative
+
+# A .gitattributes file controls which merge driver is used.
+
+[merge]
+# Show original in addition to the two conflicting edits.
+	conflictstyle = diff3
+
+[merge]
+	tool = merge-java
+
+[mergetool.merge-java]
+        cmd = merge-tool.sh "${BASE}" "${LOCAL}" "${REMOTE}" "${MERGED}"
+        trustExitCode = true
+
+[mergetool.getours]
+  cmd = git-checkout --ours ${MERGED}
+  trustExitCode = true
+[mergetool.mergeours]
+  cmd = git-merge-file --ours ${LOCAL} ${BASE} ${REMOTE} -p > ${MERGED}
+  trustExitCode = true
+[mergetool.keepours]
+  cmd = sed -I '' -e '/^<<<<<<</d' -e '/^|||||||/,/^>>>>>>>/d' ${MERGED}
+  trustExitCode = true
+[mergetool.gettheirs]
+  cmd = git-checkout --theirs ${MERGED}
+  trustExitCode = true
+[mergetool.mergetheirs]
+  cmd = git-merge-file --theirs ${LOCAL} ${BASE} ${REMOTE} -p > ${MERGED}
+  trustExitCode = true
+[mergetool.keeptheirs]
+  cmd = sed -I '' -e '/^<<<<<<</,/^=======/d' -e '/^>>>>>>>/d' ${MERGED}
+  trustExitCode = true
+
+###
+### End of diff and merge
+###
+
+# For https access
+[credential]
+## 360000 seconds is 100 hours
+#	helper = cache --timeout=360000
+## Store keeps passwords forever and is OK for low-security passwords
+## (which are most; I use ssh for high-security projects).
+	helper = store
+
+[rerere]
+	enabled = true
+
+[pager]
+	log = diff-highlight | less
+	show = diff-highlight | less
+	diff = diff-highlight | less
+	branch = false
+
+[interactive]
+	diffFilter = diff-highlight
+
+[log]
+	follow = true
+
+## Unfortunately, `git config --list` shows multiple values for user.email.
+## Git applies "last one wins", as shown by `git config --get user.email`.
+## To show the origin of a configuration entry: `git config --list --show-origin`.
+# The include applies to all repositories inside the given directory.
+[includeIf "gitdir:/home/ANT.AMAZON.COM/mdernst/"]
+	path = ~/.gitconfig-extra-amazon
+[includeIf "gitdir:/home/mdernst/"]
+	path = ~/.gitconfig-extra-amazon
+[includeIf "gitdir:~/bin/src/"]
+	path = ~/.gitconfig-extra-uwcse
+[includeIf "gitdir:~/java/plume-lib/"]
+	path = ~/.gitconfig-extra-uwcse
+[includeIf "gitdir:~/prof/"]
+	path = ~/.gitconfig-extra-uwcse
+[includeIf "gitdir:~/public_html/"]
+	path = ~/.gitconfig-extra-uwcse
+[includeIf "gitdir:~/research/"]
+	path = ~/.gitconfig-extra-uwcse
+[includeIf "gitdir:~/research/types/awslabs/"]
+	path = ~/.gitconfig-extra-amazon
+[includeIf "gitdir:~/wisdom/"]
+	path = ~/.gitconfig-extra-uwcse
+[includeIf "gitdir:/scratch/mernst/clones/types/"]
+	path = ~/.gitconfig-extra-uwcse
+[includeIf "gitdir:/scratch/mernst/clones/types/awslabs/"]
+	path = ~/.gitconfig-extra-amazon
+
+[pull]
+	rebase = false
+[safe]
+	directory = /scratch/markro/clones/mydefects4j.j17

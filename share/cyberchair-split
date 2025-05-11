@@ -1,0 +1,53 @@
+#!/usr/bin/env perl
+
+# Converts a .html file created by Cyperchair into a set of ASCII reviews,
+# one per reviewer.
+
+use strict;
+use English;
+$WARNING = 1;
+
+use checkargs;
+use util_daikon;
+
+
+###########################################################################
+### Subroutines
+###
+
+sub write_to_file ( $$ ) {
+  my ($file, $content) = check_args(2, @_);
+  open (WTF, ">$file") or die "Couldn't open $file";
+  print WTF $content;
+  close WTF;
+}
+
+
+###########################################################################
+### Create an ASCII file per HTML review
+###
+
+my @htmlfiles = glob("*.html");
+
+for my $filehtml (@htmlfiles) {
+  if (($filehtml eq "index.html") || ($filehtml eq "index2.html")) {
+    next;
+    }
+
+  my $filebase = $filehtml;
+  $filebase =~ s/\.html$//;
+  my $filetxt = "$filebase.txt";
+
+  # my $text = backticks_or_die("html2text -nobs -o $filetxt '$filehtml'");
+  my $text = `html2text -nobs '$filehtml'`;
+
+  my @parts = split(/^ _*$|^\| _+ *\|$|\|\|6 - Co-reviewer\(s\): *\| *\|$/m, $text);
+  # print "" . scalar(@parts) . " parts\n";
+
+  my $numreviews = (scalar(@parts)-3)/4;
+  for my $review (1..$numreviews) {
+    write_to_file("$filebase-$review-header.txt", $parts[$review*4-2]);
+    write_to_file("$filebase-$review-body.txt", $parts[$review*4-1]);
+    write_to_file("$filebase-$review-coreviewer.txt", $parts[$review*4]);
+    }
+}

@@ -1,0 +1,13 @@
+# CSE cycle servers
+bam.cs.washington.edu
+boom.cs.washington.edu
+bicycle.cs.washington.edu
+recycle.cs.washington.edu
+tricycle.cs.washington.edu
+# CSE-managed PLSE cycle servers
+tern.cs.washington.edu
+buffalo.cs.washington.edu
+# CSE-managed PLSE desktop machines
+godwit.cs.washington.edu
+# self-managed CSE machines
+# warfa.cs.washington.edu

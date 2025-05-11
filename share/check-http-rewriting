@@ -1,0 +1,33 @@
+#!/usr/bin/env perl
+# check-http-rewriting URL1 URL2 ensures that URL1 rewrites to URL2
+
+use strict;
+use English;
+$WARNING = 1;
+require util_mde;
+
+if (scalar(@ARGV) != 2) {
+  die "call $0 with two arguments";
+}
+
+my ($url, $goal) = @ARGV;
+
+if ($url !~ /http:\/\//) {
+  $url = "http://$url";
+}
+if ($goal !~ /http:\/\//) {
+  $goal = "http://$goal";
+}
+
+if ($url eq $goal) {
+  exit 0;
+}
+
+my $wget_output = `wget --spider $url 2>&1`;
+
+if ($wget_output !~ /.*\nLocation: $goal \[following\]\n/m) {
+  print STDERR "Failed command: $0 $url $goal\nFailed rewriting:\n  $url\ndoes not rewrite to\n  $goal\n$wget_output";
+  exit 1;
+}
+
+exit 0;

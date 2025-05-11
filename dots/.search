@@ -1,0 +1,15 @@
+## First, the defaults.
+magic: 32 : $H =~ m/[\x00-\x06\x10-\x1a\x1c-\x1f\x80\xff]{2}/
+filter: $N =~ m/.(gz|Z)$/ : "zcat %"
+option: -skip '.a .COM .elc .EXE .o .pbm .xbm .dvi'
+option: -iskip '.tarz .zip .lzh .jpg .jpeg .gif .uu'
+<!~> option: -skip '~ #'
+
+## Now, my customizations.
+option: -sort
+option: -skip 'autom4te.cache TAGS'
+# Could pipe PDF through pdftotext instead.
+option: -skip '.pdf .PDF'
+option: -dskip '.bzr CVS .hg .git .snapshot .svn'
+option: -iskip '.tar.gz .jar'
+option: -iskip '\.#*'

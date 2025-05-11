@@ -1,0 +1,65 @@
+Convert "int file_read" to "bool file_read"
+
+This patch converts an int used as a bool (but confusingly manipulated via
+arithmetic operators) into a true bool.
+
+
+2001-10-07  Michael Ernst  <mernst@alum.mit.edu>
+
+	* src/stream.h (class LexStream): Change file_read to bool.
+	* src/stream.cpp: Change file_read to bool.
+
+
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/stream.cpp ../jikes-1.15-patched/src/stream.cpp
+--- src/stream.cpp	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/stream.cpp	Sun Oct  7 00:07:54 2001
+@@ -439,7 +439,7 @@
+ 
+ LexStream::LexStream(Control &control_, FileSymbol *file_symbol_) : file_symbol(file_symbol_),
+ #ifdef JIKES_DEBUG
+-    file_read(0),
++    file_read(false),
+ #endif
+     tokens(NULL),
+     columns(NULL),
+@@ -569,7 +569,9 @@
+ LexStream::~LexStream()
+ {
+ #ifdef JIKES_DEBUG
+-    control.line_count += (file_read * (line_location.Length() - 3));
++    if (file_read) {
++        control.line_count += (line_location.Length() - 3);
++    }
+ #endif
+ 
+     DestroyInput();
+@@ -852,7 +854,7 @@
+ void LexStream::ProcessInputAscii(const char *buffer, long filesize)
+ {
+ #ifdef JIKES_DEBUG
+-    file_read++;
++    file_read = true;
+ #endif
+ 
+     wchar_t *input_ptr = AllocateInputBuffer( filesize );
+@@ -979,7 +981,7 @@
+ {
+     //fprintf(stderr,"LexStream::ProcessInputUnicode called.\n");
+ #ifdef JIKES_DEBUG
+-    file_read++;
++    file_read = true;
+ #endif
+ 
+     wchar_t *input_ptr = AllocateInputBuffer( filesize );
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/stream.h ../jikes-1.15-patched/src/stream.h
+--- src/stream.h	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/stream.h	Sun Oct  7 00:08:50 2001
+@@ -306,7 +306,7 @@
+     inline int NumBadTokens() { return bad_tokens.Length(); }
+ 
+ #ifdef JIKES_DEBUG
+-    int file_read;
++    bool file_read;
+ #endif
+ 
+     //*

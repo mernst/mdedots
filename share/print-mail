@@ -1,0 +1,64 @@
+#! /bin/csh -f
+# No -f flag to csh because I want my .cshrc read: set path, aliases.
+# Not named "printmail" because that is part of elm.
+# Invoke like this:  "print-mail bulk" or "print-mail -o outfile.ps bulk"
+
+set valid_opts = "-[o]"
+
+while ($#argv > 0)
+  if ("$1" =~ $valid_opts) then
+    unset getcommand; unset getfilterlist; unset getnamelist
+    switch ("$1")
+    case -o:
+      shift
+      set outfile = $1
+      breaksw
+    endsw
+  else
+    if ($?dropname) then
+      echo "Error: supplied two drop names"
+      echo "Usage: $0 [-o outfile.ps] dropname       eg: $0 bulk"
+      exit 1
+    endif
+    set dropname = $1
+  endif
+  shift
+end
+
+if (! $?dropname) then
+  echo "Error: supplied two drop names"
+  echo "Usage: $0 [-o outfile.ps] dropname       eg: $0 bulk"
+  exit 1
+endif
+
+cd ~/.mail
+
+if (!(-e .maildrop-$dropname)) then
+  echo "File .maildrop-$dropname does not exist"
+  exit 1
+endif
+
+if (-z .maildrop-$dropname) then
+  echo "File .maildrop-$dropname is empty"
+  exit 1
+endif
+
+# movemail .maildrop-$dropname $dropname-mail
+# /usr/lib/emacs/21.4/i386-linux/movemail .maildrop-$dropname $dropname-mail
+# /usr/libexec/emacs/22.2/i686-pc-linux-gnu/movemail .maildrop-$dropname $dropname-mail
+movemail .maildrop-$dropname $dropname-mail
+if ($status != 0) exit
+# Remove .maildrop file, which isn't used since I no longer use procmail.
+rm -f .maildrop-$dropname
+if ($status != 0) exit
+emacs -batch $dropname-mail -l ~/.emacs -l ~/emacs/mail-simplify -f clean-mail-buffer -f save-buffer >& /dev/null
+if ($?outfile) then
+  enscript --pretty-print -2r -o $outfile $dropname-mail
+  echo "Created $outfile; consider deleting $dropname-mail-$$"
+else
+  enscript --pretty-print -2r $dropname-mail
+  echo "Printed $dropname-mail; consider deleting $dropname-mail-$$"
+endif
+mv $dropname-mail.~1~ $dropname-mail-$$.~1~
+mv $dropname-mail $dropname-mail-$$
+chmod og-rw $dropname-mail-$$*

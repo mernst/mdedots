@@ -1,0 +1,710 @@
+===========================================================================
+
+For projects with many to-do items, the to-do items typically appear in
+~/wisdom/building/
+
+===========================================================================
+
+Write a little English style checker.  (This project could expand
+indefinitely, but a limited version would still be useful.  Someone else
+must have a decent one aready, but I don't like the ones I've found.  I
+should look again.)
+  first person
+  passive voice
+  "which", when not preceded by a preposition or a comma, should often be
+    converted into "that".
+TeX style:
+  non-escaped % immediately following a digit
+Doubled words (considers "%" a word, unfortunately):
+  (tags-search "\\b\\([^ \n]+\\)[ \n]+\\1\\b")
+"cite" without leading "\"
+  (tags-search "[ ~\n]cite\{")
+space before \footnote.
+
+===========================================================================
+
+ACM digital library:  dl-feedback@acm.org
+
+===========================================================================
+
+Apache Commons:
+
+http://commons.apache.org/io/issue-tracking.html
+
+----------------
+
+These two reported on 2008-09-08:
+
+LineIterator documentation
+
+In the Javadoc for rg.apache.commons.io.LineIterator (in Commons IO 1.4),
+this code snippet is incorrect:  the last instance of "iterator" should be
+"it".
+
+  LineIterator it = FileUtils.lineIterator(file, "UTF-8");
+   try {
+     while (it.hasNext()) {
+       String line = it.nextLine();
+       /// do something with line
+     }
+   } finally {
+     LineIterator.closeQuietly(iterator);
+   }
+
+
+LineIterator should implement Iterable
+
+org.apache.commons.io.LineIterator does not implement Iterable.  This makes
+it impossible to use in certain stylized ways, such as in a new-style for
+statement.  Such use is not always desirable (it might temporarily leak a
+file descriptor, until the finalizer is called), but should be possible in
+situations where it is known to be acceptable.
+
+===========================================================================
+
+checklink:
+
+  http://search.cpan.org/dist/W3C-LinkChecker/
+  http://search.cpan.org/src/SCOP/W3C-LinkChecker-4.3/README (includes installation instructions)
+  http://search.cpan.org/src/SCOP/W3C-LinkChecker-4.3/docs/checklink.html
+
+Comments and suggestions should be sent to the www-validator mailing list:
+      www-validator@w3.org (with 'checklink' in the subject)
+      http://lists.w3.org/Archives/Public/www-validator/ (archives)
+
+----------------
+
+It is bad style to reuse a global variable as a procedure parameter, as
+happens repeatedly with "%redirects".
+
+----------------
+
+===========================================================================
+
+CyberChair:  Richard van de Stadt <cyberchair_info@borbala.com>
+
+===========================================================================
+
+Eclipse:
+
+Export to a file system gives every file the current time; information
+about modification dates is lost.
+
+===========================================================================
+
+Emacs:
+
+See file ~/emacs/bug/BUGS.to-do
+
+===========================================================================
+
+enscript:
+
+Version: GNU enscript 1.6.4
+
+----------------
+
+The header can appear after the first line of text!
+
+cd ~/bin/share
+enscript --landscape --font Courier6 -T 4 -A 2 --header='$N        $D{%a %b %d %H:%M:%S %Y}        File page $% of $=        Overall page $p' -p - mail* > outfile3.ps
+
+But supplying different sets of files on the command line doesn't lead to
+this bad behavior.  I don't understand this.
+
+===========================================================================
+
+Indus Java program slicer
+
+There are no good instructions indicating how to build the system and to
+verify that it is operating correctly.
+
+In Soot 2.2.0 and 2.2.2, soot.Printer contains method
+writeXXXDeprecated(SootClass,String) with comment "Use
+soot.util.JasminOutputStream instead."  The code in examples-0.7.2.zip
+(which the website claims is dated 2005-11-13) uses write(SootClass,String)
+and thus requires Soot 2.1.0, dated December 2003.
+
+[Is this in the documentation or in the program proper?]
+In the "Slicer configuration" window, the tab "Intereference" contains a
+typo (an extra 'e").
+
+===========================================================================
+
+Java JDK:
+http://bugs.sun.com/bugdatabase/
+
+JDK 7:
+java.util.Collections.SingletonList should implement Cloneable.
+(I need to write a test case to confirm that this is a problem; is it?)
+
+JDK 6:
+BitSet.clone() should return BitSet, not Object.
+
+JDK 1.3:
+gzip can uncompress multiple compressed files that have been concatenated
+together (after compression).  When such a concatenated file is provided to
+java.util.zip.GZIPInputStream, it returns the contents of the first one.
+It should either give all the contents or raise an error.
+
+JDK 1.2.2 documentation typos:
+ * in src/java/lang/Integer.java, insert missing "}" before " with radix 8."
+ * in src/java/lang/Runtime.java, change "hte" to "the"
+ * in src/java/util/HashMap.java, change "te default" to "the default"
+ * in src/java/util/Random.java, insert "     * </blockquote></pre>" after
+   "     * public boolean nextBoolean() {return next(1) != 0;}"
+ * in src/java/util/TreeMap.java, change "Corman" to "Cormen"
+ * in src/java/lang/String.java, change "</u><DD><DL>" to "</ul><DD><DL>"
+ * in src/java/lang/Double.java, change "It is equal to the returned by" to
+   "It is equal to the value returned by"
+ * in src/java/awt/FileDialog.java, change "getFilenameFIlter" to "getFilenameFilter"
+
+===========================================================================
+
+JavaClass:
+Markus Dahm <dahm@inf.fu-berlin.de>
+http://www.inf.fu-berlin.de/~dahm/JavaClass/
+
+===========================================================================
+
+jdb:
+
+JDB should intern string literals, as Java does.  For instance, we know
+that in Java, ("foo" == "foo") is guaranteed to evaluate to true.  But in
+JDB, we get:
+  main[1] print "foo" == "foo"
+  "foo" == "foo" = false
+
+===========================================================================
+
+Jikes:
+
+One way to make a patch is:
+cd /g2/users/mernst/research/invariants/dfej-src/jikes-oss
+rmjunk
+cp cp -pR jikes jikes-tmp
+# Apply my changes to jikes-tmp (perhaps by hand)
+cd /g2/users/mernst/research/invariants/dfej-src/jikes-oss; rmjunkfg; diff -u -r jikes jikes-tmp
+# Apply the patch itself, to make sure it works
+cd jikes/src; patch < ...
+
+---------------------------------------------------------------------------
+
+Jikes 1.17:
+
+The README file says:
+
+  For info about making changes to the
+  Jikes source code itself, see the HACKING file.
+
+but no file HACKING appears in the distributed tar file.
+
+Also in the README file, "is provides" should be "is provided".
+
+
+
+---------------------------------------------------------------------------
+
+Jikes 1.14:
+
+ETAGS_ARGS isn't set anywhere in any Makefile; it needs to include "--c++".
+
+---------------------------------------------------------------------------
+
+===========================================================================
+
+JML 2.5:
+
+--- /g2/users/mernst/java/JML/README.txt	Sun Apr 15 17:58:42 2001
++++ -	Tue Apr 17 19:33:49 2001
+@@ -33,7 +33,7 @@
+ INSTALLATION
+ 
+ You'll need Java (or the Java runtime environment, jre) to run the checker.
+-We've tested it with JDK 1.1.3,  1.2.2 and, 1.3.
++We've tested it with JDK 1.1.3, 1.2.2, and 1.3.
+ 
+ First, unpack the zip or tar file in which you found this.
+ For reference below, let's assume that you did
+
+
+===========================================================================
+
+JOIE:  gac@cs.duke.edu
+
+[I've given up on JOIE.]
+
+JOIE 0.10a
+
+java joie.examples.Tracer Server
+java joie.examples.Tracer ProxyServer
+
+It would be helpful to include in the code a comment that the user probably
+wants to use ConstantPool.getIndex, not Constant.getIndex.
+
+It would have been helpful to me to have documentation on how to perform
+common tasks; for instance, to add a string to the ConstantPool, use
+function getIndex with the appropriate Constant created by
+newConstant(String name).
+
+===========================================================================
+
+At http://www.cs.purdue.edu/jtb/index.html, the link for "Links:  JavaCC"
+points to http://www.metamata.com/JavaCC/, but the latter URL is dead; the
+link should point to http://www.webgain.com/products/java_cc/.
+
+===========================================================================
+
+LaTeX2HTML:
+
+[As of July 2000, last version was released in April 1999.
+Maybe not worth reporting bugs.]
+
+In index, | is alphabetized after letters
+
+See other bugs mentioned in cecildoc (with workarounds).
+
+LaTeX2HTML 96.1.beta: latex2html@mcs.anl.gov, alopez-o@barrow.uwaterloo.ca, dprhws@edp.Arco.COM, marcush@cache.crc.ricoh.com
+
+Should convert \langle, \rangle into just <, >.
+
+This doesn't work for latex2html (both <> are at the end of the argument):
+  \def\angled#1{\latex{$\langle$}\html{<}#1\latex{$\rangle$}\html{>}}
+but this does:
+  \newcommand{\angled}[1]{\latex{$\langle$}\html{<}#1\latex{$\rangle$}\html{>}}
+
+This:
+less than: $<$
+gets screwed up, probably by my "more italic" patch.
+
+An image is generated for $\&$.  Is this necessary?
+
+\; is left as is (with the backslash)
+
+What happened to the DONT_INCLUDE variable in latex2html.config?
+
+Update html.sty and other files to reflect current LaTeX2HTML
+version number (at least 96.1).
+Also, the html.sty fiels don't appear to support \latexhtml{}{}, which is
+described in the manual.
+
+Fix my/Mark's scheme processing stuff to deal "properly" with formatting
+after a semicolon.
+\begin{schemedisplay}
+  (member-count (list 'a 'b 'a 'c 'a) 'a)  ; $\Rightarrow$ \scheme{3}
+  (member-count (list 'a 'b 'a 'c 'a) 'z)  ; $\Rightarrow$ \scheme{0}
+\end{schemedisplay}
+
+I'm hoping for semicolon followed by ``SPM'':
+ab;SPMcd $ab;SPMcd$ \;SPM ;SPM $;SPM$.
+Some more tests that should give semicolon followed by ``SPM'':
+;SPMlt; ;SPMgt; ;SPMamp; ;SPMquot; ;SPMdollar; ;SPMpct; ;SPMtilde; .
+
+---------------------------------------------------------------------------
+
+A number of variables in makeseg are never used; the following patch
+eliminates them.
+
+--- /uns/share/lib/latex2html-97.1/makeseg/makeseg.~1~	Sun Jul 20 13:25:04 1997
++++ /uns/share/lib/latex2html-97.1/makeseg/makeseg	Wed Feb  4 12:44:00 1998
+@@ -681,7 +681,7 @@
+ sub process_env {
+ # $above is local from calling parse_latex_block
+     local ($_);
+-    my ($delim,$env,$done,$after);
++    my ($delim,$env,$done);
+     ($delim,$_)=@_;
+     $delim =~ $begin_env_re;
+     $env=$1;
+@@ -1113,7 +1113,7 @@
+
+ sub process_preamble {
+     local ($_)=@_;
+-    my ($args,$html,$dir);
++    my ($args,$dir);
+ # insert a \usepackage{html} line if it's not yet there
+     print STDERR "Document class: $class, global options: $global_options\n";
+     print STDERR "packages found:\n";
+@@ -1286,7 +1286,6 @@
+     local ($star,$_)=@_;
+     my ($verbtext,$rest)=("","");
+     my ($found)=0;
+-    my ($num)=0;
+     if ($star) { $star="[$star]" };
+     while (!$found) {
+ 	if (/\\end\s*\{\s*verbatim$star\s*\}/) {
+@@ -1803,7 +1802,7 @@
+     my ($file,$inputs,$extensions) = @_;
+ #    print STDERR "Looking for $file in ".
+ #	join (" and ",@$inputs).", extensions: ".join (" and ",@$extensions)."\n";
+-    my $basedir,$dir,$found,$dirtext,$match,$ex;
++    my $basedir,$found,$ex;
+     $ext="";
+     $found="";
+     ($file =~ s/([.]\w+)$//) && do { $ext=$1 };
+@@ -1834,7 +1833,7 @@
+
+ sub find_texstyle {
+     my ($file) = @_;
+-    my $basedir,$dir,$found,$dirtext;
++    my $basedir,$found;
+     $ext="";
+     $found="";
+     ($file =~ s/([.]\w+)$//) && do { $ext=$1 };
+
+===========================================================================
+
+Metamata:
+
+Many windows come up with a title of either "Untitled" or a blank title.
+
+When I have a package and file of the same name, in addition to getting the
+warning if I try to compile, some files do not appear in the main window.
+They do appear when I do the appropriate renaming, but that shouldn't be
+necessary (and I don't have control over the names chosen by people whose
+software I use).
+
+----------------
+
+Metamata Audit 1.1fcs3 doesn't complain about the shadowed variables in
+this case, but I think it should:
+
+class A {
+  int x;
+}
+
+class B extends A {
+  int x;
+}
+
+===========================================================================
+
+Nebulous:
+
+--- /g2/users/mernst/research/invariants/tests/packages/Nebulous/nFlatLandPanel.java	Fri Oct  6 16:58:04 2000
++++ -	Sun Nov 19 09:42:07 2000
+@@ -35,7 +35,7 @@
+   File:  nFlatLandPanel.java
+   Description:  nFlatLandPanel was originally a Panel in the normal awt.  However
+   with the new Swing(JFC) in use it has changed into a JInternalFrame to allow
+-  use with there drag manager stuff.
++  use with their drag manager stuff.
+      This object is responsible for drawing the
+   data onto the screen.  Currently this involves taking a DataSource and a DataOutput
+   object from the DataContainer that this object has, and using them to draw the source
+
+
+--- /g2/users/mernst/research/invariants/tests/packages/Nebulous/nBaseDesktopManager.java.~1~	Thu Nov  4 03:39:54 1999
++++ /g2/users/mernst/research/invariants/tests/packages/Nebulous/nBaseDesktopManager.java	Tue Nov 21 15:07:39 2000
+@@ -111,7 +111,7 @@
+ 			g.setColor( Color.darkGray );
+ 			g.drawRect( 0, 0, getWidth() - 1, getHeight() - 1 );
+ 		}
+-	};
++	}
+
+ 	//////////////////////////////////////////////////////////////
+ 	//Function: setBoundsForFrame(JComponent f, int newX, int newY,
+
+
+---------------------------------------------------------------------------
+
+Aspect Browser:
+
+I find no documentation in the README file about how to run AB.  Presumably
+I just do
+  M-x aspect-workspace
+?  That should certainly be documented.
+
+
+Here are some typos in the README file:
+
+--- /g2/users/mernst/research/invariants/tests/packages/AB-1.1/README	Thu Oct 12 01:57:48 2000
++++ -	Wed Nov 22 09:07:27 2000
+@@ -7,13 +7,13 @@
+ -------------------------------
+
+   All you need to do is add two lines to your .emacs file.  If you don't
+-have .emacs file yet, create one.  Say, you extracted the package to
+-/home/yoshi.  Then, all Aspect Emacs codes should be under
++have a .emacs file yet, create one.  Say, you extracted the package to
++/home/yoshi.  Then, all Aspect Emacs code should be under
+ /home/yoshi/AB-1.1/AE.  Then, add the following two lines to your
+ .emacs file.
+
+ (setq load-path (cons (expand-file-name "/home/yoshi/AB-1.1/AE") load-path))
+-(autoload 'aspect-workspace "aspect-workspace.el" "Aspect Workspace." t)
++(autoload 'aspect-workspace "aspect-workspace.el" "Aspect Workspace" t)
+
+
+ 2. Installation of Nebulous
+@@ -39,7 +39,7 @@
+ 3. Installation of Icon tools
+ -----------------------------
+
+-  At first you have to install Icon compiler.  You can get it from
++  First, you have to install Icon compiler.  You can get it from
+ <http://www.cs.arizona.edu/icon/index.htm>.
+
+   After you installed Icon compiler, procedure is a little bit
+
+
+===========================================================================
+
+Python:  guido@python.org
+
+Do a shadowed-variables thing for Emacs a la what I currently have for Perl.
+(See my notes in my Emacs BUGS.to-do file.)
+
+Python wish list:
+
+I would like each class to have an implicit default __setstate__ method
+that simply installs the mappings in its argument dictionary into the
+object.  Users could override this if necessary, but frequently it would
+prevent tedious, repetitive, error-prone coding.  Similarly, please make
+built-ins such as types.IntType picklable.
+
+I would like to see optional explicit scoping for variables in Python.
+Right now, the only scopes of interest are entire function bodies (and
+entire classes, etc.).  This means that I can't use two different copies of
+i as the iteration variable in two different loops, and likewise for other
+variables whose scope I would like to restrict to a given block, to avoid
+errors (such as forgetting to reinitialize it in the next block, or other
+crosstalk between blocks).
+One solution would be to permit variable declarations, which would restrict
+the scope of the variable to the containing block.  (This would be similar
+to Perl's "my" declarations.)  By default, only function/class/etc. scopes
+would exist, but this extension would permit other scopes to be introduced
+for the given variables.  The result would be more checking and fewer bugs
+for those willing to declare their variables; existing code would be
+unaffected.
+
+I find C's "OP=" syntax convenient; for instance,
+  var_values[function_name][value] += count
+is terser and, thus, easier to understand and less error-prone than
+  var_values[function_name][value] = var_values[function_name][value] + count
+I don't want all of C's syntax -- just this one convenient part.
+
+---------------------------------------------------------------------------
+
+Error messages:
+
+Compiler:
+ * Issue a warning when a statement is merely a side-effect-free expression,
+   such as "f.write" instead of "f.write()".  I make this kind of mistake
+   often.
+ * Issue a warning when a variable is written but not read; this will help in
+   locating spelling mistakes, or failure to use "global" or a package modifier.
+
+Runtime:
+ * "TypeError: unbound method must be called with class instance 1st argument"
+   This can be issued even when the first argument is a class instance.
+   The error should definitely say what class the 1st argument should be (a
+   subclass of).
+
+---------------------------------------------------------------------------
+
+Documentation:  (python-doc@...)
+
+The FAQ doesn't tell how to report problems with the FAQ (ie, it doesn't
+say, "send them to guido@python.org").  It does say that the Python FAQ
+Wizard lets PSA members edit the FAQ, but that doesn't help non-members.
+
+Doc/README should stop saying that Info isn't supported, perhaps.
+
+All the demo modules should be listed in the documentation somewhere, for
+those of us not familiar with the distribution file structure.
+
+The documentation for the debugger ! (statement) command is somewhat
+misleading.  The "global" declaration causes a module variable, not a
+global variable, to be set.  For instance:
+  >>> foo1
+  'foo'
+  >>> pm()
+  > invariants.py(2953)diff()
+  ->
+  (Pdb) global foo1; foo1 = "bar"
+  (Pdb) q
+  >>> foo1
+  'foo'						# was not changed
+  >>> invariants.foo1
+  'bar'						# was changed
+How can I set a global variable rather than a module variable?
+
+In the Python Tutorial, Section 9.5 ("Inheritance") states:
+  There is a simple way to call the base class method directly: just call
+  `BaseClassName.methodname(self, arguments)'. This is occasionally
+  useful to clients as well. (Note that this only works if the base class
+  is defined or imported directly in the global scope.)
+Another caveat should be added, along these lines:
+  (Any method that uses this strategy will fail to work on existing
+  instances after the module is reloaded via the `reload' function, because
+  the reference to the global BaseClassName will be different than the old
+  instance's notion of its base class.  Instances created after reloading
+  will work; only instance existing both before and after the reloading
+  will err when such functions are called.)
+
+---------------------------------------------------------------------------
+
+[In 1.5.2, this file doesn't seem to exist.]
+
+newdir is obsolete (and not distributed with 1.5), so cmd.py in 1.5
+shouldn't use it:
+
+diff -u -b /uns/lib/python1.5/cmd.py.\~1\~ /uns/lib/python1.5/cmd.py
+--- /uns/lib/python1.5/cmd.py.~1~	Thu Apr 16 15:54:05 1998
++++ /uns/lib/python1.5/cmd.py	Fri May  1 11:56:14 1998
+@@ -54,8 +54,7 @@
+ 				return
+ 			func()
+ 		else:
+-			import newdir
+-			names = newdir.dir(self.__class__)
++			names = dir(self.__class__)
+ 			cmds_doc = []
+ 			cmds_undoc = []
+ 			help = {}
+
+---------------------------------------------------------------------------
+
+Problem with reload:
+
+Guido says:
+
+The problem you are seeing won't go away easily.  Basically, a "class"
+statement does an assignment and overwrites the previous object of the
+same name, even if it's a previous incarnation of the same class.
+
+This is part of the standard Python semantics, and unlikely to go
+away.
+
+Your mail suggests to me that you understand all this and are
+interesting in finding a work-around.  This may be hard.
+
+I've been thinking about a way to work around this; the only thing I
+can think of is to selectively execute a method definition in the
+context of an existing class.  My brother actually has a command for
+this in his Mac specific Python environment, and I've been thinking of
+adding something similar to IDLE.  You'd point at a method; it would
+scan around for the beginning and ending of the method and then search
+back for the class name; it would then do something like
+
+    exec methodsource in modulename.classname.__dict__
+
+Under some restricting assumptions you could probably write something
+to replace or augment reload() that does something similar to a whole
+module.  Perhaps (untested) something like
+
+    import types
+    def super_reload(mod):
+        d = {}
+        for name, value in mod.__dict__.items():
+            if type(value) is types.ClassType:
+                d[name] = value
+        reload(mod)
+        for name, value in d.items():
+            d.__dict__.update(mod.__dict__[name].__dict__)
+        return mod
+
+===========================================================================
+
+Quicken:
+"Quicken 2007 Deluxe Release R 5" for Windows
+
+----------------
+
+When I start Quicken, the toolbar is not displayed.
+I can make it be displayed by selecting menu item "Edit >> Customize
+Toolbar", then clicking (in the lower right-hand corner) the "Icons and
+text" or "icons only" radio button.  It doesn't matter which one I click --
+the selected or the non-selected one.  The toolbar is immediately
+displayed.
+After accepting the changes by clicking "OK", if I exit and re-start
+quicken, then once again the toolbar is not displayed.
+
+As a related problem, even when the above process made the toolbar appear, 
+The "Find all" field did not appear with the rest of the toolbar, even
+though the checkbox in the lower right-hand corner (that should have
+caused it to be displayed) was not checked.
+
+I finally figured out, via the helpful but difficult=to-find article at
+http://faq.quickensoftware.ca/detail.php?qbid=QK848&product=319&buid=QK&cat=General,
+that I need to uncheck "maximize my register view" in the register
+preferences (under "Edit >> Preferences", but this should be made clear to
+a user as soon as the user enters the "Customize Toolbar" menu.
+
+The "Find All" field is sometimes called the "Search" field in the Quicken
+documentation, and it is labeled "search".  This discrepancy is confusing.
+
+I was unable to search for "find all" on the quicken support site; it
+refused to include "all" in the search criteria because "all" is a common
+word.  I tried enclosing the phrase ion double quotes, but this did not
+work.  Some such functionality should be added to the search feature.
+
+----------------
+
+How do I match a scheduled bill with a transaction that already appears in
+my account register?
+
+===========================================================================
+
+SLaTeX 2.4: dorai@cs.rice.edu
+
+===========================================================================
+
+Spambouncer:
+
+http://www.spambouncer.org/#ConfiguringSpamBouncer
+contains the line "RM=rm" twice (both before and after "RSSCHECK=no").
+
+===========================================================================
+
+Sunbird:
+
+ * When moving to a new day, center in order to show all the day's events,
+   if possible.  Otherwise, put the first event at the beginning of the
+   window.  If there are no events, then keep the currently visible range,
+   as is done now.  On startup, default to starting with the working hours,
+   not to showing midnight as the first visible hour.
+
+ * Bind the arrow keystrokes to move around in the calendar (move to next
+   day/week).
+
+===========================================================================
+
+Texinfo:
+
+makeinfo produces lines like
+  * Prototype mismatch: %s vs %s:         perldiag.
+but these are misparsed by both info and makeinfo due to the : in the name.
+Either info and Emacs Info should try harder, or makeinfo shouldn't produce
+such.
+
+The manual should include index items for "menus, updating" and "menus,
+creating" which point to the Emacs commands.
+
+===========================================================================
+
+Ubiquitous Presenter:  Beth Simon
+
+===========================================================================
+
+Unison
+
+I believe it changed the group on ~/dots/.calendar from "mernst-admin" to
+"mernst".  This prevented Neena from reading it.
+
+===========================================================================
+
+WebGlimpse:  gberns@tucson.com, udi@cs.arizona.edu
+
+===========================================================================
+
+xnewbiff:
+
+[I've done an approximation of these two.  Someone (rig?) has the source
+ available on the net as well.]
+Make it possible for the From and Subject lines to be in either order.
+Maybe permit filtering to ignore some from/to/subject lines.
+
+===========================================================================

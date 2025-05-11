@@ -1,0 +1,13 @@
+#! /bin/csh
+# Pretty-print a Java file, overwriting the original contents but saving the
+# original non-pretty-printed file with a ".unpp" extension.
+
+# This is a shell script rather than a shell alias like 
+#   alias	javapp	'mv -f \!* \!*.unpp; java JavaPP \!*.unpp > \!*'
+# so that it can take multiple arguments.
+
+while ($#argv)
+    mv -f $argv[1] $argv[1].unpp
+    java -mx192m -classpath $HOME/java/JavaPrinter:$CLASSPATH JavaPP $argv[1].unpp > $argv[1]
+    shift
+end

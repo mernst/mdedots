@@ -1,0 +1,49 @@
+#!/bin/csh
+# Note no "-f" on line above:  I want my startup to run.
+
+if (! $?PAGHOST) then
+  setenv PAGHOST manioc.csail.mit.edu
+endif
+
+if (! ($site == "csail")) then
+  ping -q -c 1 -w 1 ${PAGHOST} > /dev/null
+  if (! ($status)) setenv remote 1
+endif
+
+# "$?remote" is true if we are remote, *and* we have connectivity to manioc.
+# if ($?remote) then
+#   echo "remote"
+# else
+#   echo "non-remote"
+# endif
+
+if ($?remote) then
+  xe ${PAGHOST}
+else
+  emacs &
+endif
+
+# This code is not right; 
+if ($?remote) then
+  # I'm willing to run ical locally on my laptop, but if manioc is available,
+  # then use it instead.
+  ssh -f ${PAGHOST} ical -iconic
+else
+  ps auxw | grep -v grep | grep ical >& /dev/null
+  # Run ical if it is not running, or if I'm not logged into manioc
+  if ($status || (($DISPLAY != "manioc:0.0") && ($DISPLAY != ":0") && ($DISPLAY != ":0.0"))) then
+      ical -iconic &
+  endif
+endif
+
+# ps -auxw | grep -v grep | grep guidescope >& /dev/null
+# if ($status) then
+#     cd $HOME/bin/src/guidescope && etc/guidescope/guide >& /dev/null &
+# endif
+
+# netscape -iconic &
+# mozilla -iconic &
+# "-iconic" does not seem to be supported any longer
+# mozilla -P mernst &
+# firefox -P mernst &
+firefox &

@@ -1,0 +1,125 @@
+Initialize variables that need to be initialized
+
+This patch adds initializations for a number of varibles.
+
+The most critical patches are the first two in the ChangeLog, without which
+jikes core-dumps due to use of uninitialized variables (when JIKES_DEBUG is
+set and the uninitialized memory doesn't happen to be NULL).
+I have not confirmed core dumps for the name fix, but I think it is possible.
+No core dump is possbile for the escape_* and ch changes.  However, these
+changes improve understandability and also suppress warnings when using -Wall.
+
+In general, I believe that developers should always use -Wall on the Jikes
+source, and I would like to see those flags used at least when building
+ethe debug version.  (I don't know how to modify the configure script to
+make this happen, however.)
+
+
+2001-10-07  Michael Ernst  <mernst@alum.mit.edu>
+
+	* src/java.g (ExplicitConstructorInvocation): Initialize base_opt
+	and dot_token_opt.
+	* src/javaact.cpp: ditto.
+	* src/symbol.cpp (GetReadAccessMethod): Initialize base_opt.
+	* src/diagnose.cpp (getErrorMessage): Initizlize *name.
+	* src/stream.cpp (ProcessInputUnicode): Initialize escape_value
+	and escape_ptr.
+	(ProcessInputUnicode): Initialize ch; fix comment typos.
+
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/diagnose.cpp ../jikes-1.15-patched/src/diagnose.cpp
+--- src/diagnose.cpp	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/diagnose.cpp	Sun Oct  7 00:25:34 2001
+@@ -2055,7 +2055,7 @@
+ const wchar_t *ParseErrorInfo::getErrorMessage() 
+ {
+     ErrorString s;
+-    const char *name;
++    const char *name = NULL;
+     int i, len = 0;
+ 
+ #if defined(FULL_DIAGNOSIS)
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/java.g ../jikes-1.15-patched/src/java.g
+--- src/java.g	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/java.g	Sun Oct  7 00:25:34 2001
+@@ -1997,6 +1997,8 @@
+ void Parser::Act$rule_number(void)
+ {
+     AstThisCall *p = ast_pool -> NewThisCall();
++    p -> base_opt                = NULL;
++    p -> dot_token_opt           = 0;
+     p -> this_token              = Token(1);
+     p -> left_parenthesis_token  = Token(2);
+     if (Sym(3) != NULL)
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/javaact.cpp ../jikes-1.15-patched/src/javaact.cpp
+--- src/javaact.cpp	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/javaact.cpp	Sun Oct  7 00:25:34 2001
+@@ -1526,6 +1526,8 @@
+ void Parser::Act106(void)
+ {
+     AstThisCall *p = ast_pool -> NewThisCall();
++    p -> base_opt                = NULL;
++    p -> dot_token_opt           = 0;
+     p -> this_token              = Token(1);
+     p -> left_parenthesis_token  = Token(2);
+     if (Sym(3) != NULL)
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/stream.cpp ../jikes-1.15-patched/src/stream.cpp
+--- src/stream.cpp	Sun Oct  7 00:07:54 2001
++++ ../jikes-1.15-patched/src/stream.cpp	Sun Oct  7 00:25:34 2001
+@@ -992,11 +992,19 @@
+     {
+         int      escape_value;
+         wchar_t *escape_ptr;
++#ifdef JIKES_DEBUG
++        escape_value = 0;
++        escape_ptr = NULL;
++#endif
+ 
+         UnicodeLexerState saved_state = START;
+         UnicodeLexerState state = START;
+         bool oncemore = false;
+ 
++        // If oncemore is true, ch is used as is; otherwise a new character
++        // is placed in it.
++        wchar_t ch = 0;
++
+         if (control.option.encoding)
+         {
+             // The encoding should have been validated by now
+@@ -1009,13 +1017,13 @@
+ 
+         while (HasMoreData() || oncemore)
+         {
+-            // On each iteration we advance input_ptr maximun 2 postions.
+-            // Here we check if we are close to the end of input_buffer
++            // On each iteration we advance input_ptr maximum 2 positions.
++            // Here we check if we are close to the end of input_buffer.
+             if (input_ptr>=input_tail)
+             {
+-                // If this happen, reallocate it with some more space.
++                // If this happens, reallocate it with some more space.
+                 // This is very rare case, which could happen if
+-                // one code page character is represened by several 
++                // one code page character is represented by several 
+                 // unicode characters. One of exaples of such
+                 // situation is unicode "surrogates".
+                 //
+@@ -1030,8 +1038,6 @@
+                 input_tail = input_buffer + newsize - 1;
+                 input_ptr  = input_buffer + cursize;
+             }
+-            
+-            wchar_t ch;
+             
+             if (!oncemore)
+             {
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/symbol.cpp ../jikes-1.15-patched/src/symbol.cpp
+--- src/symbol.cpp	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/symbol.cpp	Sun Oct  7 00:25:34 2001
+@@ -1693,6 +1693,7 @@
+             method_declarator -> right_parenthesis_token = declarator -> RightToken();
+ 
+             AstThisCall *this_call = ast_pool -> GenThisCall();
++            this_call -> base_opt                = NULL;
+             this_call -> this_token              = loc;
+             this_call -> left_parenthesis_token  = loc;
+             this_call -> right_parenthesis_token = loc;

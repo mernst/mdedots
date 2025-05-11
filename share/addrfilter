@@ -1,0 +1,59 @@
+#!/bin/sh
+# This is actually a gawk script, not a sh script.
+condition_that_fails==0 "exec" "gawk" "-f" "$0" "$@"
+## The above is instead of:  #!/usr/bin/env gawk -f
+## See http://stackoverflow.com/questions/4303128/how-to-use-multiple-arguments-with-a-shebang-i-e .
+
+# addrfilter
+
+# Remove two-line paragraphs whose second line starts with "dates:" or "email:".
+# Should actually do this for all paragraphs whose only lines are (some
+# combination of) dates:, email:, and comments.
+# Perhaps get rid of email altogether?  No, probably not.
+
+BEGIN { killit = "--kill it--"
+	prevprevprevline = killit
+	prevprevline = killit
+	prevline = killit
+	print "\\vbox{"
+      }
+
+($0 == "") && ((prevline ~ /^dates/) || (prevline ~ /^email/))  && (prevprevprevline == "") { 
+	prevprevprevline = killit
+	prevprevline = killit
+	prevline = killit }
+
+# This \vbox{...} is to work around a problem with \multicols, which
+# permits a page break at any line break.
+
+($0 == "") && (prevline != "") && (prevline != killit) {
+	prevline = prevline "\n}" }
+
+($0 == "") && (prevline == killit) && (prevprevline != "") && (prevprevline != killit) {
+	prevprevline = prevprevline "\n}" }
+
+($0 == "") && (prevline == killit) && (prevprevline == killit) && (prevprevprevline != "") && (prevprevprevline != killit) {
+	prevprevprevline = prevprevprevline "\n}" }
+
+($0 != "") && (prevline == "") {
+	$0 = "\\vbox{" $0 }
+
+# Get rid of email lines without <>; otherwise typeset in tt font
+($1 == "email:") { if ($NF ~ /<.*>/) { $0 = $NF 
+				       sub(/</, "{\\tt ")
+				       sub(/>/, "}")
+				       sub(/%/, "\\%") }
+			else $0 = killit }
+
+{ if (prevprevprevline != killit) { print prevprevprevline }
+  prevprevprevline = prevprevline
+  prevprevline = prevline
+  prevline = $0
+ }
+
+END { if (prevprevprevline != killit) { print prevprevprevline }
+      if (prevprevline != killit) { print prevprevline }
+      if (prevline != killit) { print prevline }
+      if (((prevline != "") && (prevline != killit)) || ((prevline == killit) && (prevprevline != "") && (prevprevline != killit)) || ((prevline == killit) && (prevprevline == killit) && (prevprevprevline != "") && (prevprevprevline != killit))) { print "\n}" }
+}
+

@@ -1,0 +1,26 @@
+#!/bin/sh
+
+if [ "$#" -ne 0 ]; then
+    echo "Do not pass arguments to $0"
+fi
+
+
+mdevccommit
+mdevcupdate
+cronic mdevcpushto
+
+java -ea -cp "${HOME}/java/plume-lib/multi-version-control/build/libs/multi-version-control-all.jar" org.plumelib.multiversioncontrol.MultiVersionControl update
+
+## Run `git prune` where needed.
+
+for dir in $(locate .git/gc.log | sed 's:/.git/gc.log$::') ; do
+  git -C "$dir" prune
+  rm -f "$dir"/.git/gc.log
+done
+
+## Notify about files that require attention
+
+find "${HOME}" -name SKIP-REQUIRE-JAVADOC
+if [ -d /scratch/mernst/clones ] ; then
+  find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name SKIP-REQUIRE-JAVADOC -print0 \)
+fi

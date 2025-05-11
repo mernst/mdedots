@@ -1,0 +1,35 @@
+platform.h typos
+
+This patch fixes some typos.  (Also, could you please restrict comments to
+80 columns?  It makes them much easier to read on standard terminals or
+when printed on standard paper.  Thanks.)
+
+
+2001-10-07  Michael Ernst  <mernst@alum.mit.edu>
+
+	* src/platform.h: Fix typos.
+
+
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/platform.h ../jikes-1.15-patched/src/platform.h
+--- src/platform.h	Sat Oct  6 23:42:54 2001
++++ ../jikes-1.15-patched/src/platform.h	Sun Oct  7 15:42:05 2001
+@@ -43,7 +43,7 @@
+ 
+ /*
+    undefine any symbols defined by the autotools
+-   build process that can conflict with out symbols
++   build process that can conflict with our symbols
+ */
+ 
+ #undef PACKAGE
+@@ -350,8 +350,8 @@
+ 
+ // The following comment was part of the original config.h, it explains why some parts of the
+ // guts of the compiler are written the way they are. This comment was removed when the ifdef'd
+-// EBCDIC code was initially removed. I've added it back for it's "why do they do it that way"
+-// value, hopefully it's presence will help prevent people from making assumptions and breaking
++// EBCDIC code was initially removed. I've added it back for its "why do they do it that way"
++// value, hopefully its presence will help prevent people from making assumptions and breaking
+ // the code for non-ascii platforms. At some point we'll want to be able to compile on EBCDIC
+ // systems again, using the API and iconv/ICU instead of ifdefs scattered all over creation,
+ // if the core code hasn't been compromised this should be easier. For those that have no idea

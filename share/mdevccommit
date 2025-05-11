@@ -1,0 +1,91 @@
+#!/bin/sh
+
+# Commit selected private projects without examination or a log message.
+# Other projects, including all public ones, should be committed by hand.
+
+# Die on any error.  Don't do this (yet?), because there are some commands
+# that have non-zero status that should not cause an abort.
+# set -e
+
+## Uncomment to enable debugging, or pass `--debug` on the command line.
+# DEBUG=1
+
+while :; do
+    case $1 in
+        --debug)
+            DEBUG=1
+            ;;
+        *)               # Default case: If no more options then break out of the loop.
+            break
+    esac
+
+    shift
+done
+
+if [ -n "$DEBUG" ]; then
+  echo "Debugging is on"
+  # Display commands and their arguments as they are executed; same as `set -o xtrace`.
+  set -x
+fi
+
+if [ -n "$DEBUG" ]; then
+  echo "Skipping compilation"
+else
+  cronic make -C "$HOME"/bib test
+  # I'm not sure why this is necessary, given the Git hooks
+  cronic make -C ~/bin/src/mdedots
+fi
+
+## Commit some private projects without examination or a log message.
+## Omit ~/public_html because it is publicly-visible and I should examine changes.
+for dir in ~/bib ~/bin/src/mdedots ~/research/notes ~/wisdom
+do
+  if [ -d $dir ]; then
+    echo ${dir}:
+    grep -q '^\[remote' $dir/.git/config
+    RETVAL=$?
+    if [ -n "$DEBUG" ] ; then echo "RETVAL = $RETVAL" ; fi
+    if [ $RETVAL -eq 0 ]; then
+      # The repository has a remote/parent (is not root).
+
+      if [ -n "$DEBUG" ] ; then echo "[remote ...] found in $dir/.git/config" ; fi
+
+      # (cd $dir; git commit -q -a --allow-empty-message -m " "; git pull -q; git push -q) &
+      ## WEIRD: without "git status > /dev/null", sometimes the commit does not happen.  I don't understand this.
+      ## The --dry-run is to suppress messages from the remote, such as "remote:
+      ## Resolving deltas".  See https://stackoverflow.com/questions/69475310/ .
+      ## TODO: Another problem is the possibility of git commands happening simultaneously.
+      (cd $dir && git status > /dev/null; \
+         (git diff --quiet --exit-code HEAD || git commit -q -a --allow-empty-message -m " "); \
+         git pull -q; \
+         (git log --branches --not --remotes --exit-code > /dev/null 2>&1 || \
+           (git push -q --dry-run && git push -q)))
+
+    else 
+      # Current directory is the root (no remote/parent).  This should never happen with Git.
+      if [ -n "$DEBUG" ] ; then echo "[remote ...] not found in $dir/.git/config" ; fi
+
+      # Why is second commit needed/useful?
+      # Need to do merge too?
+
+      # (cd $dir && git commit -q -a --allow-empty-message -m " "; git checkout -q) &
+      (cd $dir && (git diff --quiet --exit-code HEAD || git commit -q -a --allow-empty-message -m " "); git checkout -q)
+    fi
+  fi
+done
+
+# It would be nicer to wait for the above commands to complete (use the
+# wait shell command) and then return from this only when they are all
+# done.
+
+# It would also be nice to suppress all output from the commands and show
+# it only if there is a problem such as a timeout, especially since
+# compiling mew produces so much output.
+
+
+## syncthing warnings
+
+# Warn about conflict markers in directories that are synchronized.
+(cd ~/sync && find . -name '*.sync-conflict-*' | sed -e "s:^\./:~/sync/:")
+(cd ~/private && find . -name '*.sync-conflict-*' | sed -e "s:^\./:~/private/:")
+(cd ~/public_html/tmp72112 && find . -name '*.sync-conflict-*' | sed -e "s:^\./:~/public_html/tmp33333/:")

@@ -1,0 +1,3 @@
+#! /bin/sh
+java -jar "$HOME/java/plume-lib/lookup/build/libs/lookup-all.jar" \
+  -f "$HOME/wisdom/root_user:$HOME/wisdom/root:/afs/csail.mit.edu/u/m/mernst/wisdom/root" "$@"

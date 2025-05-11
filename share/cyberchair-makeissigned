@@ -1,0 +1,87 @@
+#!/usr/bin/env perl
+
+# Creates guesses at "issigned" files.
+# These should be deleted by hand if appropriate.
+
+use strict;
+use English;
+$WARNING = 1;
+
+use checkargs;
+use util_daikon;
+
+
+## Results for ISSTA 2006:
+#
+# These have a self-reference but are not signed:
+#
+# 111-1-issigned.txt
+# 116-2-issigned.txt
+# 120-3-issigned.txt
+# 122-1-issigned.txt
+# 126-3-issigned.txt
+# 13-1-issigned.txt
+# 138-2-issigned.txt
+# 153-3-issigned.txt
+# 157-2-issigned.txt
+# 43-2-issigned.txt
+# 48-1-issigned.txt
+# 57-1-issigned.txt
+# 80-2-issigned.txt
+#
+# Actually signed:
+#
+# 112-2-issigned.txt
+# 120-2-issigned.txt
+# 128-2-issigned.txt
+# 14-1-issigned.txt
+# 19-3-issigned.txt
+# 21-2-issigned.txt
+# 26-1-issigned.txt
+# 27-3-issigned.txt
+# 32-2-issigned.txt
+# 35-3-issigned.txt
+# 4-1-issigned.txt
+# 6-1-issigned.txt
+# 63-3-issigned.txt
+# 98-1-issigned.txt
+
+
+###########################################################################
+###
+###
+
+my @bodyfiles = glob("*-*-body.txt");
+for my $bodyfile (@bodyfiles) {
+  my $basefile = $bodyfile;
+  $basefile =~ s/-body\.txt$//;
+  my $corevfile = "$basefile-coreviewer.txt";
+  my $headerfile = "$basefile-header.txt";
+  my $header = `cat $headerfile`;
+  if ($header !~ /^\|\|Reviewer_*\|(.*?)[_| ]*$/m) {
+    die "No reviewer in file $headerfile (contents appear below).\n$header\n";
+    }
+  my $reviewer = $1;
+  $reviewer =~ s/_/ /g;
+
+  my $coreviewer = `cat $corevfile`;
+  if ($coreviewer !~ /Not_filled_in/) {
+    $coreviewer =~ s/\|//g;
+    $coreviewer =~ s/__+//g;
+    $coreviewer =~ s/\n//g;
+    $coreviewer =~ s/_/ /g;
+    print "coreviewer: $coreviewer\n";
+    $reviewer .= " $coreviewer";
+    }
+  my @reviewernames = split(/ +/, $reviewer);
+  my $body = `cat $bodyfile`;
+  my $issignedfile = "$basefile-issigned.txt";
+  for my $reviewername (@reviewernames) {
+    if ($body =~ /\b\Q$reviewername\E\b/) {
+      open (FOO, ">>$issignedfile");
+      print FOO "Found $reviewername\n";
+      }
+    }
+}
+
+

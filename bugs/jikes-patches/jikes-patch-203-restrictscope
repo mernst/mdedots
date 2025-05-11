@@ -1,0 +1,32 @@
+Restrict scope of variables
+
+This patch makes two helper variables, each used only on one or two lines,
+local to those lines.  This makes the code easier to understand, because it
+is now obvious that these variables are not used elsewhere.  It also might
+enable some compilers to optimize the code more effectively.
+
+2001-10-07  Michael Ernst  <mernst@alum.mit.edu>
+
+	* src/decl.cpp (ProcessFieldDeclaration): Restrict scope of helper
+	variables used to set field_type.
+
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/decl.cpp ../jikes-1.15-patched/src/decl.cpp
+--- src/decl.cpp	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/decl.cpp	Sun Oct  7 15:37:08 2001
+@@ -2669,9 +2669,13 @@
+     //
+     bool deprecated_declarations = lex_stream -> IsDeprecated(lex_stream -> Previous(field_declaration -> LeftToken()));
+     AstArrayType *array_type = field_declaration -> type -> ArrayTypeCast();
+-    Ast *actual_type = (array_type ? array_type -> type : field_declaration -> type);
+-    AstPrimitiveType *primitive_type = actual_type -> PrimitiveTypeCast();
+-    TypeSymbol *field_type = (primitive_type ? FindPrimitiveType(primitive_type) : MustFindType(actual_type));
++    TypeSymbol *field_type;
++    {
++        Ast *actual_type = (array_type ? array_type -> type : field_declaration -> type);
++        AstPrimitiveType *primitive_type = actual_type -> PrimitiveTypeCast();
++        field_type = (primitive_type ? FindPrimitiveType(primitive_type) : MustFindType(actual_type));
++    }
++
+     for (int i = 0; i < field_declaration -> NumVariableDeclarators(); i++)
+     {
+         AstVariableDeclarator *variable_declarator = field_declaration -> VariableDeclarator(i);

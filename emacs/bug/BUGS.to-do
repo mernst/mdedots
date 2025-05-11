@@ -1,0 +1,883 @@
+===========================================================================
+
+On godwit, I can retrieve my personal mail but not my CSE mail.
+Retrieving my CSE mail leads to "IMAP password is wrong!".
+On my home machine, I can retrieve both my personal mail and my CSE mail,
+and I think the setup is the same.  In particular, the passwords are the same.
+In Mew, the error is being raised by `mew-imap-filter`, but if I do
+M-x edebug-defun
+on it, then the process simply hangs.
+Maybe I need to add tracing (`message` statements) to that method,
+and compare on my home machine and at UW.
+
+===========================================================================
+
+In plume-lib, changing all
+(save-excursion
+  (set-buffer b)
+to
+(with-current-buffer b
+Leads to a huge problem where Mew headers are not hidden.
+I speculate that the problem is setting the buffer to the same buffer as it
+already was, without saving the current point.  I'm not sure which
+occurrence is the needed one, though.
+
+===========================================================================
+
+wgrep allows you to edit a grep buffer and apply those changes to the file buffer.
+
+===========================================================================
+
+Emacs hangs when trying to run next-line in a mail draft reply buffer to a mail that contains an HTML line separator.
+The HTML line separator is a problem in any buffer, or even selecting it with the mouse.
+It probably has to do with Emacs's new HTML rendering.
+
+===========================================================================
+
+Replacement for TAGS tables:
+ * GNU Global and gtags?
+   Debian (& Ubuntu?) version of GNU Global is ancient (version 5.7,
+   released in 2008), so build from source.  Releases are being made as of
+   Dec 2016.
+ * OpenGrok isn't integrated with Emacs (a couple packages exist).
+ * Consider "exuberant ctags" instead of etags; can produce Emacs TAGS files.
+   Is this already the default?
+ * cscope was abandoned
+
+use xcscope library, or semantic-symref from CEDET package, to find callers.
+cscope -- mostly for C/C++, but maybe also works for Java
+gnu global
+universal ctags (newer version of exuberant ctags) -- but no clear answers as to why it is better than etags, other than supporting more programming languages.
+
+===========================================================================
+
+BBDB:
+
+On my home laptop only, completing "jen wor" doesn't work in a mail buffer.
+Here is debugging.
+
+(all-completions "jen wor" (bbdb-hashtable))
+(all-completions "jennifer worrell" (bbdb-hashtable))
+(try-completion "jen wor" (bbdb-hashtable))
+(try-completion "jennifer worrell" (bbdb-hashtable))
+
+;; (bbdb-hashtable) is an obarray
+
+(setq keys nil)
+(mapatoms
+  #'(lambda (s)
+      (setq keys (cons (cons s nil) keys)))
+ (bbdb-hashtable))
+keys
+
+(all-completions "jen wor" keys)
+(all-completions "jennifer worrell" keys)
+(try-completion "jen wor" keys)
+(try-completion "jennifer worrell" keys)
+
+(completion-pcm-try-completion "jen wor" keys nil 0)
+(completion-pcm-all-completions "jen wor" keys nil 0)
+
+(setq completion-styles '(partial-completion initials))
+(setq completion-styles '(basic partial-completion emacs22))
+
+
+(hash-table-p (bbdb-hashtable))
+(vectorp (bbdb-hashtable))
+(obarrayp (bbdb-hashtable))
+
+===========================================================================
+
+Mew:
+
+----------------
+
+Submit a pull request for Mew (after my current one, https://github.com/kazu-yamamoto/Mew/pull/85 , is accepted):
+ * Manual should say how to use eww instead of w3m,
+   and update mew/dot.mew example file too.
+
+----------------
+
+Do something like this?
+(setq mew-case-guess-when-replied t)
+(setq mew-case-guess-when-replied-alist
+      '(("\\(From\\|To\\|Cc\\):"
+	 ("\\<jpp@a\\.mail\\>" . "case-for-jpp")
+	 ("\\<myself@other\\.mail\\>" . "case-for-myself")
+	 )))
+
+===========================================================================
+
+GENERAL INSTRUCTIONS about submitting a bug report in Emacs proper:
+
+[Is it in Git now?]
+First, see if it is already fixed in the latest CVS snapshot.
+To get that:
+  cd ~/tmp
+  cvs -q -z3 -d:pserver:anonymous@cvs.savannah.gnu.org:/sources/emacs co emacs
+
+General email address for bug reports:  bug-gnu-emacs@gnu.org
+For pretests (beta releases):  emacs-pretest-bug@gnu.org
+  http://lists.gnu.org/archive/html/emacs-pretest-bug/
+
+Submitting a bug:
+ * Check who the maintainer is
+ * Set From: line to mernst@alum.mit.edu
+ * Textual description
+ * Perhaps a test case
+ * ChangeLog entry, made with C-x 4 a
+ * Context diff
+
+Some of the entries in this file are very old and should be reviewed and
+resubmitted or deleted.
+
+Also see my old bug reports in ~/emacs/bug/ (and see which ones have been
+handled).
+
+===========================================================================
+
+mew-to-cc-newsgroups: advise it to remove whatever is in the
+dcc field of mew-config-alist:
+         (dcc "mernst@cs.washington.edu")
+
+===========================================================================
+
+Short-term:
+
+----------------
+
+To install versions of Emacs for multiple architectures:
+The short answer is to put one under a directory called i386_linux26
+and the other under a directory called amd64_linux26, and place the
+special token @sys into that part of the path, which AFS magically
+turns into the appropriate sysname (which can be found with 'fs
+sysname').
+
+----------------
+
+headers.el:  rewrite using page-ext.el.  (They are quite duplicative.)
+
+----------------
+
+Cleanups to my Emacs setup:
+
+Still to consider:
+  dot-emacs.el
+    buffer-menu-replacement-alist
+    abbreviate-file-name
+    Info-default-directory-list
+  mode-hooks-mde.el
+    rewrite mouse-yank-or-goto-error
+  startup-functions-mde.el:  info stuff
+
+Emacs new features to use:
+ variables:
+   beginning-of-defun-function, end-of-defun-function
+ comint:
+   don't use comint-prompt-regexp, but new field properties (?).
+
+----------------
+
+Get jdb (Java debugger) mode working.  Perhaps see old JDE code for
+inspiration.  But first, test this in Emacs 22; maybe it just works there
+now.
+
+===========================================================================
+
+Miscellaneous:
+
+When I save a file, its group is changed.  Please at least add an option
+to, when saving a file, try to set its group to what the disk file's group
+used to be.  I have an advice to basic-save-buffer-2 that does this.
+(The problem goes away if, in dired, I do a chgrp *while the file is
+in a buffer*.  If I do a chgrp, kill the buffer, and reread the file,
+then the group is still set in the way I don't want.)
+
+I liked the old version of find-function that went to advice.  In some
+sense, that's more important than the original code.  At least have an
+option for selecting between advice and non-advice.  Best of all would be
+going to the advices in order, then the main body.
+
+I should switch to using info-look.
+
+Remember these new commands, and consider using them:
+  M-* (pop-tag-mark) pops back through a history of buffer positions from
+	  which M-. or other tag-finding commands were invoked.
+  M-x checkdoc; (checkdoc-current-buffer) -- Checks style of Emacs Lisp doc strings
+  M-x ispell-comments-and-strings
+  Variable: revert-without-query
+  Macros: with-current-buffer, with-temp-file, with-temp-buffer, with-output-to-string
+  Function:  split-string
+  Ediff commands instead of compare-windows
+
+The documentation of keymaps (both in Emacs Lisp documentation strings and
+in the Emacs Lisp Manual) states that an element of a keymap may be a
+vector.  That isn't true:  the object is a char-table, which answers nil to
+vectorp.
+
+At CSAIL, when I start Emacs in text mode and type ahead while Emacs is
+starting up, the first character is lost and the rest appear in the
+*scratch* buffer, followed by "0;222;0c".  If I do not type ahead, nothing
+appears in the *scratch* buffer.  This behavior also occurs without my init
+files ("emacs -q -nw").  I do not understand this.
+
+M-x recover-session should make sure that omit-mode is not on.
+(I have an advice that takes care of this for me, but it's still a general
+issue.)
+
+===========================================================================
+
+AUC TeX:  bug-auctex@gnu.org
+
+I don't use this at present.
+
+===========================================================================
+
+bbdb:  (not in Emacs distribution)
+
+The new version at git://git.sv.gnu.org/bbdb.git does not support Mew
+integration, so don't bother with it.
+
+To report a bug:  M-x bbdb-submit-bug-report
+
+[This has been sent, but I want to remember it anyway, for my own good.]
+[To make the annoying "->" prompt go away (if, say, I buried the *BBDB*
+buffer instead of exiting with SPC), do a ^G at top-level.]
+[Can turn electric mode off and make it just use display-buffer.
+ But the idea behind electric modes is that when you hit SPC, the buffer 
+ goes away and restores the window configuration.]
+
+===========================================================================
+
+bdiff.el:  (not in Emacs distribution)
+
+----------------
+
+bdiff doesn't work when the buffer name is long enough to get truncated:
+the regular expression doesn't match.
+`list-some-buffers' should be re-implemented in a different way:
+`list-buffers-noselect' takes a buffer-list argument that I could set
+somehow, maybe via advice.
+
+----------------
+
+I want to add a disjunction like this one to the function in
+`list-munged-buffers'; however, that doesn't work because
+`purge-buffer-listing' lists only buffers visiting files, via
+`(list-buffers t)'.  It would be better for purge-buffer-listing to take a
+list of buffers to display rather than buffers not to display; then it
+wouldn't need to pass the argument to `list-buffers'.
+
+		;; special case for Dired buffers
+		(save-excursion
+		  (set-buffer b)
+		  (and (eq major-mode 'dired-mode)
+		       (not
+			(let ((attributes (file-attributes dired-directory))
+			      (modtime (visited-file-modtime)))
+			  (if (not attributes)
+			      nil
+			  (or (eq modtime 0)
+			      (not (eq (car attributes) t))
+			      (and (= (car (nth 5 attributes)) (car modtime))
+				   (= (nth 1 (nth 5 attributes)) (cdr modtime)))))))))
+
+===========================================================================
+
+bibtex.el:  Roland Winkler <roland.winkler@physik.uni-erlangen.de>
+
+===========================================================================
+
+buff-menu.el:
+
+list-buffers-directory needs a documentation string (and thus needs to be
+defvar'ed).
+
+list-buffers tracks buffers not by their identity, but by their name.  That
+means that if a buffer is renamed (say, by uniquify), it cannot be found
+via the buffer-menu, even if it still exists.
+Rather than using a 'buffer-name text property that records the buffer
+name, use a 'buffer (or some other name) text-property that records the
+buffer itself.
+You might consider using the buffer name as a backup, but that's not even
+as good as using the file name instead.  (Then you could read the file back
+in if it isn't at the moment, which might be a nice feature.)  Or, don't
+bother to have a backup at all.
+
+===========================================================================
+
+completing-read:
+
+;; I want something less severe than completion-ignore-case:
+;;  * don't arbitrarily choose one if two things are different in case
+;;  * If I match uniquely modulo case, do choose that (and complete up
+;;    to uniqueness modulo case)
+
+I would also like a version that, when all the possible completions have
+the same value (cdr in the alist or value in the obarray), returns one of
+them arbitrarily.  This will be nice for BBDB, which often forces me to
+choose among many barely-different aliases.
+
+===========================================================================
+
+comint.el:
+
+comint-last-output-start should be documented either as a variable or as
+part of the interface to comint-postoutput-scroll-to-bottom.
+
+===========================================================================
+
+compile.el:
+
+===========================================================================
+
+complete.el:
+
+When debugging, PC-do-completion is a good first place to look.
+
+Sometimes, the result of javadoc-lookup seems to differ from my tests.
+This may be because javadoc-lookup sets completion-ignore-case.
+
+----------------
+
+The problem is near the "same char (modulo case); no action" comment, and
+near
+
+		  ;; Retain capitalization of user input even if
+		  ;; completion-ignore-case is set.
+
+If the list `poss' has many possibilities with different capitalization,
+then we want to retain the capitalization as input by the user.  However,
+if they are all the same, we want to adjust the capitalization.
+(completion-test-4 "getmilli" t)
+(completion-test-4 "ge" t)
+
+----
+
+(defun completion-test-4 (initial-input &optional ignore-case)
+  (let ((completion-ignore-case ignore-case))
+    (completing-read "Input: "
+                     '(("getMillis" . 1)
+                       ("getMillisToDecideToPopup" . 2)
+                       ("getMillisToPopup" . 3)
+                       ("getMillisecond" . 4))
+                     nil                ; no predicate, all answers acceptable
+                     t                  ; require match
+                     initial-input
+                     )))
+
+(defun completion-test-4b (initial-input &optional ignore-case)
+  (let ((completion-ignore-case ignore-case))
+    (completing-read "Input: "
+                     '(("getMillisUpcase" . 1)
+                       ("getmillisdowncase" . 2))
+                     nil                ; no predicate, all answers acceptable
+                     t                  ; require match
+                     initial-input
+                     )))
+
+(defun completion-test-4c (initial-input &optional ignore-case)
+  (let ((completion-ignore-case ignore-case))
+    (completing-read "Input: "
+                     '(("getmillisdowncase" . 1)
+                       ("getMillisUpcase" . 2))
+                     nil                ; no predicate, all answers acceptable
+                     t                  ; require match
+                     initial-input
+                     )))
+
+(partial-completion-mode 1)
+(setq PC-meta-flag t)
+
+(completion-test-4 "getmilli" t)
+;; user types:  M-TAB    [normal completion]
+;; result:  getMillis    [chooses the element that matches modulo case]
+;; user types:  RET      [partial completion]
+;; result:  getmillis    [problem:  all lower-case, second RET doesn't select]
+
+(completion-test-4b "getmilli" t)
+(completion-test-4c "getmilli" t)
+(completion-test-4 "getMilli" t)
+
+
+(try-completion "getmilli" 
+	'(("getMillis" . 1)
+                       ("getMillisToDecideToPopup" . 2)
+                       ("getMillisToPopup" . 3)
+                       ("getMillisecond" . 4)))
+
+(let ((completion-ignore-case t))
+  (try-completion "getmilli" 
+		  '("getMillis"
+		    "getMillisToDecideToPopup"
+		    "getMillisToPopup"
+		    "getMillisecond")))
+
+(defun hash-table-keys (h)
+  (let ((keys nil))
+    (maphash (function (lambda (key value)) (push key keys)) h)
+    (nreverse keys)))
+
+;; Returns non-nil if, for all completions, their prefix has the same case
+;; (they are the same up to capitalization).  The return value is the
+;; common prefix, which is the same (up to case) as the result of
+;; try-completion.  Returns nil if try-completion returns nil.
+(defun all-completions-same-case (string alist &optional predicate)
+  (let ((completion (try-completion string alist predicate)))
+    (if completion
+	(let ((completion-length (length completion))
+	      (candidates (if (hash-table-p alist)
+			      (hash-table-keys alist)
+			    (mapcar (function (lambda (elt) (if (stringp elt)
+								elt
+							      (car elt))))
+				    alist)))
+	      (result nil))
+	  (while candidates
+	    (let* ((this-candidate (car candidates))
+		   (this-prefix (substring this-candidate 0 completion-length)))
+	      (if (if predicate
+		      (funcall predicate this-candidate)
+		    (eq t (compare-strings completion nil nil
+					   this-prefix nil nil
+					   case-fold-search)))
+		  ;; This candidate matches the criterion
+		  (if (not result)
+		      ;; First match seen; initialize result
+		      (setq result this-prefix)
+		    (if (not (string= result this-prefix))
+			;; does not match; function will return nil
+			(setq candidates nil
+			      result nil)))))
+	    (setq candidates (cdr candidates)))
+	  result))))
+
+(assert (string= "getMillis"
+ (let ((completion-ignore-case t))
+   (all-completions-same-case "getmilli" '("getMillis"
+	 				  "getMillisToDecideToPopup"
+		 			  "getMillisToPopup"
+			 		  "getMillisecond")))))
+(assert (equal nil
+ (let ((completion-ignore-case t))
+   (all-completions-same-case "getmilli" '("getMillis"
+					  "getMillisToDecideToPopup"
+					  "getmillistopopup"
+					  "getMillisecond")))))
+
+
+;; Actually, it seems like a problem that normal completion chooses the
+;; matching element immediately rather than giving a list of all
+;; possibilities.  Is this a bug in normal completion?
+
+----------------
+
+M-x pr bu<space> should act the same as if the space had been a
+<tab>, since the completion for the second word is unique.  Similarly, when
+the only completions are char-to-string and current-time-string, the
+"string" ought to be completed and the cursor jump back to the t (say).
+[This looks really hairy; I don't understand the (complicated) code, though
+perhaps the solution is to change the recursive call of PC-do-completion
+from passing 'word as MODE argument to passing nil.]
+
+----------------
+
+Make complete.el partial completion understand environment variables; this
+is one possible start, though getting the info back to the main routine is
+harder:
+(defun PC-substitute-in-file-name (filename)
+  (condition-case err
+      (substitute-in-file-name filename)
+    (error
+     (if (and (eq (car err) 'error)
+	      (string-match
+	       "^Substituting nonexistent environment variable \"\\(.*\\)\"$"
+	       (car (cdr err))))
+	 (let ((env-var (match-string 1 (car (cdr err))))
+	       (env-vars (mapcar (function (lambda (x)
+					     (substring x 0 (string-match "=" x))))
+				  process-environment)))
+	...)))))
+
+----------------
+
+It would be great if someone who understands the code could add
+documentation -- even a sentence or two -- for the undocumented functions,
+such as PC-chop-word and others.  That would improve the comprehensibility
+of complete.el.
+
+----------------
+
+===========================================================================
+
+dtrt-indent:
+
+http://savannah.nongnu.org/support/?group=dtrt-indent
+
+===========================================================================
+
+ell.el:
+
+Call of function xml-parse-region gives an error.
+
+===========================================================================
+
+etags-mde:
+
+When find-tag finds a tag but can't find the definition in the file (due to
+renaming, commenting out, etc.), it shouldn't say "No tags containing foo",
+but should give a more informative message.
+
+===========================================================================
+
+ffap.el:
+
+The following ffap patch isn't all that useful, because
+substitute-in-file-name doesn't understand $(...) notation.  But it does
+understand curly braces!  (And bash doesn't understand parentheses.)  So I
+should use curly braces and should adjust the ffap patch accordingly.  See
+my advice to substitute-in-file-name that handles parentheses.
+
+
+The following patch makes ffap.el deal correctly with environment variables
+in braces or parentheses -- for instance, ${HOME}/.emacs.  Although
+they should arguably use ${HOME}/... instead, this appears in lots of
+existing files, such as Makefiles.
+
+*** /var/mnt/uns.share/emacs/20.3.9/lisp/ffap.el	Sat Feb 13 06:42:35 1999
+--- -	Thu May 13 15:39:30 1999
+***************
+*** 933,936 ****
+--- 933,938 ----
+      ;; Mathematica paths: allow backquotes
+      (math-mode ",-:$+<>@-Z_a-z~`" "<" "@>;.,!?`:")
++     ;; Makefiles:  allow environment variables in braces/parens
++     (makefile-mode "--:$+<>@-Z_a-z~(){}" "<@({" "@>)};.,!?:")
+      )
+    "Alist of \(MODE CHARS BEG END\), where MODE is a symbol,
+
+===========================================================================
+
+files.el:
+
+Rename parse-colon-path in files.el to cd-parse-colon-path; make a
+parse-colon-path that can be used by other places in code (grep for getenv
+and PATH).
+
+===========================================================================
+
+gud.el:
+
+It would be nice to abstract out the functionality of
+`gud-gdb-marker-filter', as it is currently incorporated via cut-and-paste
+into most of the other debugger support marker-filters.
+
+===========================================================================
+
+guess-offset.el:  Julian Scheid <julian@sektor37.de>
+
+I'm having trouble with this -- I believe that it isn't setting the default
+appropriately in empty buffers.
+
+===========================================================================
+
+info-look.el:
+
+I'd like to permit, instead of a single DOC-SPEC INFO-NODE -- a string like
+"(perl5)Function Index" -- either a list of such (add "(perl)Function
+Index", since though perl5 was the old name, perl is the new name) or a
+simple rename-info-file-name function.  The former seems easier, since
+users won't have to cope with it.
+
+
+--- /uns/share/share/emacs/20.2.93/lisp/info-look.el	Wed Apr  1 20:28:55 1998
++++ -	Thu May 21 17:07:28 1998
+@@ -68,7 +68,7 @@
+
+ HELP-TOPIC is the symbol of a help topic.
+ HELP-DATA is a HELP-TOPIC's public data set.
+- Value is an alist with elements of the form
++ HELP-DATA's value is an alist with elements of the form
+
+     (HELP-MODE REGEXP IGNORE-CASE DOC-SPEC PARSE-RULE OTHER-MODES)
+
+@@ -398,12 +398,12 @@
+   (let ((doc-spec (info-lookup->doc-spec topic mode))
+         (regexp (concat "^\\(" (info-lookup->regexp topic mode)
+                         "\\)\\([ \t].*\\)?$"))
+-        node trans entry item prefix result doc-found
++        nodes node trans entry item prefix result doc-found
+         (buffer (get-buffer-create " temp-info-look")))
+     (with-current-buffer buffer
+       (Info-mode))
+     (while doc-spec
+-      (setq node (nth 0 (car doc-spec))
++      (setq nodes (nth 0 (car doc-spec))
+             trans (cond ((eq (nth 1 (car doc-spec)) nil)
+                          (lambda (arg)
+                            (if (string-match regexp arg)
+@@ -414,7 +414,11 @@
+                            (if (string-match "^\\([^: \t\n]+\\)" arg)
+                                (concat prefix (match-string 1 arg)))))
+                         (t (nth 1 (car doc-spec)))))
++      (if (stringp nodes)
++          (setq nodes (list nodes)))
+       (with-current-buffer buffer
++        (while nodes
++          (setq node (car nodes))
+         (message "Processing Info node `%s'..." node)
+         (when (condition-case error-data
+                   (progn
+@@ -437,8 +441,9 @@
+                             (setq entry nil))
+                        (or (assoc item result)
+                            (setq result (cons (cons item entry) result))))))
+-            (error nil))))
++              (error nil)))
+       (message "Processing Info node `%s'...done" node)
++          (setq nodes (cdr nodes))))
+       (setq doc-spec (cdr doc-spec)))
+     (or doc-found
+         (error "Info documentation for lookup was not found"))
+
+===========================================================================
+
+ispell.el: ispell-el-bugs@itcorp.com, bug-gnu-emacs@gnu.org
+
+----------------
+
+As of 11/2009,
+Ispell chokes on this line when spell-checking a message or this file.
+    “interesting” — the range that should be reported. For instance,
+But in a file of its own, it seems to be OK.  The problem is apparently:
+this line (without the hyphen):   Local-Words:  Fähndrich
+but the error isn't getting reported properly.
+It hangs in accept-process-output in ispell-accept-output in ispell-process-line.
+I don't think the problem is in the filter -- I debugged it, and the
+hang occurred at its end.  I don't see a sentinel defined, and
+(process-sentinel ispell-process) returns nil.
+Setting (setq ispell-async-processp nil) does not help -- it just leads to
+errors, even if it's the first thing in my .emacs.
+So, how can I see all the process input/output?
+
+----------------
+
+These are not bugs, merely to-do items.
+
+Perhaps set ispell-local-dictionary (which see), especially for papers that
+I write with others.  (Though it's helpful to them to have the Local
+Variables entry, too...)
+
+On a related note, perhaps avoid the need for all the TeX-master business
+(ditto).
+
+----------------
+
+===========================================================================
+
+JDE:  paulk@mathworks.com
+
+I've long since given up on this flaky, badly-designed software.
+
+===========================================================================
+
+man.el:
+
+There should be an easier way to modify Man-filter-list: auxiliary
+variables that it sets would be best; then I could just call
+Man-init-defvars to renew.
+
+===========================================================================
+
+nuke-trailing-whitespace.el:
+
+documentation should menton write-file-functions, not write-file-hooks.
+
+===========================================================================
+
+Mew
+mew-int@mew.org
+
+---------------------------------------------------------------------------
+
+Here is a minor comment about the style in the manual, when writing a
+sequence of keystrokes.
+
+The Mew manual sometimes puts a space between adjacent characters, and
+sometimes does not.  For example, in this sequence:
+
+C-uM-x mew
+
+there is no space between the "C-u" and "M-x" characters.
+
+It is idiomatic to put a space between the letters.  (This is the way the
+GNU Emacs Manual is written.)  The one exception is for input in the
+minibuffer, such as after M-x.  So, in the GNU Emacs manual, we can find
+text like `C-u M-x longlines-auto-wrap'.  Likewise, the GNU Emacs Manual
+would write `C-x m' rather than Mew's `C-xm'.  I think key sequences are
+easier to read, when at least any compound/modified character (such as a C-
+or M- character) is surrounded by space on both sides.
+
+Admittedly, this is a rather minor issue, but I think it would improve
+readability.
+
+===========================================================================
+
+NEWS (etc/NEWS):
+
+===========================================================================
+
+pcl-cvs:  pcl-cvs@cyclic.com
+
+===========================================================================
+
+pp.el:
+
+pretty-printing load-path should put each element on its own line, not all
+on one line.  The problem is that pp-to-string never splits the innermost
+level of list structure, only lists that themselves contain lists.  Also,
+it seems to ignore the current column, width of the current object, etc.
+
+===========================================================================
+
+reposition.el:
+
+Make reposition-window optionally use a {beginning,end}-of-def-function.
+What besides reposition-window could advantageously use such functions?
+
+===========================================================================
+
+shell.el:
+
+(This will be easy to implement, but hold off on doing so until it
+sufficiently bothers me.)
+shell-directory-tracker should monitor for "pwd" too, and look at the
+command's output.  (The workaround is to do M-x dirs to resync.)
+
+===========================================================================
+
+url.el:
+
+Don't save buffer name in url-working-buffer; save the buffer itself.  You
+have no control over when and how the buffer is renamed (eg if another of
+the same name is created and the names are both uniquified).
+
+M-x netscape-follow-url (and others that use url.el) misses the trailing #
+in URLs.
+
+===========================================================================
+
+vc.el:  Andre Spiegel <spiegel@gnu.org>, bug-gnu-emacs@gnu.org
+
+VC should use abbreviate-file-name most places it does (message ...).
+Maybe there should be a more general solution to this problem.
+
+===========================================================================
+
+VM (View Mail):
+
+VM 8:  http://www.nongnu.org/viewmail/
+Robert Widhopf-Fenk <hack@robf.de>
+Bug reports: https://bugs.launchpad.net/viewmail/
+  My bug reports to do: ~/emacs/bug/BUGS.to-do
+  My bug reports submitted:  https://bugs.launchpad.net/viewmail/+bugs?field.bug_reporter=michaelernst
+
+To get the current version:
+bzr branch lp:viewmail
+
+----------------
+
+I would like an additional sort key for vm-sort-messages:  whether the
+message has been read.  More generally, it would be great for
+vm-sort-messages to use a customizable alist rather than its long
+hard-coded cond statement.  That way, users could easily add their own sort
+keys.
+
+----------------
+
+Function vm-fill-paragraphs-containing-long-lines conflates two distinct
+concepts:
+ * what lines are long enough that they must be re-filled
+ * what the fill column should be
+
+My correspondents may use wider lines than I for hand-formatted text, and I
+don't want to disturb those.  But I want to fill all their really long
+lines, that are definitely wrapped text, and I want those to fit on my
+screen.  So, I would like to be able to specify the two concepts
+separately.  This was possible in VM 7.19, and it only requires this patch,
+plus possibly a way to give the behavior that both variables have the same
+value.
+
+--- /DS/home-0/mernst/emacs/vm-8.0.11-581/lisp/vm-misc.el	2008-08-11 22:42:57.000000000 +0200
++++ -	2008-08-22 09:40:17.405632166 +0200
+@@ -882,7 +882,6 @@
+ (defun vm-fill-paragraphs-containing-long-lines (len start end)
+   (let ((done nil)
+ 	(buffer-read-only nil)
+-	(fill-column vm-paragraph-fill-column)
+ 	;; user doesn't want long lines, so set this to zero for them.
+ 	(filladapt-fill-column-forward-fuzz 0))
+     (save-excursion
+
+----------------
+
+===========================================================================
+
+C code:
+
+The invisible text-property interacts with movement in an unfortunate way.
+I would like to skip over it and have current-column report the column in
+the window, not in the original buffer.  How can I get around this?  (There
+is a to-be-implemented "intangible" text-property which does what I want.)
+
+It would be nice if switch-to-buffer (which is implemented in C) took a
+prefix arg indicating how far down the stack the default file should be
+found.  (M-2 C-x b would act as the default; M-4 C-x b RET would be a
+simple way to select the fourth most recently selected buffer.)
+
+ * In isearch-mode, M-n or M-p invoke a search ring containing previous search
+strings.  This ring should contain the original search string, so that an
+accidentally typing M-n or M-p doesn't lose everything typed in isearch-mode.
+Bjarne says:
+ * Also, I have found no way to avoid jumping back to the start of the search
+apart from searching for something else.  C-g puts you back at search
+start.  This is not what I want if I have already performed a few matches
+using i-search and then accidentally hit M-n or M-p before exiting
+i-search mode.  I use M-n and M-p to scroll the buffer up and down, so it
+often bites me.
+
+after-load-alist should strip/ignore trailing ".el[c]" on file names, when
+adding to it or when loading a file.  Right now you need to specify the
+exact extension used by the autoload or load or require statement, yuck!
+(This is documented in Emacs 19.34, but I don't like it...)
+
+copy-file should accept a second argument which is a directory --
+interactively, at the very least.
+
+I'd like clearer documentation of where a filename must have
+substitute-in-file-name applied and where it mustn't; it would be nice to
+permit abbreviate-file-name to also unsubstitute environment variables.
+
+When not in menu-bar-mode, perhaps don't mention menu bar bindings in "C-h b"?
+Or at least don't suppress key bindings for the same commands.  (Is this
+fixed in Emacs 20.2.93?)
+
+It should be possible to run multiple background jobs.
+
+[Still true in 20.3]
+With point at the beginning of the second line:
+  BCC: mernst
+  --text follows this line--
+C-o expands "mernst" (which is fine) but leaves point at the end of the
+expanded abbreviation rather than on the empty line.  Similarly, with point
+at the end of the first line:
+  latexx
+  foo
+C-o expands "latexx" but leaves point on the empty line instead of at the
+end of the expanded abbreviation.  And with point at the beginning of the
+second line:
+  latexx
+  foo
+C-o expands "latexx" but leaves point at the end of "foo"!
+
+===========================================================================

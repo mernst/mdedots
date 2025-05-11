@@ -1,0 +1,27 @@
+Subject: Jikes patch: website CVS instructions
+
+http://oss.software.ibm.com/developerworks/cvs/os-cvs.php?group_id=10
+has a few errors in its instructions.
+
+1. It states that the CVS login command is
+
+  cvs login :pserver:anoncvs@oss.software.ibm.com:/usr/cvs/jikes password:anoncvs
+but in fact the correct command is
+
+  cvs -d :pserver:anoncvs@oss.software.ibm.com:/usr/cvs/jikes login
+
+and then the user should reply "anoncvs" (without the quotes) to the
+"password:" prompt.  So two things need to change in the instructions:
+ * change the command as above
+ * make it clear that "password:anoncvs" is not part of the command
+
+2. It states "Check out the module: cvs checkout module name".  Here,
+   "module name" should be replaced by "jikes".  Also, it is not necessary
+   (for me, at least) to set the CVSROOT variable; you can just type
+     cvs -d :pserver:anoncvs@oss.software.ibm.com:/usr/cvs/jikes checkout jikes
+   and then omit the "-d" argument thereafter (nor ever set the variable).
+
+3. The comment "Use the -d option to specify the working directory ( if not
+   the current directory)." is not true for CVS 1.10 or 1.11 (1.11 is the
+   current version); -d specifies the root, not the working directory.
+

@@ -1,0 +1,5 @@
+#!/bin/csh -f
+
+foreach i (beet turnip yam scallion cassava shallot potato geyer meoptiplex manioc)
+  xterm -T $i -e ssh -c 3des $i.csail.mit.edu &
+end

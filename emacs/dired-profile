@@ -1,0 +1,182 @@
+(setq profile-functions-list
+      '(dired-mark-unmarked-files
+	dired-get-filename
+	dired-quick-get-filename))
+(setq profile-functions-list
+      '(dired-omit-regexp))
+
+
+(profile-functions)
+
+(profile-results)
+
+(profile-finish)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun dired-omit-regexp ()
+"\\(^#\\|^\\.\\.?$\\)\\|\\(-\\|~\\|\\.\\(otl\\|err\\|KILL\\|bak\\|cp\\|tp\\|pg\\|ky\\|fn\\|vr\\|bci\\|so\\|o\\|elc\\|bin\\|lbin\\|fasl\\|dvi\\|toc\\|log\\|aux\\|a\\|ln\\|lof\\|blg\\|bbl\\|glo\\|idx\\|lot\\|fmt\\|idx\\|lof\\|lot\\|glo\\|blg\\|bbl\\|cp\\|cps\\|fn\\|fns\\|ky\\|kys\\|pg\\|pgs\\|tp\\|tps\\|vr\\|vrs\\)\\)$"
+)
+
+(defun dired-omit-regexp ()
+  (concat (if dired-omit-files (concat "\\(" dired-omit-files "\\)") "")
+	  (if (and dired-omit-files dired-omit-extensions) "\\|" "")
+	  (if dired-omit-extensions
+	      (concat ".";; a non-extension part should exist
+		      "\\("
+		      (mapconcat 'regexp-quote dired-omit-extensions "\\|")
+		      "\\)$")
+	    "")))
+
+
+
+(defun segregate-by-first-letter (string-list)
+  (let* ((result '())
+	 (this-string (car string-list))
+	 (this-letter-list (list this-string))
+	 (this-letter (aref this-string 0)))
+    (setq string-list (cdr string-list))
+    (while string-list
+      (setq this-string (car string-list))
+      (if (= this-letter (aref this-string 0))
+	  (setq this-letter-list (cons this-string this-letter-list))
+	(progn
+	  (setq result (cons (nreverse this-letter-list) result)
+		this-letter (aref this-string 0)
+		this-letter-list (list this-string))))
+      (setq string-list (cdr string-list)))
+    (cons (nreverse this-letter-list) result)))
+
+(segregate-by-first-letter '("foo" "bar" "barf" "baz"))
+
+
+	  (sort '("foo" "bar" "barf" "baz"))
+    
+
+(setq string-list (sort string-list))
+
+(require
+
+(defun dired-build-compact-regexp (sorted-string-list)
+  "Return a regular expression matching any member of SORTED-STRING-LIST.
+SORTED-STRING-LIST should be a sorted list of strings."
+  (let ((ssl sorted-string-list))
+    (cond ((not (cdr ssl))
+	   ;; only one element
+	   (car ssl))
+	  ((equal "" (car ssl))
+	   (let ((others (cdr ssl)))
+	     (if (cdr others)
+		 (
+
+	   (if (cdr (cdr ssl))
+	       (let 
+	 
+
+  
+			    
+
+
+(defvar dired-prev-omit-regexp)
+(defvar dired-prev-omit-files)
+(defvar dired-prev-omit-extensions)
+
+(defun dired-omit-regexp ()
+  (if (and dired-prev-omit-regexp
+	   (eq dired-omit-files dired-prev-omit-files)
+	   (eq dired-omit-extensions dired-prev-omit-extensions))
+      dired-prev-omit-regexp
+    (progn
+      (setq dired-prev-omit-regexp (dired-build-omit-regexp)
+	    dired-prev-omit-files dired-omit-files
+	    dired-prev-omit-extensions dired-omit-extensions)
+      dired-prev-omit-regexp)))
+
+(defun dired-build-omit-regexp ()
+  (let ((extensions (sort dired-omit-extensions)))
+    (cl-remove-duplicates extensions)
+
+  (concat (if dired-omit-files
+	      (concat "\\(" dired-omit-files "\\)")
+	    "")
+	  (if (and dired-omit-files dired-omit-extensions) "\\|" "")
+	  (if dired-omit-extensions
+	      (concat ".";; a non-extension part should exist
+		      "\\("
+		      (mapconcat (function regexp-quote)
+				 dired-omit-extensions
+				 "\\|")
+		      "\\)$")
+	    "")))
+
+(dired-omit-regexp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+These changes about halve the time required by dired on ~/emacs on a
+machine with load = 1.
+
+Function                         Time (Seconds.Useconds)
+========                         =======================
+dired-quick-get-filename             0.000000
+dired-get-filename                  14.020150
+dired-mark-unmarked-files           27.719854
+
+Function                         Time (Seconds.Useconds)
+========                         =======================
+dired-quick-get-filename             1.862793
+dired-get-filename                   0.140196
+dired-mark-unmarked-files           15.181854
+
+
+;; Assume:
+;;  * filename contains no spaces
+;;  * dired-actual-switches does not contain "b"
+(defun dired-quick-get-filename (&optional localp no-error-if-not-filep)
+  "In dired, return name of file mentioned on this line.
+Value returned normally includes the directory name.
+Optional arg LOCALP with value `no-dir' means don't include directory
+  name in result.  A value of t means construct name relative to
+  `default-directory', which still may contain slashes if in a subdirectory.
+Optional arg NO-ERROR-IF-NOT-FILEP means return nil if no filename on
+  this line, otherwise an error occurs."
+  (save-excursion
+    (beginning-of-line 1)
+    (if (looking-at "  [-dl]")
+	(progn
+	  (let ((bol (point))
+		(symlink (looking-at "  l"))
+		end file)
+	    (end-of-line 1)
+	    (if symlink
+		(if (search-backward " ->" eol t)
+		    (progn
+		      (and (string-match "F" dired-actual-switches)
+			   dired-ls-F-marks-symlinks
+			   (eq (preceding-char) ?@);; did ls really mark the link?
+			   (forward-char -1)))))
+	    (setq end (point))
+	    (search-backward " ")
+	    (setq file (buffer-substring (1+ (point)) end))
+	    (if (eq localp 'no-dir)
+		file
+	      (concat (dired-current-directory localp) file))))
+      (if (not no-error-if-not-filep)
+	  (error "No file on this line.")))))
+
+(defun dired-mark-unmarked-files (regexp msg &optional unflag-p localp)
+  "Marks unmarked files matching REGEXP, displaying MSG.
+REGEXP is matched against the complete pathname.
+Does not re-mark files which already have a mark.
+With prefix argument, unflag all those files.
+Second optional argument LOCALP is as in `dired-get-filename'."
+  (interactive "P")
+  (let ((dired-marker-char (if unflag-p ?\  dired-marker-char)))
+    (dired-mark-if
+     (and
+      ;; not already marked
+      (looking-at " ")
+      ;; uninteresting
+      (let ((fn (dired-quick-get-filename localp t)))
+	(and fn (string-match regexp fn))))
+     msg)))

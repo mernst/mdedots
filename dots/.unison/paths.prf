@@ -1,0 +1,68 @@
+## Paths to synchronize 
+# This file must be changed on the local machine; the server's copy has no effect!
+
+## To do: try diff3, and if it doesn't work, then move on to trying Emacs.
+## Examples for merging:
+# backupcurrent = Name *.txt
+# merge = Name *.txt -> emacs -q --eval '(ediff-merge-files-with-ancestor "CURRENT1" "CURRENT2" "CURRENTARCH" nil "NEW")' 
+# merge = Name *.txt -> if [ CURRENTARCHOPTx = x ]; then opendiff CURRENT1 CURRENT2 -merge NEW; else opendiff CURRENT1 CURRENT2 -ancestor CURRENTARCHOPT -merge NEW; fi
+
+path = private
+ignore = Path private/.gnupg/S.gpg-agent
+ignore = Path private/.gnupg/S.dirmngr
+backupcurrent = Path private/to-do
+merge = Path private/to-do -> diff3 -m CURRENT1 CURRENTARCH CURRENT2 > NEW || echo "differences detected"
+backupcurrent = Path private/travel-calendar
+merge = Path private/travel-calendar -> diff3 -m CURRENT1 CURRENTARCH CURRENT2 > NEW || echo "differences detected"
+backupcurrent = Path private/to-do-20120224
+merge = Path private/to-do-20120224 -> diff3 -m CURRENT1 CURRENTARCH CURRENT2 > NEW || echo "differences detected"
+backupcurrent = Path private/.bbdb
+merge = Path private/.bbdb -> diff3 -m CURRENT1 CURRENTARCH CURRENT2 > NEW || echo "differences detected"
+backupcurrent = Path private/calendar
+merge = Path private/calendar -> diff3 -m CURRENT1 CURRENTARCH CURRENT2 > NEW || echo "differences detected"
+backupcurrent = Path private/deadlines
+merge = Path private/deadlines -> diff3 -m CURRENT1 CURRENTARCH CURRENT2 > NEW || echo "differences detected"
+backupcurrent = Path private/timelog
+merge = Path private/timelog -> diff3 -m CURRENT1 CURRENTARCH CURRENT2 > NEW || echo "differences detected"
+backupcurrent = Path private/addresses.tex
+merge = Path private/addresses.tex -> diff3 -m CURRENT1 CURRENTARCH CURRENT2 > NEW || echo "differences detected"
+backupcurrent = Path private/travel-calendar
+merge = Path private/travel-calendar -> diff3 -m CURRENT1 CURRENTARCH CURRENT2 > NEW || echo "differences detected"
+
+# Not ".sync" because dotfiles are ignored in some circumstances,
+# such as in the Firefox "file upload" pop-up window.
+path = sync
+# Do NOT attempt to use a "follow" command so that I can put put links in
+# ~/sync to real files!
+# (It would be OK if I only delete the symbolic link, never the real file.)
+# The "follow" command is dangerous.  Suppose I do the following:
+#  1. On system A I create a symlink in sync to a file.
+#  2. On system B I delete the file (which isn't a symlink) from sync.
+# This has the effect on deleting the file from its home on system A!
+# (I appear to have done this by accident on multiple occasions.)
+# This is not sensible behavior, since that leaves the sumlink on system A
+# pointing to no file and therefore useless.
+# I would prefer that the delete on system B only has the effect of
+# deleting the symbolic link on system A; is there a way to do that?
+# Hard links work OK, though, and don't require the "follow" option.
+# But on AFS, hard links only work within the same volume.
+## follow = Regex sync.*
+
+# path = .fonts
+
+## Lines below here are automatically inserted
+
+ignore = Path dose/My Pictures
+ignore = Path dose/My Music
+ignore = Path dose/My eBooks
+ignore = Path dose/WUTemp
+ignore = Name thumbs.db
+ignore = Path dose/System Volume Information
+ignore = Path random/travel/captions-landscape.aux
+ignore = Path random/travel/captions-landscape.dvi
+ignore = Path random/travel/captions-landscape.log
+ignore = Path random/travel/captions-landscape.ps
+ignore = Path random/travel/captions-portrait.aux
+ignore = Path random/travel/captions-portrait.dvi
+ignore = Path random/travel/captions-portrait.log
+ignore = Path random/travel/captions-portrait.ps

@@ -1,0 +1,10 @@
+/.bzr/
+/.git/
+/.hg/
+/.svn/
+.unison/backup
+*~
+TAGS
+*.haux
+*.htoc
+*.aux

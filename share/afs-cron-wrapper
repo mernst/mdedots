@@ -1,0 +1,30 @@
+#!/usr/bin/pagsh
+# Note, using `pagsh' above is important, to create a new process
+# authentication group (PAG); do not change.
+
+{
+  # I can only substitute "${USER}" for the first "mernst", so don't bother.
+  # This script needs to set KRB5CCNAME to a different temporary file in
+  # each cron job, so their accesses to the credentials won't collide.
+  # KRB5CCNAME=/tmp/krb5cc_cron_mernst
+  KRB5CCNAME=/tmp/krb5cc_cron_mernst_$$
+  export KRB5CCNAME
+  # I am using the /etc path instead of the private one because I need
+  # credentials in order to read the private one!  /etc isn't in AFS, and
+  # I have set the permissions appropriately on that file.
+  kinit -k -t /etc/mernst.keytab mernst/cron@CSAIL.MIT.EDU
+  # kinit -k -t /afs/csail.mit.edu/u/m/mernst/.ssh/private/mernst.keytab mernst/cron@CSAIL.MIT.EDU
+  aklog
+  kdestroy -q
+}
+
+# Now running under the UNIX user ${USER} but AFS user ${USER}.cron
+# (and $USER itself doesn't seem to be set at all).
+
+## Debugging
+# echo "running afs-cron-wrapper $@"
+# date
+# hostname
+# echo ""
+
+$@

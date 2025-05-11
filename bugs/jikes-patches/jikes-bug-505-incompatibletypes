@@ -1,0 +1,23 @@
+Subject: Jikes bug: incompatible types print identically in "N$P is not compatible with N$P"
+
+[This appears to be the same as already-submitted bug #505;
+I submitted it as a comment to that.]
+
+This file, N.java:
+  class N {
+    void foo() {
+      P p = new N$P();
+    }
+
+    public class P
+    {
+    }
+  }
+produces this output when compiled with jikes 1.14:
+  % jikes -g +E +F N.java
+  N.java:3:9:3:21: Error: The type of the left-hand side in this assignment, "N$P", is not compatible with the type of the right-hand side expression, "N$P".
+  N.java:3:17:3:17: Error: Type N$P was not found.
+The error message, "N$P is not compatible with N$P", is confusing, since
+the two allegedly incompatible types print identically.  The error message
+should be made clearer.
+

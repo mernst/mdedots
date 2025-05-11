@@ -1,0 +1,621 @@
+# .aliases file
+# Also contains functions
+
+# Most customizations (e.g., to PATH) appear in ~/.profile .
+
+## Environment variables (which are set in .environment) get copied to child
+## shells, but aliases don't, so this file needs to always be re-executed.
+
+# Watch out for aliases with pipes; writing a shell script may be superior.
+
+# shellcheck shell=sh
+
+###########################################################################
+
+
+alias eth0='sudo /sbin/ifup eth0'
+alias eth1='sudo /sbin/ifup eth1'
+
+alias f='finger'
+
+# ispell
+alias ispell='ispell -t'
+
+# There is a program named `killall`
+alias killalljobs='kill -9 %1; kill -9 %2; kill -9 %3; kill -9 %4; kill -9 %5; kill -9 %6; kill -9 %7; kill -9 %8; kill -9 %9'
+# "-v" avoids bizarre GNU ls 4.1 sort order
+alias killacroread='kill -9 `ps -elfw | grep acroread | grep -v grep | cut -c 14-20`'
+
+## Lookup program.
+alias lookup='java -ea -jar ${HOME}/java/plume-lib/lookup/build/libs/lookup-all.jar -a'
+# Note there is also a ~/bin/share/doc program that is nearly identical to this.
+alias doc='lookup -f ${HOME}/wisdom/root_user'
+alias bibfind='lookup -l -f ${HOME}/bib/bibroot'
+alias rolo='lookup -f ${HOME}/private/addresses.tex --comment-re='
+alias quotefind='lookup -f ${HOME}/private/quotes1 -f ${HOME}/private/quotes'
+
+# "patience diff" algorithm
+alias patdiff='git diff --no-index --patience'
+# Recursive diff
+alias diffr="diff -u -b -r --exclude=.bzr --exclude=CVS --exclude=.gradle --exclude=.hg --exclude=.hgtags --exclude=.git --exclude=.svn --exclude=api --exclude=build --exclude=checker-qual --exclude=checker-qual-android --exclude=javadoc --exclude=TAGS --exclude='*~' --exclude='*.class' --exclude='*.elc' --exclude='*.jar' --exclude='*.aux' --exclude='*.blg' --exclude='*.haux' --exclude='*.htoc' --exclude='*.image.tex' --exclude='*.toc' --exclude=.run-google-java-format"
+
+alias ls='ls -bCFv'
+
+# alias java='java -ea'
+alias javac='javac -g'
+alias javatags='etags `find . -type f -name '"'"'*.java'"'"'`'
+
+alias usejdk8='(cd ~/java && rm -f jdk && ln -s jdk8 jdk)'
+alias usejdk11='(cd ~/java && rm -f jdk && ln -s jdk11 jdk)'
+alias usejdk17='(cd ~/java && rm -f jdk && ln -s jdk17 jdk)'
+alias usejdk18='(cd ~/java && rm -f jdk && ln -s jdk18 jdk)'
+alias usejdk19='(cd ~/java && rm -f jdk && ln -s jdk19 jdk)'
+alias usejdk20='(cd ~/java && rm -f jdk && ln -s jdk20 jdk)'
+alias usejdk21='(cd ~/java && rm -f jdk && ln -s jdk21 jdk)'
+alias usejdk22='(cd ~/java && rm -f jdk && ln -s jdk22 jdk)'
+alias usejdk23='(cd ~/java && rm -f jdk && ln -s jdk23 jdk)'
+alias usejdk24='(cd ~/java && rm -f jdk && ln -s jdk24 jdk)'
+TMP=$(mktemp -t .aliases-trap.XXXXXX)
+trap 'rm $TMP* 2>/dev/null' EXIT
+# Argument is a directory suffix like "fork-mernst-branch-scene-to-stub-writer-debug-3",
+# or an entire directory name.
+usecf () { 
+  suffix=$1
+  suffix=${suffix##*/}
+  suffix=${suffix#checker-framework-}
+  suffix=${suffix#demos-}
+  suffix=${suffix#jdk-}
+  suffix=${suffix#jdk11u-}
+  suffix=${suffix#jdk17u-}
+  suffix=${suffix#annotation-tools-}
+  suffix=${suffix#stubparser-}
+  # echo "suffix = ${suffix}"
+  (cd "${t:?}" && \
+  rm -f annotation-tools; if [ -d "annotation-tools-$suffix" ] ; then ln -sf "annotation-tools-$suffix" annotation-tools; else ln -sf annotation-tools-branch-master annotation-tools; fi; \
+  rm -f checker-framework; if [ -d "checker-framework-$suffix" ] ; then ln -sf "checker-framework-$suffix" checker-framework; else ln -sf checker-framework-branch-master checker-framework; fi; \
+  rm -f demos; if [ -d "demos-$suffix" ] ; then ln -sf "demos-$suffix" demos; else ln -sf demos-branch-master demos; fi; \
+  rm -f stubparser; if [ -d "stubparser-$suffix" ] ; then ln -sf "stubparser-$suffix" stubparser; else ln -sf stubparser-branch-master stubparser; fi; \
+  cd "$t/libraries" && rm -f jdk; if [ -d "jdk-$suffix" ] ; then ln -sf "jdk-$suffix" jdk; else ln -sf jdk-branch-master jdk; fi; \
+  cd "$t/libraries" && rm -f jdk17u; if [ -d "jdk17u-$suffix" ] ; then ln -sf "jdk17u-$suffix" jdk17u; else ln -sf jdk17u-branch-master jdk17u; fi; \
+) }
+usenocf () { (cd "$t" && rm -f annotation-tools checker-framework stubparser libraries/jdk libraries/jdk11u checker-framework-inference ) }
+
+# Temporary; later there will be a program of this name.
+alias mvc='java -ea -cp ${HOME}/java/plume-lib/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl'
+
+alias mroe='more'
+# nman <man-file> # Process the unformatted man page <man-file>
+nman () { command tbl "$@" | neqn | nroff -man | col ; }
+# alias oo='openoffice'
+alias ooffice='soffice'
+
+# Suffix "p" means portrait input, suffix "l" means landscape input.
+alias pdfnup2p='pdfjam --nup 2x1 --landscape --suffix nup --frame true'
+alias pdfnup2='pdfnup2p'
+alias pdfnup4l='pdfjam --nup 2x2 --landscape --suffix nup --frame true'
+alias pdfnup4p='pdfjam --nup 2x2 --no-landscape --suffix 4up --suffix nup --frame true'
+alias pdfnup4='pdfnup4l'
+alias pdfnup3x2='pdfjam --nup 3x2 --landscape --suffix nup --frame true'
+alias pdfnup6l='pdfjam --nup 2x3 --landscape --suffix nup --frame true'
+alias pdfnup6='pdfnup6l'
+alias pdfnup8='pdfjam --nup 4x2 --landscape --suffix nup --frame true'
+
+# ps2ascii <psfile> # outputs text of <psfile>  (always spell-check afterward)
+alias ps2ascii='gs -q -dNODISPLAY -dNOBIND -dWRITESYSTEMDICT -dSIMPLE ps2ascii.ps'
+alias pstoascii='ps2ascii'
+remake () { command rm -f "$@"; make "$@" ; }
+alias gw='./gradlew -q'
+# shellcheck disable=SC2154
+alias cfassemble='(cd $cf && cronic --duplicate-stderr ./gradlew assembleForJavac && true)'
+alias cfpublish='(cd $cf && cronic --duplicate-stderr ./gradlew publishToMavenLocal && true)'
+# "rmjunk" alias is too dangerous.
+# alias rmjunk='junk -c \rm'
+alias texclean='rm -rf *.aux .*.aux *.toc .*.toc *.lof .*.lof *.lot .*.lot *.idx .*.idx *.glo .*.glo *.log .*.log *.blg .*.blg *.dvi .*.dvi'
+alias texiclean='texinfoclean'
+alias up='cd ..'
+uue () {
+  if [ "$#" -ne 1 ] || ! [ -d "$1" ]; then echo "uue: pass one directory argument; received $*"; return 1; fi;
+  command uuencode "$1" "$1" > "$".UUE ;
+}
+alias whihc='which'
+
+# I get a warning mesage from ps about bad syntax, which I don't understand.
+psgrep () { command ps auxwwww | grep "$1" | grep -v "grep $1"; } 
+
+zw () { command zwrite "$1" -m "$2"* ; }
+ 
+# Emacs
+alias bytecomp='emacs -batch -f batch-byte-compile'
+## Try skipping this; instead, I have an alias in ~/bin/Darwin-x86_64/
+# A problem with the below is that it does not set the `exec-path' Emacs 
+# variable from the PATH environment variable.
+# if [[ "$OSTYPE" == "darwin"* ]]; then
+#   alias emacs="/usr/local/Cellar/emacs/24.3/Emacs.app/Contents/MacOS/Emacs"
+# fi
+
+## Uses of "find"
+# copytree <src> <dest> # copy files from <src> to <dest>
+copytree () { (cd "$1" && tar cf - .) | (cd "$2" && tar xvfBp -) }
+# findfile <filepat> # finds files matching <filepat> below .
+findfile () { command find . -iname "$@" -print ; }
+alias findfiles='find . -type f'
+
+alias ag='ag --hidden --follow --search-zip'
+
+# Address & date database manipulation
+# aliasconv.sh has trouble with subshells
+alias printdates='(cd && checkdates p \!*; latex adates > /dev/null; lpr -d adates.dvi; \rm adates.*)'
+alias psaddresses3col='(cd ~/private && \rm -f addr.tex; addrfilter < addresses.tex > addr.tex; latex \\batchmode \\input rolo3col > /dev/null; dvips -o addresses.ps rolo3col.dvi; \rm rolo3col.dvi rolo3col.aux rolo3col.log addr.tex)'
+alias psaddresses4col='(cd ~/private && \rm -f addr.tex; addrfilter < addresses.tex > addr.tex; latex \\batchmode \\input rolo4col > /dev/null; dvips -o addresses.ps rolo4col.dvi; \rm rolo4col.dvi rolo4col.aux rolo4col.log addr.tex)'
+alias psaddresses='psaddresses4col'
+alias printaddresses='(cd ~/random && psaddresses; lpr addresses.ps; \rm -f addresses.ps)'
+
+
+## Old versions, but now I can directly give the size.
+## For presentations (and x60s)
+alias smallscreen='xrandr -s 1024x768'
+## For x300 laptop
+alias x300screen='xrandr -s 1440x900'
+## For Yoga S1
+alias s1screen='xrandr --newmode "1920x1080"  173.00  1920 2048 2248 2576  1080 1083 1088 1120 -hsync +vsync; xrandr --addmode Virtual1 1920x1080; xrandr --output Virtual1 --mode 1920x1080'
+alias lapscreen=s1screen
+## For external monitor
+# alias bigscreen='xrandr -s 1680x1050'
+alias bigscreen='xrandr -s 1920x1200'
+
+# keymap switch in Linux: loadkeys dvorak (or loadkeys us to get back to
+# QWERTY) from a console, and setxkbmap dvorak / us from within X.
+alias aoeu='if [ $DISPLAY ]; then setxkbmap us; else loadkeys us; fi'
+alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
+
+alias bb=brazil-build
+alias bbb='brazil-build build'
+
+
+###########################################################################
+### Printing
+###
+
+if [ -d "/homes/gws/mernst" ]; then
+  alias lpr='lpr -o fit-to-page'
+fi
+
+# psnup can read from standard input, but then it can't take an argument
+# for the output file; thus, use ">" file redirection.
+# These commands Works on .ps files, not on .pdf files
+acm2up () { command pstops "0(-125,-110)" "$@" | psnup -2 -W360 -H590 -pletter -m0.5in -b0.05in > "$(basename "$@" .ps)-2up.ps" ; }
+# To make the print bigger on the final page, make the -W and -H arguments smaller.  To move the text logically downward toward the bottom of the page, make the last number in "0(-133,-97)" a larger negative number.
+lncs2up () { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m0.45in -b-0.15in > "$(basename "$@" .ps)-2up.ps" ; }
+
+# # Seems more robust than the real html2ps
+# # But, htmldoc is not installed at CSE, whereas html2ps is.
+# html2ps () { command htmldoc -f `basename "$@" .ps` --webpage "$@" ; }
+# html2pdf () { command htmldoc -f `basename "$@" .pdf` --webpage "$@" ; }
+
+# Enscript/genscript (ens uses -pOUTFILE; gens uses -oOUTFILE to output to file)
+# -h: no burst/header page; -B: no page headings; -b 'header'; -G: gaudy page
+# headings; -R: portrait
+# one useful modification is to add '; sleep 2; lpq' to the end
+
+# ASCII input, 1up
+alias ens1nofont='enscript --pretty-print -1R --non-printable-format=questionmark --word-wrap --mark-wrapped-lines=arrow --no-job-header'
+# Decimal font sizes like Courier10.2 are permitted.
+#                   Columns       Landscape
+# Font size        10    9  8.7     8   10   9    8
+# Courier          87   97  100   109    ?  135    ?
+# DejaVuSansMono   87   97  100   109    ?  135    ?
+# Inconsolata      113?  ?    ?    ?     ?    ?    ?
+# For code, don't use Inconsolata or DejaVuSansMono: they lack bold and oblique versions for use by enscript!
+# Inconsolata is not installed at CSE
+# "c" is for courier, "i" is for inconsolata; default is Courier10.
+alias ens1c='ens1nofont -f Courier10'
+alias ens1d='ens1nofont -f DejaVuSansMono10'
+alias ens1i='ens1nofont -f Inconsolata10'
+alias ens1='ens1d'
+# tweak sizes to fit 100 columns
+alias ens1csmall='ens1nofont -f Courier8.7'
+alias ens1dsmall='ens1nofont -f DejaVuSansMono8.7'
+alias ens1ismall='ens1nofont -f Inconsolata9'
+alias ens1small='ens1csmall'
+alias ens100='ens1small'
+alias ens1csmaller='ens1nofont -f Courier8'
+alias ens1dsmaller='ens1nofont -f DejaVuSansMono8'
+alias ens1ismaller='ens1nofont -f Inconsolata8'
+alias ens1smaller='ens1csmaller'
+alias ens1cr='ens1csmall -r'
+alias ens1dr='ens1dsmall -r'
+alias ens1ir='ens1ismall -r'
+alias ens1r='ens1dr'
+alias ens1diff='ens1 --color -Ediffu'
+# Output to PDF file.  i means inconsolata.
+# For no header, add:  -b ""
+ens1f () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ens1f: pass one file argument; received $*"; return 1; fi;
+  ens1 -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ;
+}
+ens1fi () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ens1fi: pass one file argument; received $*"; return 1; fi;
+  ens1i -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ;
+}
+ens1fsmall () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ens1fsmall: pass one file argument; received $*"; return 1; fi;
+  ens1small -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ;
+}
+ens100f () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ens100f: pass one file argument; received $*"; return 1; fi;
+  ens100 -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ;
+}
+ens1fsmaller () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ens1fsmaller: pass one file argument; received $*"; return 1; fi;
+  ens1smaller -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ;
+}
+ens1fr () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ens1fr: pass one file argument; received $*"; return 1; fi;
+  ens1r -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ;
+}
+# Same as ens1f
+ensf () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ensf: pass one file argument; received $*"; return 1; fi;
+  ens1 -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ;
+}
+# With line numbers
+ens100fc () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ens100fc: pass one file argument; received $*"; return 1; fi;
+  ens100 -C -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ;
+}
+ens1fdiff () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ens1fdiff: pass one file argument; received $*"; return 1; fi;
+  ens1diff -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ;
+}    
+
+# ASCII input, 2up
+# 83 columns
+alias ens2nofont='enscript --pretty-print -2r --non-printable-format=questionmark'
+alias ens2c='ens2nofont'
+alias ens2i='ens2nofont -f Inconsolata7'
+alias ens2='ens2i'
+# Output to file
+# ens2f () { ens2 -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ; }
+# This rather odd definition makes the final .ps (but not .pdf) work on
+# printer psc581 as of 2009/2010.  (There's a new printer psc581 as of 2014;
+# is the odd definition needed any more?)
+ens2f () {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then echo "ens2f: pass one file argument; received $*"; return 1; fi;
+  ens2 -o "$1".ps "$1" ; ps2pdf "$1".ps "$1".pdf ; mv "$1".ps "$1".ps-orig ; pdftops "$1".pdf "$1".ps ; mv "$1".pdf "$1".pdf-orig ;
+  }
+
+# Consider "-H 2" for highlight bars
+# 169 columns
+alias enswide='enscript -f Inconsolata7 -r'
+alias ensw='enswide'
+# ASCII input, 4up: a2ps -4 | lpr	
+# no burst page
+alias ens1h='ens1 -h'
+alias ens2h='ens2 -h'
+
+# Problem: enscript does not properly handly unicode/UTF-8.
+# Neither does a2ps as of 9/2014, it seems.
+# Alternative:  paps does, and an Ubuntu package for it exists.
+# Alternative:  cedilla does.
+# Alternative:  pipe through recode before sending to enscript (or
+# before sending to cedilla, which dies if the output isn't legal Unicode).
+
+paps1f () { file="$1"; paps --font="Monospace 10" --paper letter "$@" > "$1".ps; ps2pdf "$1".ps "$1".pdf; }
+paps1 () { paps1f "$@"; }
+paps2f () { file="$1"; paps --cpi 18 --header --landscape --columns=2 --paper letter "$@" > "$1".ps; ps2pdf "$1".ps "$1".pdf; }
+paps2 () { paps2f "$@"; }
+
+# Cedilla with a header
+# (Problem: if a symbolic link, it's the link's date, not the real file's date.)
+# shellcheck disable=SC2012
+cedhead () { file="$1"; shift; date=$(ls -l "$file" | cut -d " " -f 6-7); cedilla -p Letter -w -h "$file,$date,%p" "$1" "$file" "$file.ps"; } 
+# These take the file name FIRST, and any other parameters afterward.
+ced1f () { file="$1"; cedhead "$@"; ps2pdf "$1".ps "$1".pdf; }
+ced1 () { ced1f "$@"; }
+ced () { ced1f "$@"; }
+ced2f () { file="$1"; ced1 "$@"; psnup -2 -d "$1".ps "$1"-2up.ps; pdfjam --nup 2x1 --landscape --suffix nup "$1".pdf; }
+ced2 () { ced2f "$@"; }
+# Smaller font.
+ceds () { cedhead "$@" -s 8; ps2pdf "$1".ps "$1".pdf; }
+
+
+# This usually turns an unprintable PDF file into a printable one
+pdfclean () { pdftops "$1" "$1".ps; ps2pdf "$1".ps; }
+
+
+###########################################################################
+### Java
+###
+
+jstackf() { jstack "$1" > jstack-"$1".txt; }
+
+alias jikes='jikes -g +E +F'
+
+alias daikon='java -ea -mx3G -cp $inv/daikon/daikon.jar daikon.Daikon'
+alias printinvariants='java -ea -mx3G -cp $inv/daikon/daikon.jar daikon.PrintInvariants'
+
+# Avoid running the JIT that removes debugging information.
+# Ordinarily JAVA_COMPILER is not defined.
+alias jitoff='export JAVA_COMPILER=NONE'
+alias jiton='unset JAVA_COMPILER'
+
+# This isn't quite right because we want CLASSPATH set exactly as in the
+# environment, but it's good enough.
+alias jwhich='java -ea -cp ${CLASSPATH}:${HOME}/java/plume-lib/plume-lib-OLD/plume-lib-branch-master/java/plume.jar plume.JWhich'
+
+# alias eclipse='eclipse -data $HOME/.eclipse'
+# alias eclpise='eclipse -vm /usr/bin/java'
+
+
+alias javacheck='$CHECKERFRAMEWORK/checker/bin/javac'
+
+
+# Infer non-null types using JastAdd
+alias nninfer='java -ea -jar ${HOME}/java/JavaNonNullInferencer.jar -classpath ${CLASSPATH} -import "checkers.quals.*"'
+alias nncheckold='javac -g -processor org.checkerframework.checker.nullness.NullnessChecker'
+
+
+###########################################################################
+### ssh/rlogin
+###
+
+## If adding new domains, don't forget to edit /etc/ssh/ssh_config to set
+## "ForwardX11 yes" for those domains.  (Otherwise:  I have to pass the
+## "-X" argument to ssh, and DISPLAY=:0.0 doesn't work (but
+## DISPLAY=localhost:0.0 does).)
+
+# Without xterm
+alias sshgodwit='ssh mernst@godwit.cs.washington.edu'
+
+
+# xterm with ssh, xterm with ssh remotely
+xs () { 
+  if [ "$#" -ne 1 ]; then echo "xs: pass one argument; received $*"; return 1; fi;
+  command xterm -T "$1" -e ssh -X mernst@"$1" &
+}
+xsc () {
+  if [ "$#" -ne 1 ]; then echo "xsc: pass one argument; received $*"; return 1; fi;
+  command xterm -T "$1" -e ssh -X mernst@"$1".csail.mit.edu &
+}
+xsw () {
+  if [ "$#" -ne 1 ]; then echo "xsw: pass one argument; received $*"; return 1; fi;
+  command xterm -T "$1" -e ssh -X mernst@"$1".cs.washington.edu &
+}
+# "-J" means use a jump host, for machines that are not accessible outside cs.washington.edu.
+xswj () {
+  if [ "$#" -ne 1 ]; then echo "xswj: pass one argument; received $*"; return 1; fi;
+  command xterm -T "$1" -e ssh -J bicycle.cs.washington.edu -X mernst@"$1".cs.washington.edu &
+}
+# "ssh -Y" does trusted X11 forwarding
+xswy () {
+  if [ "$#" -ne 1 ]; then echo "xswy: pass one argument; received $*"; return 1; fi;
+  command xterm -T "$1" -e ssh -Y mernst@"$1".cs.washington.edu &
+}
+# Emacs via X, remotely
+xe () {
+  if [ "$#" -ne 1 ]; then echo "xe: pass one argument; received $*"; return 1; fi;
+  command ssh -X -f mernst@"$1" emacs ;
+}
+xej () {
+  if [ "$#" -ne 1 ]; then echo "xe: pass one argument; received $*"; return 1; fi;
+  command ssh -J bicycle.cs.washington.edu -X -f mernst@"$1" emacs ;
+}
+xec () {
+  if [ "$#" -ne 1 ]; then echo "xec: pass one argument; received $*"; return 1; fi;
+  xe "$1".csail.mit.edu ;
+}
+xew () {
+  if [ "$#" -ne 1 ]; then echo "xew: pass one argument; received $*"; return 1; fi;
+  xe "$1".cs.washington.edu ;
+}
+xewj () {
+  if [ "$#" -ne 1 ]; then echo "xew: pass one argument; received $*"; return 1; fi;
+  xej "$1".cs.washington.edu ;
+}
+
+# login: x86-64; login32: x86
+alias csail='xsc login'
+
+alias laptop='(xterm -T laptop -e ssh -X -p 58512 mernst2.no-ip.org &)'
+
+alias godwit='xsw godwit'
+# Eel can only be logged into from a CSE machine, not from outside the CSE network.
+alias eel='xsw eel'
+# Cremosa runs CentOS 8.  It can only be logged into from a CSE machine, not from outside the CSE network.
+alias cremosa='xsw cremosa'
+alias attu='xsw attu'
+alias jicama='xsw jicama'
+alias honu='xswj honu'
+alias singular='xswj singular'
+alias hummingbird='xsw hummingbird'
+alias buffalo='xsw buffalo'
+alias tern='xsw tern'
+alias warfa='xsw warfa'
+alias pipsqueak='xsw pipsqueak'
+alias yonder='xsw yonder'
+# "egodwit" is problematic because environment variables like $inv don't
+# get defined.  (Perhaps other commands have this problem too, but I don't
+# recall it as a problem for emangold.)
+alias egodwit='xew godwit'
+alias recycle='xsw recycle'
+alias erecycle='xew recycle'
+alias bicycle='xsw bicycle'
+alias bicycley='xswy bicycle'
+alias ebicycle='xew bicycle'
+alias tricycle='xsw tricycle'
+alias etricycle='xew tricycle'
+alias bam='xsw bam'
+alias ebam='xew bam'
+alias boom='xsw boom'
+alias eboom='xew boom'
+# Tex Live 2023 installation
+# TODO: Within cs.washington.edu, I do NOT need to use a jump host.
+alias texlive='xswj texlive'
+alias etexlive='xewj texlive'
+# Testing for new OS releases
+alias testify='xsw testify'
+alias etestify='xew testify'
+
+# farin is Rene's fast box with 1 TB of memory, but my CSE password does not work for it.
+
+
+# As of 10/2016, runs "Windows Server 2012 R2 Datacenter"
+# No "&" because it needs to accept input.  I need to C-z then bg.
+alias aqua='xfreerdp -u mernst -g 2048x1536 aqua.cs.washington.edu'
+
+alias eustace='xterm -T eustace -e ssh -X eustace@godwit.cs.washington.edu &'
+
+# shellcheck disable=SC2154 # should this use different quoting?
+alias serverload='for server in recycle bicycle tricycle bam boom tern ; do echo $server ; timeout 2s ssh $server.cs.washington.edu uptime ; done'
+
+alias c331tst1='xterm -T c331tst1 -e ssh -X c331tst1@attu.cs.washington.edu &'
+alias c331tst2='xterm -T c331tst2 -e ssh -X c331tst2@attu.cs.washington.edu &'
+clone331 () { dir331=~/class/331/cse331-18au-"$1" && git --depth=1 clone git@gitlab.cs.washington.edu:cse331-18au-students/cse331-18au-"$1".git "$dir331"; cd "$dir331" || (echo "$dir331 does not exist" && return 1); }
+
+# "daikonuser" has PAG-specific customizations (like old daikongroupmember).
+# "paguser" has no customizations (like old daikonuser).
+alias daikonuser32='xterm -T "daikonuser-onion" -e ssh -X daikonuser@onion.csail.mit.edu &'
+alias paguser32='xterm -T paguser -e ssh -X paguser@onion.csail.mit.edu &'
+alias daikonuser64='xterm -T "daikonuser-mangold" -e ssh -X daikonuser@mangold.csail.mit.edu &'
+alias paguser64='xterm -T paguser -e ssh -X paguser@mangold.csail.mit.edu &'
+alias daikonuser=daikonuser64
+alias paguser=paguser64
+alias paguserlap='xterm -T paguserlap -e ssh -X paguser@localhost &'
+
+alias clouddesk='xsa dev-dsk-mdernst-2b-8d1f8628.us-west-2'
+alias clouddesky='xsay dev-dsk-mdernst-2b-8d1f8628.us-west-2'
+
+pinghost () { command time ping -q -c 1 -w 1 "$1" ; }
+# The first sudo command is to warm up the sudo cache, so that I don't have
+# to wait for the prompt and so that the time isn't incorrect by the few
+# moments it takes me to type the password.
+datehost () { command sudo echo -n "" ; sudo date -u "$(ssh "$1" date -u +"%m%d%H%M%Y.%S")" ; date ; }
+
+alias uwplse='xterm -T uwplse -e ssh -X mernst@uwplse.org &'
+
+alias pingmangold='pinghost mernst@mangold.csail.mit.edu'
+alias mangolddate='datehost mernst@mangold.csail.mit.edu'
+alias pingrecycle='pinghost mernst@recycle.cs.washington.edu'
+alias recycledate='datehost mernst@recycle.cs.washington.edu'
+alias pinggodwit='pinghost mernst@godwit.cs.washington.edu'
+alias godwitdate='datehost mernst@godwit.cs.washington.edu'
+
+## Local
+alias mdetest='xterm -T mernsttest -e ssh -X -c blowfish mernsttest@localhost &'
+alias emdetest='ssh -X -f mernsttest@localhost -c blowfish emacs &'
+
+
+# scpfX stands for "scp from machine X"
+# scptX stands for "scp to machine X"
+scpfg () { command scp mernst@godwit.cs.washington.edu:"$1" . ; }
+scptg () { command scp "$1" mernst@godwit.cs.washington.edu: ; }
+scpfm () { command scp mernst@mangold.csail.mit.edu:"$1" . ; }
+scptm () { command scp "$1" mernst@mangold.csail.mit.edu: ; }
+scpfp () { command scp mernst@pag.csail.mit.edu:"$1" . ; }
+scptp () { command scp "$1" mernst@pag.csail.mit.edu: ; }
+scpfth () { command scp mernst@theory.lcs.mit.edu:"$1" . ; }
+scptth () { command scp "$1" mernst@theory.lcs.mit.edu: ; }
+
+
+###########################################################################
+### Version control
+###
+
+# alias myxapps='kcsail; emacs & firefox & sunbird & kcse; godwit & unisonb &'
+alias mdeapps='mdevccommit; emacs & mvc update &'
+
+
+### Put these in the non-interactive part of .aliases so that
+### they work for Emacs's `shell-command' function.
+# By default, aliases are not expanded in a non-interactive shell
+# (even if the alias is defined).
+shopt -s expand_aliases
+
+# `git diff` creates a patch for only the changes, not newly-created untracked files.
+# `git-diff-new` creates a patch for newly-created untracked files.
+# `git-diff-all` creates a patch for changed and new files.
+alias git-diff-new="git ls-files --others --exclude-standard | xargs -n 1 git --no-pager diff /dev/null"
+alias git-diff-all="(git diff && git-diff-new)"
+
+alias gcb=git-checkout-branch
+alias gnb=git-new-branch
+
+# shellcheck disable=SC2046 # want argument splitting
+git_log_show () { git show $(git log --format=format:%H "$@") ; }
+alias git-log-show=git_log_show
+
+alias rmgob='rm -rf $(git-orphaned-branches)'
+
+# Pretty-print a .json or .jsonl file.
+json_pp () {
+  cp   "$1"      "$1".tmp && \
+  jq . "$1".tmp >"$1"     && \
+  rm   "$1".tmp
+}
+alias jsonpp=json_pp
+# Compact a .json or .jsonl file.
+json_compact () {
+  cp     "$1"      "$1".tmp && \
+  jq -c . "$1".tmp >"$1"     && \
+  rm     "$1".tmp
+}
+alias jsoncompact=json_compact
+
+
+
+###########################################################################
+### Interactive shells only
+###
+
+# Some aliases cause trouble if invoked by a program.
+
+# If not running interactively, return.
+if [ -z "$PS1" ]; then
+  return
+fi
+
+## If `unison` is aliased in a non-login shell, it screws up an attempt
+# to run "unison -server".
+alias unison='(cd ~; \unison -ui text -auto $UNISONSITE)'
+alias unisonb='(cd ~; \unison -ui text -auto -batch $UNISONSITE)'
+
+## Don't do this, because even "cp -f" doesn't work then; you need "\cp -f".
+# # Safer versions of shell commands.
+# alias cp='cp -ip'
+# alias ln='ln -i'
+# alias mv='mv -i'
+
+## Commented because of problem with redirection.
+# # Invokes mergetool when necessary
+# alias git=git-auto-invoke-mergetool.sh
+
+### Bash-specific functions
+
+# Get "ps" output for the argument
+psgrep() {
+  pgrep "$1"
+}
+
+# Kill any process that matches the argument.
+pskill() {
+  pskill_pid=$(ps -ax | grep "$1" | grep -v grep | awk '{ print $1 }')
+  # shellcheck disable=SC2039
+  printf "killing %s (process %s)..." "$1" "$pskill_pid"
+  kill -9 "$pskill_pid"
+  echo "slaughtered."
+}
+
+# Set the X windows window title
+xtitle () { 
+  # shellcheck disable=SC2039 disable=SC3037
+  echo -n -e "\033]0;$*\007"
+}
+
+
+###########################################################################
+
+# Local variables:
+# eval: (auto-fill-mode 0)
+# inleft-string: "# "
+# mode: sh
+# end:

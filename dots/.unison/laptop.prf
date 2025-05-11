@@ -1,0 +1,28 @@
+# This file must be edited on the machine from which unison will be run.
+# Editing it on the server has no effect.
+
+# For ~/dose, consider using unison's -ignorecase argument.  Otherwise,
+# each uppercase file gets mapped remotely, then back as lowercase; and,
+# more seriously, if either one is deleted/moved, so is the other one.
+# So avoid all-caps filenames.
+
+## Roots of the synchronization
+root = /home/mernst
+# root = ssh://mernst@manioc.csail.mit.edu//afs/csail.mit.edu/u/m/mernst
+## Use rsh to avoid rate-limiting of ssh connections.
+## WARNING: changing the machine can cause bad merge conflicts! Do so
+## sparingly, and update soon from all versions.
+# root = rsh://mernst@godwit.cs.washington.edu//homes/gws/mernst
+root = rsh://mernst@bicycle.cs.washington.edu//homes/gws/mernst
+# servercmd = /homes/gws/mernst/bin/Linux-x86_64/unison-2.48
+servercmd = /homes/gws/mernst/bin/Linux-x86_64/unison
+# servercmd = /homes/gws/mernst/bin/install-f22/unison-2.48.3/unison
+# servercmd = unison-2.40
+# servercmd = unison
+
+include settings
+
+include paths
+
+# Periodically move these to paths.prf
+## Lines below here are automatically inserted

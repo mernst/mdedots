@@ -1,0 +1,29 @@
+syntax: glob
+
+# Emacs files
+TAGS
+*~
+.#*
+
+# MacOS files
+__MACOSX
+.DS_Store
+Thumbs.db
+
+# Due to bug in Chrome version 28 that leaves this file around
+libpeerconnection.log
+
+# LaTeX files
+*.aux
+*.haux
+# latexmk files
+*.fdb_latexmk
+*.fls
+
+# Other
+.gradle
+find-output
+
+syntax: regexp
+# Not a glob because it starts with # which looks like a comment.
+(^|/)\#.*\#$

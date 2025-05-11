@@ -1,0 +1,22 @@
+Submit patches at
+  http://oss.software.ibm.com/developerworks/patch/?func=addpatch&group_id=10
+
+When the main website mechanism is down, bugs can be accessed via
+  http://oss.software.ibm.com/developerworks/patch/?func=detailpatch&patch_id=xxx&group_id=10
+where "xxx" is the number of the bug.
+
+7/6/2001:  I can view
+  http://oss.software.ibm.com/developerworks/patch/?func=detailpatch&patch_id=133&group_id=10
+  http://oss.software.ibm.com/developerworks/patch/?func=detailpatch&patch_id=134&group_id=10
+  http://oss.software.ibm.com/developerworks/patch/?func=detailpatch&patch_id=135&group_id=10
+  http://oss.software.ibm.com/developerworks/patch/?func=detailpatch&patch_id=136&group_id=10
+  http://oss.software.ibm.com/developerworks/patch/?func=detailpatch&patch_id=137&group_id=10
+  http://oss.software.ibm.com/developerworks/patch/?func=detailpatch&patch_id=138&group_id=10
+
+
+  -rw-rw-r--    1 mernst   mernst        850 Jun  7 10:19 jikes-patch-133-setupcomments
+  -rw-rw-r--    1 mernst   mernst       1124 Jun  7 10:19 jikes-patch-134-unparselabel
+  -rw-rw-r--    1 mernst   mernst      30515 Jun  7 10:27 jikes-patch-135-ifspace
+  -rw-rw-r--    1 mernst   mernst       4040 Jun  7 10:28 jikes-patch-136-commenttypos
+  -rw-rw-r--    1 mernst   mernst       2397 Jun  7 10:20 jikes-patch-137-compilerwarnings
+  -rw-rw-r--    1 mernst   mernst       1220 Jun  7 10:31 jikes-patch-138-websitecvs

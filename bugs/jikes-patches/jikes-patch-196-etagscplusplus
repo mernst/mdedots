@@ -1,0 +1,18 @@
+etags needs the "--c++" flag to generate better TAGS files.
+
+2001-10-06  Michael Ernst  <mernst@alum.mit.edu>
+
+	* src/Makefile.in (TAGS): Pass --c++ argument to etags.
+
+diff -u -r --exclude=*~ --exclude=*.o src/Makefile.in ../jikes-1.15-patched/src/Makefile.in
+--- src/Makefile.in	Fri Sep 28 21:12:18 2001
++++ ../jikes-1.15-patched/src/Makefile.in	Sat Oct  6 21:55:47 2001
+@@ -338,7 +338,7 @@
+ 	  $(AWK) '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)config.h.in$$unique$(LISP)$$tags" \
+-	  || etags $(ETAGS_ARGS) $$tags config.h.in $$unique $(LISP)
++	  || etags --c++ $(ETAGS_ARGS) $$tags config.h.in $$unique $(LISP)
+ 
+ GTAGS:
+ 	here=`CDPATH=: && cd $(top_builddir) && pwd` \

@@ -1,0 +1,14 @@
+#AFMPath: /usr/share/enscript/afm:/usr/local/lib/ps:/usr/lib/ps:/home/user/docs/fonts/bera:/home/user/docs/fonts/ocra
+# AFMPath: /usr/share/enscript/afm:/usr/local/lib/ps:/usr/lib/ps:/home/svend/tmp/ocra:/usr/share/fonts/truetype/ttf-ocr-a
+AFMPath: /usr/share/enscript/afm:/homes/gws/mernst/.fonts:/home/mernst/.fonts
+#DefaultOutputMethod: stdout
+#DefaultMedia: Letter
+#DownloadFont: ocra10
+#DownloadFont: OCRA
+#DownloadFont: ocra
+#DownloadFont: BeraSansMono-Bold
+#DownloadFont: BeraSansMono-BoldOb
+#DownloadFont: BeraSansMono-Oblique
+#DownloadFont: BeraSansMono-Roman
+DownloadFont: Inconsolata
+MarkWrappedLines: arrow

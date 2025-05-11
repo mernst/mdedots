@@ -1,0 +1,281 @@
+#! /usr/bin/env python
+
+import gzip
+import os
+from io import BytesIO
+import subprocess
+import tempfile
+
+# import requests                 # replaces urllib and urllib2
+import urllib.request
+import urllib.parse
+import urllib.error
+
+
+# I can't screen-scrape Stack Exchange because of throttling they have implemented.
+
+# The Stack Exchange API lacks some features such as is:question that I want to use.
+
+# Idea:  use the Stack Exchange API only for simple searches that I can usually flter out.
+
+# I could instead use the Stack Exchange API; see https://api.stackexchange.com/docs .  For instance, run:
+# wget 'https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=activity&tagged=%5Bchecker-framework%5D&site=stackoverflow'
+# and don't even show the ones that don't have any matches
+# Note that ?filter=total gives the number of items matching criteria, which is probably what I want.
+
+TODAY_USER_FRIENDLY = (
+    subprocess.check_output(["date", "+%h %d"]).strip().decode("utf-8")
+)
+SUBJECT = "Check Stack Overflow for " + TODAY_USER_FRIENDLY
+YESTERDAY = (
+    subprocess.check_output(["date", "--date", "yesterday", "+%Y-%m-%d"])
+    .strip()
+    .decode("utf-8")
+)
+## For testing
+# YESTERDAY="2015-01-01"
+YESTERDAY_UNIX = (
+    subprocess.check_output(["date", "--date", YESTERDAY, "+%s"])
+    .strip()
+    .decode("utf-8")
+)
+
+# On Solaris, don't use "mail", which is /bin/mail;
+# use /usr/ucb/mail, which understands the -s argument.
+# On Debian, must use /usr/bin/mail instead of /bin/mail.
+# setenv MAILE /usr/bin/mail -e
+MAILE = os.environ["HOME"] + "/bin/src/plume-scripts/mail-e"
+
+
+## TODO: I can add negative tags to these searches, by prefixing with a hyphen.  TThat may be useful.
+
+## I expected these to give exactly the same results; it isn't quite the same but is similar.
+# http://stackoverflow.com/search?tab=newest&q=%5bjava%5d%20%5bannotations%5d%20is%3aquestion%20lastactive%3a2014-12-04..
+# http://stackoverflow.com/questions/tagged/java+annotations?sort=newest
+
+# Documentation:
+# https://api.stackexchange.com/docs
+# https://api.stackexchange.com/docs/excerpt-search
+
+## Searching for tags:  these are identical -- the first redirects to the third (which is a bug -- it should redirect to the second!)
+# http://stackoverflow.com/search?tab=newest&q=%5bjava%5d+%5bannotations%5d
+# http://stackoverflow.com/questions/tagged/java+annotations?sort=newest
+# http://stackoverflow.com/questions/tagged/java+annotations
+
+# URLs:
+
+# To get just a total count of answers, add: &filter=!)V)MSZJUTLp
+
+# Daikon
+# http://stackoverflow.com/search?tab=newest&q=Daikon%20is%3aquestion%20lastactive%3a2015-04-27..
+# https://api.stackexchange.com/2.2/search/excerpts?fromdate=1430092800&order=desc&sort=activity&q=Daikon&site=stackoverflow
+
+# [java] nullcheck is:question lastactive:2015-04-27..
+# http://stackoverflow.com/search?tab=newest&q=%5bjava%5d%20nullcheck%20is%3aquestion%20lastactive%3a2015-04-27..
+# https://api.stackexchange.com/2.2/search/excerpts?fromdate=1430092800&order=desc&sort=activity&q=nullcheck&tagged=java&site=stackoverflow
+
+# [java] [immutability] is:question lastactive:2015-04-27..
+# Problem: search for is:question gives me 3 answers, but API methods give me 9
+# http://stackoverflow.com/search?q=%5Bjava%5D+%5Bimmutability%5D+is%3Aquestion+lastactive%3A2015-04-27..
+# cut out is:question, now is equivalent to API version: # http://stackoverflow.com/search?q=%5Bjava%5D+%5Bimmutability%5D+lastactive%3A2015-04-27..
+# https://api.stackexchange.com/2.2/search/excerpts?fromdate=1430092800&order=desc&sort=activity&tagged=java%3Bimmutability&site=stackoverflow
+# https://api.stackexchange.com/2.2/search/excerpts?fromdate=1430092800&order=desc&sort=activity&tagged=java%3Bimmutability&site=stackoverflow
+
+# http://stackoverflow.com/search?tab=newest&q=%5bjava%5d+%5bannotations%5d
+
+debug = False
+# debug = True
+
+
+MAILBODY = tempfile.NamedTemporaryFile(mode="w", delete=not debug)
+if debug:
+    print("MAILBODY=" + MAILBODY.name)
+
+
+def echoautobrowsemaybe(*args):
+    """Echo an autobrowse command if there would be anything to see there.
+    Each argument can be one of:
+      [bracketedtag]
+      -[negatedbracketedtag]
+      term"""
+
+    if debug:
+        print("echoautobrowsemaybe " + " ".join(args), file=MAILBODY)
+
+    tagged = []  # list of [bracketedstrings]
+    nottagged = []  # list of -[negatedbracketedstrings]
+    terms = []  # list of strings
+
+    for arg in args:
+        if arg.startswith("[") and arg.endswith("]"):
+            tagged.append(arg)
+        elif arg.startswith("-[") and arg.endswith("]"):
+            nottagged.append(arg)
+        else:
+            terms.append(arg)
+
+    if tagged == []:
+        apitagged = ""
+    else:
+        apitagged = "&tagged=" + urllib.parse.quote(
+            ";".join([tag[1:-1] for tag in tagged])
+        )
+
+    if nottagged == []:
+        apinottagged = ""
+    else:
+        apinottagged = "&tagged=" + urllib.parse.quote(
+            ";".join([tag[2:-1] for tag in nottagged])
+        )
+
+    if terms == []:
+        apiquery = ""
+    else:
+        apiquery = "&q=" + urllib.parse.quote(" ".join(terms))
+
+    URL = (
+        "http://stackoverflow.com/search?tab=newest&q="
+        + urllib.parse.quote(" ".join(args))
+        + "%20is%3aquestion%20lastactive%3a"
+        + YESTERDAY
+        + ".%2E"
+    )
+
+    # I cannot use wget with the URL above because StackOverflow gives a
+    # CAPTCHA; I don't get the same webpage text that I see when I go to the
+    # URL using a browser.
+    APIURL = (
+        "https://api.stackexchange.com/2.2/search/advanced?fromdate="
+        + YESTERDAY_UNIX
+        + apitagged
+        + apinottagged
+        + apiquery
+        + "&site=stackoverflow&filter=!)V)MSZJUTLp"
+    )
+
+    ## Instead, use the API which uses different syntax and more limited functionality.
+    ## That's why we only use this filtering for certain simple queries.
+
+    if debug:
+        print("pinged " + APIURL, file=MAILBODY)
+    # wget -q "$APIURL" -O - | gunzip > "${WGETRESULT}"
+    response = urllib.request.urlopen(APIURL)
+    # contentgzipped = response.read()
+    # f = gzip.GzipFile(fileobj=contentgzipped)
+    # content = f.read()
+
+    request = urllib.request.Request(APIURL)
+    request.add_header("Accept-encoding", "gzip")
+    response = urllib.request.urlopen(request)
+    data = None
+    if response.info().get("Content-Encoding") == "gzip":
+        buf = BytesIO(response.read())
+        f = gzip.GzipFile(fileobj=buf)
+        data = f.read()
+    else:
+        data = response.read()
+
+    if debug:
+        print("data = " + data.decode("utf-8"), file=MAILBODY)
+    if data == b'{"total":0}':
+        if debug:
+            print("Nothing to see in " + URL, file=MAILBODY)
+    else:
+        print("Auto-browse to " + URL, file=MAILBODY)
+        print("", file=MAILBODY)  # add newline, to avoid confusing GMail
+
+    if debug:
+        MAILBODY.flush()
+
+
+## Note that only 30 searches are allowed via normal web browsing in a 60-second period.
+## This is very close to that limit.
+
+## [...] = %5b...%5d
+## "..." = %22...%22
+## space = %20   (but + also seems to work)
+
+# Randoop
+echoautobrowsemaybe("randoop")
+
+# Plume-lib
+echoautobrowsemaybe("[java]", "[command-line-arguments]")
+
+# Daikon
+echoautobrowsemaybe("Daikon")
+echoautobrowsemaybe("[design-by-contract]")
+
+# JSR 308
+echoautobrowsemaybe("[java]", '"JSR 308"')
+echoautobrowsemaybe("[java]", "JSR308")
+echoautobrowsemaybe("[java]", '"type annotation"')
+echoautobrowsemaybe("[java]", '"type annotations"')
+
+# Checker Framework
+echoautobrowsemaybe(
+    '"checker framework"', '-"spell checker framework"', '-"spelling checker framework"'
+)
+echoautobrowsemaybe('"checkers framework"')
+echoautobrowsemaybe("checkerframework")
+echoautobrowsemaybe("[checker-framework]")
+
+# CF: Nullness Checker
+echoautobrowsemaybe("[java]", "[nullable]")
+echoautobrowsemaybe("[java]", "[non-nullable]")
+echoautobrowsemaybe("[java]", "nullcheck")
+# Too much cruft in this search
+# echoautobrowsemaybe("[java]", "NullPointerException")
+
+# CF: Regex Checker
+echoautobrowsemaybe("[java]", "PatternSyntaxException")
+echoautobrowsemaybe("[java]", "Matcher", "group", "regex", "IndexOutOfBoundsException")
+
+# CF: Format String Checker
+echoautobrowsemaybe("[java]", "IllegalFormatException")
+echoautobrowsemaybe("[java]", "DuplicateFormatFlagsException")
+echoautobrowsemaybe("[java]", "FormatFlagsConversionMismatchException")
+echoautobrowsemaybe("[java]", "IllegalFormatFlagsException")
+echoautobrowsemaybe("[java]", "IllegalFormatPrecisionException")
+echoautobrowsemaybe("[java]", "IllegalFormatWidthException")
+echoautobrowsemaybe("[java]", "MissingFormatWidthException")
+echoautobrowsemaybe("[java]", "UnknownFormatConversionException")
+echoautobrowsemaybe("[java]", "UnknownFormatFlagsException")
+
+# CF: GUI Effect Checker:
+# for SWT, it's "invalid thread access".
+
+# # CF: IGJ and Javari Checkers
+# echoautobrowsemaybe("[java]", "[immutability]")
+# echoautobrowsemaybe("[java]", "[immutablelist]")
+# # No need for [immutable] tag because it's an alias for [immutability],
+# # and searching for it via the api gives:   {"total":0}
+# # echoautobrowsemaybe("[java]", "[immutable]")
+
+# CF: Fake Enum Checker
+echoautobrowsemaybe("[java]", "typedef")
+echoautobrowsemaybe("[java]", "-[spring]", "-[spring-boot]", "type alias")
+echoautobrowsemaybe("[java]", "fake enumeration")
+
+# Java annotations more generally
+echoautobrowsemaybe(
+    "[java]",
+    "[annotations]",
+    "-[hibernate]",
+    "-[jaxb]",
+    "-[pdf]",
+    "-[spring]",
+    "-[spring-boot]",
+    "-[struts2]",
+    "-[swagger]",
+)
+
+
+MAILBODY.flush()
+
+if debug:
+    print([MAILE, "-s", SUBJECT, "mernst"])
+
+# `${COMMAND} |& ${MAILE} -s "${SUBJECT}" mernst`
+mailbody_stdin = open(MAILBODY.name)
+p = subprocess.Popen([MAILE, "-s", SUBJECT, "mernst"], stdin=mailbody_stdin)
+p.wait()

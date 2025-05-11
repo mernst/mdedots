@@ -1,0 +1,76 @@
+Add SystemMkdirHierForFile
+
+This patch abstracts out a piece of code that should really be a separate
+prodecure.  The code in question creates a directory hierarchy:  it creates
+a directory and also any missing parent directories. 
+
+
+2001-10-06  Michael Ernst  <mernst@alum.mit.edu>
+
+	* src/platform.h: Add prototype SystemMkdirHierForFile.
+	* src/platform.cpp (SystemMkdirhierForFile): Add definition.
+	* src/unparse.cpp (Unparse): Use SystemMkdirhierForFile.
+
+
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/platform.cpp ../jikes-1.15-patched/src/platform.cpp
+--- src/platform.cpp	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/platform.cpp	Sat Oct  6 23:46:54 2001
+@@ -253,6 +253,24 @@
+ }
+ 
+ 
++// Create the specified directory and also any missing parent directories.
++int SystemMkdirhierForFile(char *filename)
++{
++  for (int i=strlen(filename); i>=0; i--) {
++    if (filename[i] == U_SLASH) {
++      int result = 0;
++      filename[i] = U_NULL;
++      if (! ::SystemIsDirectory(filename)) {
++        Ostream() << "making directory " << filename << "\n";
++        result = ::SystemMkdirhier(filename);
++      }
++      filename[i] = U_SLASH;
++      return result;
++    }
++  }
++  return 0;
++}
++
+ 
+ // FIXME: These next two should definitely be inlined; but when I
+ // add the "inline" keyword , I get linker problems.
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/platform.h ../jikes-1.15-patched/src/platform.h
+--- src/platform.h	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/platform.h	Sat Oct  6 23:42:54 2001
+@@ -331,6 +331,7 @@
+ extern char PathSeparator();
+ extern int SystemMkdir(char *);
+ extern int SystemMkdirhier(char *);
++extern int SystemMkdirhierForFile(char *);
+ 
+ extern char * strcat3(const char *, const char *, const char *);
+ extern char * wstring2string(wchar_t * in);
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/unparse.cpp ../jikes-1.15-patched/src/unparse.cpp
+--- src/unparse.cpp	Sat Oct  6 23:13:03 2001
++++ ../jikes-1.15-patched/src/unparse.cpp	Sat Oct  6 23:43:59 2001
+@@ -27,18 +27,7 @@
+     char *suffix = "";
+     char *out_file_name = strcat3(directory, in_file_name, suffix);
+     // Create the directory if necessary
+-    for (int i=strlen(out_file_name); i>=0; i--) {
+-       if (out_file_name[i] == U_SLASH) {
+-           out_file_name[i] = U_NULL;
+-           if (! SystemIsDirectory(out_file_name))
+-           {
+-               Ostream() << "making directory " << out_file_name << endl;
+-               SystemMkdirhier(out_file_name);
+-           }
+-           out_file_name[i] = U_SLASH;
+-           break;
+-       }
+-    }
++    SystemMkdirhierForFile(out_file_name);
+     ofstream os_base(out_file_name);
+     if (!os_base)
+     {

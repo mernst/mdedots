@@ -1,0 +1,52 @@
+This patch corrects two problems with Ast::Print.
+
+2001-10-06  Michael Ernst  <mernst@alum.mit.edu>
+
+	* src/ast.cpp: Fix two problems with Ast::Print:
+	output AstThisCall base if necessary, and
+	correct error in switch label line wrapping.
+
+diff -u -r --exclude=*~ --exclude=*.o src/ast.cpp ../jikes-1.15-patched/src/ast.cpp
+--- src/ast.cpp	Fri Sep 28 21:12:18 2001
++++ ../jikes-1.15-patched/src/ast.cpp	Sat Oct  6 22:29:22 2001
+@@ -1283,13 +1283,21 @@
+ 
+     void AstThisCall::Print(LexStream& lex_stream)
+     {
+-        Coutput << "#" << this -> id << " (ThisCall):  "
+-                << lex_stream.NameString(this_token)
++        Coutput << "#" << this -> id << " (ThisCall):  ";
++        if (base_opt)
++        {
++            Coutput << "#" << base_opt -> id
++                    << lex_stream.NameString(dot_token_opt);
++        }
++        Coutput << lex_stream.NameString(this_token)
+                 << " (";
+         for (int i = 0; i < this -> NumArguments(); i++)
+             Coutput << " #" << this -> Argument(i) -> id;
+         Coutput << " )" << endl;
+ 
++        if (base_opt)
++            base_opt -> Print(lex_stream);
++
+         for (int j = 0; j < NumArguments(); j++)
+             this -> Argument(j) -> Print(lex_stream);
+     }
+@@ -1445,14 +1453,14 @@
+         for (int i = 0; i < NumSwitchLabels(); i++)
+         {
+             if (i % 10 == 0)
+-                Coutput << "        " << endl;
++                 Coutput << endl << "        ";
+             Coutput << " #" << this -> SwitchLabel(i) -> id << ':';
+         }
+         Coutput << endl;
+         for (int k = 0; k < NumStatements(); k++)
+         {
+             if (k % 10 == 0)
+-                Coutput << "            " << endl;
++                 Coutput << endl << "            ";
+             Coutput << " #" << this -> Statement(k) -> id;
+         }
+         Coutput << endl;

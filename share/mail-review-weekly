@@ -1,0 +1,88 @@
+#! /usr/bin/env python3
+
+# Usage: mail-review-weekly
+
+import time
+import webbrowser
+
+
+def mail_search(search_term):
+    webbrowser.open(
+        "https://mail.google.com/mail/u/"
+        + "mernst@cs.washington.edu"
+        + "/#search/"
+        + search_term
+    )
+    time.sleep(0.3)
+    webbrowser.open(
+        "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/" + search_term
+    )
+    time.sleep(0.3)
+
+
+def mail_label(search_term):
+    webbrowser.open(
+        "https://mail.google.com/mail/u/"
+        + "mernst@cs.washington.edu"
+        + "/#label/"
+        + search_term
+    )
+    time.sleep(0.3)
+    webbrowser.open(
+        "https://mail.google.com/mail/u/" + "michael.ernst" + "/#label/" + search_term
+    )
+    time.sleep(0.3)
+
+
+# Merged pull requests
+
+mail_search("merged+(%22into+master%22+OR+%22into+main%22)")
+
+# Kids' daily & weekly email
+
+mail_search("category%3Apromotions+label%3Asilas+label%3Ainbox")
+mail_search("category%3Asocial+label%3Asilas+label%3Ainbox")
+# mail_search("category%3Apromotions+label%3Amaeve+label%3Ainbox")
+# mail_search("category%3Asocial+label%3Amaeve+label%3Ainbox")
+
+# Social & promotions email
+
+mail_search("category%3Apromotions+label%3Ainbox")
+mail_search("category%3Asocial+label%3Ainbox")
+mail_search("category%3Aupdates+label%3Ainbox+label%3Acommerce")
+mail_search("category%3Aupdates+label%3Ainbox")
+mail_search("to%3Aprogress-reports%40cs.washington.edu+label%3Ainbox")
+mail_search("category%3Aforums+label%3Ainbox")
+
+# Weekly (and daily) email
+
+## TODO: Change these to mail_search
+# The regular mail_label() does not work with additional keywords.
+# These come early so that the delay-weekly label might update before I get to it.
+webbrowser.open(
+    "https://mail.google.com/mail/u/"
+    + "mernst@cs.washington.edu"
+    + "/#search/label%3Adelay-weekly+seworld"
+)
+webbrowser.open(
+    "https://mail.google.com/mail/u/"
+    + "michael.ernst"
+    + "/#search/label%3Adelay-weekly+seworld"
+)
+webbrowser.open(
+    "https://mail.google.com/mail/u/"
+    + "mernst@cs.washington.edu"
+    + "/#search/label%3Adelay-weekly+ecoop-info"
+)
+webbrowser.open(
+    "https://mail.google.com/mail/u/"
+    + "michael.ernst"
+    + "/#search/label%3Adelay-weekly+ecoop-info"
+)
+mail_search("label%3Adelay-junk+%22micheal%22")
+mail_search("to:it-fmeurope-events")
+
+mail_label("delay-bulk")
+mail_label("delay-daily")
+mail_label("delay-junk")
+mail_label("delay-weekly")

@@ -1,0 +1,61 @@
+===========================================================================
+
+[Before sending this, see other changes in my local copies, too.]
+
+This patch fixes a typo in the manual.
+
+diff -u -b -r --exclude=CVS --exclude=.bzr --exclude=.hg --exclude=.hgtags --exclude=.svn --exclude='*.class' /home/mernst/emacs/mew-6.2/info/mew.texi.\~1\~ /home/mernst/emacs/mew-6.2/info/mew.texi
+--- /home/mernst/emacs/mew-6.2/info/mew.texi.~1~	2008-12-15 00:13:05.000000000 -0800
++++ /home/mernst/emacs/mew-6.2/info/mew.texi	2009-10-03 12:55:59.000000000 -0700
+@@ -317,7 +317,7 @@
+ Mew には次の 7 つのモードがあります。
+ @end ifset
+ @ifset us
+-Mew has the following six modes:
++Mew has the following seven modes:
+ @end ifset
+ 
+ @table @samp
+
+Diff finished.  Sat Oct  3 12:56:04 2009
+
+===========================================================================
+
+http://www.mew.org/en/bugreport/ buries information about how to submit a
+bug report -- the mailing list address -- in the penultimate paragraph.  It
+would be better to make that information more prominent.
+
+===========================================================================
+
+At http://mew.org/en/anoncvs/, it might be worth mentioning that "make
+distclean" will fail for a new checkout, which lacks a "Makefile".  "make
+distclean" will also fail if run twice in a row, for the same reason.
+
+===========================================================================
+
+mew-config-alist doesn't mention support for bcc.  (It does support bcc.)
+
+===========================================================================
+
+Here is a minor comment about the style in the manual, when writing a
+sequence of keystrokes.
+
+The Mew manual sometimes puts a space between adjacent characters, and
+sometimes does not.  For example, in this sequence:
+
+C-uM-x mew
+
+there is no space between the "C-u" and "M-x" characters.
+
+It is idiomatic to put a space between the letters.  (This is the way the
+GNU Emacs Manual is written.)  The one example is for input in the
+minibuffer, such as after M-x.  So, in the GNU Emacs manual, we can find
+text like `C-u M-x longlines-auto-wrap'.  Likewise, the GNU Emacs Manual
+would write `C-x m' rather than Mew's `C-xm'.  I think key sequences are
+easier to read, when at least any compound/modified character (such as a C-
+or M- character) is surrounded by space on both sides.
+
+Admittedly, this is a rather minor issue, but I think it would improve
+readability.
+
+===========================================================================

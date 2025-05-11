@@ -1,0 +1,5 @@
+#!/usr/bin/env perl
+
+use MIME::Base64;
+$text = <>;
+print decode_base64($text);

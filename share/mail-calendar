@@ -1,0 +1,24 @@
+#! /bin/sh
+
+# This needs to run every day, not just weekdays, because of apparent bug
+# that omits Sunday/Monday items from Friday reports.
+
+# I think I must specify the filename directly, because mernst.cron (which
+# this runs as, at CSAIL) has no calendar.
+# export COMMAND="$HOME/bin/Linux-i686/calendar -f $HOME/calendar"
+export COMMAND="$HOME/bin/Linux-x86_64/calendar"
+# export COMMAND="/usr/bin/calendar -f $HOME/calendar"
+# export COMMAND=/afs/csail.mit.edu/u/m/mernst/bin/share/qalendar
+
+export TODAY
+TODAY="$(date +'%h %d')"
+export SUBJECT="Calendar for $TODAY"
+
+# On Solaris, don't use "mail", which is /bin/mail;
+# use /usr/ucb/mail, which understands the -s argument.
+# On Debian, must use /usr/bin/mail instead of /bin/mail.
+# export MAILE=/usr/bin/mail -e
+export MAILE="$HOME/bin/src/plume-scripts/mail-e"
+
+
+${COMMAND} 2>&1 | ${MAILE} -s "${SUBJECT}" mernst

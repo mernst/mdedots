@@ -1,0 +1,831 @@
+Subject: Jikes patch: make spacing after conditionals uniform
+
+This patch adjusts the spacing after the "if" and "while" C++ keywords.  In
+most places in the code (4700, by my count), there is a space between those
+keywords and the open parenthesis of the condition.  In 200 places (100, if
+you omit java.g and javaact.cpp, which I left alone), there is no space.
+
+Using a space makes the keywords look less like function calls; omitting
+the space can be confusing to tools and to human readers of the code.  But
+perhaps the best argument is consistency:  code is hard to read if it
+switches from style to style frequently, as some files did.  This patch
+corrects that problem.
+
+For reference, I originally made the changes the patch via
+  cd src
+  etags *.cpp *h
+and then, in Emacs, evaluating the following expression:
+  (tags-query-replace "\\([^_]\\b\\(if\\|while\\)\\)(" "\\1 (")
+and finally fixing up some indentation.
+
+This patch is to Jikes 1.14.  You can apply it in the src/ directory.
+
+
+diff -u -r jikes/src/ast.cpp jikes-tmp/src/ast.cpp
+--- jikes/src/ast.cpp	Wed Jan 10 11:49:43 2001
++++ jikes-tmp/src/ast.cpp	Thu Jun  7 09:49:16 2001
+@@ -138,13 +138,13 @@
+     lostack[top] = 0;
+     histack[top] = map.Length() - 1;
+ 
+-    while(top >= 0)
++    while (top >= 0)
+     {
+         lower = lostack[top];
+         upper = histack[top];
+         top--;
+ 
+-        while(upper > lower)
++        while (upper > lower)
+         {
+             //
+             // The array is most-likely almost sorted. Therefore,
+diff -u -r jikes/src/bytecode.cpp jikes-tmp/src/bytecode.cpp
+--- jikes/src/bytecode.cpp	Mon May  7 02:33:59 2001
++++ jikes-tmp/src/bytecode.cpp	Thu Jun  7 09:49:16 2001
+@@ -1536,7 +1536,7 @@
+     //
+     // supply any needed padding
+     //
+-    while(code_attribute -> CodeLength() % 4 != 0)
++    while (code_attribute -> CodeLength() % 4 != 0)
+         PutNop(0);
+ 
+     //
+diff -u -r jikes/src/bytecode.h jikes-tmp/src/bytecode.h
+--- jikes/src/bytecode.h	Mon May  7 02:33:59 2001
++++ jikes-tmp/src/bytecode.h	Thu Jun  7 09:49:16 2001
+@@ -732,7 +732,7 @@
+     //
+     AstExpression *UnParenthesize(AstExpression *expr)
+     {
+-        while(! (expr -> IsConstant()) && expr -> ParenthesizedExpressionCast())
++        while (! (expr -> IsConstant()) && expr -> ParenthesizedExpressionCast())
+             expr = expr -> ParenthesizedExpressionCast() -> expression;
+ 
+         return expr;
+diff -u -r jikes/src/control.cpp jikes-tmp/src/control.cpp
+--- jikes/src/control.cpp	Fri May 18 00:21:18 2001
++++ jikes-tmp/src/control.cpp	Thu Jun  7 09:49:16 2001
+@@ -558,7 +558,7 @@
+         FindPathsToDirectory(package_symbol);
+     }
+ 
+-    while(length < name_length)
++    while (length < name_length)
+     {
+         int start = ++length;
+         for (int i = 0; length < name_length && name[length] != U_SLASH; i++, length++)
+@@ -838,10 +838,10 @@
+     //
+     // Process all file names specified in command line
+     //
+-    if(arguments)
++    if (arguments)
+     {
+         int j=0;
+-        while(arguments[j])
++        while (arguments[j])
+         {
+             char *file_name = arguments[j++];
+             int file_name_length = strlen(file_name);
+diff -u -r jikes/src/diagnose.cpp jikes-tmp/src/diagnose.cpp
+--- jikes/src/diagnose.cpp	Wed Jan 10 11:49:44 2001
++++ jikes-tmp/src/diagnose.cpp	Thu Jun  7 09:49:16 2001
+@@ -128,7 +128,7 @@
+                 //     semantic_action(act);
+                 //
+                 act = nt_action(temp_stack[temp_stack_top], lhs[act]);
+-            } while(act <= NUM_RULES);
++            } while (act <= NUM_RULES);
+             /*************************************************/
+             /* ... Update the maximum useful position of the */
+             /* (STATE_)STACK, push goto state into stack, and*/
+@@ -150,8 +150,8 @@
+ /* the highest position in STACK that is still useful after the  */
+ /* reductions are executed.                                      */
+ /*****************************************************************/
+-        while(act > ERROR_ACTION ||       /* SHIFT-REDUCE action */
+-              act < ACCEPT_ACTION)               /* SHIFT action */
++        while (act > ERROR_ACTION ||      /* SHIFT-REDUCE action */
++               act < ACCEPT_ACTION)              /* SHIFT action */
+         {
+             next_stack_top = temp_stack_top + 1;
+             for (i = next_pos + 1; i <= next_stack_top; i++)
+@@ -175,7 +175,7 @@
+                     //     semantic_action(act);
+                     //
+                     act = nt_action(next_stack[next_stack_top], lhs[act]);
+-                } while(act <= NUM_RULES);
++                } while (act <= NUM_RULES);
+                 pos = Min(pos, next_stack_top);
+             }
+ 
+@@ -193,7 +193,7 @@
+             curtok = lex_stream -> Gettoken();
+             tok = lex_stream -> Kind(curtok);
+             act = t_action(act, tok, lex_stream);
+-            while(act <= NUM_RULES)
++            while (act <= NUM_RULES)
+             {
+                 /*************************************************/
+                 /* ... Process all goto-reduce actions following */
+@@ -211,7 +211,7 @@
+                                ? temp_stack[temp_stack_top]
+                                : next_stack[temp_stack_top]);
+                     act = nt_action(act, lhs_symbol);
+-                }   while(act <= NUM_RULES);
++                }   while (act <= NUM_RULES);
+ 
+                 /*************************************************/
+                 /* ... Update the maximum useful position of the */
+@@ -270,7 +270,7 @@
+             {
+                 lhs_symbol = candidate.symbol - NT_OFFSET;
+                 act = nt_action(act, lhs_symbol);
+-                while(act <= NUM_RULES)
++                while (act <= NUM_RULES)
+                 {
+                     state_stack_top -= (rhs[act]-1);
+                     act = nt_action(stack[state_stack_top], lhs[act]);
+@@ -345,7 +345,7 @@
+ /* a successful recovery or have consumed the remaining input    */
+ /* tokens.                                                       */
+ /*****************************************************************/
+-    while(lex_stream -> Kind(buffer[BUFF_UBOUND]) != EOFT_SYMBOL)
++    while (lex_stream -> Kind(buffer[BUFF_UBOUND]) != EOFT_SYMBOL)
+     {
+         candidate = SecondaryPhase(buffer[MAX_DISTANCE - MIN_DISTANCE + 2]);
+         if (candidate.symbol)
+@@ -671,7 +671,7 @@
+     tok = lex_stream -> Kind(buffer[repair.buffer_position]);
+     lex_stream -> Reset(buffer[repair.buffer_position + 1]);
+     act = t_action(next_state, tok, lex_stream);
+-    while(act <= NUM_RULES)
++    while (act <= NUM_RULES)
+     {
+         do
+         {
+@@ -681,7 +681,7 @@
+                                   ? temp_stack[temp_stack_top]
+                                   : stck[temp_stack_top]);
+             act = nt_action(act, symbol);
+-        }   while(act <= NUM_RULES);
++        }   while (act <= NUM_RULES);
+         max_pos = Min(max_pos, temp_stack_top);
+         temp_stack[temp_stack_top + 1] = act;
+         next_state = act;
+@@ -737,7 +737,7 @@
+ /* the current state, except EOFT and ERROR_SYMBOL.              */
+ /*****************************************************************/
+     symbol = root;
+-    while(symbol != 0)
++    while (symbol != 0)
+     {
+         if (symbol == EOLT_SYMBOL &&
+             lex_stream -> AfterEol(buffer[repair.buffer_position]))
+@@ -768,7 +768,7 @@
+ /* in the current state, except EOFT and ERROR_SYMBOL.           */
+ /*****************************************************************/
+     symbol = root;
+-    while(symbol != 0)
++    while (symbol != 0)
+     {
+         if (symbol == EOLT_SYMBOL &&
+             lex_stream -> AfterEol(buffer[repair.buffer_position+1]))
+@@ -1018,7 +1018,7 @@
+ /*****************************************************************/
+     lex_stream -> Reset(buffer[buffer_position]);
+     act = t_action(act, tok, lex_stream);
+-    while(act <= NUM_RULES)
++    while (act <= NUM_RULES)
+     {
+         /*********************************************************/
+         /* Process all goto-reduce actions following reduction,  */
+@@ -1032,7 +1032,7 @@
+                                   ? temp_stack[temp_stack_top]
+                                   : stck[temp_stack_top]);
+             act = nt_action(act, lhs_symbol);
+-        } while(act <= NUM_RULES);
++        } while (act <= NUM_RULES);
+         /*********************************************************/
+         /* Compute new maximum useful position of (STATE_)stack, */
+         /* push goto state into the stack, and compute next      */
+@@ -1070,7 +1070,7 @@
+         act = t_action(act, tok, lex_stream);
+     }
+ 
+-    while(act <= NUM_RULES)
++    while (act <= NUM_RULES)
+     {
+         /*********************************************************/
+         /* Process all goto-reduce actions following reduction,  */
+@@ -1090,7 +1090,7 @@
+                                   ? temp_stack[temp_stack_top]
+                                   : stck[temp_stack_top]);
+             act = nt_action(act, lhs_symbol);
+-        } while(act <= NUM_RULES);
++        } while (act <= NUM_RULES);
+ 
+         temp_stack[temp_stack_top + 1] = act;
+         act = t_action(act, tok, lex_stream);
+@@ -1137,7 +1137,7 @@
+         act = t_action(act, tok, lex_stream);
+     }
+ 
+-    while(act <= NUM_RULES)
++    while (act <= NUM_RULES)
+     {
+         /*********************************************************/
+         /* Process all goto-reduce actions following reduction,  */
+@@ -1151,7 +1151,7 @@
+             if (temp_stack_top == 0)
+                 highest_symbol = lhs[act];
+             act = nt_action(temp_stack[temp_stack_top], lhs[act]);
+-        } while(act <= NUM_RULES);
++        } while (act <= NUM_RULES);
+         temp_stack[temp_stack_top + 1] = act;
+         act = t_action(act, tok, lex_stream);
+     }
+@@ -1259,7 +1259,7 @@
+         tok = scope_la[i];
+         lex_stream -> Reset(buffer[repair.buffer_position]);
+         act = t_action(act, tok, lex_stream);
+-        while(act <= NUM_RULES)
++        while (act <= NUM_RULES)
+         {
+             /*************************************************/
+             /* ... Process all goto-reduce actions following */
+@@ -1273,7 +1273,7 @@
+                             ?  temp_stack[temp_stack_top]
+                             :  stck[temp_stack_top]);
+                 act = nt_action(act, lhs_symbol);
+-            }  while(act <= NUM_RULES);
++            }  while (act <= NUM_RULES);
+             if (temp_stack_top + 1 >= stack_length)
+                 return;
+             max_pos = Min(max_pos, temp_stack_top);
+@@ -1351,7 +1351,7 @@
+                     {
+                         int top = stack_position;
+                         act = nt_action(stck[top], scope_lhs[i]);
+-                        while(act <= NUM_RULES)
++                        while (act <= NUM_RULES)
+                         {
+                             top -= (rhs[act]-1);
+                             act = nt_action(stck[top], lhs[act]);
+@@ -1916,13 +1916,13 @@
+      lostack[top] = 0;
+      histack[top] = errors.Length() - 1;
+ 
+-     while(top >= 0)
++     while (top >= 0)
+      {
+          lower = lostack[top];
+          upper = histack[top];
+          top--;
+ 
+-         while(upper > lower)
++         while (upper > lower)
+          {
+              /*********************************************************/
+              /* The array is most-likely almost sorted. Therefore,    */
+@@ -2022,7 +2022,7 @@
+     errors[i].right_string_length = lex_stream -> NameStringLength(right_token);
+     errors[i].scope_name_index    = scope_name_index;
+ 
+-    if(control.option.dump_errors)
++    if (control.option.dump_errors)
+     {
+         PrintPrimaryMessage(i);        
+         errors.Reset(1); // we only need to indicate that at least one error was detected... See print_messages
+@@ -2194,7 +2194,7 @@
+ {
+     ErrorString s;
+     
+-    if(left_line_no == right_line_no)
++    if (left_line_no == right_line_no)
+     {
+         s << "\n\n";
+         s.width(6);
+@@ -2335,14 +2335,14 @@
+                  int i = error_stack[stack_top],
+                      j = error_stack[stack_top - 1];
+ 
+-                 if((errors[i].msg_code != SECONDARY_CODE &&
+-                     errors[i].msg_code != MISPLACED_CODE &&
+-                     errors[i].msg_code != DELETION_CODE) 
+-                    ||
+-                    (errors[j].msg_code != DELETION_CODE  &&
+-                     errors[j].msg_code != MISPLACED_CODE &&
+-                     errors[j].msg_code != SECONDARY_CODE)
+-                 )
++                 if ((errors[i].msg_code != SECONDARY_CODE &&
++                      errors[i].msg_code != MISPLACED_CODE &&
++                      errors[i].msg_code != DELETION_CODE) 
++                     ||
++                     (errors[j].msg_code != DELETION_CODE  &&
++                      errors[j].msg_code != MISPLACED_CODE &&
++                      errors[j].msg_code != SECONDARY_CODE)
++                     )
+                  {
+                      
+                      PrintSecondaryMessage(i);
+@@ -2350,17 +2350,17 @@
+              }
+         }
+ 
+-        if(errors[k].left_token < errors[k].right_token)
++        if (errors[k].left_token < errors[k].right_token)
+         {
+             stack_top++;
+             error_stack[stack_top] = k;
+         }
+-        else if(!((stack_top >= 0) &&
+-                  (errors[error_stack[stack_top]].msg_code == SECONDARY_CODE ||
+-                   errors[error_stack[stack_top]].msg_code == DELETION_CODE) 
+-                  &&
+-                  (errors[k].left_token  == errors[error_stack[stack_top]].left_token ||
+-                   errors[k].right_token == errors[error_stack[stack_top]].right_token)))
++        else if (!((stack_top >= 0) &&
++                   (errors[error_stack[stack_top]].msg_code == SECONDARY_CODE ||
++                    errors[error_stack[stack_top]].msg_code == DELETION_CODE) 
++                   &&
++                   (errors[k].left_token  == errors[error_stack[stack_top]].left_token ||
++                    errors[k].right_token == errors[error_stack[stack_top]].right_token)))
+         {
+             /* NOTE that input_line already contains a '\n' character */
+             /*
+@@ -2375,7 +2375,7 @@
+                 for (int i = lex_stream -> LineStart(errors[k].left_line_no); i <= lex_stream -> LineEnd(errors[k].left_line_no); i++)
+                     Coutput << lex_stream -> InputBuffer()[i];
+ 
+-                if((msg_code == SUBSTITUTION_CODE) ||
++                if ((msg_code == SUBSTITUTION_CODE) ||
+                     (n == m) ||
+                     (msg_code == BEFORE_CODE)  ||
+                     (msg_code == INVALID_CODE  && n <= (m+1)) ||
+@@ -2423,7 +2423,7 @@
+ 
+     delete [] error_stack;
+ 
+-    if(control.option.errors)
++    if (control.option.errors)
+         lex_stream -> DestroyInput();
+ 
+     return;
+diff -u -r jikes/src/error.cpp jikes-tmp/src/error.cpp
+--- jikes/src/error.cpp	Thu Feb 15 05:36:05 2001
++++ jikes-tmp/src/error.cpp	Thu Jun  7 09:49:16 2001
+@@ -37,8 +37,8 @@
+      * (lord)
+      *
+      
+-     if(right_column_no != 0) // could not compute a column number
+-     right_column_no += (right_string_length - 1); // point to last character in right token
++     if (right_column_no != 0) // could not compute a column number
++         right_column_no += (right_string_length - 1); // point to last character in right token
+      
+     */
+ 
+@@ -87,7 +87,7 @@
+ {
+     ErrorString s;
+ 
+-    if(left_token < right_token)
++    if (left_token < right_token)
+         PrintLargeSource(s);
+     else 
+         PrintSmallSource(s);
+@@ -810,13 +810,13 @@
+      lostack[top] = 0;
+      histack[top] = error.Length() - 1;
+ 
+-     while(top >= 0)
++     while (top >= 0)
+      {
+          lower = lostack[top];
+          upper = histack[top];
+          top--;
+ 
+-         while(upper > lower)
++         while (upper > lower)
+          {
+              //
+              // The array is most-likely almost sorted. Therefore,
+diff -u -r jikes/src/expr.cpp jikes-tmp/src/expr.cpp
+--- jikes/src/expr.cpp	Sat May 26 18:57:30 2001
++++ jikes-tmp/src/expr.cpp	Thu Jun  7 09:49:16 2001
+@@ -1858,7 +1858,7 @@
+         {
+             if (constructor -> ACC_PROTECTED())
+             {
+-                if(containing_type->ContainingPackage() != this_package)
++                if (containing_type->ContainingPackage() != this_package)
+                 {
+                     ReportSemError(SemanticError::PROTECTED_CONSTRUCTOR_NOT_ACCESSIBLE,
+                                    class_creation -> class_type -> LeftToken(),
+@@ -1940,7 +1940,7 @@
+                 // Since "this" is a primary, it can be parenthesized. We remove all such parentheses here.
+                 //
+                 AstExpression *expr = base;
+-                while(expr -> ParenthesizedExpressionCast())
++                while (expr -> ParenthesizedExpressionCast())
+                     expr = expr -> ParenthesizedExpressionCast() -> expression;
+ 
+                 if (! (expr -> ThisExpressionCast() || expr -> SuperExpressionCast()))
+diff -u -r jikes/src/jikesapi.cpp jikes-tmp/src/jikesapi.cpp
+--- jikes/src/jikesapi.cpp	Sat Apr 28 15:34:37 2001
++++ jikes-tmp/src/jikesapi.cpp	Thu Jun  7 09:49:16 2001
+@@ -262,7 +262,7 @@
+     // NB even if a file is empty (0 bytes)
+     // This will return a pointer to 0 length array
+     // and should not be NULL.
+-    if(result && (result->getBuffer() == NULL))  
++    if (result && (result->getBuffer() == NULL))  
+     {							    
+         delete result;				
+         result  = NULL;
+@@ -277,7 +277,7 @@
+ {
+     FileWriter *result  = new DefaultFileWriter(fileName, bytes);
+     
+-    if(result && (!result->isValid()))
++    if (result && (!result->isValid()))
+     {
+         delete result;
+         result = NULL;
+@@ -293,7 +293,7 @@
+ {
+     size_t result   = 0;
+ 
+-    if(size <= maxSize)
++    if (size <= maxSize)
+     {
+         result   = this->doWrite(data,size);
+         maxSize  -= size;
+diff -u -r jikes/src/modifier.cpp jikes-tmp/src/modifier.cpp
+--- jikes/src/modifier.cpp	Wed Jan 10 11:49:45 2001
++++ jikes-tmp/src/modifier.cpp	Thu Jun  7 09:49:16 2001
+@@ -441,7 +441,7 @@
+             }
+             break;
+         case Ast::PUBLIC:
+-            if(access_flags.ACC_PUBLIC())
++            if (access_flags.ACC_PUBLIC())
+             {
+                 ReportSemError(SemanticError::DUPLICATE_ACCESS_MODIFIER,
+                                modifier -> modifier_kind_token,
+@@ -457,7 +457,7 @@
+             }
+             break;
+         case Ast::STATIC: // TODO: Need to confirm that this is valid !!!
+-            if(access_flags.ACC_STATIC())
++            if (access_flags.ACC_STATIC())
+             {
+                 ReportSemError(SemanticError::DUPLICATE_MODIFIER,
+                                modifier -> modifier_kind_token,
+@@ -465,7 +465,7 @@
+             }
+             else 
+             {
+-                if(control.option.pedantic)
++                if (control.option.pedantic)
+                     ReportSemError(SemanticError::REDUNDANT_STATIC,
+                                    modifier -> modifier_kind_token,
+                                    modifier -> modifier_kind_token);
+diff -u -r jikes/src/option.cpp jikes-tmp/src/option.cpp
+--- jikes/src/option.cpp	Fri Jun  1 22:55:39 2001
++++ jikes-tmp/src/option.cpp	Thu Jun  7 09:49:16 2001
+@@ -78,7 +78,7 @@
+             // Find the end of this line, save last non space
+             // or tab position in the end ptr
+ 
+-            while(eol == NULL) {
++            while (eol == NULL) {
+                 switch (*ptr) {
+                 case U_LINE_FEED:
+                 case U_CARRIAGE_RETURN:
+@@ -178,7 +178,7 @@
+                 arguments.Next() = argument;
+             }
+         }
+-    } while(end < line.Length());
++    } while (end < line.Length());
+ 
+     argc = arguments.Length();
+     argv = new char*[argc];
+diff -u -r jikes/src/parser.cpp jikes-tmp/src/parser.cpp
+--- jikes/src/parser.cpp	Wed Jan 10 11:49:45 2001
++++ jikes-tmp/src/parser.cpp	Thu Jun  7 09:49:16 2001
+@@ -194,7 +194,7 @@
+             state_stack_top -= (rhs[act] - 1);
+             (this ->* rule_action[act])();
+             act = nt_action(stack[state_stack_top], lhs[act]);
+-        } while(act <= NUM_RULES);
++        } while (act <= NUM_RULES);
+     } /* process_terminal */
+ 
+     if (act == ERROR_ACTION)
+@@ -514,7 +514,7 @@
+             state_stack_top -= (rhs[act] - 1);
+             (this ->* rule_action[act])();
+             act = nt_action(stack[state_stack_top], lhs[act]);
+-        } while(act <= NUM_RULES);
++        } while (act <= NUM_RULES);
+     } /* process_terminal */
+ 
+     if (act == ERROR_ACTION)
+@@ -610,7 +610,7 @@
+                 state_stack_top -= (rhs[act] - 1);
+                 (this ->* rule_action[act])();
+                 act = nt_action(stack[state_stack_top], lhs[act]);
+-            } while(act <= NUM_RULES);
++            } while (act <= NUM_RULES);
+         } /* process_terminal */
+     }
+ 
+@@ -777,7 +777,7 @@
+                                   ? temp_stack[temp_stack_top]
+                                   : stck[temp_stack_top]);
+             act = nt_action(act, lhs_symbol);
+-        } while(act <= NUM_RULES);
++        } while (act <= NUM_RULES);
+ 
+         max_pos = Min(max_pos, temp_stack_top);
+     } // process_terminal;
+diff -u -r jikes/src/platform.cpp jikes-tmp/src/platform.cpp
+--- jikes/src/platform.cpp	Sat Apr 28 15:34:37 2001
++++ jikes-tmp/src/platform.cpp	Thu Jun  7 09:49:16 2001
+@@ -1470,7 +1470,7 @@
+ 
+ void ErrorString::do_fill(int n)
+ {
+-    while(n<field_width)
++    while (n<field_width)
+     {
+         Next()=(wchar_t)fill_char;
+         n++;
+@@ -1501,8 +1501,8 @@
+ #endif
+                    s)
+ 	    );
+-    if(s)
+-        while(*s)
++    if (s)
++        while (*s)
+             Next()=*(s++);
+ 
+     return *this;
+@@ -1511,8 +1511,8 @@
+ ErrorString &ErrorString::operator<<(const char *s)
+ {
+     do_fill(strlen(s));
+-    if(s)
+-        while(*s)
++    if (s)
++        while (*s)
+             Next()=(wchar_t) *(s++);
+     
+     return *this;
+@@ -1530,7 +1530,7 @@
+ {
+     Next() = U_NULL; // zero terminate string
+     wchar_t *s=ConvertibleArray<wchar_t>::Array();
+-    if(!s)
++    if (!s)
+         return NULL;
+ 
+     //TODO: optimize!
+diff -u -r jikes/src/stream.cpp jikes-tmp/src/stream.cpp
+--- jikes/src/stream.cpp	Fri May 11 03:28:44 2001
++++ jikes-tmp/src/stream.cpp	Thu Jun  7 09:49:16 2001
+@@ -100,7 +100,7 @@
+      * and all errors are reported.
+      * (lord)
+      */
+-    if(!initialized)
++    if (!initialized)
+     {
+         left_line_no    = lex_stream->FindLine   ( start_location );
+         left_column_no  = lex_stream->FindColumn ( start_location );
+@@ -130,7 +130,7 @@
+     ErrorString s;
+ 
+     assert(lex_stream);
+-    if(left_line_no == right_line_no)
++    if (left_line_no == right_line_no)
+         PrintSmallSource(s);
+     else 
+         PrintLargeSource(s);
+@@ -361,7 +361,7 @@
+                           source_tail+1,
+                           &err);
+ 
+-    if(U_FAILURE(err))
++    if (U_FAILURE(err))
+     {
+         fprintf(stderr,"Conversion error: %s at byte %d\n", 
+             u_errorName(err),
+@@ -394,7 +394,7 @@
+                     &source_ptr, &srcl,
+                     (char **)&chp, &chl);
+ 
+-    if(n == (size_t) -1)
++    if (n == (size_t) -1)
+     {
+ 	if (errno == EINVAL && before + srcl + 1 <= source_tail) {
+ 	  srcl++; //we're on a multibyte input and it didn't fit in srcl
+@@ -431,7 +431,7 @@
+ 
+ #endif //iconv
+ 
+-    if(before == source_ptr)
++    if (before == source_ptr)
+     {
+         //End of conversion
+         error_decode_next_character = true;
+@@ -662,7 +662,7 @@
+     locations = line_location  .Array();
+     types     = type_index     .Array();
+     
+-    if(control.option.dump_errors)
++    if (control.option.dump_errors)
+         InitializeColumns();
+     
+     return;
+@@ -871,7 +871,7 @@
+     {
+         InitializeDataBuffer(buffer, filesize);
+ 
+-        while(source_ptr <= source_tail)
++        while (source_ptr <= source_tail)
+         {
+             *(++input_ptr) = (*source_ptr++) & 0x00ff; // The (& 0x00ff) guarantees that quantity is copied as unsigned value
+ 
+@@ -958,7 +958,7 @@
+         //
+         // Remove all trailing spaces
+         //
+-        while((input_ptr > input_buffer) && Code::IsSpace(*input_ptr))
++        while ((input_ptr > input_buffer) && Code::IsSpace(*input_ptr))
+             input_ptr--;
+     }
+ 
+@@ -995,7 +995,7 @@
+     wchar_t *input_tail = input_ptr + filesize;
+     *input_ptr = U_LINE_FEED; // add an initial '\n';
+ 
+-    if(buffer)
++    if (buffer)
+     {
+         int      escape_value;
+         wchar_t *escape_ptr;
+@@ -1004,7 +1004,7 @@
+         UnicodeLexerState state = START;
+         bool oncemore = false;
+ 
+-        if(control.option.encoding)
++        if (control.option.encoding)
+         {
+             // The encoding should have been validated by now
+             assert( SetEncoding(control.option.encoding) );
+@@ -1013,11 +1013,11 @@
+         // init data after setting the encoding
+         InitializeDataBuffer(buffer, filesize);
+ 
+-        while(HasMoreData() || oncemore)
++        while (HasMoreData() || oncemore)
+         {
+             // On each iteration we advance input_ptr maximun 2 postions.
+             // Here we check if we are close to the end of input_buffer
+-            if(input_ptr>=input_tail)
++            if (input_ptr>=input_tail)
+             {
+                 // If this happen, reallocate it with some more space.
+                 // This is very rare case, which could happen if
+@@ -1039,7 +1039,7 @@
+             
+             wchar_t ch;
+             
+-            if(!oncemore)
++            if (!oncemore)
+             {
+                 ch=DecodeNextCharacter();
+ 
+@@ -1054,12 +1054,12 @@
+             {
+ 
+             case QUOTE:
+-                if(ch==U_BACKSLASH)
++                if (ch==U_BACKSLASH)
+                 {
+                     *(++input_ptr) = U_BACKSLASH;
+                     *(++input_ptr) = U_BACKSLASH;
+                     state          = RAW;
+-                } else if(ch==U_u)
++                } else if (ch==U_u)
+                 {
+                     escape_ptr = input_ptr;
+                     state      = UNICODE_ESCAPE;
+@@ -1072,13 +1072,13 @@
+                 break;
+ 
+             case UNICODE_ESCAPE:
+-                if(isxdigit(ch))
++                if (isxdigit(ch))
+                 {
+                     state=UNICODE_ESCAPE_DIGIT_0;
+                     escape_value=hexvalue(ch)*16*16*16;
+-                } else if(ch!=U_u)
++                } else if (ch!=U_u)
+                 {
+-                    if(initial_reading_of_input)
++                    if (initial_reading_of_input)
+                         bad_tokens.Next().Initialize(StreamError::INVALID_UNICODE_ESCAPE,
+                                                      (unsigned) (escape_ptr - input_buffer),
+                                                      (unsigned) (input_ptr - input_buffer), this);
+@@ -1086,13 +1086,13 @@
+                 break;
+ 
+             case UNICODE_ESCAPE_DIGIT_0:
+-                if(isxdigit(ch))
++                if (isxdigit(ch))
+                 {
+                     state=UNICODE_ESCAPE_DIGIT_1;
+                     escape_value+=hexvalue(ch)*16*16;
+                 } else  
+                 {
+-                    if(initial_reading_of_input)
++                    if (initial_reading_of_input)
+                         bad_tokens.Next().Initialize(StreamError::INVALID_UNICODE_ESCAPE,
+                                                      (unsigned) (escape_ptr - input_buffer),
+                                                      (unsigned) (input_ptr - input_buffer), this);
+@@ -1100,13 +1100,13 @@
+                 break;
+ 
+             case UNICODE_ESCAPE_DIGIT_1:
+-                if(isxdigit(ch))
++                if (isxdigit(ch))
+                 {
+                     state=UNICODE_ESCAPE_DIGIT_2;
+                     escape_value+=hexvalue(ch)*16;
+                 } else  
+                 {
+-                    if(initial_reading_of_input)
++                    if (initial_reading_of_input)
+                         bad_tokens.Next().Initialize(StreamError::INVALID_UNICODE_ESCAPE,
+                                                      (unsigned) (escape_ptr - input_buffer),
+                                                      (unsigned) (input_ptr - input_buffer), this);
+@@ -1114,7 +1114,7 @@
+                 break;
+ 
+             case UNICODE_ESCAPE_DIGIT_2:
+-                if(isxdigit(ch))
++                if (isxdigit(ch))
+                 {
+                     ch       = escape_value+hexvalue(ch);
+                     state    = saved_state;
+@@ -1122,7 +1122,7 @@
+                     oncemore = true;
+                 } else  
+                 {
+-                    if(initial_reading_of_input)
++                    if (initial_reading_of_input)
+                         bad_tokens.Next().Initialize(StreamError::INVALID_UNICODE_ESCAPE,
+                                                      (unsigned) (escape_ptr - input_buffer),
+                                                      (unsigned) (input_ptr - input_buffer), this);
+@@ -1157,14 +1157,14 @@
+                 // if for some reason converter produced or passed
+                 // byte order mark, it have to be ignored.
+                 state = RAW;
+-                if(ch==U_BOM || ch==U_REVERSE_BOM)
++                if (ch==U_BOM || ch==U_REVERSE_BOM)
+                     break; //ignore
+                     
+             case RAW:
+-                if(ch==U_BACKSLASH && saved_state != UNICODE_ESCAPE_DIGIT_2)
++                if (ch==U_BACKSLASH && saved_state != UNICODE_ESCAPE_DIGIT_2)
+                 {
+                     state       = QUOTE;
+-                } else if(ch == U_CARRIAGE_RETURN)
++                } else if (ch == U_CARRIAGE_RETURN)
+                 {
+                     state = CR;
+                     *(++input_ptr) = U_LINE_FEED;
+@@ -1216,13 +1216,13 @@
+      lostack[top] = 0;
+      histack[top] = bad_tokens.Length() - 1;
+ 
+-     while(top >= 0)
++     while (top >= 0)
+      {
+          lower = lostack[top];
+          upper = histack[top];
+          top--;
+ 
+-         while(upper > lower)
++         while (upper > lower)
+          {
+              //
+              // The array is most-likely almost sorted. Therefore,

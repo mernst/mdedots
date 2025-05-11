@@ -1,0 +1,148 @@
+# crontab file -- to install, just do  "crontab <filename>"
+# This runs on onion.csail.mit.edu.
+# Blank lines in this file cause problems on some systems.
+# Columns stand for minute, hour, day of month, month, day of week.
+# Percent signs get converted to newlines unless backslash-quoted.
+###
+### Permissions
+###
+# The tasks in this file will be done by user mernst.cron; afs-cron-wrapper
+# gives that user access to the appropriate directories/files.
+# If not at CSAIL, comment it out; do not use an empty definition like "AFS=".
+AFS=/afs/csail.mit.edu/u/m/mernst/bin/share/afs-cron-wrapper
+# Beware of running commands like "$AFS program > myfile":  that's parsed
+# as "($AFS program) > myfile" which means that there are no permissions to 
+# myfile.  Use  sh -c "program > myfile"  instead.
+###
+### Environment variables
+###
+# Environment variables such as CLASSPATH are *not* set when running cron jobs.
+# Use of environment variable $HOME does not seem to work on the rhs of a
+# variable definition, though it works in the commands themselves.
+# INV=$HOME/research/invariants
+site=csail
+BPHOME=/afs/csail.mit.edu/u/m/mernst/bin/src/perl/bibtex2web/lib
+JAVA_HOME=/afs/csail.mit.edu/u/m/mernst/java/jdk
+JDKDIR=/afs/csail.mit.edu/u/m/mernst/java/jdk
+JAVA=/afs/csail.mit.edu/u/m/mernst/java/jdk/bin/java -ea
+# INV=/afs/csail.mit.edu/u/m/mernst/research/invariants
+DAIKONDIR=/afs/csail.mit.edu/u/m/mernst/research/invariants/daikon
+CRONIC=/afs/csail.mit.edu/u/m/mernst/bin/src/plume-scripts/cronic
+CLASSPATH=/afs/csail.mit.edu/u/m/mernst/bin/src/plume-lib/java/plume.jar:/afs/csail.mit.edu/u/m/mernst/research/types/jsr308-langtools/dist/lib/javac.jar:/afs/csail.mit.edu/u/m/mernst/java/jdk/jre/lib/rt.jar:/afs/csail.mit.edu/u/m/mernst/java/jdk/lib/tools.jar:/afs/csail.mit.edu/u/m/mernst/research/types/checker-framework/checkers/binary/checkers.jar
+CHECKLINKDIR=/afs/csail.mit.edu/u/m/mernst/bin/src/checklink
+PLUMESCRIPTS=/afs/csail.mit.edu/u/m/mernst/bin/src/plume-scripts
+PERLLIB=/afs/csail.mit.edu/u/m/mernst/bin/src/plume-scripts
+MAILCOMMAND=/usr/bin/mail
+EMAIL=mernst@csail.mit.edu
+WWWLOCAL=http://pag.csail.mit.edu/~mernst
+# Default path: /usr/bin:/bin
+# `uname`-`uname -m` does not work, so hardcode Linux-i686
+PATH=.:/afs/csail.mit.edu/u/m/mernst/bin/Linux-i686:/afs/csail.mit.edu/u/m/mernst/bin/share:/afs/csail.mit.edu/u/m/mernst/bin/src/plume-scripts:/afs/csail.mit.edu/u/m/mernst/research/invariants/daikon/scripts:/uns/bin:/usr/bin:/bin
+###
+### Testing (every minute)
+###
+# * * * * *	$AFS touch $HOME/.mail/.time-to-read-hourly
+# * * * * *	$AFS echo " " | $MAILCOMMAND -s "Cronmail" $EMAIL
+# * * * * *	$AFS echo "$PATH"
+# * * * * *	$AFS $HOME/bin/share/mail-checkdates
+### Testing (daily)
+#CSE# 11 5 * * Mon	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` http://pag.csail.mit.edu/~mernst/
+#CSE# 11 5 * * Mon	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` http://homes.cs.washington.edu/~mernst/
+#CSE# 12 5 * * Mon	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` http://pag.csail.mit.edu/~mernst/links2.html
+#CSE# 13 5 * * Mon	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` http://pag.csail.mit.edu/
+#CSE# 14 5 * * Mon	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` http://pag.csail.mit.edu/daikon
+#CSE# 15 5 * * Mon	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` http://types.cs.washington.edu/
+###
+### Maildrops
+###
+#CSE# 01 * * * *	$AFS touch $HOME/.mail/.time-to-read-hourly
+#CSE# 25 4 * * *	$AFS touch $HOME/.mail/.time-to-read-daily
+#CSE# 25 4 * * *	$AFS touch $HOME/.mail/.time-to-read-daily-403
+#CSE# 25 4 * * *	$AFS touch $HOME/.mail/.time-to-read-jml
+#CSE# 25 4 * * *	$AFS touch $HOME/.mail/.time-to-read-seajug
+#CSE# 25 4 * * *	$AFS touch $HOME/.mail/.time-to-read-talks
+#CSE# 25 4 * * *	$AFS r2e run
+#CSE# 26 4 * * Mon	$AFS touch $HOME/.mail/.time-to-read-weekly
+#CSE# 25 4 * * Mon	$AFS touch $HOME/.mail/.time-to-read-hkn
+#CSE# 27 4 1 * *	$AFS touch $HOME/.mail/.time-to-read-monthly
+###
+### Daily
+###
+01 0 * * *	$AFS crontab $HOME/bin/share/crontab
+# Not  /bin/rm `/usr/bin/find $HOME -name core -type f`  because rm might get no args
+# 20 1 * * *	$AFS /usr/bin/find $HOME -path $HOME/.snapshot -prune -o -name core -type f | xargs -r rm
+#CSE# 21 1 * * *	$AFS $HOME/bin/share/mail-checkdates
+#CSE# 22 1 * * *	$AFS $HOME/bin/share/mail-calendar
+#CSE# 23 1 * * *	$AFS $CRONIC /usr/bin/calendar -f $HOME/calendar
+24 1 * * *	$AFS $CRONIC make -C $HOME/bib test
+# 25 1 * * *	$AFS $CRONIC $HOME/bin/share/mdecvs-old diff
+# Too many permission errors when run in cron at CSAIL
+# 25 1 * * *	$AFS ${JAVA} plume.MultiVersionControl --quiet status --search=true --ignore-dir=$HOME/.snapshot
+#CSE# 27 1 * * *	$AFS $CRONIC make PATH=${HOME}/research/types/jsr308-langtools/dist/bin:${HOME}/java/jdk/bin:${PATH} CHECKERSJAR=${HOME}/research/types/checker-framework/checkers/binary/checkers.jar -C $HOME/bin/src/plume-lib/java showvars compile check-interning
+#CSE# 28 1 * * *	$AFS $CRONIC make PATH=${HOME}/research/types/jsr308-langtools/dist/bin:${HOME}/java/jdk/bin:${PATH} CHECKERSJAR=${HOME}/research/types/checker-framework/checkers/binary/checkers.jar -C $HOME/bin/src/plume-lib/java showvars check-nullness
+30 1 * * *	$AFS $HOME/bin/share/make-mail-aliases
+# 24 1 * * *	$AFS $HOME/bin/share/make-procmailrc-all
+#COMMENTED 31 1 * * *	$AFS $DAIKONDIR/scripts/buildtest-check
+# 31 1 * * *	$AFS $HOME/bin/share/check-for-misdelivered-mail 2>&1 | grep -v "^No remote authentication"
+# 32 1 * * *	$AFS chgrp invariants `find /g4/projects/invariants/.CVS -type d -print` > /dev/null
+# I can't get this to work in Gnus 5.4.65
+# 30 1 * * *	$AFS emacs -l ~/.emacs -l gnus -l gnus-kill -f debug-on-error -f gnus-batch-score "uw.announce"
+###
+### Weekly
+###
+# As of 8/98, LCD-datafile hadn't been updated since 3/97.
+# 3 5 * * Sun       $HOME/bin/share/update-lcd-datafile
+# Better to use etags in $HOME/bin/linux/; can't build for Solaris.
+8 5 * * Sun	cd $HOME/emacs; $AFS /usr/bin/etags *.el
+#CSE# 9 5 * * Mon	$AFS echo "http://wasp.cs.washington.edu/Internal/index.html" | $MAILCOMMAND -s "Need WASP announcement 24 hours in advance" $EMAIL
+#CSE# 9 5 * * Tue	$AFS echo "http://sites.google.com/a/cs.washington.edu/590n/2010-winter" | $MAILCOMMAND -s "Need 590n announcement 24 hours in advance" $EMAIL
+#CSE# 9 5 * * Wed	$AFS echo "http://sites.google.com/a/cs.washington.edu/se-research-group-meeting" | $MAILCOMMAND -s "Need SE research group announcement 24 hours in advance" $EMAIL
+###
+### Weekly reminders
+###
+#CSE# 08 1 * * Mon    $AFS echo " " | $MAILCOMMAND -s "Set up lunch with a faculty member" $EMAIL
+#CSE# 08 1 * * Mon    $AFS echo " " | $MAILCOMMAND -s "Tally up timelog, send progress report; include weekly goals" $EMAIL
+#CSE# 08 1 * * Tue    $AFS echo " " | $MAILCOMMAND -s "Write home (including Dave)" $EMAIL
+# 08 1 * * Tue	$AFS echo " " | $MAILCOMMAND -s "Water plants" $EMAIL
+# 08 1 * * Wed	$AFS echo " " | $MAILCOMMAND -s "Receive slides for Friday group meeting; have reminder sent" $EMAIL
+# 08 1 * * Thu	$AFS echo " " | $MAILCOMMAND -s "Read progress reports, check for missing ones" $EMAIL
+# 08 1 * * Fri	$AFS echo " " | $MAILCOMMAND -s "Send timesheet to Systolic Networks" $EMAIL
+###
+### Monthly
+###
+## If I just want to send myself mail on a given day of the month, then why
+## not just put the reminder as an event in ~/calendar ?
+## Publications (do mine first, to iron out problems; then the group's)
+09 5 2 * *	$AFS $CRONIC make -C $HOME/www/advice/
+#CSE# 10 5 2 * *	$AFS $CRONIC make -C $HOME/www/pubs
+11 5 2 * *	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` $WWWLOCAL/
+# 11 5 * * *	$AFS $CHECKLINKDIR/checklink -q -r $WWWLOCAL/
+11 5 3 * *	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` $WWWLOCAL/links2.html
+# 11 5 * * *	$AFS $CHECKLINKDIR/checklink -q -r $WWWLOCAL/links2.html
+11 5 4 * *	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` http://pag.csail.mit.edu/
+# 11 5 * * *	$AFS $CHECKLINKDIR/checklink -q -r http://pag.csail.mit.edu/
+10 5 11 * *	$AFS make -C /afs/csail/group/pag/www/pubs
+11 5 12 * *	$AFS html5validator -emacs `/usr/bin/find $HOME/public_html -path grant/index.html -prune -o -name agre-networking-on-the-network-20050814.html -prune -o -name '*.html' -a \( ! -name 'research-index*-headfoot.html' \) -a \( ! -name 'pubs-bytopic*-headfoot.html' \) -a \( ! -wholename '*public_html/grant/index.html' \)`
+# AFS validation problems with this line; maybe fixed with $AFS in backtick
+# But, now I get "/afs/csail.mit.edu/u/m/mernst/bin/share/afs-cron-wrapper: Argument list too long"
+12 5 12 * *	$AFS html5validator -emacs `$AFS find /afs/csail/group/pag/www/ \( -name '*_manual_html' -o -wholename /afs/csail/group/pag/www/daikon/download/doc/developer.html -o -wholename /afs/csail/group/pag/www/daikon/download/doc/daikon.html -o -name index-tree.html -o -name people-tree.html -o -name jdoc -o -name staging-daikon -o -name wisdom-old -o -name application_communities -o -name application_communities_cvs -o -name old-projects.html -o -name continuoustesting-beta -o -name ct-eclipse -o -wholename /afs/csail/group/pag/www/darpa  -o -wholename /afs/csail/group/pag/www/darpa_ac -o -wholename /afs/csail/group/pag/www/jsr308/readonly-repo -o -wholename /afs/csail/group/pag/www/jsr308/releases -o -name java-annotation-design*.html -o -name gnu_lgpl.html -o -name javac_lifecycle \) -prune -o \( -name '*.html' \) -print | $PLUMESCRIPTS/sort-directory-order`
+## Daikon (at the end of the month, before the beginning-of-month release)
+## Because of February, end-of-month really should happen by the 28th.
+# 11 5 26 * *	$AFS make -C $DAIKONDIR/java USER=mernst-cron PATH=$HOME/java/jdk/bin:$DAIKONDIR/scripts:$PATH CLASSPATH=$HOME/java/jdk/lib/tools.jar:$DAIKONDIR/java/lib/java-getopt.jar:$DAIKONDIR/java/lib/junit.jar:$DAIKONDIR/java/lib/bcel.jar:$DAIKONDIR/java/lib/commons-io.jar:$DAIKONDIR/java:$CLASSPATH findbugs
+# This should be after "make doc-javadoc-lookup" finishes; 6 minutes on manioc
+30 5 27 * *	$AFS mv -f $HOME/.javadoc-index.el $HOME/.javadoc-index.el-old
+# This won't work because $AFS applies to the first comand but not the redirection.
+31 5 27 * *	$AFS sh -c "$PLUMESCRIPTS/javadoc-index-to-alist > $HOME/.javadoc-index.el"
+10 5 28 * *	$AFS make -C /afs/csail/group/pag/www/daikon pubs
+12 5 28 * *	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` http://pag.csail.mit.edu/daikon
+# 11 5 * * *	$AFS $CHECKLINKDIR/checklink -q -r http://pag.csail.mit.edu/daikon
+###
+### End
+###
+# Local Variables:
+# eval:  (auto-fill-mode 0)
+# time-stamp-start: "^# Last updated: "
+# time-stamp-end: "\\.?$"
+# time-stamp-format: "%:b %:d, %:y"
+# time-stamp-line-limit: 10
+# End:

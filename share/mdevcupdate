@@ -1,0 +1,271 @@
+#!/bin/sh
+
+### Update my forks from upstream.
+
+# Pull from $org/$repo into $parentdir/$localname-fork-mernst
+# Only permit fast-forward pulls: no merges are allowed.
+# Arguments are $org $repo $parentdir $localname .
+# If $localname is omitted or blank, it defaults to $repo.
+update_fork() {
+  update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com mernst
+}
+
+# Pull from $org/$repo into $parentdir/$repo-fork-mdernsta
+update_fork_mdernsta() {
+  update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com mdernsta
+}
+
+# Pull from $org/$repo into $parentdir/$repo-fork-typetools
+update_fork_typetools() {
+  update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com typetools
+}
+
+# Pull from $org/$repo into $parentdir/$repo-fork-kelloggm
+update_fork_kelloggm() {
+  update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com kelloggm
+}
+
+# Pull from $org/$repo into $parentdir/$repo-fork-mernst
+update_fork_from_rjust_bitbucket() {
+  if [ -n "$DEBUG" ] ; then
+    echo "update_fork_from_rjust_bitbucket 1=$1 2=$2"
+  fi
+  update_fork_with_hosting_and_userid "rjust" "$1" "$2" "" bitbucket.org michaelernst
+}
+
+
+# userid relates to how the clone is named locally, not the username at the hosting service
+update_fork_with_hosting_and_userid() {
+  org="$1"
+  repo="$2"
+  parentdir="$3"
+  localname="$4"
+  hosting="$5"
+  userid="$6"
+  if [ -z "$localname" ] ; then
+    localname="$repo"
+  fi
+  if [ -n "$DEBUG" ] ; then
+    echo "update_fork_with_hosting_and_userid org=$org repo=$repo parentdir=$parentdir localname=$localname hosting=$hosting userid=$userid"
+  fi
+  if [ -z "$parentdir" ] || [ -z "$userid" ]; then
+    echo "update_fork_with_hosting_and_userid: not enough arguments"
+    echo "1=$1"
+    echo "2=$2"
+    echo "3=$3"
+    echo "4=$4"
+    echo "5=$5"
+    echo "6=$6"
+    exit 2
+  fi
+  if [ -d "$parentdir/$localname-fork-$userid" ] ; then
+    git_pull_command="git pull -q --ff-only git@${hosting}:$org/$repo --tags"
+    if [ -n "$DEBUG" ] ; then
+      echo "cd $parentdir/$localname-fork-$userid && $git_pull_command"
+    fi
+    # Doesn't use `git -C` because multiple git commands will be run in the directory.
+    ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
+    if [ -n "$DEBUG" ] ; then echo "sleeping"; sleep 30 ; fi
+  fi
+}
+
+update_fork_from_rjust_bitbucket coverage ~/class/se-activities
+update_fork_from_rjust_bitbucket debugging ~/class/se-activities
+update_fork_from_rjust_bitbucket delta-debugging ~/class/se-activities
+update_fork_from_rjust_bitbucket jp-example ~/class/se-activities
+update_fork_from_rjust_bitbucket mutation ~/class/se-activities
+
+update_fork plume-lib bcel-util ~/java/plume-lib
+update_fork plume-lib bibtex-clean ~/java/plume-lib
+update_fork plume-lib hashmap-util ~/java/plume-lib
+update_fork plume-lib html-pretty-print ~/java/plume-lib
+update_fork plume-lib icalavailable ~/java/plume-lib
+update_fork plume-lib javac-parse ~/java/plume-lib
+update_fork plume-lib javadoc-lookup ~/java/plume-lib
+update_fork plume-lib lookup ~/java/plume-lib
+update_fork plume-lib merging ~/java/plume-lib
+update_fork plume-lib multi-version-control ~/java/plume-lib
+update_fork plume-lib options ~/java/plume-lib
+update_fork plume-lib plume-util ~/java/plume-lib
+update_fork plume-lib reflection-util ~/java/plume-lib
+update_fork plume-lib require-javadoc ~/java/plume-lib
+
+update_fork codespecs daikon ~/research/invariants
+update_fork codespecs daikon /scratch/mernst/clones/invariants
+update_fork codespecs fjalar ~/research/invariants
+update_fork codespecs fjalar /scratch/mernst/clones/invariants
+update_fork sri-csl daikon-gradle-plugin ~/research/invariants
+update_fork sri-csl daikon-gradle-plugin /scratch/mernst/clones/invariants
+
+update_fork aas-integration integration-test2 ~/research/muse-pascali
+update_fork kelloggm do-like-javac ~/java
+## This doesn't work because it uses http, but upstream is private.
+# update_fork aas-integration ontology ~/research/muse-pascali
+
+update_fork randoop randoop ~/research/testing
+update_fork randoop randoop /scratch/mernst/clones/testing
+update_fork randoop grt-testing ~/research/testing
+update_fork randoop grt-testing /scratch/mernst/clones/testing
+update_fork rjust defects4j ~/research/testing
+update_fork rjust defects4j /scratch/mernst/clones/testing
+
+update_fork typetools annotation-tools ~/research/types
+update_fork typetools annotation-tools /scratch/mernst/clones/types
+update_fork typetools checker-framework ~/research/types
+update_fork typetools checker-framework /scratch/mernst/clones/types
+update_fork typetools checker-framework.demos ~/research/types demos
+update_fork typetools checker-framework.demos /scratch/mernst/clones/types demos
+update_fork typetools checker-framework-inference ~/research/types
+update_fork typetools checker-framework-inference /scratch/mernst/clones/types
+update_fork typetools stubparser ~/research/types
+update_fork typetools stubparser /scratch/mernst/clones/types
+update_fork typetools jdk ~/research/types/libraries
+update_fork typetools jdk /scratch/mernst/clones/types/libraries
+# update_fork typetools jdk11u ~/research/types/libraries
+# update_fork typetools jdk11u /scratch/mernst/clones/types/libraries
+update_fork typetools jdk17u ~/research/types/libraries
+update_fork typetools jdk17u /scratch/mernst/clones/types/libraries
+update_fork kelloggm run-dljc ~/research/types
+update_fork kelloggm wpi-many ~/research/types
+update_fork kelloggm wpi-many-tests-bcel-util ~/research/types
+update_fork kelloggm wpi-many-tests-bibtex-clean ~/research/types
+update_fork kelloggm wpi-many-tests-ensures-called-methods ~/research/types
+update_fork kelloggm wpi-many-tests-html-pretty-print ~/research/types
+update_fork kelloggm -wpi-many-tests-bibtex-clean ~/research/types
+update_fork Nargeshdb wpi-many-tests-owning-field ~/research/types
+
+update_fork_kelloggm typetools annotation-tools ~/research/types
+update_fork_kelloggm typetools annotation-tools /scratch/mernst/clones/types
+update_fork_kelloggm typetools checker-framework ~/research/types
+update_fork_kelloggm typetools checker-framework /scratch/mernst/clones/types
+update_fork_kelloggm typetools stubparser ~/research/types
+update_fork_kelloggm typetools stubparser /scratch/mernst/clones/types
+update_fork_kelloggm typetools jdk ~/research/types/libraries
+update_fork_kelloggm typetools jdk /scratch/mernst/clones/types/libraries
+update_fork_kelloggm typetools jdk17u ~/research/types/libraries
+update_fork_kelloggm typetools jdk17u /scratch/mernst/clones/types/libraries
+
+update_fork jonathan-m-phillips ASHE_Automated-Software-Hardening-for-Entrypoints ~/research/types
+update_fork jonathan-m-phillips ASHE_Automated-Software-Hardening-for-Entrypoints /scratch/mernst/clones/types
+
+update_fork jspecify jspecify ~/research/types
+
+## The mdernsta account no longer exists.
+# update_fork_mdernsta awslabs aws-crypto-policy-compliance-checker ~/research/types/awslabs
+# update_fork_mdernsta awslabs aws-crypto-policy-compliance-checker /scratch/mernst/clones/types/awslabs
+# update_fork_mdernsta awslabs aws-kms-compliance-checker ~/research/types/awslabs
+# update_fork_mdernsta awslabs aws-kms-compliance-checker /scratch/mernst/clones/types/awslabs
+# update_fork_mdernsta awslabs data-classification-checker ~/research/types/awslabs
+# update_fork_mdernsta awslabs data-classification-checker /scratch/mernst/clones/types/awslabs
+
+update_fork typetools commons-io ~/research/types/libraries
+update_fork typetools commons-io /scratch/mernst/clones/types/libraries
+## The mernst fork of guava has typetools, not google, as its upstream!
+## That is so that CF CI passes (it uses git-clone-related from typetools).
+## This means it's a bit more complicated for me to make pull requests to google.
+update_fork typetools guava ~/research/types/libraries
+update_fork typetools guava /scratch/mernst/clones/types/libraries
+update_fork apache logging-log4j2 ~/research/types/libraries
+update_fork apache logging-log4j2 /scratch/mernst/clones/types/libraries
+update_fork_typetools apache logging-log4j2 ~/research/types/libraries
+update_fork_typetools apache logging-log4j2 /scratch/mernst/clones/types/libraries
+
+
+update_fork eisopux javac-diagnostics-wrapper ~/research/types
+update_fork eisopux javac-diagnostics-wrapper /scratch/mernst/clones/types
+
+## Don't do joda-time automatically because Steven Colburn force-pushes to
+## change history, which then causes extra commits and merges on my fork.
+# update_fork JodaOrg joda-time ~/research/types/cf-case-studies
+# update_fork JodaOrg joda-time /scratch/mernst/clones/types/cf-case-studies
+update_fork SERG-Delft jpacman-framework ~/research/types/cf-case-studies
+update_fork SERG-Delft jpacman-framework /scratch/mernst/clones/types/cf-case-studies
+update_fork cmackie Unsignedness-Study-jake2 ~/research/types/cf-case-studies
+update_fork cmackie Unsignedness-Study-jake2 /scratch/mernst/clones/types/cf-case-studies
+
+update_fork maxirmx libcorrect4j ~/research/types/cf-case-studies
+update_fork maxirmx libcorrect4j /scratch/mernst/clones/types/cf-case-studies
+
+update_fork CozySynthesizer cozy ~/research/calvin-loncaric
+
+update_fork AML14 tratto ~/research/nlp
+
+update_fork Thomsch untangling-tools-benchmark ~/research/version-control
+
+update_fork apache logging-log4j2 ~/java
+update_fork google guava ~/java
+update_fork gradle gradle ~/java
+update_fork ical4j ical4j ~/java
+update_fork jhy jsoup ~/java
+update_fork liflab beepbeep-3 ~/java
+update_fork liflab petitpoucet ~/java
+update_fork projectlombok lombok ~/java
+update_fork projectlombok lombok.wiki ~/java
+update_fork google google-java-format ~/java
+update_fork diffplug spotless ~/java
+update_fork jhipster prettier-java ~/java
+update_fork uber nullaway ~/java
+
+update_fork google error-prone ~/java
+if [ -d ~/java/error-prone-branch-gh-pages ] ; then
+  git -C ~/java/error-prone-branch-gh-pages pull -q --ff-only
+  if [ -d ~/java/error-prone-fork-mernst-branch-gh-pages ] ; then
+    (cd ~/java/error-prone-fork-mernst-branch-gh-pages && git pull -q --ff-only ~/java/error-prone-branch-gh-pages && git push)
+  fi
+fi
+
+update_fork michel-kraemer gradle-download-task ~/bin/src
+update_fork w3c link-checker ~/bin/src
+
+update_fork Wilfred ag.el ~/emacs
+
+update_fork SRI-CSL ETB2 ~/prof/grants
+
+update_fork benedikt-schesch AST-Merging-Evaluation ~/research/version-control
+update_fork benedikt-schesch AST-Merging-Evaluation /scratch/mernst/clones/version-control
+
+
+### Special cases
+
+## This doesn't work because mernst/stubparser is the name of my fork of javaparser/javaparser,
+# update_fork javaparser javaparser ~/java
+
+update_fork typetools commons-bcel /scratch/mernst/clones/types/libraries
+update_fork typetools commons-bcel ~/research/types/libraries
+## This does not work because mernst/commons-bcel is a fork of typetools/commons-bcel.
+## The above commands handle that fact.
+# update_fork apache commons-bcel ~/java
+
+
+## Weird: using `--tags` causes the pull to fail.
+# update_fork JetBrains kotlin ~/java
+## So do it directly:
+if [ -d "~java/kotlin-fork-mernst" ] ; then
+  (cd ~/java/kotlin-fork-mernst && \
+  git pull -q --ff-only && \
+  git pull -q --ff-only "git@github.com:JetBrains/kotlin" && \
+  git push -q && \
+  git remote prune origin)
+fi
+
+### Update from a non-GitHub upstream
+
+## Using `update_fork does not work because the repository is at gitlab.ow2.org, not github,
+## and it uses a https: rather than a git: URL.
+# update_fork asm asm ~/java
+## So do it directly:
+if [ -d ~/java/asm-fork-mernst ] ; then
+  (cd ~/java/asm-fork-mernst && \
+  git pull -q --ff-only && \
+  git pull -q --ff-only https://gitlab.ow2.org/asm/asm.git --tags && \
+  git push -q && \
+  git remote prune origin)
+fi
+# shellcheck disable=SC2154 # $t should be defined.
+if [ -d "$t"/libraries/asm-fork-typetools ] ; then
+  (cd "$t"/libraries/asm-fork-typetools && \
+  git pull -q --ff-only && \
+  git pull -q --ff-only https://gitlab.ow2.org/asm/asm.git --tags && \
+  git push -q && \
+  git remote prune origin)
+fi

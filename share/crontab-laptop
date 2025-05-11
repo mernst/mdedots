@@ -1,0 +1,59 @@
+# crontab file -- to install, just do  "crontab <filename>"
+# This runs on godwit.cs.washington.edu.
+# Blank lines in this file cause problems on some systems.
+# Columns stand for minute, hour, day of month, month, day of week.
+# Percent signs get converted to newlines unless backslash-quoted.
+###
+### Environment variables
+###
+# Environment variables such as CLASSPATH are *not* set when running cron jobs.
+# Use of environment variable $HOME does not seem to work on the rhs of this
+# variable definition, though it works in the commands themselves.
+# INV=$HOME/research/invariants
+site=laptop
+BPHOME=/homes/gws/mernst/bin/src/perl/bibtex2web/lib
+JAVA_HOME=/homes/gws/mernst/java/jdk
+JDKDIR=/homes/gws/mernst/java/jdk
+JAVA=/homes/gws/mernst/java/jdk/bin/java -ea
+INV=/homes/gws/mernst/research/invariants
+CRONIC=/homes/gws/mernst/bin/src/plume-scripts/cronic
+CLASSPATH=/homes/gws/mernst/bin/src/plume-lib/java/plume.jar:/homes/gws/mernst/java/jdk/jre/lib/rt.jar:/homes/gws/mernst/java/jdk/lib/tools.jar:/homes/gws/mernst/research/types/checker-framework/checkers/dist/checker.jar
+PLUMESCRIPTS=/homes/gws/mernst/bin/src/plume-scripts
+PERLLIB=/homes/gws/mernst/bin/src/plume-scripts
+MAILCOMMAND=/bin/mail
+EMAIL=mernst@cs.washington.edu
+EMAILPERSONAL=michael.ernst@gmail.com
+WWWLOCAL=http://homes.cs.washington.edu/~mernst
+checkers=/homes/gws/mernst/research/types/checker-framework/checkers
+# Default path: /usr/bin:/bin
+# `uname`-`uname -m` does not work, so hardcode Linux-i686
+PATH=.:/homes/gws/mernst/bin/Linux-i686:/homes/gws/mernst/bin/share:/homes/gws/mernst/bin/src/plume-scripts:/homes/gws/mernst/research/invariants/scripts:/homes/gws/mernst/java/jdk/bin:/uns/bin:/usr/bin:/bin
+###
+### Testing (every minute)
+###
+# * * * * *	touch $HOME/.crontab-ran
+###
+### Every minute
+###
+* * * * *	/bin/bash /path/to/batch/drop_caches.sh >> /var/log/syslog 2>&1
+###
+### Hourly
+###
+# 0 * * * *	$HOME/bin/share/mirror-repositories
+# 15 * * * *	$HOME/bin/share/mirror-repositories
+# 30 * * * *	$HOME/bin/share/mirror-repositories
+# 45 * * * *	$HOME/bin/share/mirror-repositories
+###
+### Daily
+###
+01 21 * * *	$AFS crontab $HOME/bin/share/crontab
+###
+### End
+###
+# Local Variables:
+# eval:  (auto-fill-mode 0)
+# time-stamp-start: "^# Last updated: "
+# time-stamp-end: "\\.?$"
+# time-stamp-format: "%:b %:d, %:y"
+# time-stamp-line-limit: 10
+# End:

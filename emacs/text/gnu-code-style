@@ -1,0 +1,43 @@
+From: Richard Stallman <rms@ai.mit.edu>
+Date: Tue, 5 Feb 91 20:06:19 -0500
+To: mernst@lcs.mit.edu
+In-Reply-To: (Michael Ernst's message of 5 Feb 91 21:36:59 GMT <MERNST.91Feb5133659@emu.lcs.mit.edu>
+Subject: Reposition-window (centering Lisp definitions)
+
+I'd like to use this, but cd you make certain changes?
+
+* All variables and functions in the package should have names
+starting with a common prefix (or at least containing a common word).
+This helps avoid name conflicts.
+
+I don't mind if your package has two or three alternative common words,
+if they make sense.
+
+This applies even to traditional Lisp primitives which are not primitives
+in Emacs Lisp--even `cadr'!  Believe it or not, there is more than one
+plausible way to define `cadr'.  Play it safe; append your name prefix
+to get a name like `foo-cadr' or `mylib-cadr' instead.
+
+* Internal subroutines should have comments rather than docstrings, in
+order to save space when the package is loaded.  Only people reading
+the source code will want to see this text anyway.
+
+* Each doc string's first line should be one or two complete sentences
+which stand on their own as a summary.  This means starting with a
+capital letter and end with a period.
+
+A doc string can have additional lines which expand on the details of
+how to use the function or variable.  The additional lines should be
+made up of complete sentences also, but they may be filled if that
+looks good.
+
+* When a doc string refers to a Lisp symbol, write it as it would be
+printed (which usually means in lower case), with single-quotes around
+it.  For example: `lambda'.  There are two exceptions: write t and nil
+without single-quotes.
+
+* When a doc string refers to the value of an argument of the current
+function, use a word in all caps.  Thus, DIVISOR is how the / function
+doc string refers to its second argument.  Also use all caps for meta-
+syntactic variables when you show the decomposition of a list or
+vector into components, some of which may be variable.

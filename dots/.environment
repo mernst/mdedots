@@ -1,0 +1,380 @@
+#!/bin/sh
+
+### Environment variables
+## This file should not contain anything besides environment variables,
+## because they are carried over to subshells but (say) aliases aren't.
+## Paths ($path or $PATH) are set in .profile .
+
+if [ -n "${dot_environment_file_read}" ] ; then
+  return
+else
+  export dot_environment_file_read=1
+fi
+
+
+###########################################################################
+### Non-site-specific
+###
+
+# if ($?DEBUGLOGIN) echo ".environment: non-site-specific"
+
+# This is now done in .bashrc.mine
+# # Use "English, U.S." locale
+# export LANGUAGE=en_US
+# export LC_ALL=en_US
+# # Necessary in Ubuntu
+# export LC_ALL=en_US.utf8
+# export LC_ALL=en_US.UTF-8
+
+# if (! $?LOGNAME) export LOGNAME=$USER
+
+export EMAIL=mernst@cs.washington.edu
+
+export EDITOR='emacsclient'
+export VISUAL='emacsclient'
+
+# export PNMDEVICE=pnmraw
+
+export GPG_TTY
+GPG_TTY=$(tty)
+
+# If POSIXLY_CORRECT is set, the patch program pays attention to the file
+# name ("Index:") in the patch.  However, POSIXLY_CORRECT has the effect of
+# changing the bash startup procedure, so that it reads not the .bashrc or
+# .bash_profile file, but only $ENV (which is not set for me), among other
+# changes.  I could try to fix this, but it's easier to just leave it
+# commented it.  If I want POSIX compliance, then maybe "set -o posix" is
+# better.
+# export POSIXLY_CORRECT=1
+
+## this must be set differently in bash and csh
+# This is causing trouble when \help isn't found.
+# export HELPPROG=`which \help`
+# export HELPPROG="$HOME"/bin/`uname`-`uname -m`/help
+
+
+# For ESC/Java; this is supposed to default to 10, but needs to be explicitly set.
+export PROVER_CC_LIMIT=10
+
+# For Git
+export GIT_PAGER=""
+export GIT_MERGE_AUTOEDIT=no
+
+# Per http://askubuntu.com/questions/227515/terminal-warning-when-opening-a-file-in-gedit
+export NO_AT_BRIDGE=1
+
+if [ -f /scratch/mernst ] ; then
+  export GRADLE_USER_HOME=/scratch/mernst/.gradle
+fi
+
+export RIPGREP_CONFIG_PATH="$HOME"/.ripgreprc
+
+# Needed by Emacs on WSL, apparently??  Maybe I need to rebuild Emacs with system's tree-sitter.
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/.local/lib
+
+
+###
+### Shell
+###
+
+# Ensure that aliases, etc. get set in subshells (important for Emacs)
+export BASH_ENV="$HOME"/.bashrc
+
+export CVS_RSH=ssh
+
+export HISTTIMEFORMAT="%T  "
+
+# For ruff, because I am usually working in Emacs terminal.
+export NOCOLOR=1
+
+
+###
+### Perl
+###
+
+# modification of "bp" Perl package for bibliography parsing/manipulation
+export BPHOME="$HOME"/bin/src/perl/bibtex2web/lib
+
+
+###
+### Java
+###
+
+# Avoid message "Picked up JAVA_TOOL_OPTIONS: -javaagent:/usr/share/java/jayatanaag.jar"
+unset JAVA_TOOL_OPTIONS
+
+# Commented out because this file should permit both sh and csh syntax.
+# if ($?DEBUGLOGIN) echo ".environment: java"
+
+# if ($?DEBUGLOGIN) echo ".environment: java (daikon)"
+## JAVA_HOME needs to be set on CSE, where JDK 8 is the default.
+## But let's not set it at Amazon.
+# Daikon
+if [ -n "$DEBUGLOGIN" ]; then echo ".environment: about to set JAVA_HOME"; fi
+if [ "$HOME" = "/home/ANT.AMAZON.COM/mdernst" ]; then
+  :
+elif [ -d "$HOME"/java/jdk ] ; then
+  export JAVA_HOME="$HOME"/java/jdk
+else
+  # `readlink -f` does not work on Mac OS.
+  # Alternatives include `realpath` and: perl -MCwd -e 'print Cwd::abs_path shift'
+  # Perl doesn't work here on CentOS 8, though that may be because the path isn't set yet??
+  export JAVA_HOME
+  JAVA_HOME="$(dirname "$(dirname "$(realpath "$(/usr/bin/which --skip-alias javac)")")")"
+fi
+export GRAALVM_HOME
+# TODO: This isn't working; GRAALVM_HOME is empty.  Why?
+# TODO: I should check that it really is GraalVM.
+GRAALVM_HOME="$JAVA_HOME"
+if [ -n "$DEBUGLOGIN" ]; then echo ".environment: JAVA_HOME=${JAVA_HOME}"; fi
+if [ -d "$HOME"/java/jtreg/lib ] ; then
+  export JTREG_HOME="$HOME"/java/jtreg
+elif [ -d "$HOME"/bin/install/jtreg ]; then
+  export JTREG_HOME="$HOME"/bin/install/jtreg
+elif [ -d /usr/share/jtreg ] ; then
+  export JTREG_HOME=/usr/share/jtreg
+fi
+
+if [ -d "$HOME"/java/jdk8 ] ; then
+  export JAVA8_HOME="$HOME"/java/jdk8
+fi
+if [ -d "$HOME"/java/jdk11 ] ; then
+  export JAVA11_HOME="$HOME"/java/jdk11
+fi
+if [ -d "$HOME"/java/jdk17 ] ; then
+  export JAVA17_HOME="$HOME"/java/jdk17
+fi
+if [ -d "$HOME"/java/jdk21 ] ; then
+  export JAVA21_HOME="$HOME"/java/jdk21
+fi
+if [ -d "$HOME"/java/jdk22 ] ; then
+  export JAVA22_HOME="$HOME"/java/jdk22
+fi
+if [ -d "$HOME"/java/jdk23 ] ; then
+  export JAVA23_HOME="$HOME"/java/jdk23
+fi
+
+if [ -d /usr/lib/android-sdk ]; then
+  export ANDROID_SDK_ROOT=/usr/lib/android-sdk
+fi
+
+
+###
+### Go
+###
+
+if [ -d "$HOME"/bin/install/go ]; then
+  export GOROOT="$HOME"/bin/install/go
+  export GOPATH="$HOME"/gocode
+fi
+
+
+###
+### TeX
+###
+
+# if ($?DEBUGLOGIN) echo ".environment: tex"
+
+# According to the tex man page:
+# In TEXINPUTS, an empty path component will be replaced with the paths
+# defined in the texmf.cnf file.  For example, set TEXINPUTS to
+# ".:/home/usr/tex:"  to prepend the current direcory and
+# ``/home/user/tex'' to the standard search path.
+
+## The "bib" directory that might not exist is causing fits for Emacs 23
+## BibTeX mode on Ubuntu, as of 12/11/2009.  So remove it.
+# export BIBINPUTS=.:"$HOME"/bib:..:bib:
+# export BIBINPUTS=.:"$HOME"/bib:..:
+export TEXINPUTS=.:"$HOME"/tex/sty:"$HOME"/tex:"$INSTALLDIR"/hevea-2.00:"$INSTALLDIR"/hevea-2.00/html:"$HOME"/tex/sty/latex-caption-code/tex:"$HOME"/tex/sty/hyperref/hyperref:..:
+
+
+###
+### C
+###
+
+# Use this to find memory errors; produces too much output to be
+# uniformly enabled.
+#  0 to ignore corruptions
+#  1 to print to stderr(3)
+#  2 to abort immediately
+# export MALLOC_CHECK_=1
+
+
+export BINTRAY_USER=mernst
+export BINTRAY_API_KEY=4f8445bd90c64ca1bb367f2210dc0c8969c16705
+
+
+###
+### Debian/Ubuntu packaging tools
+###
+
+export DEBFULLNAME="Michael Ernst"
+# export DEBEMAIL="mernst@cs.washington.edu"
+export DEBEMAIL="mernst@alum.mit.edu"
+export QUILT_PATCHES=debian/patches
+export QUILT_DIFF_ARGS="--no-timestamps --no-index -pab"
+export QUILT_REFRESH_ARGS="--no-timestamps --no-index -pab"
+export QUILT_PATCH_OPTS="--reject-format=unified"
+
+
+###########################################################################
+### Directories
+###
+
+# if ($?DEBUGLOGIN) echo ".environment: directories"
+
+export pag=/afs/csail/group/pag
+export PAG=$pag
+
+###
+### Directories -- teaching
+###
+
+# sdi stands for "Software Design and Implementation"
+export sdibase="$HOME"/class/331
+# export sdi10sp="$HOME"/class/331/10sp
+# export SDI10sp=$sdi10sp
+# export sdi10au="$HOME"/class/331/10au
+# export SDI10au=$sdi10au
+# export sdi11wi="$HOME"/class/331/11wi
+# export SDI11wi=$sdi11wi
+export sdi12sp="$HOME"/class/331/12sp
+# Customize just the next line; also update `ffap-semi-env-vars' in ~/emacs/dot-emacs.el
+export sdiq=18au
+export sdi="$sdibase/$sdiq"
+export SDI="$sdi"
+
+export sebase="$HOME"/class/403
+# Customize just the next line; also update `ffap-semi-env-vars' in ~/emacs/dot-emacs.el
+export seq=24au
+export se="$sebase/$seq"
+export sen="$sebase"/notes
+
+# gse stands for "graduate software engineering"
+export gsebase="$HOME"/class/503
+# Customize just the next line; also update `ffap-semi-env-vars' in ~/emacs/dot-emacs.el
+export gseq=25wi
+export gse="$gsebase/$gseq"
+export gsen="$gsebase"/notes
+export pab="$HOME"/class/503/program-analysis-book
+
+# pse stands for "PMP software engineering"
+export psebase="$HOME"/class/504p
+# Customize just the next line; also update `ffap-semi-env-vars' in ~/emacs/dot-emacs.el
+export pseq=24sp
+export pse="$psebase/$pseq"
+export psen="$psebase"/notes
+
+# export dpbase="$HOME"/class/190p
+# export dpq=12su
+export dpbase="$HOME"/class/160
+export dpb="$dpbase"
+export dpq=13wi
+export dp="$dpbase/$dpq"
+
+# My current teaching (must come after $sdi or $se or $gse is defined).
+# export s="$sdi"
+# export s="$se"
+export s="$gse"
+
+export sbook="$gsebase"/program-analysis-book
+
+###
+### Directories -- everything besides teaching
+###
+
+# Should not be necessary; just run from current directory.
+# export DAIKONDIR="$HOME"/research/invariants/daikon
+
+if [ -d /scratch/mernst/clones ]; then
+  export inv=/scratch/mernst/clones/invariants
+  export pl=/scratch/mernst/clones/plume-lib
+  export repair=/scratch/mernst/clones/repair
+  export t=/scratch/mernst/clones/types
+  export testing=/scratch/mernst/clones/testing
+  export versioncontrol=/scratch/mernst/clones/version-control
+  export vc=/scratch/mernst/clones/version-control
+  export nlp=/scratch/mernst/clones/nlp
+else
+  export inv="$HOME"/research/invariants
+  export pl="$HOME"/java/plume-lib
+  export repair="$HOME"/research/repair
+  export t="$HOME"/research/types
+  export testing="$HOME"/research/testing
+  export versioncontrol="$HOME"/research/version-control
+  export vc="$HOME"/research/version-control
+  export nlp="$HOME"/research/nlp
+fi
+
+export INV="$inv"
+export d="$inv"/daikon
+# export DAIKONCLASSPATH=$d/java:$d/java/lib/java-getopt.jar:$d/java/lib/plume.jar:$d/daikon.jar
+
+export test="$testing"
+export randoop="$testing"/randoop
+export r="$randoop"
+# Used in Randoop manual:
+# export RANDOOP_JAR=$randoop/build/libs/randoop-all-4.3.1.jar
+
+# For Defects4J
+export D4J_HOME="$test"/defects4j
+export DEFECTS4J_HOME="$test"/defects4j
+export d4j="${D4J_HOME}"
+# To use Defects4J:  export PATH=$PATH:"$d4j"/framework/bin
+
+export pu="$pl"/plume-util
+
+# Actually private-bib, but close enough
+# export PLUMEBIB="$HOME"/tex/plume-bib
+export PLUMEBIB="$HOME"/bib
+
+
+# Users are recommended to use ${HOME}/jsr308
+export JSR308="$t"
+## To run the Annotation File Utilities from the compiled sources, not .jar:
+## Also compile asmx with "ant -Dproduct.noshrink compile"
+export anno="$t"/annotation-tools
+
+export qn="$t"/notes
+
+export at="$t"/annotation-tools
+export afu="$at"/annotation-file-utilities
+if [ -z "$CHECKERFRAMEWORK" ]; then
+  export CHECKERFRAMEWORK="$t"/checker-framework
+fi
+export cf="$CHECKERFRAMEWORK"
+export cfi="$t"/checker-framework-inference
+# Note that this does NOT change if CHECKERFRAMEWORK changes.  It always uses $t/checker-framework/.
+export ch="$cf"/checker
+# Common typos
+export on="$qn"
+
+export gn="$HOME"/research/games/notes
+export VERIGAMES="$HOME"/research/games/verigames
+# export SCALA_HOME=/usr/share/java
+export VERIGAMES_ASP_HOME=''
+
+export swl=/projects/swlab1
+
+export gsoc="$HOME"/prof/grants/google-grants/gsoc
+
+export cl="$HOME"/clones
+
+export MERGE_EVAL_ROOT="$HOME"/research/version-control
+
+export kindle=/media/mernst/Kindle/documents/Downloads/Items01
+
+## Temporary
+
+
+
+###########################################################################
+### End of file
+###
+
+# if ($?debugpath) echo "path (very end of .environment): $path"
+
+
+# Local variables:
+# eval: (auto-fill-mode 0)
+# end:

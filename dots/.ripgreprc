@@ -1,0 +1,14 @@
+## I don't like this setting.
+# # Don't let ripgrep vomit really long lines to my terminal.
+# --max-columns=300
+
+# Search hidden files by default
+--hidden
+
+--smart-case
+
+# Force ripgrep to sort its output by file name. (This disables parallelism, so it might be slower.)
+--sort-files
+
+# Follow symbolic links while recursively searching
+--follow

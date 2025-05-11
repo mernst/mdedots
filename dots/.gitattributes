@@ -1,0 +1,6 @@
+# *.java merge=merge-java
+
+*.tex diff=tex
+*.java diff=java
+
+.emacs -binary

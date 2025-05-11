@@ -1,0 +1,26 @@
+#!/usr/bin/env perl
+# check-http-rewriting-all
+
+# check-http-rewriting URL1 URL2 ensures that URL1 rewrites to URL2
+
+my $goal = "http://homes.cs.washington.edu/~mernst/";
+for my $base ("people.csail.mit.edu/people/mernst",
+              "people.csail.mit.edu/~mernst",
+              "csail.mit.edu/~mernst",
+              "pag.csail.mit.edu/~mernst",
+              "www.pag.csail.mit.edu/~mernst",
+              "pag.lcs.mit.edu/~mernst") {
+  my $result;
+  $result = system("check-http-rewriting $base $goal");
+  if ($result) { next; }
+  $result = system("check-http-rewriting $base/ $goal");
+  if ($result) { next; }
+  $result = system("check-http-rewriting $base/index.html ${goal}index.html");
+  if ($result) { next; }
+  $result = system("check-http-rewriting $base/pubs ${goal}pubs/");
+  if ($result) { next; }
+  $result = system("check-http-rewriting $base/pubs/ ${goal}pubs/");
+  if ($result) { next; }
+  $result = system("check-http-rewriting $base/pubs/index.html ${goal}pubs/index.html");
+  if ($result) { next; }
+}

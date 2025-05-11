@@ -1,0 +1,96 @@
+#!/usr/bin/env perl
+
+# Converts a .html file created by Cyperchair into a set of ASCII reviews,
+# one per reviewer.
+
+use strict;
+use English;
+$WARNING = 1;
+
+use checkargs;
+use util_daikon;
+
+
+## Results for ISSTA 2006:
+## Notice that the average score is "B", which seems high!
+#
+# Signed: 14 reviews
+#   length: 3659
+#   score: 1.92
+# Unsigned: 398 reviews
+#   length: 5463
+#   score: 1.97
+
+
+###########################################################################
+### Compute statistics for each review
+###
+
+my %reviewerpapers = ();
+my %reviewertotallength = ();
+my %reviewertotalscore = ();
+
+my $signedlength = 0;
+my $signedscore = 0.0;
+my $signedcount = 0;
+my $unsignedlength = 0;
+my $unsignedscore = 0.0;
+my $unsignedcount = 0;
+
+my @bodyfiles = glob("*-*-body.txt");
+for my $bodyfile (@bodyfiles) {
+  my $basefile = $bodyfile;
+  $basefile =~ s/-body\.txt$//;
+  my $corevfile = "$basefile-coreviewer.txt";
+  my $headerfile = "$basefile-header.txt";
+  my $header = `cat $headerfile`;
+  if ($header !~ /^\|\|Reviewer_*\|(.*?)[_| ]*$/m) {
+    die "No reviewer in file $headerfile (contents appear below).\n$header\n";
+    }
+  my $reviewer = $1;
+  $reviewer =~ s/_/ /g;
+  my $coreviewer = `cat $corevfile`;
+  if ($coreviewer =~ /Not_filled_in/) {
+    $coreviewer = undef;
+    }
+  my $body = `cat $bodyfile`;
+
+  my $length = length($body);
+  # print "length of $bodyfile: $length\n";
+  $reviewerpapers{$reviewer}++;
+  $reviewertotallength{$reviewer} += $length;
+
+  if ($body !~ /Classification:_([A-D])_/) {
+    die "Didn't find classification in $bodyfile:\n$body\n";
+    }
+  my $score = ord($1) - ord('A');
+  if (($score < 0) || ($score > 3)) {
+    die "Bad score $score in $bodyfile:\n$body\n";
+    }
+
+  if (-e "$basefile-issigned.txt") {
+    $signedlength += $length;
+    $signedscore += $score;
+    $signedcount ++;
+    } else {
+    $unsignedlength += $length;
+    $unsignedscore += $score;
+    $unsignedcount ++;
+      }
+}
+
+for my $reviewer (keys %reviewerpapers) {
+  print "Reviewer: $reviewer\n";
+  print "papers: $reviewerpapers{$reviewer}\n";
+  print "length: $reviewertotallength{$reviewer}\n";
+  my $avglen = int($reviewertotallength{$reviewer}/$reviewerpapers{$reviewer});
+  print "avg length: $avglen\n";
+}
+
+print "Signed: $signedcount reviews\n";
+print "  length: " . int($signedlength/$signedcount) . "\n";
+print "  score: " . (int(100*$signedscore/$signedcount)/100) . "\n";
+print "Unsigned: $unsignedcount reviews\n";
+print "  length: " . int($unsignedlength/$unsignedcount) . "\n";
+print "  score: " . (int(100*$unsignedscore/$unsignedcount)/100) . "\n";
+

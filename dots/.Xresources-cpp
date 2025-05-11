@@ -1,0 +1,119 @@
+/*
+! .Xresources
+
+! After changing this, you must do something like   xrdb -load $HOME/.Xresources
+
+! Do not call this .Xdefaults, because sometimes applications read that
+! directly.  By default, xrdb pipes this through cpp, so you can use / * * /
+! comments, but # causes confusion (as it looks like a cpp directive).
+! (Sometimes xrdb did not appear to respect ! comments.)
+
+
+! The res_class is "XTerm".  The res_name is something like "xterm-rhodes".
+! If I use "xterm", then those others do not get modified by this.
+! The more specific overrides, so I could add a "xterm-rhodes" entry.
+*/
+/*
+! XTerm*font:	7x13
+*/
+XTerm*faceName: Inconsolata
+XTerm*faceSize: 10
+XTerm*autoWrap:	false
+XTerm*curses:	true
+XTerm*internalBorder:	6
+XTerm*jumpScroll:	true
+XTerm*loginShell:	true
+XTerm*pointerColor:	black
+XTerm*marginBell:	false
+XTerm*visualBell:	true
+XTerm*scrollKey:	true
+XTerm*reverseVideo:	off
+XTerm*background:	white
+XTerm*foreground:	black
+XTerm*saveLines:	1000
+XTerm*scrollBar:	true
+XTerm*ScrollBar:	true
+XTerm*scrollInput:	true
+XTerm*utmpInhibit:	false
+XTerm.MultiScroll: true
+xterm*selectToClipboard: true
+
+XLoad*font:	lucidasans-bold
+XLoad*geometry:	50x50
+/*
+! cannot be zero
+*/
+XLoad*paned*grip.width: 1
+XLoad*paned*grip.height: 1
+XLoad*foreground: blue
+XLoad*showGrip: false
+
+Emacs.FontBackend: xft
+#ifdef cse
+emacs.geometry:			101x88+0+0
+#else
+/*
+! This is good for my laptop's the external monitor, but probably won't
+! work for when using the laptop on its own.
+*/
+emacs.geometry:			101x60+0+0
+#endif
+/* 
+! Emacs*font:			9x15
+*/
+/*
+! Larger font for when my eyes were bad...
+! Emacs*font:			10x20
+! 7x13 and 8x13 are OK too (the latter a bit wide for cramming lots onto screen)
+!XEmacs complains if I use *geometry instead of .geometry
+! Right side:
+! Emacs.geometry:			101x49-87+0
+! left side:
+*/
+/*
+! Temporarily trying out ignoring the background color; will white make
+! some colors (such as "shadow") easier to see?
+! Emacs.background: linen
+*/
+Emacs.cursorColor:  blue
+Emacs.text-cursor*attributeBackground:	blue
+Emacs.pointer*attributeForeground: blue
+
+Scrollbar.JumpCursor:	True
+
+XDvi*font: 7x13
+XDvi*expert: true
+/*
+! This second "expert" line is needed for MPI-SWS
+! XDvi.expert: true
+*/
+XDvi*Margin: 1.5
+/*
+! XDvi.magnifierSize3:	600
+*/
+/* Location:  far right, slightly off the screen: */
+#ifdef cse
+/* Size 4 for CSE monitor */
+XDvi.shrinkFactor:	4
+XDvi*geometry:	1282x1548--40+0
+#endif
+#ifdef laptop
+/* Size 5 for home monitor */
+XDvi.shrinkFactor:	5
+XDvi*geometry:	950x1180--40+0
+#endif
+XDvi.background:                        white
+XDvi.borderColor:                       black
+XDvi.cursorColor:                       blue
+XDvi.foreground:                        black
+XDvi.highlight:                         black
+
+/*
+! A problem with this after-save-hook is that it blows away any existing
+! *compilation* buffer.  Let's hope this isn't too big an annoyance.
+! Local variables:
+! eval: (auto-fill-mode 0)
+! eval: (make-local-variable 'after-save-hook)
+! eval: (add-hook 'after-save-hook '(lambda () (save-window-excursion (let ((compilation-ask-about-save nil)) (compile "make")))))
+! End:
+*/

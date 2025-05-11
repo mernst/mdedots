@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Per https://stackoverflow.com/questions/69475310 , this reduces the
+# output of "git push".
+
+git push --dry-run "$@" && git push --quiet "$@"

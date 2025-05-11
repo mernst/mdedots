@@ -1,0 +1,22 @@
+Subject: Jikes patch: prevent SetUpComments from redoing work
+
+This patch prevents SetUpComments from redoing work;
+if comment_buffer is already set, the procedure has already been run.
+
+This patch is to Jikes 1.14.  You can apply it in the src/ directory.
+
+
+diff -u -b -r /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-dist/src/stream.h /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/stream.h
+--- /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-dist/src/stream.h	Sat Mar 31 00:02:39 2001
++++ /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/stream.h	Mon Jun  4 08:07:02 2001
+@@ -355,6 +356,8 @@
+ 
+     void SetUpComments()
+     {
++        if (comment_buffer)
++            return;
+         RereadInput();
+         //
+         // Calculate the length of the string required to save the comments.
+
+

@@ -1,0 +1,46 @@
+#!/bin/sh
+
+## Each of these commands is temporary.  It keeps dependent branches up to date.
+
+# shellcheck disable=SC2154 # var is defined
+# cd "$t" && \
+# git-push-to checker-framework-branch-master \
+#             checker-framework-fork-jyoo980-branch-yoo-optional-checker-latest && \
+# true
+
+# shellcheck disable=SC2154 # var is defined
+# cd "$t" && \
+# git-push-to annotation-tools-branch-master \
+#             annotation-tools-fork-mernst-branch-no-annotations-in-comments && \
+# git-push-to checker-framework-branch-master \
+#             checker-framework-fork-mernst-branch-asm-annos && \
+# true
+
+# shellcheck disable=SC2154 # var is defined
+# cd "$t/libraries" && \
+# git-push-to --nocompile \
+#             jdk-branch-master \
+#             jdk-fork-jyoo980-branch-yoo-optional-checker-latest && \
+# true
+
+## "agora-improved" is daikon-fork-JuanCarlosAlonsoValenzuela with some other branches pulled in.  Check its diffs before deleting it.
+# shellcheck disable=SC2154 # var is defined
+# cd "$inv" && \
+# git-push-to --nocompile \
+#             daikon-branch-master \
+#             daikon-fork-mernst-branch-agora-without-alwaysempty \
+#             daikon-fork-mernst-branch-agora-without-alwaysempty-2
+# git-push-to --nocompile \
+#             daikon-branch-master \
+#             daikon-fork-JuanCarlosAlonsoValenzuela \
+#             daikon-fork-mernst-branch-agora-improved
+# git-push-to --nocompile \
+#             daikon-branch-master \
+#             daikon-fork-mernst-branch-sampletester \
+#             daikon-fork-mernst-branch-agora-improved
+# git-push-to --nocompile \
+#             daikon-branch-master \
+#             daikon-fork-mernst-branch-sampletester \
+#             daikon-fork-mernst-branch-agora-without-alwaysempty \
+#             daikon-fork-mernst-branch-agora-without-alwaysempty-2 && \
+# true

@@ -1,0 +1,52 @@
+From: MAP@LCS.MIT.EDU (Michael A. Patton)
+Subject: self-help with emacs
+Date: 29 Sep 90 01:46:43 GMT
+
+To answer the question "How do I find the documentation for a
+function which c-h f prints out?" first type c-h k c-h f to find out
+what c-h f runs, you get:
+
+describe-function:
+Display the full documentation of FUNCTION (a symbol).
+
+That means that the code:
+	(describe-function 'some-function)
+will produce this info.  It pops up the help window just like c-h f
+(since it's what c-h f calls).  You could test this by typing:
+	m-ESC (describe-function 'describe-function)
+which produces the same output as above.
+
+If what you wanted was just to pop up a standard help window, that's
+all you need, but I'm assuming you want to get the string.  So now use
+tags on the emacs source (that's what the source is for :-) First load
+the tags table (note, the file name may differ on your system
+depending on where emacs is installed) by typing:
+	m-x visit-tag /src/site/emacs/src/
+
+Then we use those tags to find the actual function. Type:
+	m-. describe-function
+
+If m-. doesn't find the exact match you want (say, you got
+electric-describe-function), then c-u m-. (or m-0 m-. if you have a real
+META key) will find the next matching function.
+
+Anyway, we see that the main work is done by calling the function
+documentation.  Let's get help on that:
+	c-h f documentation
+
+documentation:
+Return the documentation string of FUNCTION.
+
+This seems to be what you want, just for completeness let's look at source
+for this:
+	m-. documentation
+
+Oh, wow!  We made it into the C code...  This code isn't too hard to
+guess at, but now you know what you wanted and a little bit more (and
+you wouldn't have had to wait the time it takes for a message to go
+out and a reply to come back :-).
+
+So for example, the code:
+	(documentation 'describe-function)
+will return the documentation for the function called by c-h f and now
+we have come full circle.

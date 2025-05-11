@@ -1,0 +1,69 @@
+Improve error messages
+
+This patch improves several error messages, most notably differentiating
+three that were previously identical (and insufficiently specific).
+
+2001-10-07  Michael Ernst  <mernst@alum.mit.edu>
+
+	* src/bytecode.cpp (EmitAssignmentExpression): Improve message.
+	* src/control.cpp (Serializable_type): Improve message.
+	* src/depend.cpp (OutputMake): Improve message.
+	* src/dump.cpp (Dump): Improve message.
+
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/bytecode.cpp ../jikes-1.15-patched/src/bytecode.cpp
+--- src/bytecode.cpp	Fri Sep 28 21:12:18 2001
++++ ../jikes-1.15-patched/src/bytecode.cpp	Sat Oct  6 23:59:36 2001
+@@ -3289,7 +3289,7 @@
+             }
+             else
+             {
+-                assert(false && "bad op_type in EmitAssignmentExpression");
++                assert(false && "unrecognized op_type in EmitAssignmentExpression");
+             }
+ 
+             //
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/control.cpp ../jikes-1.15-patched/src/control.cpp
+--- src/control.cpp	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/control.cpp	Sat Oct  6 23:59:36 2001
+@@ -418,7 +418,7 @@
+             {
+                 FILE *outfile = SystemFopen(option.dependence_report_name, "w");
+                 if (outfile == NULL)
+-                    Coutput << "*** Cannot open file " << option.dependence_report_name << endl;
++                    Coutput << "*** Cannot open dependence output file " << option.dependence_report_name << endl;
+                 else
+                 {
+                     SymbolSet types_in_new_files;
+@@ -1345,7 +1345,7 @@
+                 sem -> compilation_unit -> debug_unparse = true;
+                 Ast::debug_unparse = true;
+               }
+-            sem -> compilation_unit -> Unparse(*sem -> lex_stream,
++            sem -> compilation_unit -> Unparse(sem -> lex_stream,
+                                                "unparsed/");
+         }
+ #endif
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/depend.cpp ../jikes-1.15-patched/src/depend.cpp
+--- src/depend.cpp	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/depend.cpp	Sat Oct  6 23:59:36 2001
+@@ -370,7 +370,7 @@
+ 
+     FILE *outfile = SystemFopen(u_name, "w");
+     if (outfile == NULL)
+-        Coutput << "*** Cannot open file " << u_name << endl;
++        Coutput << "*** Cannot open output Makefile " << u_name << endl;
+     else
+     {
+         OutputMake(outfile, output_name, file_list);
+diff -u -r --exclude=*~ --exclude=*.o --exclude=jikes src/dump.cpp ../jikes-1.15-patched/src/dump.cpp
+--- src/dump.cpp	Fri Sep 28 21:12:19 2001
++++ ../jikes-1.15-patched/src/dump.cpp	Sat Oct  6 23:59:36 2001
+@@ -251,7 +251,7 @@
+ 
+     if ((tokfile = SystemFopen(tokfile_name, "w")) == NULL)
+     {
+-        Coutput << "*** Cannot open file " << tokfile_name << endl;
++        Coutput << "*** Cannot open LexStream dump output file " << tokfile_name << "\n";
+         return;
+     }
+ 

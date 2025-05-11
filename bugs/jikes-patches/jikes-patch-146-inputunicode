@@ -1,0 +1,29 @@
+
+Subject: Jikes patch: ProcessInputUnicode uses uninitialized variable
+
+This patch makes ProcessInputUnicode no longer use an uninitialized variable.
+
+This patch is to Jikes 1.14.  You can apply it in the src/ directory.
+
+
+--- /g2/users/mernst/research/invariants/dfej-src/jikes-oss/jikes/src/stream.cpp	Thu Jun  7 10:00:50 2001
++++ -	Fri Jul  6 10:13:43 2001
+@@ -1003,6 +1003,9 @@
+         UnicodeLexerState saved_state = START;
+         UnicodeLexerState state = START;
+         bool oncemore = false;
++        // If oncemore is true, ch is used as is; otherwise a new character
++        // is placed in it.
++        wchar_t ch = 0;
+ 
+         if (control.option.encoding)
+         {
+@@ -1036,8 +1039,6 @@
+                 input_tail = input_buffer + newsize - 1;
+                 input_ptr  = input_buffer + cursize;
+             }
+-            
+-            wchar_t ch;
+             
+             if (!oncemore)
+             {

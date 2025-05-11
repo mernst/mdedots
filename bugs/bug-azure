@@ -1,0 +1,41 @@
+===========================================================================
+
+Re-use of old, inaccurate results when commits on two branches have the same SHA hash
+
+When the same commit SHA appears on two branches, Azure Pipelines does not run CI twice as it should.  Azure Pipelines runs only once, and GitHub displays that result for both of the branches.  
+
+
+Re-reporting a previous run gives incorrect execution results, because a CI job depends not just on the commit SHA, but also on CI variables (branch name, whether it is a pull request, etc.).  Here are examples of the need for different behavior:
+ * There may be higher requirements for a commit or pull request to `master` than to other branches.
+ * Sometimes, two different repositories need to be updated together.  A CI job for branch `B` of repo1 would use branch `B` of repo2.
+
+
+Example 1:
+
+Consider this GitHub branch webpage:
+https://github.com/mernst/azure-reuses-results/branches
+Both the `master` and `branch2` branches are at commit bdfea1c.
+The `master` branch should pass tests, and the `branch2` branch should fail.
+If you click on the "x" next to "master", you get to 
+https://dev.azure.com/mernst22/azure-reuses-results/_build/results?buildId=3585&view=results
+which is a build for the `branch2` branch.
+Oddly,
+https://dev.azure.com/mernst22/azure-reuses-results/_build?definitionId=20&_a=summary
+shows that cI was run on commit bdfea1c for both the master and the branch2 branches, but the GitHub page links to the wrong run.
+
+Example 2:
+
+Consider this GitHub branch webpage:
+https://github.com/mernst/azure-reuses-results-repo1/branches
+It shows a successful Azure Pipelines result for both branches.  However, branch2's job should fail.  If you click into the green checkmark for branch2, you get to
+https://dev.azure.com/mernst22/azure-reuses-results/_build/results?buildId=3578&view=results
+which is a build for the master branch.
+You can see at
+https://dev.azure.com/mernst22/azure-reuses-results/_build?view=runs
+that the CI job was not run for `branch2` after commit 54d79235 was pushed to `branch2`.
+
+In case it is helpful:  I once observed the following behavior:  I pushed commits with the same SHA hash to master and branch2 simultaneously, and both of the CI jobs run, the job for branch2 fails as it should, and they are properly linked from the GitHub branch webpage.  Then, I pushed to master, waited for Azure Pipelines to complete, then push the commit to branch2; this time, the previous CI run for master was incorrectly re-used for branch2.
+
+I'm not sure whether this is a bug in GitHub, a bug in Azure Pipelines, or a bug in the integration between the two.  I'm reporting it to you because you are in the best situation to determine who is at fault and pursue a resolution.  Thanks for your help!
+
+===========================================================================

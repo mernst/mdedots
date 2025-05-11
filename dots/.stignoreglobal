@@ -1,0 +1,48 @@
+// .stignoreglobal
+
+// Put the following in each node's .stignore file:
+// #include .stglobalignore
+// or, just symlink the .stignore file to this one.
+// syncthing never synchronizes a file named .stignore .
+// (The master version of this file is in a Git repository.)
+
+
+// Incomplete Downloads
+// At least for now, these prevent Syncthing from transferring data that's
+// going to be thrown out anyway once the download is finished and the
+// file is renamed. Things may change when Syncthing gets smarter.
+//
+// Firefox downloads and other things
+*.part
+// Chrome and Chromium downloads
+*.crdownload
+
+// Temporary / Backup Files
+(?d)*~
+(?d).*.swp
+// Note that # lock files are not included here; we want them synchronized.
+
+// OS-generated files (OS X)
+(?d).DS_Store
+(?d).Spotlight-V100
+(?d).Trashes
+(?d)._*
+
+// OS-generated files (Windows)
+(?d)desktop.ini
+(?d)ehthumbs.db
+(?d)Thumbs.db
+
+// BTSync files
+.sync
+*.bts
+*.!Sync
+.SyncID
+.SyncIgnore
+.SyncArchive
+*.SyncPart
+*.SyncTemp
+*.SyncOld
+
+// Synology files
+@eaDir

@@ -1,0 +1,21 @@
+Subject: Control::Control failes to initialize Vector_type
+
+This patch eliminates errors that result from use of uninitialized
+Control::Vector_type.  (All is well if it happens to originally have value
+0, but error result otherwise.)
+
+This patch is to Jikes 1.14.  You can apply it in the src/ directory.
+
+
+diff -u -b -r /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/control.cpp.\~1\~ /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/control.cpp
+--- /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/control.cpp.~1~	Wed Jun 20 11:19:56 2001
++++ /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/control.cpp	Sun Jul  8 15:11:26 2001
+@@ -63,6 +63,7 @@
+                                                                  RuntimeException_type(NULL),
+                                                                  ClassNotFoundException_type(NULL),
+                                                                  Error_type(NULL),
++                                                                 Vector_type(NULL),
+                                                                  NoClassDefFoundError_type(NULL),
+                                                                  StringBuffer_type(NULL),
+ 
+

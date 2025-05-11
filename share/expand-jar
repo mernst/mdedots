@@ -1,0 +1,13 @@
+#! /bin/bash
+# Expand a .jar file into a directory.
+# If the .jar file is "foo.jar", the directory is "foo-jar".
+
+for jarfile in "$@"
+do
+    dir=${jarfile/.jar/-jar}
+    rm -rf "${dir}"
+    mkdir "${dir}"
+    cp -p "${jarfile}" "${dir}"
+    (cd "${dir}" && jar xf "$(basename "${jarfile}")")
+done
+

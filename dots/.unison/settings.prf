@@ -1,0 +1,59 @@
+## Default Unison profile
+## It names no paths, only sets configuration/defaults/settings.
+
+# Some regexps specifying names and paths to ignore
+# ignore = Name temp.*
+ignore = Name *~
+ignore = Name .*~
+# ignore = Path */pilot/backup/Archive_*
+ignore = Name *.o
+# ignore = Name *.tmp
+# Should really ignore any directory that contains a "CVS" subdirectory
+ignore = Name CVS
+# ignore = Name .unison
+ignore = Name #*#
+
+ignore = Name __MACOS
+ignore = Name .DS_Store
+ignore = Name ._.DS_Store
+
+# Window height
+height = 37
+
+# Keep a backup copy of the entire replica (takes lots of space!)
+# backup = Name *
+
+# Use this command for displaying diffs
+diff = diff -y -W 79 --suppress-common-lines
+
+# # Log actions to the terminal
+# log = true
+# Problem:  this is a relative pathname.
+logfile = .unison/unison.log
+
+# Programs that perform merging
+# merge2 = emacs -q --eval '(ediff-merge-files "CURRENT1" "CURRENT2" nil "NEW")' 
+# merge = emacs -q --eval '(ediff-merge-files-with-ancestor "CURRENT1" "CURRENT2" "OLD" nil "NEW")' 
+
+# Do not use this; it causes "no matching comp found: client zlib server none"
+# # Improve transfer speed when using ssh
+# rshargs = -C
+
+# Check only creation time, not full file contents, on Windows
+fastcheck = true
+
+# Propagate file modification times
+times = true
+## Commented out because the whole synchronization fails if the group or
+## user doesn't exist on both machines.
+# # Synchronize group and owner
+# group = true
+# owner = true
+
+# This does not seem to have any effect.
+ui = text
+
+## Doing this causes file permissions to be completely ignored.
+## I would prefer that file permissions are propagated: files that
+## Unison creates inherit permissions from their remote counterpart.
+# perms = 0

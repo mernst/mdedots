@@ -1,0 +1,102 @@
+#!/usr/bin/env perl
+use strict;
+use English;
+$WARNING = 1;
+
+use MIME::QuotedPrint;
+use MIME::Base64;
+
+my $fVerbose = 1;
+my $debug = 0;
+# $debug = 1;
+
+my $mode;
+my $filename;
+my $contentdescription;
+
+my $firstline = 1;
+
+while (<>) {
+  # This deals with a leading blank line.
+  next if (/^\s*$/ && $firstline);
+  $firstline = 0;
+
+  last if (/^\s*$/);		# used to also check " && defined($mode)"
+  if ((!defined($filename))
+      && (/(?:file)?name=([^;\n]*)(;|$)/i)) {
+    $filename = &simplify_filename($1);
+  }
+  if ((!defined($contentdescription))
+      && (/^Content-Description: (.*)$/i)) {
+    $contentdescription = &simplify_filename($1);
+  }
+  if ((/Content-Transfer-Encoding: (.*)$/i) || (/X-Sun-Encoding-Info: (.*)$/i)) {
+    my $encoding = $1;
+    if ($debug) {
+      print STDERR "encoding: $encoding\n";
+    }
+    if ($encoding =~ /quoted/i) {
+      $mode = "quoted";
+    } elsif ($encoding =~ /64/) {
+      $mode = "base64";
+    }
+  }
+  if ((/^Content-Type: text\/plain/) && !defined($mode)) {
+    $mode = "text/plain";
+  }
+}
+
+if (!defined($filename)) {
+  $filename = $contentdescription;
+}
+
+if ((!defined($filename)) && (!defined($mode))) {
+  die "No encoding or filename!";
+}
+
+# $/ = 0777;
+undef $/;
+my $text = <>;  # slurp whole file
+
+if (!defined($mode)) {
+  print STDERR "No encoding specified; using text/plain.\n";
+  $mode = "text/plain";
+} else {
+  print STDERR "Using $mode\n" if $fVerbose;
+}
+
+if (defined($filename)) {
+  if (-e $filename) {
+    print STDERR "File \"$filename\" already exists, not over-writing, using stdout instead.\n";
+    undef $filename;
+  }
+}
+
+if (defined($filename)) {
+  open(OUT,">$filename");
+  print STDERR "Outputting to \"$filename\".\n" if $fVerbose;
+} else {
+  open(OUT,">-");
+  print STDERR "Outputting to stdout.\n" if $fVerbose;
+}
+
+if ($mode eq "quoted") {
+  print OUT decode_qp($text);
+} elsif ($mode eq "base64") {
+  print OUT decode_base64($text);
+} elsif ($mode eq "text/plain") {
+  print OUT $text;
+} else {
+  die "Unrecognized mode $mode";
+}
+
+sub simplify_filename ( $ ) {
+  my ($fname) = @_;
+  $fname =~ s/;$//;
+  $fname =~ s/^\"//;
+  $fname =~ s/\"$//;
+  if ($fname eq "") {
+    undef($fname);
+  }
+  return $fname;
+}

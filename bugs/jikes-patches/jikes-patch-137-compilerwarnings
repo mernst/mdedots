@@ -1,0 +1,51 @@
+Subject: Jikes patch: eliminate "gcc -Wall" compiler warnings
+
+This patch eliminates some compiler warnings that occur when using
+"gcc -Wall" to compile Jikes.
+
+This patch is to Jikes 1.14.  You can apply it in the src/ directory.
+
+
+diff -u -b -r /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-dist/src/bytecode.cpp /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/bytecode.cpp
+--- /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-dist/src/bytecode.cpp	Mon May  7 02:33:59 2001
++++ /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/bytecode.cpp	Mon Jun  4 08:52:30 2001
+@@ -3182,6 +3182,10 @@
+                          assert(false && "bad op_type in EmitAssignmentExpression");
+                 }
+             }
++            else
++            {
++                assert(false && "unrecognized op_type in EmitAssignmentExpression");
++            }    
+ 
+             //
+             // convert value to desired type if necessary
+
+
+diff -u -b -r /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-dist/src/decl.cpp /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/decl.cpp
+--- /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-dist/src/decl.cpp	Wed Jan 10 11:49:44 2001
++++ /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/decl.cpp	Mon Jun  4 08:06:56 2001
+@@ -3742,7 +3753,7 @@
+         method = this_type -> Overload(method);
+     }
+ 
+-    int num_dimensions = (method_type == control.void_type
++    int num_dimensions = ((method_type == control.void_type)
+                                        ? 0
+                                        : (array_type ? array_type -> NumBrackets() : 0) + method_declarator -> NumBrackets());
+     if (num_dimensions == 0)
+
+
+diff -u -b -r /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-dist/src/getclass.cpp /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/getclass.cpp
+--- /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-dist/src/getclass.cpp	Wed Jan 10 11:49:45 2001
++++ /g2/users/mernst/research/invariants/dfej-src/jikes-1.14-mde/src/getclass.cpp	Mon Jun  4 08:58:40 2001
+@@ -299,7 +299,7 @@
+              type = control.void_type;
+              break;
+         default:
+-            assert(! "KNOW WHAT TO DO WITH SIGNATURE");
++            assert(false && "don't know what to do with signature");
+             break;
+     }
+ 
+

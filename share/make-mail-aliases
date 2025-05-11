@@ -1,0 +1,6 @@
+#! /bin/csh -f
+# not /bin/sh because csh understands "~mernst"
+
+\rm -f ~mernst/.mailrc.el
+~mernst/bin/share/make-mail-aliases.awk < ~mernst/private/addresses.tex > ~mernst/.mailrc.el
+# echo "Perform any desired touchups by hand."

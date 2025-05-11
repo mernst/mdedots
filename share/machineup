@@ -1,0 +1,11 @@
+#!/bin/csh -f
+# machineUp: redo commands in .xsession and myxloads that refer to the machine
+#    With second argument, just display the commands, don't execute them.
+
+if ($#argv > 1) then
+  grep $1 ~/.xsession
+  myxloads --show 48 45 0 0 100 300 | grep $1
+else
+  grep $1 ~/.xsession | csh -f -s
+  myxloads --show 48 45 0 0 100 300 | grep $1 | csh -f -s 
+endif
