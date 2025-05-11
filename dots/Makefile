@@ -2,13 +2,6 @@ all: .hunspell_en_US.sorted .enscriptrc .javadoc-index-files .jsr308-demos.prope
 	.gitconfig-extra-amazon .gitconfig-extra-uwcse \
 	.Xresources-cse .Xresources-laptop .Xresources-mac .Xresources-yogaubuntu
 
-# Explicitly mention some scripts that don't have a shebang line.
-STARTUP_SCRIPTS =
-SH_SCRIPTS = .aliases .environment .profile $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)bash' * | grep -v .git | grep -v "~" | grep -v addrfilter | grep -v mail-stackoverflow.sh)
-BASH_SCRIPTS = .bashrc .bash_profile $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)bash' * | grep -v .git | grep -v "~")
-shell-script-style:
-	shellcheck -x -P ${HOME}/dots --format=gcc ${SH_SCRIPTS} ${BASH_SCRIPTS}
-	checkbashisms ${SH_SCRIPTS}
 showvars:
 	@echo "SH_SCRIPTS=${SH_SCRIPTS}"
 	@echo "BASH_SCRIPTS=${BASH_SCRIPTS}"

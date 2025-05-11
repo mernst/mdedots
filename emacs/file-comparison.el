@@ -223,6 +223,12 @@ editing a diff buffer to remove uninteresting changes."
   (let ((diff-clean-removed-files '(".*/docs/api/.*")))
     (diff-clean)))
 
+(defun diff-clean-backup ()
+  "Remove backup files from a diff."
+  (interactive)
+  (let ((diff-clean-removed-files '(".*~$")))
+    (diff-clean)))
+
 (defun delete-non-matching-hunks (regexp)
   "Delete hunks that do not contain a match for the given regexp."
   (interactive)

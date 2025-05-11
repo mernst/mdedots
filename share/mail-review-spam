@@ -243,15 +243,17 @@ mail_search(
     '("Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR "mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR ("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR "guten tag" OR "spende")'
 )
 # Portuguese
-mail_search('("Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR reclamação OR eletrônica)')
+mail_search(
+    '("Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR reclamação OR eletrônica)'
+)
 # Spanish
 mail_search("mejor AND opción")
 # Russian
-mail_search('и')
+mail_search("и")
 # Polish
-mail_search('Proszę OR Słowa OR Dzień')
+mail_search("Proszę OR Słowa OR Dzień")
 # Italian
-mail_search('Fattura OR pagata')
+mail_search("Fattura OR pagata")
 
 # NOTE: Most of these aren't a problem because the email subject sorts at the end when I review the email in Emacs Mew.
 # mail_search("К")

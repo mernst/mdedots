@@ -1,8 +1,11 @@
-all: git-hooks
+all: style-check git-hooks
 	${MAKE} -C dots
-	${MAKE} -C share
 	# Emacs comes last to prevent masking other problems
 	${MAKE} -C emacs
+	${MAKE} style-check
+
+style-check: python-style-check shell-style-check
+style-fix: python-style-fix shell-style-fix
 
 .PHONY: git-hooks
 git-hooks: .git/hooks/pre-commit .git/hooks/post-merge
@@ -12,6 +15,26 @@ git-hooks: .git/hooks/pre-commit .git/hooks/post-merge
 	cp -pf $< $@
 
 PYTHON_FILES   = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/\|/usr/bin/env \)python'   * | grep -v /.git/ | grep -v '~$$' | grep -v '\.tar$$' | grep -v addrfilter | grep -v cronic-orig | grep -v gradlew | grep -v mail-stackoverflow.sh | grep -v '/old/' | grep -v 'emacs/')
-python-style:
+python-style-fix:
 	ruff format ${PYTHON_FILES}
 	ruff check ${PYTHON_FILES} --fix
+python-style-check:
+	ruff format --check ${PYTHON_FILES}
+	ruff check ${PYTHON_FILES}
+
+
+SH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)sh' * | grep -v /.git/ | grep -v '~$$' | grep -v addrfilter | grep -v mail-stackoverflow.sh | grep -v mew.texi | grep -v emacs/mew/ | grep -v conda-initialize.sh)
+BASH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)bash' * | grep -v /.git/ | grep -v '~$$' | grep -v emacs/mew/)
+
+shell-style-fix:
+	shfmt -w -i 2 -ci -bn ${SH_SCRIPTS} ${BASH_SCRIPTS}
+	shellcheck -x -P SCRIPTDIR --format=diff ${SH_SCRIPTS} ${BASH_SCRIPTS} | patch -p1
+
+shell-style-check:
+	shfmt -d -i 2 -ci -bn ${SH_SCRIPTS} ${BASH_SCRIPTS}
+	shellcheck -x -P SCRIPTDIR --format=gcc ${SH_SCRIPTS} ${BASH_SCRIPTS}
+	checkbashisms -l ${SH_SCRIPTS}
+
+showvars:
+	@echo "SH_SCRIPTS=${SH_SCRIPTS}"
+	@echo "BASH_SCRIPTS=${BASH_SCRIPTS}"

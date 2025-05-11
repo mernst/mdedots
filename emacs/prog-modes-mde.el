@@ -694,9 +694,6 @@ This is disabled on lines with a comment containing the string \"interned\"."
 	  (string-match-p "/plume-scripts" filename)
           (string-match-p "/prompt-mutation-experiments" filename)
           )
-
-
-
       t)
 
      ;; No formatting for all other projects
@@ -780,6 +777,8 @@ This is disabled on lines with a comment containing the string \"interned\"."
   (add-hook 'after-save-hook 'shell-script-validate nil 'local)
   )
 (add-hook 'sh-mode-hook 'mde-sh-mode-hook)
+
+(add-hook 'sh-mode-hook 'shfmt-on-save-mode)
 
 (defun shell-script-validate ()
   "Validate this shell script."
@@ -1059,7 +1058,7 @@ otherwise, raise an error after the first problem is encountered."
   ;; (add-hook 'write-contents-functions 'maybe-delete-trailing-whitespace)
   ;; (add-hook 'write-contents-functions 'pyflakes-this-file)
 
-  (if (enable-formatting-p)
+  (if (enable-python-formatting-p)
       (apheleia-mode +1))
 
   (setq indent-tabs-mode nil)

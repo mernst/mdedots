@@ -1,3 +1,5 @@
+default: compile-without-mew
+
 EMACS ?= emacs
 
 # EL_FILES does not include $(wildcard mew/*.el); use its own Makefile
@@ -5,8 +7,9 @@ EL_FILES = $(wildcard *.el)
 EL_FILES := $(filter-out vm-w3m.el, $(EL_FILES))
 ELC_FILES = $(patsubst %.el,%.elc,$(EL_FILES))
 
-.PHONY: compile
-compile: ${ELC_FILES}
+.PHONY: compile compile-without-mew
+compile-without-mew: ${ELC_FILES}
+compile: compile-without-mew
 	make -C mew
 
 %.elc: %.el
