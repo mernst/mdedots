@@ -197,7 +197,9 @@ if [ -n "$DEBUGLOGIN" ]; then
 fi
 
 # The next line updates PATH for the Google Cloud SDK.
+# shellcheck disable=SC1091
 if [ -f '/home/mernst/bin/install/google-cloud-sdk/path.bash.inc' ]; then . '/home/mernst/bin/install/google-cloud-sdk/path.bash.inc'; fi
 
 # The next line enables shell command completion for gcloud.
+# shellcheck disable=SC1091
 if [ -f '/home/mernst/bin/install/google-cloud-sdk/completion.bash.inc' ]; then . '/home/mernst/bin/install/google-cloud-sdk/completion.bash.inc'; fi
