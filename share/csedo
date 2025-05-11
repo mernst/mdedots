@@ -4,8 +4,8 @@
 
 SCRIPTPATH=$(dirname "$(readlink -f "$0")")
 
-grep -v '^ *#' <"$SCRIPTPATH/cse-machines" | while IFS= read -r host; do
+grep -v '^ *#' < "$SCRIPTPATH/cse-machines" | while IFS= read -r host; do
   echo "${host}:"
   # shellcheck disable=SC2029
-  ssh -X "$host" "$@" </dev/null
+  ssh -X "$host" "$@" < /dev/null
 done

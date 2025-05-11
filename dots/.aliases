@@ -129,7 +129,7 @@ uue() {
     echo "uue: pass one directory argument; received $*"
     return 1
   fi
-  command uuencode "$1" "$1" >"$".UUE
+  command uuencode "$1" "$1" > "$".UUE
 }
 alias whihc='which'
 
@@ -195,9 +195,9 @@ fi
 # psnup can read from standard input, but then it can't take an argument
 # for the output file; thus, use ">" file redirection.
 # These commands Works on .ps files, not on .pdf files
-acm2up() { command pstops "0(-125,-110)" "$@" | psnup -2 -W360 -H590 -pletter -m0.5in -b0.05in >"$(basename "$@" .ps)-2up.ps"; }
+acm2up() { command pstops "0(-125,-110)" "$@" | psnup -2 -W360 -H590 -pletter -m0.5in -b0.05in > "$(basename "$@" .ps)-2up.ps"; }
 # To make the print bigger on the final page, make the -W and -H arguments smaller.  To move the text logically downward toward the bottom of the page, make the last number in "0(-133,-97)" a larger negative number.
-lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m0.45in -b-0.15in >"$(basename "$@" .ps)-2up.ps"; }
+lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m0.45in -b-0.15in > "$(basename "$@" .ps)-2up.ps"; }
 
 # # Seems more robust than the real html2ps
 # # But, htmldoc is not installed at CSE, whereas html2ps is.
@@ -357,13 +357,13 @@ alias ens2h='ens2 -h'
 
 paps1f() {
   file="$1"
-  paps --font="Monospace 10" --paper letter "$@" >"$1".ps
+  paps --font="Monospace 10" --paper letter "$@" > "$1".ps
   ps2pdf "$1".ps "$1".pdf
 }
 paps1() { paps1f "$@"; }
 paps2f() {
   file="$1"
-  paps --cpi 18 --header --landscape --columns=2 --paper letter "$@" >"$1".ps
+  paps --cpi 18 --header --landscape --columns=2 --paper letter "$@" > "$1".ps
   ps2pdf "$1".ps "$1".pdf
 }
 paps2() { paps2f "$@"; }
@@ -408,7 +408,7 @@ pdfclean() {
 ### Java
 ###
 
-jstackf() { jstack "$1" >jstack-"$1".txt; }
+jstackf() { jstack "$1" > jstack-"$1".txt; }
 
 alias jikes='jikes -g +E +F'
 
@@ -661,14 +661,14 @@ alias rmgob='rm -rf $(git-orphaned-branches)'
 # Pretty-print a .json or .jsonl file.
 json_pp() {
   cp "$1" "$1".tmp \
-    && jq . "$1".tmp >"$1" \
+    && jq . "$1".tmp > "$1" \
     && rm "$1".tmp
 }
 alias jsonpp=json_pp
 # Compact a .json or .jsonl file.
 json_compact() {
   cp "$1" "$1".tmp \
-    && jq -c . "$1".tmp >"$1" \
+    && jq -c . "$1".tmp > "$1" \
     && rm "$1".tmp
 }
 alias jsoncompact=json_compact
