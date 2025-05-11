@@ -55,10 +55,10 @@ for dir in ~/bib ~/bin/src/mdedots ~/research/notes ~/wisdom; do
       ## Resolving deltas".  See https://stackoverflow.com/questions/69475310/ .
       ## TODO: Another problem is the possibility of git commands happening simultaneously.
       (
-        cd $dir && git status >/dev/null
+        cd $dir && git status > /dev/null
         (git diff --quiet --exit-code HEAD || git commit -q -a --allow-empty-message -m " ")
         git pull -q
-        (git log --branches --not --remotes --exit-code >/dev/null 2>&1 \
+        (git log --branches --not --remotes --exit-code > /dev/null 2>&1 \
           || (git push -q --dry-run && git push -q))
       )
 

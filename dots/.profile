@@ -91,8 +91,8 @@ fi
 # These export commands are necessary to avoid Perl warnings; daikon-dev.bashrc
 # uses perl.  Only set the locale if it is available.  (If it isn't available,
 # how do I avoid the perl warnings?)
-if command -v locale >/dev/null 2>&1; then
-  if locale -a | grep -q en_US.utf8 >/dev/null; then
+if command -v locale > /dev/null 2>&1; then
+  if locale -a | grep -q en_US.utf8 > /dev/null; then
     # export LANGUAGE=en_US.UTF-8
     # export LC_ALL=en_US.UTF-8
     export LANGUAGE=en_US.utf8
@@ -168,7 +168,7 @@ export PATH="$PATH:$HOME/.local/pipx/venvs/html5validator/bin"
 export PATH="$HOME/.local/bin:$PATH"
 export PATH=${HOME}/.venv/bin:${PATH}
 export PATH="$PATH:/root/.local/bin"
-if command -v register-python-argcomplete >/dev/null; then
+if command -v register-python-argcomplete > /dev/null; then
   eval "$(register-python-argcomplete pipx)"
 fi
 
@@ -271,9 +271,9 @@ if [ "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
 ### Processes
 ###
 
-if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' >/dev/null 2>&1); then
+if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' > /dev/null 2>&1); then
   # syncthing is not running
-  nohup syncthing >"$HOME"/tmp/syncthing.log 2>&1 &
+  nohup syncthing > "$HOME"/tmp/syncthing.log 2>&1 &
 fi
 
 # For Rust

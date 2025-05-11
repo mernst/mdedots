@@ -63,7 +63,7 @@ update_fork_with_hosting_and_userid() {
       echo "cd $parentdir/$localname-fork-$userid && $git_pull_command"
     fi
     # Doesn't use `git -C` because multiple git commands will be run in the directory.
-    ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin >/dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
+    ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
     if [ -n "$DEBUG" ]; then
       echo "sleeping"
       sleep 30
