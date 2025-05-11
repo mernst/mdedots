@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2181 # because of conda, see below
+# shellcheck disable=SC2154  # conda code snippet :-(
 
 # ~/.bashrc: anything desired for interactive command line:
 # command prompt, EDITOR variable, bash aliases.
@@ -11,7 +11,6 @@
 # Most customizations (e.g., to PATH) appear in ~/.profile .
 # Aliases appear in ~/.aliases .
 
-
 ###########################################################################
 ### Debugging
 ###
@@ -22,7 +21,6 @@ export DEBUGBASH=
 # export DEBUGBASH=true
 export DEBUGLOGIN=
 # export DEBUGLOGIN=true
-
 
 ###########################################################################
 ### Defaults
@@ -36,12 +34,12 @@ if [ -n "$DEBUGBASH" ]; then echo "Starting .bashrc"; fi
 # As of 2023-08-10, at CSE this changes the PATH (putting
 # /usr/lib/java/apache-maven-3.8.6/bin at its beginning, for example).
 if [ -f /etc/bashrc ]; then
-	. /etc/bashrc
-        unset PROMPT_COMMAND
+  # shellcheck disable=SC1091  # file does not exist on some file systems
+  . /etc/bashrc
+  unset PROMPT_COMMAND
 fi
 export INSTALLDIR=${HOME}/bin/install
 export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
-
 
 ###########################################################################
 ### Noninteractive shells
@@ -52,7 +50,7 @@ shopt -s expand_aliases
 if [ -d /cygdrive/c/ ]; then
   export DISPLAY=localhost:0
 elif [ -d /home/mernst/ ]; then
-  if grep -qE "(Microsoft|WSL)" /proc/version &> /dev/null ; then
+  if grep -qE "(Microsoft|WSL)" /proc/version &>/dev/null; then
     # Windows Subsystem for Linux
     export DISPLAY=:0
   fi
@@ -67,29 +65,31 @@ fi
 if [ -n "$DEBUGLOGIN" ]; then echo "Sourced .aliases"; fi
 
 if [ -n "$DEBUGLOGIN" ]; then echo "Sourcing .environment"; fi
-if ! [ "$dot_environment_file_read" ]; then   # avoid sourcing .environment twice
-    . "$HOME/.environment"
+if ! [ "$dot_environment_file_read" ]; then # avoid sourcing .environment twice
+  . "$HOME/.environment"
 fi
 if [ -n "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
 
-html2ps () { command htmldoc -f "$(basename "$@" .ps)" --webpage "$@" ; }
-html2pdf () { command htmldoc -f "$(basename "$@" .pdf)" --webpage "$@" ; }
+html2ps() { command htmldoc -f "$(basename "$@" .ps)" --webpage "$@"; }
+html2pdf() { command htmldoc -f "$(basename "$@" .pdf)" --webpage "$@"; }
 
 # added by travis gem
+# shellcheck disable=SC1091  # file does not exist on some file systems
 [ -f "$HOME/.travis/travis.sh" ] && source "$HOME/.travis/travis.sh"
 
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
+# shellcheck disable=SC1091  # file does not exist on some file systems
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" # This loads nvm
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
+# shellcheck disable=SC1091  # file does not exist on some file systems
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 
 if [ -n "$DEBUGBASH" ]; then
-    echo "In .bashrc: PATH = ${PATH}"
-    echo "End of .bashrc section \"noninteractive shells\"";
+  echo "In .bashrc: PATH = ${PATH}"
+  echo "End of .bashrc section \"noninteractive shells\""
 fi
-
 
 ###########################################################################
 ### Interactive shells
@@ -110,7 +110,7 @@ export PS1="\h \#% "
 # Supercedes the above.
 export HISTIGNORE="[   ]*:&:bg:fg"
 
-if [ -d /homes/gws/mernst ] ; then
+if [ -d /homes/gws/mernst ]; then
   export PRINTER=psc541
 fi
 
@@ -142,7 +142,6 @@ if [ -n "$DEBUGLOGIN" ]; then
   echo "End of .bashrc section \"interactive shells\"; \"extensions\" comes next"
 fi
 
-
 ###########################################################################
 ### Extensions
 ###
@@ -152,51 +151,55 @@ fi
 
 # For Rust
 if [ -f "$HOME/.cargo/env" ]; then
+  # shellcheck disable=SC1091  # file does not exist on some file systems
   . "$HOME/.cargo/env"
 fi
 
 # added by travis gem
+# shellcheck disable=SC1091  # file does not exist on some file systems
 [ -f "$HOME/.travis/travis.sh" ] && source "$HOME/.travis/travis.sh"
 
-PATH="/homes/gws/mernst/perl5/bin${PATH:+:${PATH}}"; export PATH;
-PERL5LIB="/homes/gws/mernst/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
-PERL_LOCAL_LIB_ROOT="/homes/gws/mernst/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
-PERL_MB_OPT="--install_base /homes/gws/mernst/perl5"; export PERL_MB_OPT;
-PERL_MM_OPT="INSTALL_BASE=/homes/gws/mernst/perl5"; export PERL_MM_OPT;
+PATH="/homes/gws/mernst/perl5/bin${PATH:+:${PATH}}"
+export PATH
+PERL5LIB="/homes/gws/mernst/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"
+export PERL5LIB
+PERL_LOCAL_LIB_ROOT="/homes/gws/mernst/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"
+export PERL_LOCAL_LIB_ROOT
+PERL_MB_OPT="--install_base /homes/gws/mernst/perl5"
+export PERL_MB_OPT
+PERL_MM_OPT="INSTALL_BASE=/homes/gws/mernst/perl5"
+export PERL_MM_OPT
 
 # `conda activate` won't run unless these lines appear in my .bashrc file --
 # even if the lines have already been run, say by running
 # `~/dots/conda-initialize.sh`.  However, running these lines for every shell
-# interferes with ssh-agent.  So, comment them out with `if false`.  To add
-# insult to injury, the check for these exact lines means that I have to disable
-# the shellcheck warning SC2181 throughout this file rather than just on the bad
-# line below, and that I need to change the hard-coded absolute filenames for
-# each file system I use.
-# I can change the `false` to `true` temporarily when using conda.
-# Or, just run the commands manually.
-if false; then
+# interferes with ssh-agent.  So, comment them out with a here-document.
+# When using conda, run ~/dots/conda-initialize.sh or run the commands manually.
+true <<ENDCONDA
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/mernst/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$('/home/mernst/miniconda3/bin/conda' 'shell.bash' 'hook' 2>/dev/null)"
 if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
+  eval "$__conda_setup"
 else
-    if [ -f "/home/mernst/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/mernst/miniconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/mernst/miniconda3/bin:$PATH"
-    fi
+  if [ -f "/home/mernst/miniconda3/etc/profile.d/conda.sh" ]; then
+    . "/home/mernst/miniconda3/etc/profile.d/conda.sh"
+  else
+    export PATH="/home/mernst/miniconda3/bin:$PATH"
+  fi
 fi
 unset __conda_setup
 # <<< conda initialize <<<
-fi
+ENDCONDA
 
 if [ -n "$DEBUGLOGIN" ]; then
   echo "Exiting .bashrc"
 fi
 
 # The next line updates PATH for the Google Cloud SDK.
+# shellcheck disable=SC1091
 if [ -f '/home/mernst/bin/install/google-cloud-sdk/path.bash.inc' ]; then . '/home/mernst/bin/install/google-cloud-sdk/path.bash.inc'; fi
 
 # The next line enables shell command completion for gcloud.
+# shellcheck disable=SC1091
 if [ -f '/home/mernst/bin/install/google-cloud-sdk/completion.bash.inc' ]; then . '/home/mernst/bin/install/google-cloud-sdk/completion.bash.inc'; fi

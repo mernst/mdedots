@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # .profile should be compatible with any /bin/sh, incuding bash, dash, and ksh.
 
 # ~/.profile: executed by the command interpreter for login shells.
@@ -7,7 +7,6 @@
 # Includes anything that should be available to graphical applications.
 # It is one-time setup.  .bashrc has per-shell-instance setup.
 # Do not source .bashrc from .profile (at least not unconditionally).
-
 
 # Paths are set in this file.
 # Classpath is no longer set (used to be set in .environment).
@@ -23,7 +22,6 @@
 
 if [ -n "$DEBUGBASH" ]; then echo "entering .profile"; fi
 
-
 ###########################################################################
 ### Variables
 ###
@@ -34,7 +32,6 @@ if [ -n "$DEBUGBASH" ]; then echo "entering .profile"; fi
 #  * Can prevent problems.  For example, CVS repositories should be
 #    group-writable.
 # umask u=rwx,g=rwx,o=rx
-
 
 # Don't make useless coredump files.  If you want a coredump,
 # say "ulimit -c unlimited" and then cause a segmentation fault.
@@ -49,13 +46,12 @@ shopt -s expand_aliases
 # # For example, false | true will be considered to have succeeded.
 # set -o pipefail
 
-if [ -f /etc/redhat-release ] ; then
-  if grep -q "CentOS Linux release 7" /etc/redhat-release ; then
+if [ -f /etc/redhat-release ]; then
+  if grep -q "CentOS Linux release 7" /etc/redhat-release; then
     CENTOS_VERSION=7
     export CENTOS_VERSION
   fi
 fi
-
 
 ###########################################################################
 ### Paths
@@ -88,15 +84,15 @@ if [ "$(uname)" = "Darwin" ]; then
   export PATH=/usr/local/bin:${PATH}
 fi
 
-if [ "$CENTOS_VERSION" = "7" ] ; then
+if [ "$CENTOS_VERSION" = "7" ]; then
   export PATH=${HOME}/bin/install/ActivePerl-5.28/bin:${PATH}
 fi
 
 # These export commands are necessary to avoid Perl warnings; daikon-dev.bashrc
 # uses perl.  Only set the locale if it is available.  (If it isn't available,
 # how do I avoid the perl warnings?)
-if command -v locale > /dev/null 2>&1; then
-  if locale -a | grep -q en_US.utf8 > /dev/null; then
+if command -v locale >/dev/null 2>&1; then
+  if locale -a | grep -q en_US.utf8 >/dev/null; then
     # export LANGUAGE=en_US.UTF-8
     # export LC_ALL=en_US.UTF-8
     export LANGUAGE=en_US.utf8
@@ -107,7 +103,7 @@ fi
 # Daikon
 if [ -f "$HOME/research/invariants/daikon/scripts/daikon-dev.bashrc" ]; then
   if [ -n "$DEBUGBASH" ]; then echo "about to source daikon-dev.bashrc: $HOME/research/invariants/daikon/scripts/daikon-dev.bashrc"; fi
-  # I don't know why, but 
+  # I don't know why, but
   #   -d "/afs/csail/group/pag/software"
   # returns true and
   #   -d "/afs/csail/group/pag/software/pkg"
@@ -135,7 +131,6 @@ fi
 # them), so features coordinated by environment variables are hard to turn
 # off without logging out and back in.
 
-
 export PATH=$HOME/research/types/annotation-tools/annotation-file-utilities/scripts:$PATH
 
 # Javarifier
@@ -153,7 +148,6 @@ export PATH=${INSTALLDIR}/epd-7.3-1-rh5-x86/bin:$PATH
 export PATH=${INSTALLDIR}/epd-7.3-1-rh5-x86_64/bin:$PATH
 
 export PATH=$PATH:/usr/local/go/bin
-
 
 export PATH=$HOME/class/331/CurrentQtr/staff/bin:$HOME/class/331/CurrentQtr/courseware:$HOME/class/331/CurrentQtr/courseware/common:${PATH}
 export PATH="${PATH}:$sdi/staff/bin:$sdi/courseware:$sdi/courseware/common"
@@ -174,7 +168,7 @@ export PATH="$PATH:$HOME/.local/pipx/venvs/html5validator/bin"
 export PATH="$HOME/.local/bin:$PATH"
 export PATH=${HOME}/.venv/bin:${PATH}
 export PATH="$PATH:/root/.local/bin"
-if command -v register-python-argcomplete > /dev/null ; then
+if command -v register-python-argcomplete >/dev/null; then
   eval "$(register-python-argcomplete pipx)"
 fi
 
@@ -223,13 +217,12 @@ else
   BINUNAMEM=$HOME/bin/$(uname)-$(uname -m)
   export PATH=${BINUNAMEM}:$PATH
 fi
-if [ -n "$CENTOS_VERSION" ] ; then
+if [ -n "$CENTOS_VERSION" ]; then
   BINCENTOS=$HOME/bin/$(uname)-$(uname -m)-CentOS${CENTOS_VERSION}
   export PATH=${BINCENTOS}:$PATH
 fi
 if [ "$DEBUGLOGIN" ]; then echo "system-specific path: $PATH"; fi
 export PATH=$HOME/bin/share:$HOME/bin/src/run-google-java-format:$HOME/bin/src/checklink:$HOME/bin/src/html-tools:$HOME/bin/src/git-scripts:$HOME/bin/src/manage-git-branches:$HOME/bin/src/plume-scripts:$HOME/java/plume-lib/merging/src/main/sh:${PATH}:.
-
 
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/gc-7.1-install/lib
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/old-lib
@@ -237,14 +230,15 @@ export PATH=$HOME/bin/share:$HOME/bin/src/run-google-java-format:$HOME/bin/src/c
 # # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/lib64
 export LD_LIBRARY_PATH=${HOME}/.local/lib/:${LD_LIBRARY_PATH}
 
-
-
 ###########################################################################
 ### Clean up the path
 ###
 
 if [ -f "$HOME/bin/src/plume-scripts/path-remove" ]; then
-  if [ "$DEBUGLOGIN" ]; then echo "about to call path-remove: $PATH"; command -v perl; fi
+  if [ "$DEBUGLOGIN" ]; then
+    echo "about to call path-remove: $PATH"
+    command -v perl
+  fi
   TRIMMED_PATH=$(echo "$PATH" | "$HOME/bin/src/plume-scripts/path-remove")
   if [ "$DEBUGLOGIN" ]; then echo "called path-remove: \"$TRIMMED_PATH\""; fi
   if [ -n "$TRIMMED_PATH" ]; then
@@ -259,7 +253,6 @@ if [ "$DEBUGLOGIN" ]; then command -v javac; fi
 
 # LD_LIBRARY_PATH is set in ~/.environment .
 
-
 ###########################################################################
 ### Environment and functions
 ###
@@ -267,29 +260,29 @@ if [ "$DEBUGLOGIN" ]; then command -v javac; fi
 ### Shell-independent customizations
 
 if [ "$DEBUGLOGIN" ]; then echo "Sourcing .environment"; fi
-if ! [ "$dot_environment_file_read" ]; then   # avoid sourcing .environment twice
+if ! [ "$dot_environment_file_read" ]; then # avoid sourcing .environment twice
   . "$(dirname "${BASH_SOURCE[0]}")/.environment"
 fi
 if [ "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
 
-
 # Site-specific environment varibales (such as PRINTER) are in .bashrc.
-
 
 ###########################################################################
 ### Processes
 ###
 
-if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' > /dev/null 2>&1); then
+if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' >/dev/null 2>&1); then
   # syncthing is not running
-  nohup syncthing > $HOME/tmp/syncthing.log 2>&1 &
+  nohup syncthing >"$HOME"/tmp/syncthing.log 2>&1 &
 fi
 
 # For Rust
 if [ -f "$HOME/.cargo/env" ]; then
+  # shellcheck disable=SC1091  # file does not exist on some file systems
   . "$HOME/.cargo/env"
 fi
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="/home/mernst/.sdkman"
+# shellcheck disable=SC1091  # file does not exist on some file systems
 [ -s "/home/mernst/.sdkman/bin/sdkman-init.sh" ] && . "/home/mernst/.sdkman/bin/sdkman-init.sh"

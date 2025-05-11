@@ -5,12 +5,11 @@
 ## because they are carried over to subshells but (say) aliases aren't.
 ## Paths ($path or $PATH) are set in .profile .
 
-if [ -n "${dot_environment_file_read}" ] ; then
+if [ -n "${dot_environment_file_read}" ]; then
   return
 else
   export dot_environment_file_read=1
 fi
-
 
 ###########################################################################
 ### Non-site-specific
@@ -52,7 +51,6 @@ GPG_TTY=$(tty)
 # export HELPPROG=`which \help`
 # export HELPPROG="$HOME"/bin/`uname`-`uname -m`/help
 
-
 # For ESC/Java; this is supposed to default to 10, but needs to be explicitly set.
 export PROVER_CC_LIMIT=10
 
@@ -63,15 +61,14 @@ export GIT_MERGE_AUTOEDIT=no
 # Per http://askubuntu.com/questions/227515/terminal-warning-when-opening-a-file-in-gedit
 export NO_AT_BRIDGE=1
 
-if [ -f /scratch/mernst ] ; then
+if [ -f /scratch/mernst ]; then
   export GRADLE_USER_HOME=/scratch/mernst/.gradle
 fi
 
 export RIPGREP_CONFIG_PATH="$HOME"/.ripgreprc
 
 # Needed by Emacs on WSL, apparently??  Maybe I need to rebuild Emacs with system's tree-sitter.
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/.local/lib
-
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}":"${HOME}"/.local/lib
 
 ###
 ### Shell
@@ -87,14 +84,12 @@ export HISTTIMEFORMAT="%T  "
 # For ruff, because I am usually working in Emacs terminal.
 export NOCOLOR=1
 
-
 ###
 ### Perl
 ###
 
 # modification of "bp" Perl package for bibliography parsing/manipulation
 export BPHOME="$HOME"/bin/src/perl/bibtex2web/lib
-
 
 ###
 ### Java
@@ -113,7 +108,7 @@ unset JAVA_TOOL_OPTIONS
 if [ -n "$DEBUGLOGIN" ]; then echo ".environment: about to set JAVA_HOME"; fi
 if [ "$HOME" = "/home/ANT.AMAZON.COM/mdernst" ]; then
   :
-elif [ -d "$HOME"/java/jdk ] ; then
+elif [ -d "$HOME"/java/jdk ]; then
   export JAVA_HOME="$HOME"/java/jdk
 else
   # `readlink -f` does not work on Mac OS.
@@ -127,37 +122,36 @@ export GRAALVM_HOME
 # TODO: I should check that it really is GraalVM.
 GRAALVM_HOME="$JAVA_HOME"
 if [ -n "$DEBUGLOGIN" ]; then echo ".environment: JAVA_HOME=${JAVA_HOME}"; fi
-if [ -d "$HOME"/java/jtreg/lib ] ; then
+if [ -d "$HOME"/java/jtreg/lib ]; then
   export JTREG_HOME="$HOME"/java/jtreg
 elif [ -d "$HOME"/bin/install/jtreg ]; then
   export JTREG_HOME="$HOME"/bin/install/jtreg
-elif [ -d /usr/share/jtreg ] ; then
+elif [ -d /usr/share/jtreg ]; then
   export JTREG_HOME=/usr/share/jtreg
 fi
 
-if [ -d "$HOME"/java/jdk8 ] ; then
+if [ -d "$HOME"/java/jdk8 ]; then
   export JAVA8_HOME="$HOME"/java/jdk8
 fi
-if [ -d "$HOME"/java/jdk11 ] ; then
+if [ -d "$HOME"/java/jdk11 ]; then
   export JAVA11_HOME="$HOME"/java/jdk11
 fi
-if [ -d "$HOME"/java/jdk17 ] ; then
+if [ -d "$HOME"/java/jdk17 ]; then
   export JAVA17_HOME="$HOME"/java/jdk17
 fi
-if [ -d "$HOME"/java/jdk21 ] ; then
+if [ -d "$HOME"/java/jdk21 ]; then
   export JAVA21_HOME="$HOME"/java/jdk21
 fi
-if [ -d "$HOME"/java/jdk22 ] ; then
+if [ -d "$HOME"/java/jdk22 ]; then
   export JAVA22_HOME="$HOME"/java/jdk22
 fi
-if [ -d "$HOME"/java/jdk23 ] ; then
+if [ -d "$HOME"/java/jdk23 ]; then
   export JAVA23_HOME="$HOME"/java/jdk23
 fi
 
 if [ -d /usr/lib/android-sdk ]; then
   export ANDROID_SDK_ROOT=/usr/lib/android-sdk
 fi
-
 
 ###
 ### Go
@@ -167,7 +161,6 @@ if [ -d "$HOME"/bin/install/go ]; then
   export GOROOT="$HOME"/bin/install/go
   export GOPATH="$HOME"/gocode
 fi
-
 
 ###
 ### TeX
@@ -187,7 +180,6 @@ fi
 # export BIBINPUTS=.:"$HOME"/bib:..:
 export TEXINPUTS=.:"$HOME"/tex/sty:"$HOME"/tex:"$INSTALLDIR"/hevea-2.00:"$INSTALLDIR"/hevea-2.00/html:"$HOME"/tex/sty/latex-caption-code/tex:"$HOME"/tex/sty/hyperref/hyperref:..:
 
-
 ###
 ### C
 ###
@@ -199,10 +191,8 @@ export TEXINPUTS=.:"$HOME"/tex/sty:"$HOME"/tex:"$INSTALLDIR"/hevea-2.00:"$INSTAL
 #  2 to abort immediately
 # export MALLOC_CHECK_=1
 
-
 export BINTRAY_USER=mernst
 export BINTRAY_API_KEY=4f8445bd90c64ca1bb367f2210dc0c8969c16705
-
 
 ###
 ### Debian/Ubuntu packaging tools
@@ -215,7 +205,6 @@ export QUILT_PATCHES=debian/patches
 export QUILT_DIFF_ARGS="--no-timestamps --no-index -pab"
 export QUILT_REFRESH_ARGS="--no-timestamps --no-index -pab"
 export QUILT_PATCH_OPTS="--reject-format=unified"
-
 
 ###########################################################################
 ### Directories
@@ -328,7 +317,6 @@ export pu="$pl"/plume-util
 # export PLUMEBIB="$HOME"/tex/plume-bib
 export PLUMEBIB="$HOME"/bib
 
-
 # Users are recommended to use ${HOME}/jsr308
 export JSR308="$t"
 ## To run the Annotation File Utilities from the compiled sources, not .jar:
@@ -366,14 +354,11 @@ export kindle=/media/mernst/Kindle/documents/Downloads/Items01
 
 ## Temporary
 
-
-
 ###########################################################################
 ### End of file
 ###
 
 # if ($?debugpath) echo "path (very end of .environment): $path"
-
 
 # Local variables:
 # eval: (auto-fill-mode 0)

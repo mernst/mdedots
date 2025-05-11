@@ -20,5 +20,4 @@ export SUBJECT="Calendar for $TODAY"
 # export MAILE=/usr/bin/mail -e
 export MAILE="$HOME/bin/src/plume-scripts/mail-e"
 
-
 ${COMMAND} 2>&1 | ${MAILE} -s "${SUBJECT}" mernst

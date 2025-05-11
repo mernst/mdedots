@@ -8,21 +8,20 @@
 # "umask 002" means files you make look like "rw-rw-r-".
 # umask 002
 
-
 export SHELL=${SHELL:-${BASH:-/bin/bash}}
 
-
 # Include .profile if it exists.  Sets environment variables and paths.
-if [ -f $HOME/.profile ]; then
-  source $HOME/.profile
+if [ -f "$HOME"/.profile ]; then
+  source "$HOME"/.profile
 fi
 
 # Include .bashrc if it exists.  Config for interactive command line.
-if [ -f $HOME/.bashrc ]; then
-  source $HOME/.bashrc
+if [ -f "$HOME"/.bashrc ]; then
+  source "$HOME"/.bashrc
 fi
 
 # For Rust
 if [ -f "$HOME/.cargo/env" ]; then
+  # shellcheck disable=SC1091  # file does not exist on some file systems
   source "$HOME/.cargo/env"
 fi

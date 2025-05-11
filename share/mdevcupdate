@@ -27,12 +27,11 @@ update_fork_kelloggm() {
 
 # Pull from $org/$repo into $parentdir/$repo-fork-mernst
 update_fork_from_rjust_bitbucket() {
-  if [ -n "$DEBUG" ] ; then
+  if [ -n "$DEBUG" ]; then
     echo "update_fork_from_rjust_bitbucket 1=$1 2=$2"
   fi
   update_fork_with_hosting_and_userid "rjust" "$1" "$2" "" bitbucket.org michaelernst
 }
-
 
 # userid relates to how the clone is named locally, not the username at the hosting service
 update_fork_with_hosting_and_userid() {
@@ -42,10 +41,10 @@ update_fork_with_hosting_and_userid() {
   localname="$4"
   hosting="$5"
   userid="$6"
-  if [ -z "$localname" ] ; then
+  if [ -z "$localname" ]; then
     localname="$repo"
   fi
-  if [ -n "$DEBUG" ] ; then
+  if [ -n "$DEBUG" ]; then
     echo "update_fork_with_hosting_and_userid org=$org repo=$repo parentdir=$parentdir localname=$localname hosting=$hosting userid=$userid"
   fi
   if [ -z "$parentdir" ] || [ -z "$userid" ]; then
@@ -58,14 +57,17 @@ update_fork_with_hosting_and_userid() {
     echo "6=$6"
     exit 2
   fi
-  if [ -d "$parentdir/$localname-fork-$userid" ] ; then
+  if [ -d "$parentdir/$localname-fork-$userid" ]; then
     git_pull_command="git pull -q --ff-only git@${hosting}:$org/$repo --tags"
-    if [ -n "$DEBUG" ] ; then
+    if [ -n "$DEBUG" ]; then
       echo "cd $parentdir/$localname-fork-$userid && $git_pull_command"
     fi
     # Doesn't use `git -C` because multiple git commands will be run in the directory.
-    ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
-    if [ -n "$DEBUG" ] ; then echo "sleeping"; sleep 30 ; fi
+    ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin >/dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
+    if [ -n "$DEBUG" ]; then
+      echo "sleeping"
+      sleep 30
+    fi
   fi
 }
 
@@ -170,7 +172,6 @@ update_fork apache logging-log4j2 /scratch/mernst/clones/types/libraries
 update_fork_typetools apache logging-log4j2 ~/research/types/libraries
 update_fork_typetools apache logging-log4j2 /scratch/mernst/clones/types/libraries
 
-
 update_fork eisopux javac-diagnostics-wrapper ~/research/types
 update_fork eisopux javac-diagnostics-wrapper /scratch/mernst/clones/types
 
@@ -207,9 +208,9 @@ update_fork jhipster prettier-java ~/java
 update_fork uber nullaway ~/java
 
 update_fork google error-prone ~/java
-if [ -d ~/java/error-prone-branch-gh-pages ] ; then
+if [ -d ~/java/error-prone-branch-gh-pages ]; then
   git -C ~/java/error-prone-branch-gh-pages pull -q --ff-only
-  if [ -d ~/java/error-prone-fork-mernst-branch-gh-pages ] ; then
+  if [ -d ~/java/error-prone-fork-mernst-branch-gh-pages ]; then
     (cd ~/java/error-prone-fork-mernst-branch-gh-pages && git pull -q --ff-only ~/java/error-prone-branch-gh-pages && git push)
   fi
 fi
@@ -224,7 +225,6 @@ update_fork SRI-CSL ETB2 ~/prof/grants
 update_fork benedikt-schesch AST-Merging-Evaluation ~/research/version-control
 update_fork benedikt-schesch AST-Merging-Evaluation /scratch/mernst/clones/version-control
 
-
 ### Special cases
 
 ## This doesn't work because mernst/stubparser is the name of my fork of javaparser/javaparser,
@@ -236,16 +236,15 @@ update_fork typetools commons-bcel ~/research/types/libraries
 ## The above commands handle that fact.
 # update_fork apache commons-bcel ~/java
 
-
 ## Weird: using `--tags` causes the pull to fail.
 # update_fork JetBrains kotlin ~/java
 ## So do it directly:
-if [ -d "~java/kotlin-fork-mernst" ] ; then
-  (cd ~/java/kotlin-fork-mernst && \
-  git pull -q --ff-only && \
-  git pull -q --ff-only "git@github.com:JetBrains/kotlin" && \
-  git push -q && \
-  git remote prune origin)
+if [ -d "~java/kotlin-fork-mernst" ]; then
+  (cd ~/java/kotlin-fork-mernst \
+    && git pull -q --ff-only \
+    && git pull -q --ff-only "git@github.com:JetBrains/kotlin" \
+    && git push -q \
+    && git remote prune origin)
 fi
 
 ### Update from a non-GitHub upstream
@@ -254,18 +253,18 @@ fi
 ## and it uses a https: rather than a git: URL.
 # update_fork asm asm ~/java
 ## So do it directly:
-if [ -d ~/java/asm-fork-mernst ] ; then
-  (cd ~/java/asm-fork-mernst && \
-  git pull -q --ff-only && \
-  git pull -q --ff-only https://gitlab.ow2.org/asm/asm.git --tags && \
-  git push -q && \
-  git remote prune origin)
+if [ -d ~/java/asm-fork-mernst ]; then
+  (cd ~/java/asm-fork-mernst \
+    && git pull -q --ff-only \
+    && git pull -q --ff-only https://gitlab.ow2.org/asm/asm.git --tags \
+    && git push -q \
+    && git remote prune origin)
 fi
 # shellcheck disable=SC2154 # $t should be defined.
-if [ -d "$t"/libraries/asm-fork-typetools ] ; then
-  (cd "$t"/libraries/asm-fork-typetools && \
-  git pull -q --ff-only && \
-  git pull -q --ff-only https://gitlab.ow2.org/asm/asm.git --tags && \
-  git push -q && \
-  git remote prune origin)
+if [ -d "$t"/libraries/asm-fork-typetools ]; then
+  (cd "$t"/libraries/asm-fork-typetools \
+    && git pull -q --ff-only \
+    && git pull -q --ff-only https://gitlab.ow2.org/asm/asm.git --tags \
+    && git push -q \
+    && git remote prune origin)
 fi

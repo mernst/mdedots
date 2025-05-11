@@ -7,11 +7,11 @@
 #  optional first argument "--show" means print commands, don't execute them
 
 show=0
-if [ "$1" = "--help" ] ; then
+if [ "$1" = "--help" ]; then
   show=1
   shift
 fi
-if [ "$1" = "--show" ] ; then
+if [ "$1" = "--show" ]; then
   show=1
   shift
 fi
@@ -28,9 +28,9 @@ initsx=$sx
 
 SCRIPTPATH=$(dirname "$(readlink -f "$0")")
 
-grep -v '^ *#' < "$SCRIPTPATH/cse-machines" | while IFS= read -r host ; do
+grep -v '^ *#' <"$SCRIPTPATH/cse-machines" | while IFS= read -r host; do
   cmd="ssh -X $host nice xload -geometry =${w}x${h}-${sx}-${sy} -jumpscroll 1"
-  if [ $show = "1" ] ; then
+  if [ $show = "1" ]; then
     echo "$cmd &"
   else
     $cmd &
@@ -39,7 +39,7 @@ grep -v '^ *#' < "$SCRIPTPATH/cse-machines" | while IFS= read -r host ; do
   fi
   sx=$((sx + w))
   sx=$((sx + 4))
-  if [ "$sx" -gt "$maxx" ] ; then
+  if [ "$sx" -gt "$maxx" ]; then
     sx=$initsx
     sy=$((sy + h))
     sy=$((sy + 4))
