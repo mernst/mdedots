@@ -91,8 +91,8 @@ fi
 # These export commands are necessary to avoid Perl warnings; daikon-dev.bashrc
 # uses perl.  Only set the locale if it is available.  (If it isn't available,
 # how do I avoid the perl warnings?)
-if command -v locale >/dev/null 2>&1; then
-  if locale -a | grep -q en_US.utf8 >/dev/null; then
+if command -v locale > /dev/null 2>&1; then
+  if locale -a | grep -q en_US.utf8 > /dev/null; then
     # export LANGUAGE=en_US.UTF-8
     # export LC_ALL=en_US.UTF-8
     export LANGUAGE=en_US.utf8
