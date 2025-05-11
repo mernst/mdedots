@@ -408,7 +408,7 @@ pdfclean() {
 ### Java
 ###
 
-jstackf() { jstack "$1" > jstack-"$1".txt; }
+jstackf() { jstack "$1" >jstack-"$1".txt; }
 
 alias jikes='jikes -g +E +F'
 
