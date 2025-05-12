@@ -711,6 +711,7 @@ bursty
 buzzsaw
 buzzsaws
 bytecode
+c2rust
 call's
 callee
 callee's
@@ -808,6 +809,7 @@ decompositions
 decrement
 decrementing
 decrypted
+definedness
 deliverables
 denotational
 dependences
@@ -834,6 +836,7 @@ disambiguated
 disambiguates
 disambiguating
 disassembler
+disjoining
 disjunct
 disjunction
 disjunctions
@@ -917,6 +920,7 @@ infeasible
 initializer
 initializers
 inline
+inlined
 inlining
 instantiation
 instantiations
@@ -1058,6 +1062,7 @@ prefill
 prepend
 prepends
 preprints
+preprocessed
 preprocessing
 preprocessor
 presenter's
