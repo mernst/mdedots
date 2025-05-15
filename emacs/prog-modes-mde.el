@@ -590,11 +590,11 @@ This is disabled on lines with a comment containing the string \"interned\"."
 
     (cond
 
-     ;; No formatting
-
      ;; Not visiting a file.
      ((not filename)
       nil)
+
+     ;; No formatting
 
      ;; The buffer contains Git merge conflict markers
      ((save-excursion
@@ -680,6 +680,10 @@ This is disabled on lines with a comment containing the string \"interned\"."
   (let ((filename (buffer-file-name)))
 
     (cond
+
+     ;; Not visiting a file.
+     ((not filename)
+      nil)
 
      ;; No formatting
 
