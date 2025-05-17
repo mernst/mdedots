@@ -53,6 +53,7 @@ ArrayList
 Artzi
 Arvind
 AspectJ
+AutoCloseable
 BCEL
 BDD
 BDDs
@@ -101,6 +102,7 @@ CSFV
 CSS
 CSight
 CVS
+CalledMethods
 CentOS
 CharSequence
 ChatGPT
@@ -127,6 +129,7 @@ Cousot's
 Covariant
 Coverity
 Craigslist
+CreatesMustCallFor
 Cygwin
 DAGs
 DARCS
@@ -176,6 +179,7 @@ EasyChair
 Eleftheria
 Elli
 Emina
+EnsuresCalledMethods
 Enthought
 Equifax
 Ernst's
@@ -193,6 +197,7 @@ Facebook
 FareStart
 Fausto
 Felleisen
+FileInputStream
 FindBugs
 Fjalar
 Fjalar's
@@ -268,6 +273,7 @@ IllegalArgumentException
 ImplicitFor
 IndexOrHigh
 IndexOutOfBoundsException
+InheritableMustCall
 Inozemtseva
 IntRange
 IntelliJ
@@ -400,6 +406,8 @@ MongoDB's
 Mudduluru
 Muslu
 Muslu's
+MustCall
+MustCallAlias
 Mylyn
 NDSEG
 NIMH
@@ -422,6 +430,7 @@ NoSQL
 NoSuchElementException
 NonNegative
 NonNull
+NotOwning
 Notkin
 Notkin's
 Notkinfest
@@ -479,6 +488,7 @@ Polyakov
 PostScript
 PostgreSQL
 PowerPoint
+PrintStream
 PyTorch
 QFS
 Qualcomm
@@ -488,6 +498,9 @@ RBCommons
 README
 REPL
 RESTful
+RLC
+RLFixer
+RLFixer's
 RPI
 Randoop
 Randoop's
@@ -578,6 +591,7 @@ Tellina
 Tellina's
 Texinfo
 TikTok
+TikZ
 Toradocu
 Toraducu
 Torlak
@@ -868,6 +882,7 @@ fMRI
 facto
 finalizer
 finalizer's
+finalizers
 finiteness
 finitization
 fixpoint
@@ -956,6 +971,7 @@ lexically
 lexicographically
 lhs
 lifecycle
+lifecycles
 linearizability
 linearizable
 linearization
@@ -1119,6 +1135,7 @@ reproducibility
 repurpose
 repurposed
 request's
+researchquestions
 resubmission
 reusability
 reverifying
@@ -1242,6 +1259,7 @@ unaliased
 unannotated
 unary
 unassignable
+unclosed
 uncompilable
 uncomputability
 undecidability
@@ -1299,21 +1317,3 @@ worklist
 workspace
 x86
 xml
-researchquestions
-finalizers
-MustCall
-NotOwning
-CreatesMustCallFor
-MustCallAlias
-CalledMethods
-EnsuresCalledMethods
-InheritableMustCall
-RLFixer's
-PrintStream
-AutoCloseable
-unclosed
-RLFixer
-RLC
-TikZ
-lifecycles
-FileInputStream
