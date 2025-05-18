@@ -27,7 +27,7 @@
   (require 'util-mde)                   ; for `save-buffer-if-modified', `replace-string-noninteractive', etc.
   (require 'mode-hooks-mde)
   (require 'dtrt-indent)
-)
+  )
 
 (autoload 'save-buffer-if-modified "util-mde"
   "Save buffer if it exists and is modified." t)
@@ -60,8 +60,32 @@ This is good for modes like Perl, where the parser can get confused."
 (setq compilation-scroll-output 'first-error)
 
 ;; Automatically format buffers when saving them.
-;; This doesn't work on my laptop; I cloned instead.
-;; (package-install 'apheleia)
+(use-package apheleia)
+;; For debugging:
+(setq apheleia-log-only-errors nil)
+(setq apheleia-log-debug-info t)
+(with-eval-after-load "apheleia"
+  (setf (alist-get 'python-mode apheleia-mode-alist)
+        'ruff)
+  ;; out of the box, apheleia uses the script name "google-java-format" which doesn't exist
+  (setf (alist-get 'google-java-format apheleia-formatters)
+        '("run-google-java-format.py" inplace))
+  ;; out of the box, apheleia doesn't format shell scripts
+  (setf (alist-get 'sh-mode apheleia-mode-alist)
+        'shfmt)
+  (setf (alist-get 'shfmt
+                   apheleia-formatters)
+        '("shfmt" "-filename" filepath "-ln"
+          (cl-case (bound-and-true-p sh-shell) (sh "posix") (t "bash"))
+          "-ci" "-bn" "-sr"
+          (when apheleia-formatters-respect-indent-level
+            (list "-i"
+                  (number-to-string
+                   (cond (indent-tabs-mode 0)
+                         ((boundp 'sh-basic-offset) sh-basic-offset) (t 4)))))
+          "-"))
+  )
+
 
 (setq-default indent-tabs-mode nil)
 
@@ -241,32 +265,25 @@ if point is not in a function."
    (require 'use-package)))
 
 ;; TODO: Why is all this at the top level?
-; (use-package projectile :defer t)
+                                        ; (use-package projectile :defer t)
 (use-package flycheck)
 (use-package yasnippet :config (yas-global-mode))
 (use-package lsp-mode :hook ((lsp-mode . lsp-enable-which-key-integration)))
-; (use-package hydra)
+                                        ; (use-package hydra)
 ;; (use-package company)
 (use-package lsp-ui)
 (use-package which-key :config (which-key-mode))
-; (use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
-; (use-package dap-java :ensure nil)
-; (use-package helm-lsp)
-; (use-package helm
-;  ;; :config (helm-mode)
-;  )
+                                        ; (use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
+                                        ; (use-package dap-java :ensure nil)
+                                        ; (use-package helm-lsp)
+                                        ; (use-package helm
+                                        ;  ;; :config (helm-mode)
+                                        ;  )
 (use-package lsp-treemacs)
 
 (use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
 (with-eval-after-load "lsp-mode"
   (define-key lsp-mode-map (kbd "C-c C-l") lsp-command-map))
-
-
-(use-package apheleia)
-;; For debugging:
-;; (setq apheleia-log-only-errors nil)
-;; (setq apheleia-log-debug-info t)
-
 
 
 ;; TODO: Add autoloads for functions that are defined in java-style.el.
@@ -668,13 +685,6 @@ This is disabled on lines with a comment containing the string \"interned\"."
      (t
       nil))))
 
-(with-eval-after-load "apheleia"
-  (setf (alist-get 'python-mode apheleia-mode-alist)
-        'ruff)
-  ;; out of the box, apheleia uses the script name "google-java-format" which doesn't exist
-  (setf (alist-get 'google-java-format apheleia-formatters)
-         '("run-google-java-format.py" inplace)))
-
 (defun enable-python-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
   (let ((filename (buffer-file-name)))
@@ -778,11 +788,17 @@ This is disabled on lines with a comment containing the string \"interned\"."
   "Michael Ernst's shell mode hook."
   (setq inleft-string "# ")
   (setq indent-tabs-mode nil)
+  (if (enable-shell-formatting-p)
+      (progn
+        ;; TODO: change for certain files (but I use 2 for my own projects).
+        (setq sh-basic-offset 2)
+        (apheleia-mode +1)))
   (add-hook 'after-save-hook 'shell-script-validate nil 'local)
   )
 (add-hook 'sh-mode-hook 'mde-sh-mode-hook)
 
-(add-hook 'sh-mode-hook 'shfmt-on-save-mode)
+;; Use apheleia-mode instead.
+;; (add-hook 'sh-mode-hook 'shfmt-on-save-mode)
 
 (defun shell-script-validate ()
   "Validate this shell script."
@@ -807,6 +823,36 @@ ARGS are args to pass it.  Buffer file name is provided as last arg."
 	  (pop-to-buffer "*validate*")
 	  (error "Invalid shell script")))))
 
+(defun enable-shell-formatting-p ()
+  "Returns true if the file matches a hard-coded list of directories."
+  (let ((filename (buffer-file-name)))
+
+    (cond
+
+     ;; Not visiting a file.
+     ((not filename)
+      nil)
+
+     ;; No formatting
+
+     ;; ...
+
+     ;; Perform formatting
+
+     ((or (string-match-p "/untangling-tools-benchmark" filename)
+	  (and (string-match-p "/AST-Merging-Evaluation" filename)
+	       (not (string-match-p "git-hires-merge" filename)))
+	  (string-match-p "/git-scripts" filename)
+          (string-match-p "/grt-testing" filename)
+	  (string-match-p "/plume-scripts" filename)
+	  (string-match-p "/html-tools" filename)
+          (string-match-p "/prompt-mutation-experiments" filename)
+          )
+      t)
+
+     ;; No formatting for all other projects
+     (t
+      nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Perl
@@ -1143,8 +1189,8 @@ otherwise, raise an error after the first problem is encountered."
 
 
 (defun pyflakes-this-file () (interactive)
-  (compile (format "pyflakes %s" (buffer-file-name)))
-  )
+       (compile (format "pyflakes %s" (buffer-file-name)))
+       )
 
 ;; (add-hook 'python-mode-hook (lambda () (pyflakes-mode t)))
 
@@ -1192,7 +1238,9 @@ otherwise, raise an error after the first problem is encountered."
             (progn
               (define-key lisp-mode-map "\C-hf" 'fi:clman)
               (define-key lisp-mode-map "\C-ha" 'fi:clman-apropos)))
-        (define-key lisp-mode-map "\C-cl" 'run-lisp))))
+        (define-key lisp-mode-map "\C-cl" 'run-lisp)))
+
+  )
 (add-hook 'lisp-mode-hook 'mde-lisp-mode-hook)
 
 (put 'with-open-file 'lisp-indent-function 1)
@@ -1249,6 +1297,10 @@ If the value is neither nil nor t, then the user is queried first.")
 (defun mde-emacs-lisp-mode-hook ()
   "Michael Ernst's Emacs Lisp mode hook."
   (run-hooks 'lisp-mode-hook)
+  (if (enable-elisp-formatting-p)
+      (apheleia-mode +1))
+  (apheleia-mode +1)
+
   (add-hook 'write-contents-functions 'maybe-checkdoc-current-buffer 'append) ; execute last
   )
 (add-hook 'emacs-lisp-mode-hook 'mde-emacs-lisp-mode-hook)
@@ -1289,9 +1341,39 @@ If the value is neither nil nor t, then the user is queried first.")
                     (setq result (cons (concat (car dirs) "/" file) result)))))
           (setq files (cdr files))))
       (setq dirs (cdr dirs)))
-  result))
+    result))
 ;; (orphaned-elc-files)
 
+
+(defun enable-elisp-formatting-p ()
+  "Returns true if the file matches a hard-coded list of directories."
+  (let ((filename (buffer-file-name)))
+
+    (cond
+
+     ;; Not visiting a file.
+     ((not filename)
+      nil)
+
+     ;; No formatting
+
+     ((or (string-match-p "/resources/projects-source/" filename)
+          )
+      nil)
+
+     ;; Perform formatting
+
+     ((or (string-match-p "/mdedots.*/emacs/" filename)
+          (string-match-p "/run-google-java-format" filename)
+          (string-match-p "/plume-lib" filename)
+          (string-match-p "mewmde\\.el$" filename)
+          (string-match-p "/nsf-grant-extras" filename)
+          )
+      t)
+
+     ;; No formatting for all other projects
+     (t
+      nil))))
 
 ;;; Experimentally commenting out, 2025-04-07.
 ;; ;; This is most important for systems where my quota is tight.
@@ -1399,8 +1481,8 @@ Output that matches this is swallowed by the filter.")
       (setq string (concat (substring string 0 (match-end 1))
                            (substring string (match-end 0)))))
   (if (string-match "\\(^\\|\n\\); Fast loading /projects/null/ai.IRIX/acl4.2/lib/code/loop.fasl.\n" string)
-    (setq string (concat (substring string 0 (match-end 1))
-                         (substring string (match-end 0)))))
+      (setq string (concat (substring string 0 (match-end 1))
+                           (substring string (match-end 0)))))
   ;; not concat, as string might contain "%".
   ;; (message "fi:output[2] = <<%s>>" string)
   string)
@@ -1480,7 +1562,7 @@ How does this differ from whatever is built in?"
            (save-excursion
              (beginning-of-defun)
              (if (looking-at "(defstruct")
-                  defstruct-comment-column
+                 defstruct-comment-column
                comment-column))))))
 
 
@@ -1674,11 +1756,11 @@ in this directory or some superdirectory."
 	    (file-readable-p "build.gradle.kts"))
         (make-local-variable 'compile-command)
         (let ((gradle-command (cond ((file-readable-p "gradlew")
-				  "./gradlew")
+				     "./gradlew")
 				    ((file-readable-p "gradle/gradlew")
-				  "./gradle/gradlew")
+				     "./gradle/gradlew")
 				    (t
-				"gradle"))))
+				     "gradle"))))
 	  ;; Not "build" because tests often take a long time to run.
           (setq compile-command
 		(concat gradle-command " " (gradle-task-for-buffer)))))
@@ -1710,7 +1792,7 @@ in this directory or some superdirectory."
 			      (file-in-super-directory
 			       "build.gradle.kts" default-directory)))
                (buildfile-dir (file-relative-name
-				(file-name-directory buildfile) default-directory))
+			       (file-name-directory buildfile) default-directory))
 	       (gradle-command
 		(if (file-readable-p (concat buildfile-dir "/gradlew"))
 		    "./gradlew"
@@ -1856,7 +1938,7 @@ Use as a hook, like so:
 	((and buffer-file-name
 	      (string-match
 	       "checker-framework-optional-demo/checker/src/main/java/org/checkerframework/checker/optional/"
-	      (file-truename buffer-file-name)))
+	       (file-truename buffer-file-name)))
          (make-local-variable 'compile-command)
          (setq compile-command "$cf/gradlew -p $cf compileJava"))
 	((and buffer-file-name
@@ -1918,7 +2000,7 @@ Use as a hook, like so:
 					 testname "Test"))))
 	((string-match "\\(^.*\\)/\\(?:checker\\|framework\\)/jtreg/" default-directory)
          (let ((cf-dir (file-relative-name (match-string 1 default-directory))))
-	     (setq compile-command (concat cf-dir "/gradlew -p " cf-dir " " "jtregTests"))))
+	   (setq compile-command (concat cf-dir "/gradlew -p " cf-dir " " "jtregTests"))))
 
 	;; Checker Framework manual
 	((string-match "\\(^.*/checker-framework\\(?:-fork.[^/]*\\|-branch[^/]*\\)?\\)/docs/manual/" default-directory)
@@ -1992,7 +2074,7 @@ Use as a hook, like so:
 ;;; TODO: Is this still necessary?
 (with-eval-after-load "compile"
   (setq compilation-error-regexp-alist
-         (delete 'maven compilation-error-regexp-alist)))
+        (delete 'maven compilation-error-regexp-alist)))
 ;; Disabled by default because the regexp is slow.  If I am using Maven, run:
 ;; (use-maven-compilation-error-regexp)
 (defun use-maven-compilation-error-regexp ()
@@ -2012,7 +2094,7 @@ Use as a hook, like so:
 	  ;; Build file '/home/mernst/class/331/18au/hw/build.gradle' line: 96
 	  '("Build file '\\(.*\\)' line: \\([0-9]+\\)$" 1 2)
 	  '("^  build file '\\([^']+\\)': \\([0-9]+\\): " 1 2) ;; column number is also available
- 
+          
 	  ;; For dmalloc's ra_info output
 	  '("^Line \\([0-9]+\\) of \"\\([^\"]*\\)\"" 2 1)
 	  ;; For linkchecker
@@ -2282,7 +2364,7 @@ If in Python mode, look for a buffer associated with a python process, etc."
                         (with-current-buffer pbuffer
                           (and
                            (memq major-mode '(comint-mode shell-mode inferior-lisp-mode
-                                             fi:inferior-common-lisp-mode))
+                                                          fi:inferior-common-lisp-mode))
                            (not (string-equal (buffer-name) "*Async Shell Command*")))))
                    (setq result pbuffer
                          processes nil)

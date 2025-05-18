@@ -194,7 +194,7 @@ editing a diff buffer to remove uninteresting changes."
     (save-excursion
       ;; Remove certain files
       (goto-char (point-min))
-      (while (re-search-forward "^[-+]import.*;$" nil t)
+      (while (re-search-forward "^[-+]\\(import.*;\\|from .* import .*\\)$" nil t)
 	(goto-char (match-beginning 0))
 	(kill-line))))
   (diff-clean))
