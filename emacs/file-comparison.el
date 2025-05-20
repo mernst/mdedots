@@ -61,7 +61,7 @@
 
 (defvar diff-clean-removed-files
   nil
-    "A list of regular expressions of filenames that should not be shown in diffs.
+  "A list of regular expressions of filenames that should not be shown in diffs.
 Each regexp must match the entire filename: add .* at the beginning and end as
 necessary.
 Do not use anchoring characters ^ and $.
@@ -92,7 +92,10 @@ editing a diff buffer to remove uninteresting changes."
     (save-excursion
 
       (goto-char (point-min))
-      (delete-matching-lines "^\\\\ No newline at end of file$")
+      ;; Don't use delete-matching-lines because it doesn't update diff headers, I think.
+      (while (search-forward "\n\\ No newline at end of file\n" nil t)
+        (forward-line -1)
+        (kill-line))
 
       ;; Remove certain files
       (goto-char (point-min))
@@ -199,35 +202,44 @@ editing a diff buffer to remove uninteresting changes."
 	(kill-line))))
   (diff-clean))
 
+(defun diff-clean-more (regex)
+  "Like `diff-clean', but ignores additional files as well.
+The regex must match the whole filename, but must not start with ^ nor end with $."
+  (let ((diff-clean-removed-files (cons regex diff-clean-removed-files)))
+    (diff-clean)))
+
+(defun diff-clean-only (regex)
+  "Like `diff-clean', but only does the specified files.
+The regex must match the whole filename, but must not start with ^ nor end with $."
+  (let ((diff-clean-removed-files (list regex)))
+    (diff-clean)))
+
 ;; This name may need to be changed, so that completing "diff-clean" is easier to do.
 (defun diff-clean-target ()
   "Like `diff-clean', but also ignores generated files."
   (interactive)
-  (let ((diff-clean-removed-files
-	 (append diff-clean-removed-files
-		 '(".*/target/.*"))))
-    (diff-clean)))
+  (diff-clean-more ".*/target/.*"))
 
 ;; This name may need to be changed, so that completing "diff-clean" is easier to do.
 (defun diff-clean-build ()
   "Like `diff-clean', but also ignores generated files."
   (interactive)
-  (let ((diff-clean-removed-files
-	 (append diff-clean-removed-files
-		 '(".*/build/.*"))))
-    (diff-clean)))
-
-(defun diff-clean-javadoc ()
-  "Remove Javadoc files from a diff."
-  (interactive)
-  (let ((diff-clean-removed-files '(".*/docs/api/.*")))
-    (diff-clean)))
+  (diff-clean-more ".*/build/.*"))
 
 (defun diff-clean-backup ()
   "Remove backup files from a diff."
   (interactive)
-  (let ((diff-clean-removed-files '(".*~$")))
-    (diff-clean)))
+  (diff-clean-more ".*~"))
+
+(defun diff-clean-javadoc ()
+  "Remove Javadoc files from a diff."
+  (interactive)
+  (diff-clean-more ".*/docs/api/.*"))
+
+(defun diff-clean-json ()
+  "Remove Javadoc files from a diff."
+  (interactive)
+  (diff-clean-more ".*\\.json"))
 
 (defun delete-non-matching-hunks (regexp)
   "Delete hunks that do not contain a match for the given regexp."
@@ -337,12 +349,12 @@ The mode-hook might blow away the match-data, in which case first run
 (defun merged-annotated-for (annotatedfor-arg-1 annotatedfor-arg-2)
   "Merge two @AnnotatedFor annotation arguments into one @AnnotatedFor annotation."
   (save-match-data
-  (let* ((args1 (parse-annotatedfor-argument annotatedfor-arg-1))
-	 (args2 (parse-annotatedfor-argument annotatedfor-arg-2))
-	 (args (sort (delete-dups (append args1 args2)))))
-    (concat "@AnnotatedFor({\""
-	    (mapconcat #'identity args "\", \"")
-	    "\"})\n"))))
+    (let* ((args1 (parse-annotatedfor-argument annotatedfor-arg-1))
+	   (args2 (parse-annotatedfor-argument annotatedfor-arg-2))
+	   (args (sort (delete-dups (append args1 args2)))))
+      (concat "@AnnotatedFor({\""
+	      (mapconcat #'identity args "\", \"")
+	      "\"})\n"))))
 ;; (merged-annotated-for "{\"signature\", \"nullness\" ,\"interning\"}" "{\"propkey\", \"signature\"")
 
 (defun parse-annotatedfor-argument (arg)
@@ -411,17 +423,17 @@ public\\1 @UsesObjectEquals class \\2
 " annotatedfor-arg-combined)))
 
 
-
+(put 'with-temp-buffer 'lisp-indent-function 1)
 
 (defun sorted-non-duplicate-lines (lines1 lines2)
   "Return a string consisting of the unique lines in the two input strings.
 In the result, the lines are sorted."
-    (with-temp-buffer "*sorted-non-duplicate-lines*"
-      (insert lines1)
-      (insert lines2)
-      (delete-duplicate-lines (point-min) (point-max))
-      (sort-lines nil (point-min) (point-max))
-      (buffer-string)))
+  (with-temp-buffer "*sorted-non-duplicate-lines*"
+    (insert lines1)
+    (insert lines2)
+    (delete-duplicate-lines (point-min) (point-max))
+    (sort-lines nil (point-min) (point-max))
+    (buffer-string)))
 ;; (sorted-non-duplicate-lines "a\nc\nd\n" "d\ne\nb\nd\n")
 
 

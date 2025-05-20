@@ -112,31 +112,31 @@
   (declare (indent 0))
   `(if (eq system-site 'cse)
        (progn ,@body)))
-(put 'cse 'lisp-indent-hook 0)
+(put 'cse 'lisp-indent-function 0)
 (defmacro uwplse (&rest body)
   "Execute BODY if running on uwplse.org."
   (declare (indent 0))
   `(if (eq system-site 'uwplse)
        (progn ,@body)))
-(put 'uwplse 'lisp-indent-hook 0)
+(put 'uwplse 'lisp-indent-function 0)
 (defmacro windows (&rest body)
   "Execute BODY if running on Windows PC."
   (declare (indent 0))
   `(if (eq system-site 'windows)
        (progn ,@body)))
-(put 'windows 'lisp-indent-hook 0)
+(put 'windows 'lisp-indent-function 0)
 (defmacro mac (&rest body)
   "Execute BODY if running on Mac OSX."
   (declare (indent 0))
   `(if (eq system-site 'mac)
        (progn ,@body)))
-(put 'mac 'lisp-indent-hook 0)
+(put 'mac 'lisp-indent-function 0)
 (defmacro csail (&rest body)
   "Execute BODY if running at MIT Computer Science & Artificial Intelligence Lab."
   (declare (indent 0))
   `(if (eq system-site 'csail)
        (progn ,@body)))
-(put 'csail 'lisp-indent-hook 0)
+(put 'csail 'lisp-indent-function 0)
 
 
 (with-eval-after-load "edebug"
@@ -382,11 +382,11 @@ Use Vera Sans if Inconsolata is not available."
    ;; ((font-exists-p "Monaspace Xenon") (set-frame-font "Monaspace Xenon 14" nil t))
    ;; This one is italic.
    ;; ((font-exists-p "Monaspace Radon") (set-frame-font "Monaspace Radon 14" nil t))
-))
+   ))
 
 (with-eval-after-load "faces"
   (cond ((font-exists-p "Inconsolata")
-          (set-face-attribute 'fixed-pitch nil :family "Inconsolata"))
+         (set-face-attribute 'fixed-pitch nil :family "Inconsolata"))
         ))
 
 ;; This is ugly
@@ -504,9 +504,9 @@ Use Vera Sans if Inconsolata is not available."
                               (re-search-backward "^\\([0-9]+\\) threads in my inbox" nil t)
                               (match-string 1)))
          (message-summary (concat 
-                                  " threads in my inbox (previously "
-                                  previous-messages
-                                  ")\n")))
+                           " threads in my inbox (previously "
+                           previous-messages
+                           ")\n")))
     message-summary))
 
 (defun timelog-mew-messages-summary ()
@@ -863,8 +863,8 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; Commonly visited files; use C-x r j CHAR to find them.
 ;; This is useful for files that you need to visit frequently,
 ;; but that you don't want to keep in buffers all the time.
-; (set-register ?a '(file . "~/private/addresses.tex"))
-; (set-register ?e '(file . "~/emacs"))
+;; (set-register ?a '(file . "~/private/addresses.tex"))
+;; (set-register ?e '(file . "~/emacs"))
 
 
 
@@ -951,15 +951,15 @@ After running this, run from the shell:  print-mail bulk." t)
       enable-local-eval t)
 ;; Some of these should already be done automatically by Emacs
 (mapc (function (lambda (sym) (put sym 'safe-local-variable 'stringp)))
-     '(inleft-string tex-main-file
-                     time-stamp-start time-stamp-end time-stamp-format
-                     Coding c-indentation-style))
+      '(inleft-string tex-main-file
+                      time-stamp-start time-stamp-end time-stamp-format
+                      Coding c-indentation-style))
 (mapc (function (lambda (sym) (put sym 'safe-local-variable 'integerp)))
-     '(time-stamp-count time-stamp-line-limit))
+      '(time-stamp-count time-stamp-line-limit))
 ;; Watch out; forms automatically added in ~/.emacs could override this.
 (setq safe-local-variable-values
-     (append safe-local-variable-values
-             '((auto-fill-function . nil))))
+      (append safe-local-variable-values
+              '((auto-fill-function . nil))))
 
 (setq version-control t)                ; turn on numeric backups
 (setq kept-new-versions 3)              ; default 2
@@ -1251,10 +1251,10 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (setq Info-auto-advance t)
 
 (setq browse-url-generic-program
-  (cond ((executable-find "google-chrome")
-         "google-chrome")
-        ((executable-find "chromium-browser")
-         "chromium-browser")))
+      (cond ((executable-find "google-chrome")
+             "google-chrome")
+            ((executable-find "chromium-browser")
+             "chromium-browser")))
 
 (setq browse-url-browser-function
       (cond ((or (eq window-system 'x)
