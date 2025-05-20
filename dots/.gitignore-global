@@ -41,3 +41,6 @@ gradle/verification-metadata.dryrun.xml
 
 # LibreOffice files?
 .~lock.*#
+
+# Rust
+.ruff_cache/
