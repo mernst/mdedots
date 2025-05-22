@@ -91,12 +91,6 @@ editing a diff buffer to remove uninteresting changes."
 
     (save-excursion
 
-      (goto-char (point-min))
-      ;; Don't use delete-matching-lines because it doesn't update diff headers, I think.
-      (while (search-forward "\n\\ No newline at end of file\n" nil t)
-        (forward-line -1)
-        (kill-line))
-
       ;; Remove certain files
       (goto-char (point-min))
       (let ((filename-regexp
@@ -204,13 +198,13 @@ editing a diff buffer to remove uninteresting changes."
 
 (defun diff-clean-more (regex)
   "Like `diff-clean', but ignores additional files as well.
-The regex must match the whole filename, but must not start with ^ nor end with $."
+The regex matches the whole filename. It must not start with ^ nor end with $."
   (let ((diff-clean-removed-files (cons regex diff-clean-removed-files)))
     (diff-clean)))
 
 (defun diff-clean-only (regex)
   "Like `diff-clean', but only does the specified files.
-The regex must match the whole filename, but must not start with ^ nor end with $."
+The regex matches the whole filename. It must not start with ^ nor end with $."
   (let ((diff-clean-removed-files (list regex)))
     (diff-clean)))
 
