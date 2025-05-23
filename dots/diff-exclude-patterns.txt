@@ -36,6 +36,7 @@ plume-bib
 *.iml
 
 # Python
+.mypy_cache
 .pytest_cache
 __pycache__
 

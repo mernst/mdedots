@@ -1047,6 +1047,9 @@ After running this, run from the shell:  print-mail bulk." t)
         ("/scratch/mernst/clones/types/" . "$t/")
         ("~/research/notes/version-control/" . "$vc/notes/")
         ("~/research/version-control/" . "$vc/")
+        ("~/java/plume-lib/" . "$pl/")
+        ("/scratch/mernst/clones/plume-lib/" . "$pl/")
+
         ("/scratch/mernst/clones/version-control/" . "$vc/")
         ("/afs/csail\\(.mit.edu\\)?/group/pag/" . "$pag/")
 

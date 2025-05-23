@@ -37,7 +37,7 @@ alias quotefind='lookup -f ${HOME}/private/quotes1 -f ${HOME}/private/quotes'
 # "patience diff" algorithm
 alias patdiff='git diff --no-index --patience'
 # Recursive diff
-alias diffr="diff -u -b -r --exclude=.bzr --exclude=CVS --exclude=.gradle --exclude=.hg --exclude=.hgtags --exclude=.git --exclude=.svn --exclude=api --exclude=build --exclude=checker-qual --exclude=checker-qual-android --exclude=javadoc --exclude=TAGS --exclude='*~' --exclude='*.class' --exclude='*.elc' --exclude='*.jar' --exclude='*.aux' --exclude='*.blg' --exclude='*.haux' --exclude='*.htoc' --exclude='*.image.tex' --exclude='*.toc' --exclude=.run-google-java-format"
+alias diffr="diff -u -b -r --exclude=.bzr --exclude=CVS --exclude=.gradle --exclude=.hg --exclude=.hgtags --exclude=.git --exclude=.svn --exclude=api --exclude=build --exclude=checker-qual --exclude=checker-qual-android --exclude=javadoc --exclude=TAGS --exclude='*~' --exclude='*.class' --exclude='*.elc' --exclude='*.jar' --exclude='*.aux' --exclude='*.blg' --exclude='*.haux' --exclude='*.htoc' --exclude='*.image.tex' --exclude='*.toc' --exclude=.run-google-java-format --exclude=.mypy_cache"
 
 alias ls='ls -bCFv'
 
