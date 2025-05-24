@@ -23,5 +23,5 @@ fi
 # For Rust
 if [ -f "$HOME/.cargo/env" ]; then
   # shellcheck disable=SC1091  # file does not exist on some file systems
-  source "$HOME/.cargo/env"
+  . "$HOME/.cargo/env"
 fi

@@ -356,7 +356,7 @@ Intended to run after `visual-line-mode' runs."
       (goto-char (point-min))
       (insert "\"")
       (replace-string-noninteractive "\n\n"
-		      (concat "\"" convert-record-separator "\""))
+		                     (concat "\"" convert-record-separator "\""))
       (goto-char (point-min))
       (replace-string-noninteractive "\n" "\",\"")
       (goto-char (point-min))
@@ -411,20 +411,20 @@ Actually CHAR may be a string as well. CHAR should be regexp-quoted already."
    ;; (regexp-opt ... 'output-parens) infinite-loops, so use this instead
    "\\("
    (mapconcat 'identity
-	   (list
-	    ;; form feed, newline, four comment characters
-	    (format "\f\n%c%c%c%c" char char char char)
-	    ;; blank line, three+ comment chars, optional hyphens,
-	    ;; newline, comment chars
-	    (format "[\n\f]\n%c%c%c+-*\n%c+" char char char char)
-	    ;; blank line, three+ comment chars, optional hyphens,
-	    ;; newline, comment chars, newline, comment chars (Erik Ruf's style)
-	    (format "[\n\f]\n%c%c%c+-*\n%c+\n%c+" char char char char char)
-	    ;; form feed, newline, three+ comment chars, required space
-	    (format "\f\n%c%c%c+ " char char char)
-	    ;; beginning of file
-	    (format "\\`%c+" char))
-	   "\\|")
+	      (list
+	       ;; form feed, newline, four comment characters
+	       (format "\f\n%c%c%c%c" char char char char)
+	       ;; blank line, three+ comment chars, optional hyphens,
+	       ;; newline, comment chars
+	       (format "[\n\f]\n%c%c%c+-*\n%c+" char char char char)
+	       ;; blank line, three+ comment chars, optional hyphens,
+	       ;; newline, comment chars, newline, comment chars (Erik Ruf's style)
+	       (format "[\n\f]\n%c%c%c+-*\n%c+\n%c+" char char char char char)
+	       ;; form feed, newline, three+ comment chars, required space
+	       (format "\f\n%c%c%c+ " char char char)
+	       ;; beginning of file
+	       (format "\\`%c+" char))
+	      "\\|")
    "\\)"
    ;; Whitespace and a word beginning
    "\\s *\\<"))
@@ -525,7 +525,7 @@ proposal")
 		  (and (file-exists-p "proposal.tex") "proposal")
 		  (and (file-exists-p "p.tex") "p") ; gross name used by some people
 		  (let ((dir-basename (file-name-nondirectory
-				      (directory-file-name default-directory))))
+				       (directory-file-name default-directory))))
 		    (and (file-exists-p (concat dir-basename ".tex")) dir-basename))
 		  (and (file-exists-p "../main.tex") "../main")
 		  (and (file-exists-p "../paper.tex") "../paper")))
@@ -625,7 +625,7 @@ proposal")
     (delete-matching-paragraphs "^\\(Over\\|Under\\)full \\\\hbox")
     (delete-matching-paragraphs "^LaTeX Warning: \\(Citation\\|Reference\\)" nil nil t)
     ))
- 
+
 
 ;;;
 ;;; BibTeX
@@ -672,10 +672,10 @@ proposal")
   ;;  (setq paragraph-start "^[%} \t\f]*$"
   ;;        paragraph-separate paragraph-start)
   (setq ;; `forward-paragraph' adds leading [ \t]*
-        paragraph-start "\\([%}\n]\\|[ \t\f]+\\($\\|[^ \t]\\)\\)"
-	;; NOT the same as paragraph-start, else a one-line paragraph is
-	;; considered merely a separator.
-	paragraph-separate "[%} \t\f]*$")
+   paragraph-start "\\([%}\n]\\|[ \t\f]+\\($\\|[^ \t]\\)\\)"
+   ;; NOT the same as paragraph-start, else a one-line paragraph is
+   ;; considered merely a separator.
+   paragraph-separate "[%} \t\f]*$")
   (setq fill-column 80)
   ;; I want a nil fill-prefix outside BibTeX entries, but the existing one
   ;; is OK inside them...
@@ -683,7 +683,7 @@ proposal")
   (progn
     (make-variable-buffer-local 'before-save-hook)
     (add-hook 'before-save-hook 'delete-trailing-whitespace))
-)
+  )
 (add-hook 'bibtex-mode-hook 'mde-bibtex-mode-hook)
 
 (with-eval-after-load "bibtex"
@@ -876,7 +876,7 @@ proposal")
         (if (not (save-match-data (string-match " id=" hextra)))
             (let ((anchor-name
                    (save-match-data (replace-regexp-in-string " " "_"
-                                      (replace-regexp-in-string "'" "" hname)))))
+                                                              (replace-regexp-in-string "'" "" hname)))))
               (replace-match (concat " id=\"" anchor-name "\"" hextra) nil t nil 2)))))))
 
 (defun html-fixup-paragraphs ()
@@ -1085,6 +1085,28 @@ proposal")
 
 (with-eval-after-load "diff-mode"
   (define-key diff-mode-map (kbd "<C-return>") 'ediff-hunk))
+
+;; from https://stackoverflow.com/questions/4726220/how-to-have-colors-in-the-output-of-emacs-shell-command
+
+(defun xterm-color-colorize-shell-command-output ()
+  "Colorize `shell-command' output."
+  (let ((bufs
+         (seq-remove
+          (lambda (x)
+            (not (or (string-prefix-p " *Echo Area" (buffer-name x))
+                     (string-prefix-p "*Shell Command" (buffer-name x)))))
+          (buffer-list))))
+    (dolist (buf bufs)
+      (with-current-buffer buf
+        (xterm-color-colorize-buffer)))))
+
+(defun xterm-color-colorize-shell-command-output-advice (proc &rest rest)
+  (xterm-color-colorize-shell-command-output))
+
+(advice-add 'shell-command :after #'xterm-color-colorize-shell-command-output-advice)
+;; (advice-remove 'shell-command #'xterm-color-colorize-shell-command-output-advice)
+
+(add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
 
 
 
