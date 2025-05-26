@@ -438,6 +438,8 @@ alias nncheckold='javac -g -processor org.checkerframework.checker.nullness.Null
 ### ssh/rlogin
 ###
 
+alias sshadd='eval $(ssh-agent)`; ssh-add'
+
 ## If adding new domains, don't forget to edit /etc/ssh/ssh_config to set
 ## "ForwardX11 yes" for those domains.  (Otherwise:  I have to pass the
 ## "-X" argument to ssh, and DISPLAY=:0.0 doesn't work (but
