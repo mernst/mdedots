@@ -1384,6 +1384,8 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
   "Cleans up a diff to remove uninteresting changes." t)
 (autoload 'diff-clean-javadoc "file-comparison"
   "Cleans up a diff to remove uninteresting changes, including all API documentation." t)
+(autoload 'diff-clean-json "file-comparison"
+  "Cleans up a diff to remove uninteresting changes, including all .json files." t)
 ;; This is for pathnames.
 ;; For basenames (simple file names), use file ~/bin/src/mdedots/dots/diff-exclude-patterns.txt,
 ;; but that file isn't respected by `git diff`, only by `diff`.
