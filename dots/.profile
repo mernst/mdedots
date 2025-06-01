@@ -224,6 +224,8 @@ fi
 if [ "$DEBUGLOGIN" ]; then echo "system-specific path: $PATH"; fi
 export PATH=$HOME/bin/share:$HOME/bin/src/run-google-java-format:$HOME/bin/src/checklink:$HOME/bin/src/html-tools:$HOME/bin/src/git-scripts:$HOME/bin/src/manage-git-branches:$HOME/bin/src/plume-scripts:$HOME/java/plume-lib/merging/src/main/sh:${PATH}:.
 
+export PATH=$HOME/.cargo/bin:$PATH
+
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/gc-7.1-install/lib
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/old-lib
 # # Isn't this needed for F15?
