@@ -120,7 +120,9 @@
                ;; Mod in case end time is after midnight
                (duration (mod (- end-hour start-hour) 24))
                (detail (concat category " " (match-string 6))))
-          (cond ((equal category "R")
+          (cond ((> duration 12)
+                 (error "Duration over 12 hours"))
+                ((equal category "R")
                  ;; research
                  (setq research-time (+ research-time duration))
                  (push detail research-lines))
@@ -180,7 +182,7 @@
                     education-time service-time
                     logistics-time
                     misc-time)
-		    )
+	    )
     (if (not (= 0 y-time))
 	(insert (format "  Y: %.2f\n" y-time)))
     (if (not (= 0 z-time))

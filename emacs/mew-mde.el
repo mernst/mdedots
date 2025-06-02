@@ -4,7 +4,7 @@
   (require 'mew) ;; for macro (!) mew-summary-prepare-draft
   (require 'mew-summary3) ;; for macro (!) mew-summary-prepare-draft
   (require 'browse-url-once)
-)
+  )
 
 (autoload 'browse-url-once "browse-url-once")
 (autoload 'browse-url-if-matched "browse-url-once")
@@ -214,30 +214,30 @@
          (smtp-auth-list ("PLAIN" "LOGIN" "CRAM-MD5"))
          )
         (cse
-         (name "Michael Ernst")
-         (user "mernst")
-         (mail-domain "cs.washington.edu")
-         (proto "%")
-         (imap-user "mernst@cs.washington.edu")
-         (imap-server "imap.gmail.com")
-         (imap-ssl t)
-         (imap-ssl-port "993")
-         (imap-size 0)
-         (imap-size 1000000)
-	 ;; (imap-trash-folder "%[Gmail]/Trash")
-         (smtp-server "smtp.gmail.com") ;; if not localhost
-	 ;; Alternately, could try this but then I need a different password
-	 ;; and I haven't been able to work it out:
-	 ;; (smtp-server "smtp.cs.washington.edu") ;; if not localhost
-         (smtp-ssl t)
-         (smtp-ssl-port "587")
-         (smtp-port "587")
-         (smtp-user "mernst@cs.washington.edu")
-         (dcc "mernst@cs.washington.edu")
-         (ssl-verify-level 0)
-         (tls-smtp "smtp")
-         (smtp-auth-list ("PLAIN" "LOGIN" "CRAM-MD5"))
-         )
+          (name "Michael Ernst")
+          (user "mernst")
+          (mail-domain "cs.washington.edu")
+          (proto "%")
+          (imap-user "mernst@cs.washington.edu")
+          (imap-server "imap.gmail.com")
+          (imap-ssl t)
+          (imap-ssl-port "993")
+          (imap-size 0)
+          (imap-size 1000000)
+	  ;; (imap-trash-folder "%[Gmail]/Trash")
+          (smtp-server "smtp.gmail.com") ;; if not localhost
+	  ;; Alternately, could try this but then I need a different password
+	  ;; and I haven't been able to work it out:
+	  ;; (smtp-server "smtp.cs.washington.edu") ;; if not localhost
+          (smtp-ssl t)
+          (smtp-ssl-port "587")
+          (smtp-port "587")
+          (smtp-user "mernst@cs.washington.edu")
+          (dcc "mernst@cs.washington.edu")
+          (ssl-verify-level 0)
+          (tls-smtp "smtp")
+          (smtp-auth-list ("PLAIN" "LOGIN" "CRAM-MD5"))
+          )
         (imdea
          (name "Michael Ernst")
          (user "michael.ernst")
@@ -629,7 +629,7 @@
 
 (with-eval-after-load "mew-key"
   (define-key mew-summary-mode-map "\eo"  nil) ;; was 'mew-summary-auto-refile
-)
+  )
 
 (setq mew-use-unread-mark t)
 ;; if nil, messages get filed with the unread mark on them
@@ -653,11 +653,11 @@
 ;; Ignore leading quote marks
 (with-eval-after-load "mew-sort"
   (defun mew-sort-string (x y)
-     "Like original, but strips leading double quote."
-     (let* ((xstring (strip-leading-double-quote (mew-sort-key x)))
-	    (ystring (strip-leading-double-quote (mew-sort-key y))))
-     (or (string= xstring ystring)
-	 (string< xstring ystring)))))
+    "Like original, but strips leading double quote."
+    (let* ((xstring (strip-leading-double-quote (mew-sort-key x)))
+	   (ystring (strip-leading-double-quote (mew-sort-key y))))
+      (or (string= xstring ystring)
+	  (string< xstring ystring)))))
 
 
 ;; Surprisingly, setting mew-reply-regex does not seem to affet sorting nor
@@ -691,7 +691,7 @@
 	       ;; Keep GitHub notifications together
 	       ;; The initial optional group is in case they were forwarded via an email address.
 	       ;; (This doesn't seem to be working properly, but wait to see whether it works on new messages.)
-;;	       (list "^\\(\\[[^]]*\\] \\)?\\[\\([^/]*/[^/]*\\)\\] [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]: " "\\2")
+               ;;	       (list "^\\(\\[[^]]*\\] \\)?\\[\\([^/]*/[^/]*\\)\\] [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]: " "\\2")
 
 	       ;; Keep Travis notifications together
 	       (list "^\\(Broken\\|Errored\\|Failed\\|Fixed\\|Still Failing\\): " nil)
@@ -729,21 +729,21 @@
 ;; nil means "not visible"
 (setq mew-field-spec
       (append '(
-	       ("^Accept-Language:" nil)
-	       ("^ARC-\\(Seal\\|Message-Signature\\|Authentication-Results\\):" nil)
-	       ("^Importance:" nil)
-	       ("^IronPort-PHdr:" nil)
-	       ("^Mailing-List: list seajug@yahoogroups.com; contact seajug-owner@yahoogroups.com$" nil)
-	       ("^Received-SPF:" nil)
-	       ("^Sender: seajug@yahoogroups.com$" nil)
-	       ("^Thread-Index:" nil)
-	       ("^User-Agent:" nil)
-	       ("^X-Mailer:" nil)
-	       ;; Is this ("tab/spc characters") added after mew-field-spec is processed?
-	       ("^X-Mew: tab/spc characters on Subject: are simplified." nil)
-	       ("^acceptlanguage:" nil)
-	       )
-	     mew-field-spec))
+	        ("^Accept-Language:" nil)
+	        ("^ARC-\\(Seal\\|Message-Signature\\|Authentication-Results\\):" nil)
+	        ("^Importance:" nil)
+	        ("^IronPort-PHdr:" nil)
+	        ("^Mailing-List: list seajug@yahoogroups.com; contact seajug-owner@yahoogroups.com$" nil)
+	        ("^Received-SPF:" nil)
+	        ("^Sender: seajug@yahoogroups.com$" nil)
+	        ("^Thread-Index:" nil)
+	        ("^User-Agent:" nil)
+	        ("^X-Mailer:" nil)
+	        ;; Is this ("tab/spc characters") added after mew-field-spec is processed?
+	        ("^X-Mew: tab/spc characters on Subject: are simplified." nil)
+	        ("^acceptlanguage:" nil)
+	        )
+	      mew-field-spec))
 
 (defun mew-multipart-setup ()
   ;; set either mew-use-text/html or mew-use-text/html-list
@@ -951,6 +951,7 @@ even if `mew-window-magic' has been set to a large value."
   (browse-url-once-if-matched "https://jobs.uic.edu/reference-page\\?referenceID=[0-9]+&referenceKey=[0-9a-f]+&formID=[0-9]+&jobId=[0-9]+")
   (browse-url-once-if-matched "You can view, comment on, or merge this pull request online at:\n\n *\\(https://github.com/.*/pull/[0-9]+\\)" 1)
   (browse-url-once-if-matched "remote: Create pull request for .*: *\nremote:   \\(https://bitbucket.org/.*/pull-requests/new?source=.*&t=1\\)" 1)
+  (browse-url-once-if-matched "remote: To create a merge request for .*, visit: *\nremote:   \\(https://gitlab.eclipse.org/.*/merge_requests/new.*? //)" 1)
   (browse-url-once-if-matched "\\(https://norfolk.cs.washington.edu/recruit/faculty\\?sreview=1&index=[0-9]+\\)" 1)
   (browse-url-once-if-matched "Read this week's newsletter:[ \n]+\\(https?://hamiltonms.seattleschools.org/about/calendar_and_news/hamilton_weekly_news/[^ \t\n]*\\)" 1)
   (browse-url-once-if-matched "auto-browse to \\(https://uw-cse.slack.com/\\)" 1)
@@ -1213,7 +1214,7 @@ not just on word boundaries."
 	  (while (looking-back signature-to-delete nil)
 	    (delete-region (match-beginning 0) (match-end 0)))
 	  (if (looking-back "^[> \n]+" (save-excursion (beginning-of-line) (point)))
-	    (delete-region (match-beginning 0) (match-end 0)))
+	      (delete-region (match-beginning 0) (match-end 0)))
 	  ))))
 
 (add-hook 'mew-make-message-hook 'delete-blank-lines-at-end)
@@ -1231,7 +1232,7 @@ not just on word boundaries."
 	     (not (y-or-n-p
 		   (concat "Message has no attachment but has text:  ..."
 			   snippet "...\nSend anyway? "))))
-      (error "Message has no attachment. Not sent."))))
+        (error "Message has no attachment. Not sent."))))
 
 (defun on-quoted-line ()
   (save-excursion
