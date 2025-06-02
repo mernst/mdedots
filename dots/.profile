@@ -148,6 +148,8 @@ export PATH=${INSTALLDIR}/epd-7.3-1-rh5-x86/bin:$PATH
 export PATH=${INSTALLDIR}/epd-7.3-1-rh5-x86_64/bin:$PATH
 
 export PATH=$PATH:/usr/local/go/bin
+export PATH=$PATH:$HOME/gocode/bin
+export PATH=$PATH:$HOME/go/bin
 
 export PATH=$HOME/class/331/CurrentQtr/staff/bin:$HOME/class/331/CurrentQtr/courseware:$HOME/class/331/CurrentQtr/courseware/common:${PATH}
 export PATH="${PATH}:$sdi/staff/bin:$sdi/courseware:$sdi/courseware/common"

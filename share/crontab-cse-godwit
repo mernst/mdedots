@@ -216,7 +216,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 ## No longer necessary because under version control.
 # The server version occasionally gets lost
 # 01 1 2 * *	$AFS $CRONIC cp -p $HOME/public_html/travel/travel-calendar $HOME/public_html/travel/travel-calendar-`date +\%Y\%m\%d`
-09 5 2 * *	$AFS $CRONIC make -C $HOME/public_html/advice/
+09 5 2 * *	$AFS PATH=${PATH}:${HOME}/bin/src/git-tools $CRONIC make -C $HOME/public_html/advice/
 10 5 3 * *	$AFS $CRONIC make -C $HOME/public_html/pubs
 #CSAIL#(copy to UW eventually) 10 5 10 * *	$AFS make -C /afs/csail/group/pag/www/pubs
 # 11 5 12 * *	$AFS html5validator -emacs `/usr/bin/find $HOME/public_html -name '*.html' -a \( ! -name 'research-index*-headfoot.html' \) -a \( ! -name 'pubs-bytopic*-headfoot.html' \) -a \( ! -wholename '*public_html/grant/index.html' \) -a \( ! -name agre-networking-on-the-network-20050814.html \)`
