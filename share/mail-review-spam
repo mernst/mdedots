@@ -139,6 +139,7 @@ mail_search(
     "(from:Avantor OR from:ATC-NY OR from:SimpsonScarborough OR from:VinFuture)"
 )
 mail_search("(from:%22Check Point%22 OR from:%22Staples Technology Solutions%22)")
+mail_search("(from:FB)")
 
 input("Press ENTER")
 print("Suspicious senders, part 3")
@@ -164,6 +165,8 @@ print("Suspicious senders, part 4")
 
 mail_search("from:journal")
 mail_search("from:team")
+
+mail_search("from:trump")
 
 input("Press ENTER")
 print("Likely false positive")
@@ -224,6 +227,9 @@ mail_search("diabetes")
 mail_search("fuckme")
 mail_search("indonesia")  # nothing on 2/3/2023
 mail_search("(keto OR ketosis)")  # nothing on 8/3/2022
+mail_search("docusign")
+mail_search("elongation")
+mail_search("trump")
 
 # mail_search("Kamala Harris")
 
@@ -240,20 +246,23 @@ print('Foreign languages and emojis (watch out for "Showing related results")')
 # German
 # This does not seem to work; at least, a "Herzlichen Glückwunsch" email remained
 mail_search(
-    '("Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR "mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR ("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR "guten tag" OR "spende")'
+    '"Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR "mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR ("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR "guten tag" OR "spende" OR ("für" and "Ihre")'
 )
 # Portuguese
 mail_search(
-    '("Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR reclamação OR eletrônica)'
+    '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR reclamação OR eletrônica OR curriculo OR Investigação'
 )
 # Spanish
-mail_search("mejor AND opción")
+mail_search("(mejor AND opción) OR (en su)")
 # Russian
 mail_search("и")
 # Polish
 mail_search("Proszę OR Słowa OR Dzień")
 # Italian
 mail_search("Fattura OR pagata")
+# Chinese
+mail_search("様")
+
 
 # NOTE: Most of these aren't a problem because the email subject sorts at the end when I review the email in Emacs Mew.
 # mail_search("К")
