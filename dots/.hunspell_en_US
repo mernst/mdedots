@@ -303,6 +303,7 @@ JUnit
 JUnit's
 JVM
 JVMs
+Jacoco
 Jalali
 JavaCOP
 JavaCOP's
@@ -696,6 +697,7 @@ alkylating
 allocator
 allocators
 analytics
+anaphor
 anonymized
 another's
 anthropomorphize
@@ -740,6 +742,7 @@ canoeing
 canonicalization
 canonicalize
 cardinality
+cataphora
 cc'ed
 celeriac
 changeset
@@ -883,6 +886,7 @@ experimentalist
 extensibility
 fMRI
 facto
+filesystem
 finalizer
 finalizer's
 finalizers
@@ -933,6 +937,7 @@ incrementalization
 incrementalize
 incrementalized
 incrementing
+indexicals
 indices
 infeasible
 initializer
@@ -992,6 +997,8 @@ mashups
 mechanizable
 memoization
 mergeable
+metonym
+metonyms
 microbenchmark
 microbenchmarks
 middleware
@@ -1279,12 +1286,14 @@ uninclined
 uninferred
 uninterpretable
 unintuitive
+unintuitively
 unmodifiable
 unoptimized
 unparenthesized
 unpatched
 unprimed
 unprioritized
+unpublicized
 unsatisfiable
 unscalable
 unsoundnesses
@@ -1320,12 +1329,3 @@ worklist
 workspace
 x86
 xml
-cataphora
-metonyms
-anaphor
-indexicals
-metonym
-unintuitively
-Jacoco
-unpublicized
-filesystem
