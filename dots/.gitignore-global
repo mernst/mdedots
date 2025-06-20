@@ -1,3 +1,10 @@
+# Createcal (mainly to avoid having pt search it)
+.inputFilesBackup
+
+# Eclipse
+.classpath
+.project
+
 # Emacs files
 GPATH
 GRTAGS
@@ -7,10 +14,9 @@ TAGS
 .#*
 \#*#
 
-# MacOS files
-__MACOSX
-.DS_Store
-Thumbs.db
+# Gradle
+.gradle
+gradle/verification-metadata.dryrun.xml
 
 # Java files
 *.class
@@ -28,20 +34,20 @@ Thumbs.db
 *.synctex\(busy\)
 _minted-paper
 
-# Createcal (mainly to avoid having pt search it)
-.inputFilesBackup
+# LibreOffice files?
+.~lock.*#
 
-# Other
-.gradle
+# MacOS files
+__MACOSX
+.DS_Store
+Thumbs.db
+
+# My files
 find-output
-gradle/verification-metadata.dryrun.xml
 
 # Python
 .pytest_cache/
 .mypy_cache/
-
-# LibreOffice files?
-.~lock.*#
 
 # Rust
 .ruff_cache/
