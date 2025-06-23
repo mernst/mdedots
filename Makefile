@@ -1,8 +1,9 @@
 all: style-fix style-check git-hooks
+	${MAKE} style-check
 	${MAKE} -C dots
+	${MAKE} -C share
 	# Emacs comes last to prevent masking other problems
 	${MAKE} -C emacs
-	${MAKE} style-check
 
 style-fix: python-style-fix shell-style-fix
 style-check: python-style-check shell-style-check

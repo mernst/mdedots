@@ -48,13 +48,9 @@ alias javatags='etags `find . -type f -name '"'"'*.java'"'"'`'
 alias usejdk8='(cd ~/java && rm -f jdk && ln -s jdk8 jdk)'
 alias usejdk11='(cd ~/java && rm -f jdk && ln -s jdk11 jdk)'
 alias usejdk17='(cd ~/java && rm -f jdk && ln -s jdk17 jdk)'
-alias usejdk18='(cd ~/java && rm -f jdk && ln -s jdk18 jdk)'
-alias usejdk19='(cd ~/java && rm -f jdk && ln -s jdk19 jdk)'
-alias usejdk20='(cd ~/java && rm -f jdk && ln -s jdk20 jdk)'
 alias usejdk21='(cd ~/java && rm -f jdk && ln -s jdk21 jdk)'
-alias usejdk22='(cd ~/java && rm -f jdk && ln -s jdk22 jdk)'
-alias usejdk23='(cd ~/java && rm -f jdk && ln -s jdk23 jdk)'
 alias usejdk24='(cd ~/java && rm -f jdk && ln -s jdk24 jdk)'
+alias usejdk25='(cd ~/java && rm -f jdk && ln -s jdk25 jdk)'
 TMP=$(mktemp -t .aliases-trap.XXXXXX)
 trap 'rm $TMP* 2>/dev/null' EXIT
 # Argument is a directory suffix like "fork-mernst-branch-scene-to-stub-writer-debug-3",
