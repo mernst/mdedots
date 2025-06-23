@@ -1,7 +1,8 @@
 ;;; -*- lexical-binding: t -*-
 
+
 (eval-when-compile
-  (require 'mew) ;; for macro (!) mew-summary-prepare-draft
+  (require 'mew)          ;; for macro (!) mew-summary-prepare-draft
   (require 'mew-summary3) ;; for macro (!) mew-summary-prepare-draft
   (require 'browse-url-once)
   )
