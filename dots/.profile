@@ -290,3 +290,7 @@ fi
 export SDKMAN_DIR="/home/mernst/.sdkman"
 # shellcheck disable=SC1091  # file does not exist on some file systems
 [ -s "/home/mernst/.sdkman/bin/sdkman-init.sh" ] && . "/home/mernst/.sdkman/bin/sdkman-init.sh"
+
+# Generated for envman. Do not edit.
+# shellcheck disable=SC1091 # files might not exist
+[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"

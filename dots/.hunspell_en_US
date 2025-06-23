@@ -35,6 +35,7 @@ AWS
 Abhishek
 Abrahamson
 Abrahamson's
+AenableReturnsReceiverForRlc
 Aftandilian
 Aires
 Alessandra
@@ -75,6 +76,7 @@ Beschastnikh
 Beschastnikh's
 Bhoraskar
 BibTeX
+BinaryNameWithoutPackage
 Bitbucket
 BlackBerry
 Bloomberg
@@ -283,6 +285,7 @@ IntelliSense
 InterningAnnotatedTypeFactory
 InvariMint
 IoLab
+Iterable
 JBoss
 JCP
 JCrasher
@@ -309,6 +312,7 @@ JavaCOP
 JavaCOP's
 JavaOne
 JavaParser
+JavaStubifier
 Javadoc
 Javari
 Javari's
@@ -429,6 +433,7 @@ Nimmer
 NoDefaultQualifierForUse
 NoSQL
 NoSuchElementException
+NonEmpty
 NonNegative
 NonNull
 NotOwning
@@ -621,6 +626,7 @@ Uber's
 Uchitel
 Unfazed
 Unix's
+UnknownNonEmpty
 UnmodifiableList
 Unpulled
 Unpushed
@@ -830,6 +836,7 @@ decrement
 decrementing
 decrypted
 definedness
+deictic
 deliverables
 denotational
 dependences
@@ -969,6 +976,7 @@ iteratively
 jQuery
 java
 javac
+javac's
 jsr308
 kTails
 kindergarteners

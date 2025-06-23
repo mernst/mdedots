@@ -4,6 +4,13 @@ if [ "$#" -ne 0 ]; then
   echo "Do not pass arguments to $0"
 fi
 
+# shellcheck disable=SC2046 # git-orphaned-branches prints multiple directories
+if [ -d /scratch/mernst/clones ]; then
+  (cd /scratch/mernst/clones && rm -rf $(git-orphaned-branches)) &
+fi
+# shellcheck disable=SC2046 # git-orphaned-branches prints multiple directories
+(cd && rm -rf $(git-orphaned-branches)) &
+
 mdevccommit
 mdevcupdate
 cronic mdevcpushto

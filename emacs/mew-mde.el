@@ -1,6 +1,5 @@
 ;;; -*- lexical-binding: t -*-
 
-
 (eval-when-compile
   (require 'mew)          ;; for macro (!) mew-summary-prepare-draft
   (require 'mew-summary3) ;; for macro (!) mew-summary-prepare-draft
@@ -147,12 +146,12 @@
 
 ;; xpdf was not installed on my system, and Mew silently failed.
 (with-eval-after-load "mew-unix"
-  ;; (setcar mew-prog-pdf-ext "evince") ;; was: ("xpdf" ("-geometry" "+0+0") t)
+  ;; (setcar mew-prog-pdf-ext "papers") ;; was: ("xpdf" ("-geometry" "+0+0") t)
   ;; (setq mew-prog-pdf '("acroread" ("-geometry" "+0+0") t))
   ;; Evince cannot handle -geometry argument, and Mew fails silently if it is
   ;; given (even though evince does not fail silently).
-  (setq mew-prog-pdf-ext '("evince" nil t))
-  (setq mew-prog-pdf "evince") ;; was "xpdf"
+  (setq mew-prog-pdf-ext '("papers" nil t))
+  (setq mew-prog-pdf "papers") ;; was "xpdf"
   )
 ;; Shouldn't this be the default already?
 ;; (with-eval-after-load "mew-darwin"

@@ -246,7 +246,7 @@ print('Foreign languages and emojis (watch out for "Showing related results")')
 # German
 # This does not seem to work; at least, a "Herzlichen Glückwunsch" email remained
 mail_search(
-    '"Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR "mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR ("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR "guten tag" OR "spende" OR ("für" and "Ihre")'
+    '("Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR "mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR ("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR "guten tag" OR "spende")'
 )
 # Portuguese
 mail_search(
@@ -257,7 +257,7 @@ mail_search("(mejor AND opción) OR (en su)")
 # Russian
 mail_search("и")
 # Polish
-mail_search("Proszę OR Słowa OR Dzień")
+mail_search("Proszę OR Słowa OR Dzień OR związku")
 # Italian
 mail_search("Fattura OR pagata")
 # Chinese

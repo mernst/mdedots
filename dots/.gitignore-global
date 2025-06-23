@@ -4,6 +4,7 @@
 # Eclipse
 .classpath
 .project
+.settings/
 
 # Emacs files
 GPATH

@@ -31,6 +31,14 @@ target
 .do-like-javac
 plume-bib
 
+# Eclipse
+.classpath
+.factorypath
+.project
+org.eclipse.buildship.core.prefs
+org.eclipse.jdt.apt.core.prefs
+org.eclipse.jdt.core.prefs
+
 # IntelliJ
 .idea
 *.iml
@@ -38,6 +46,7 @@ plume-bib
 # Python
 .mypy_cache
 .pytest_cache
+.ruff_cache
 __pycache__
 
 ## Files

@@ -13,8 +13,8 @@
 (eval-when-compile
   (condition-case _err
       (require 'vm)
-      (require 'vm-message)		; for vm-deleted-flag macro
-      (require 'vm-rfaddons)		; for vm-fill-paragraphs-containing-long-lines advice
+    (require 'vm-message)		; for vm-deleted-flag macro
+    (require 'vm-rfaddons)		; for vm-fill-paragraphs-containing-long-lines advice
     (error nil))
   (require 'sendmail)			; for mail-bcc, etc.; should such
 					;   code go in sendmail-mde.el?
@@ -24,8 +24,8 @@
 
 ;; VM
 ;; (setq vm-enable-addons nil)		; trying to debug troubles
-; This seems to be badly broken:  I get the whole INBOX file quoted.
-; (setq vm-reply-include-presentation t)
+                                        ; This seems to be badly broken:  I get the whole INBOX file quoted.
+                                        ; (setq vm-reply-include-presentation t)
 
 ;; (require 'vm-autoloads)
 (add-to-list 'Info-default-directory-list
@@ -188,11 +188,11 @@ DROP is \"hourly\", \"daily\", etc."
 ;; Add "Reply-to:" to vm-visible-headers, before "To:"
 (with-eval-after-load "vm-vars"
   (if (not (member "Reply-to:" vm-visible-headers))
-       (let ((to-part (member "To:" vm-visible-headers)))
-	 (if (not to-part)
-	     (error "Didn't find \"To:\" in vm-visible-headers")
-	   (setcdr to-part (cons (car to-part) (cdr to-part)))
-	   (setcar to-part "Reply-to:")))))
+      (let ((to-part (member "To:" vm-visible-headers)))
+	(if (not to-part)
+	    (error "Didn't find \"To:\" in vm-visible-headers")
+	  (setcdr to-part (cons (car to-part) (cdr to-part)))
+	  (setcar to-part "Reply-to:")))))
 
 ;;
 ;; Key bindings
@@ -246,7 +246,7 @@ DROP is \"hourly\", \"daily\", etc."
 	  ("video/mpeg" 	"mpeg_play")
 	  ("video" 	"xanim")
           ;; ("application/pdf" "acroread")
-	  ("application/pdf" "evince")
+	  ("application/pdf" "papers" "evince")
 	  ("application/msword" office-program)
 	  ("application/vnd.ms-powerpoint" office-program)
 	  ("application/vnd.ms-excel" office-program)
@@ -319,7 +319,7 @@ DROP is \"hourly\", \"daily\", etc."
 ;;        (setq vm-stunnel-program "/usr/bin/stunnel")))
 
 (if (file-exists-p '"/usr/bin/stunnel4")
-  (setq vm-stunnel-program '"/usr/bin/stunnel4"))
+    (setq vm-stunnel-program '"/usr/bin/stunnel4"))
 
 
 ;; to use, run: vm-visit-imap-folder
@@ -338,54 +338,54 @@ DROP is \"hourly\", \"daily\", etc."
 ;; SELECT command is sent without quoting the space, and the prefix of the
 ;; mailbox name up to the space does.
 (with-eval-after-load "vm-imap"
- (defun vm-imap-select-mailbox (process mailbox &optional just-examine)
-   (let ((imap-buffer (current-buffer))
-	 (command (if just-examine "EXAMINE" "SELECT"))
-	 tok response p
-	 (flags nil)
-	 (permanent-flags nil)
-	 (msg-count nil)
-	 (uid-validity nil)
-	 (read-write (not just-examine))
-	 (can-delete t)
-	 (need-ok t))
-     ;; QUOTES ADDED BY MDE
-     (vm-imap-send-command process (format "%s \"%s\"" command mailbox))
-     (while need-ok
-       (setq response (vm-imap-read-response process))
-       (if (vm-imap-response-matches response 'VM 'NO)
-	   (error "server said NO to %s" command))
-       (if (vm-imap-response-matches response 'VM 'BAD)
-	   (vm-imap-protocol-error "server said BAD to %s" command))
-       (cond ((vm-imap-response-matches response '* 'OK 'vector)
-	      (setq p (cdr (nth 2 response)))
-	      (cond ((vm-imap-response-matches p 'UIDVALIDITY 'atom)
-		     (setq tok (nth 1 p))
-		     (setq uid-validity (buffer-substring (nth 1 tok)
-							  (nth 2 tok))))
-		    ((vm-imap-response-matches p 'PERMANENTFLAGS 'list)
-		     (setq permanent-flags (nth 1 p)))))
-	     ((vm-imap-response-matches response '* 'FLAGS 'list)
-	      (setq flags (nth 2 response)))
-	     ((vm-imap-response-matches response '* 'atom 'EXISTS)
-	      (setq tok (nth 1 response))
-	      (goto-char (nth 1 tok))
-	      (setq msg-count (read imap-buffer)))
-	     ((vm-imap-response-matches response 'VM 'OK '(vector READ-WRITE))
-	      (setq need-ok nil read-write t))
-	     ((vm-imap-response-matches response 'VM 'OK '(vector READ-ONLY))
-	      (setq need-ok nil read-write t))
-	     ((vm-imap-response-matches response 'VM 'OK)
-	      (setq need-ok nil))))
-     (if (null flags)
-	 (vm-imap-protocol-error "FLAGS missing from SELECT responses"))
-     (if (null msg-count)
-	 (vm-imap-protocol-error "EXISTS missing from SELECT responses"))
-     (if (null uid-validity)
-	 (vm-imap-protocol-error "UIDVALIDITY missing from SELECT responses"))
-     (setq can-delete (vm-imap-scan-list-for-flag flags "\\Deleted"))
-     (list msg-count uid-validity read-write can-delete permanent-flags) ))
- )
+  (defun vm-imap-select-mailbox (process mailbox &optional just-examine)
+    (let ((imap-buffer (current-buffer))
+	  (command (if just-examine "EXAMINE" "SELECT"))
+	  tok response p
+	  (flags nil)
+	  (permanent-flags nil)
+	  (msg-count nil)
+	  (uid-validity nil)
+	  (read-write (not just-examine))
+	  (can-delete t)
+	  (need-ok t))
+      ;; QUOTES ADDED BY MDE
+      (vm-imap-send-command process (format "%s \"%s\"" command mailbox))
+      (while need-ok
+        (setq response (vm-imap-read-response process))
+        (if (vm-imap-response-matches response 'VM 'NO)
+	    (error "server said NO to %s" command))
+        (if (vm-imap-response-matches response 'VM 'BAD)
+	    (vm-imap-protocol-error "server said BAD to %s" command))
+        (cond ((vm-imap-response-matches response '* 'OK 'vector)
+	       (setq p (cdr (nth 2 response)))
+	       (cond ((vm-imap-response-matches p 'UIDVALIDITY 'atom)
+		      (setq tok (nth 1 p))
+		      (setq uid-validity (buffer-substring (nth 1 tok)
+							   (nth 2 tok))))
+		     ((vm-imap-response-matches p 'PERMANENTFLAGS 'list)
+		      (setq permanent-flags (nth 1 p)))))
+	      ((vm-imap-response-matches response '* 'FLAGS 'list)
+	       (setq flags (nth 2 response)))
+	      ((vm-imap-response-matches response '* 'atom 'EXISTS)
+	       (setq tok (nth 1 response))
+	       (goto-char (nth 1 tok))
+	       (setq msg-count (read imap-buffer)))
+	      ((vm-imap-response-matches response 'VM 'OK '(vector READ-WRITE))
+	       (setq need-ok nil read-write t))
+	      ((vm-imap-response-matches response 'VM 'OK '(vector READ-ONLY))
+	       (setq need-ok nil read-write t))
+	      ((vm-imap-response-matches response 'VM 'OK)
+	       (setq need-ok nil))))
+      (if (null flags)
+	  (vm-imap-protocol-error "FLAGS missing from SELECT responses"))
+      (if (null msg-count)
+	  (vm-imap-protocol-error "EXISTS missing from SELECT responses"))
+      (if (null uid-validity)
+	  (vm-imap-protocol-error "UIDVALIDITY missing from SELECT responses"))
+      (setq can-delete (vm-imap-scan-list-for-flag flags "\\Deleted"))
+      (list msg-count uid-validity read-write can-delete permanent-flags) ))
+  )
 
 (setq vm-auto-get-new-mail nil)
 
@@ -416,9 +416,9 @@ DROP is \"hourly\", \"daily\", etc."
 ;; So, disable the bug.
 (with-eval-after-load "vm-rfaddons"
   (if (ad-is-advised 'vm-fill-paragraphs-containing-long-lines)
-       (progn
-	 (ad-disable-advice 'vm-fill-paragraphs-containing-long-lines 'around 'vm-rfaddons-better-filling)
-	 (ad-activate 'vm-fill-paragraphs-containing-long-lines))))
+      (progn
+	(ad-disable-advice 'vm-fill-paragraphs-containing-long-lines 'around 'vm-rfaddons-better-filling)
+	(ad-activate 'vm-fill-paragraphs-containing-long-lines))))
 
 
 
@@ -527,7 +527,7 @@ This adds a mark field at the beginning, which is missing in RMAIL.")
 (setq vm-summary-format vm-summary-format-rmail-style)
 
 (defun vm-summary-function-d (message)
-  ; checkdoc-params: (message)
+                                        ; checkdoc-params: (message)
   "First character of `vm-su-attribute-indicators': deleted, new, unread, or read."
   (cond ((vm-deleted-flag message) "D")
 	((vm-new-flag message) "N")
@@ -701,26 +701,26 @@ its From: line.")
       (let* ((mp (car (vm-select-marked-or-prefixed-messages 1))) ; not strictly right
 	     (from-field (vm-get-header-contents mp "From:"))
 	     (reply-to-field (vm-get-header-contents mp "Reply-To:")))
-    (if (and reply-to-field
-	     ;; reply-to exists
-	     (not (or
-		   ;; OK if reply-to but equals from-field
-		   (equal from-field reply-to-field)
-		   ;; OK if reply-to is a substring of from-field
-		   ;;   From: Adam Kiezun <akiezun@csail.mit.edu>
-		   ;;   Reply-To:  akiezun@csail.mit.edu
-		   (string-match (regexp-quote reply-to-field) from-field)
-		   ;; OK if reply-to is a pseudo-substring of from-field
-		   ;;   From: Adam Kiezun <akiezun@csail.mit.edu>
-		   ;;   Reply-To:  akiezun@mit.edu
-		   (let ((reply-parts (split-string reply-to-field "@")))
-		     (string-match (concat (regexp-quote (cl-first reply-parts))
-					   "@[^ ]*"
-					   (regexp-quote (cl-second reply-parts)))
-				   from-field))
-		   ))
-	     (not (y-or-n-p "Reply to other than from/sender? ")))
-	(error "Avoid redirected reply.")))))
+        (if (and reply-to-field
+	         ;; reply-to exists
+	         (not (or
+		       ;; OK if reply-to but equals from-field
+		       (equal from-field reply-to-field)
+		       ;; OK if reply-to is a substring of from-field
+		       ;;   From: Adam Kiezun <akiezun@csail.mit.edu>
+		       ;;   Reply-To:  akiezun@csail.mit.edu
+		       (string-match (regexp-quote reply-to-field) from-field)
+		       ;; OK if reply-to is a pseudo-substring of from-field
+		       ;;   From: Adam Kiezun <akiezun@csail.mit.edu>
+		       ;;   Reply-To:  akiezun@mit.edu
+		       (let ((reply-parts (split-string reply-to-field "@")))
+		         (string-match (concat (regexp-quote (cl-first reply-parts))
+					       "@[^ ]*"
+					       (regexp-quote (cl-second reply-parts)))
+				       from-field))
+		       ))
+	         (not (y-or-n-p "Reply to other than from/sender? ")))
+	    (error "Avoid redirected reply.")))))
 
 
 
@@ -911,12 +911,12 @@ its From: line.")
 ;; The "+" at the end iterates as many times as needed.
 (setq vm-subject-ignored-prefix
       (concat
-      "\\`\\("
-      re-regexp
-      "\\|"
-      "\\[[^\]]*\\] "
-      ;; "\\[6\\.170 TAs\\] *"
-      "\\)+"))
+       "\\`\\("
+       re-regexp
+       "\\|"
+       "\\[[^\]]*\\] "
+       ;; "\\[6\\.170 TAs\\] *"
+       "\\)+"))
 
 
 ;; ;; I'm not sure whether this is desirable, but try it and see how it works.

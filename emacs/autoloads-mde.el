@@ -7,7 +7,11 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'edebug) (require 'elide-head))
+(eval-when-compile
+  (require 'edebug)
+  (require 'elide-head)
+  (require 'info)
+  (require 'magit))
 
 ;;;
 ;;; Coding/programming
@@ -17,9 +21,9 @@
 (setq-default compile-command "make ")	; default: "make -k "
 
 ;; Coding
-; GNU boilerplate
+                                        ; GNU boilerplate
 (push '("is free software; you can redistribute it" . 
-	"Boston, MA 02111-1307, USA\\.\\|Cambridge, MA 02139, USA\\.")
+	        "Boston, MA 02111-1307, USA\\.\\|Cambridge, MA 02139, USA\\.")
       elide-head-headers-to-hide)
 
 
@@ -46,20 +50,20 @@
 
 ;; Running Lisp
 (autoload 'run-kcl "/u/mic/el/kcl-mode" "Run kcl (not loaded)" t)
-;(autoload 'scheme "/a/kcl/goodies/kcl" "KCL, T, and R^3 Scheme" t)
-;(autoload 'kcl "/a/kcl/goodies/kcl" "KCL, T, and R^3 Scheme" t)
+                                        ;(autoload 'scheme "/a/kcl/goodies/kcl" "KCL, T, and R^3 Scheme" t)
+                                        ;(autoload 'kcl "/a/kcl/goodies/kcl" "KCL, T, and R^3 Scheme" t)
 ;; (autoload 'run-ilisp "ilisp-mde" "Select a new inferior LISP." t)
 ;; (autoload 'kcl       "ilisp-mde" "Inferior Kyoto Common LISP." t)
 ;; (autoload 'akcl      "ilisp-mde" "Inferior Austin Kyoto Common LISP." t)
 ;; (autoload 'scheme    "ilisp-mde" "Inferior generic Scheme." t)
 ;; I can't get Lucid to run correctly; the default-directory is messed up.
-; (setq lucid-program "lucid")
-; (autoload 'lucid     "ilisp-mde" "Inferior Lucid Common LISP." t)
+                                        ; (setq lucid-program "lucid")
+                                        ; (autoload 'lucid     "ilisp-mde" "Inferior Lucid Common LISP." t)
 
 ;; 6.846
 (autoload 'run-tea "$PARARCHPATH/bin/t" "Run an inferior T process." t)
 (autoload 'run-asim "$PARARCHPATH/bin/asim"
-	  "Run an inferior ASIM (experimental) process." t)
+  "Run an inferior ASIM (experimental) process." t)
 (setq auto-mode-alist
       (cons '("\\.t$" . scheme-mode)	; Scheme mode for T files.
 	    auto-mode-alist))
@@ -200,17 +204,17 @@
 
 ;; Love22
 (autoload 'show-abc-chart "love22"
-	  "Show the ABC chart in the *Help* window." t)
+  "Show the ABC chart in the *Help* window." t)
 (autoload 'abc-chart-word "love22"
-	  "Compute and display the ABC chart value of the word at point." t)
+  "Compute and display the ABC chart value of the word at point." t)
 (autoload 'abc-chart-region "love22"
-	  "Compute and display the ABC chart value of the current region." t)
+  "Compute and display the ABC chart value of the current region." t)
 (autoload 'love22-buffer "love22"
-	  "Process a buffer to look like Love22 wrote it." t)
+  "Process a buffer to look like Love22 wrote it." t)
 (autoload 'love22-region "love22"
-	  "Process a region to look like Love22 wrote it." t)
+  "Process a region to look like Love22 wrote it." t)
 (autoload 'love22-mode "love22"
-	  "Minor mode for writing Love22 text." t)
+  "Minor mode for writing Love22 text." t)
 
 ;; LaTeXinfo
 (autoload 'get-latexinfo-node "get-node" "Get help on a LaTeXinfo topic" t)
@@ -278,9 +282,9 @@
 (autoload 'lisp-dir-retrieve "lispdir" "Retrieve elisp code" t)
 (autoload 'submit-lcd-entry "lispdir" "Submit code for the LCD" t)
 (autoload 'tex-macro-catalogue "tex-macro-catalogue"
-          "TeX macro catalogue browser" t)
+  "TeX macro catalogue browser" t)
 (autoload (function find-faq) "faq"
-	  "*Find the archived Usenet NEWSGROUP FAQ file..." t)
+  "*Find the archived Usenet NEWSGROUP FAQ file..." t)
 
 ;;;
 ;;; Differences
@@ -346,7 +350,7 @@
 (autoload 'games	"games" "Games comint mode." t)
 (autoload 'games-ask	"games" "Games comint mode." t)
 (autoload 'konane-substitute "games-k-exp"
-	  "Substitute Konane games into file." t)
+  "Substitute Konane games into file." t)
 (autoload 'games-defexpectation "games" "Define a new games expectation form.")
 
 (autoload 'madlib "madlib" "Mad Lib game" t)
@@ -356,7 +360,7 @@
 ;; ; gnus customizations in gnus-mike-batch.el or gnus-mike.el
 (setq gnus-init-file (expand-file-name "~/emacs/gnus-mike"))
 (autoload 'caesar-region "rnews" "Rot-13 the region." t)
-;(autoload 'irc "~/emacs/irc-2.0" "Internet Relay Chat" t)
+                                        ;(autoload 'irc "~/emacs/irc-2.0" "Internet Relay Chat" t)
 
 ;; Inleft; Emacs-19 comment-region isn't as versatile.
 ;; This seems to be necessary to get correct behavior from, eg, cecil-mode
@@ -378,7 +382,7 @@
 (autoload 'speedbar-frame-mode "speedbar" "Popup a speedbar frame" t)
 (autoload 'speedbar-get-focus "speedbar" "Jump to speedbar frame" t)
 (define-key-after (lookup-key global-map [menu-bar tools])
-   [speedbar] '("Speedbar" . speedbar-frame-mode) [calendar])
+  [speedbar] '("Speedbar" . speedbar-frame-mode) [calendar])
 ;; Texinfo fancy chapter tags (for speedbar)
 ;; (add-hook 'texinfo-mode-hook (lambda () (require 'sb-texinfo)))
 ;; for Linux systems
@@ -403,6 +407,6 @@
 (autoload 'test-region-edit "regionedit" nil t)
 
 ;; Also don't forget these libraries:
-; rmailsort
+                                        ; rmailsort
 
 ;;; autoloads-mde.el ends here

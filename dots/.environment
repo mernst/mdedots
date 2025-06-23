@@ -160,6 +160,7 @@ fi
 if [ -d "$HOME"/bin/install/go ]; then
   export GOROOT="$HOME"/bin/install/go
   export GOPATH="$HOME"/gocode
+  export PATH="${PATH}:${GOPATH}/bin:${GOROOT}/bin"
 fi
 
 ###

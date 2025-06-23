@@ -91,6 +91,9 @@ editing a diff buffer to remove uninteresting changes."
 
     (save-excursion
 
+      ;; (goto-char (point-min))
+      ;; (delete-matching-lines "^\\\\ No newline at end of file$")
+
       ;; Remove certain files
       (goto-char (point-min))
       (let ((filename-regexp
@@ -216,7 +219,7 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
 
 ;; This name may need to be changed, so that completing "diff-clean" is easier to do.
 (defun diff-clean-build ()
-  "Like `diff-clean', but also ignores generated files."
+  "Like `diff-clean', but also removes generated files."
   (interactive)
   (diff-clean-more ".*/build/.*"))
 
@@ -226,12 +229,12 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
   (diff-clean-more ".*~"))
 
 (defun diff-clean-javadoc ()
-  "Remove Javadoc files from a diff."
+  "Like `diff-clean', but also removes Javadoc files."
   (interactive)
   (diff-clean-more ".*/docs/api/.*"))
 
 (defun diff-clean-json ()
-  "Remove Javadoc files from a diff."
+  "Like `diff-clean', but also removes JSON files."
   (interactive)
   (diff-clean-more ".*\\.json"))
 

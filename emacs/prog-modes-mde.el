@@ -268,25 +268,25 @@ if point is not in a function."
    (require 'use-package)))
 
 ;; TODO: Why is all this at the top level?
-                                        ; (use-package projectile :defer t)
 (use-package flycheck)
 (use-package yasnippet :config (yas-global-mode))
 (use-package lsp-mode :hook ((lsp-mode . lsp-enable-which-key-integration)))
-                                        ; (use-package hydra)
-;; (use-package company)
 (use-package lsp-ui)
 (use-package which-key :config (which-key-mode))
-                                        ; (use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
-                                        ; (use-package dap-java :ensure nil)
-                                        ; (use-package helm-lsp)
-                                        ; (use-package helm
-                                        ;  ;; :config (helm-mode)
-                                        ;  )
 (use-package lsp-treemacs)
+(use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
+(use-package dap-java :ensure nil)
 
 (use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
 (with-eval-after-load "lsp-mode"
   (define-key lsp-mode-map (kbd "C-c C-l") lsp-command-map))
+
+
+(use-package apheleia)
+;; For debugging:
+;; (setq apheleia-log-only-errors nil)
+;; (setq apheleia-log-debug-info t)
+
 
 
 ;; TODO: Add autoloads for functions that are defined in java-style.el.
@@ -688,6 +688,13 @@ This is disabled on lines with a comment containing the string \"interned\"."
      (t
       nil))))
 
+(with-eval-after-load "apheleia"
+  (setf (alist-get 'python-mode apheleia-mode-alist)
+        'ruff)
+  ;; out of the box, apheleia uses the script name "google-java-format" which doesn't exist
+  (setf (alist-get 'google-java-format apheleia-formatters)
+        '("run-google-java-format.py" inplace)))
+
 (defun enable-python-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
   (let ((filename (buffer-file-name)))
@@ -784,7 +791,34 @@ This is disabled on lines with a comment containing the string \"interned\"."
       (local-set-key "\C-c\C-c" 'compile)))
 (add-hook 'sgml-mode-hook 'mde-xml-mode-hook)
 
+(defun enable-shell-script-formatting-p ()
+  "Returns true if the file matches a hard-coded list of directories."
+  (let ((filename (buffer-file-name)))
 
+    (cond
+
+     ((not filename)
+      nil)
+
+
+
+     ;; No formatting
+
+     ;; ...
+
+     ;; Perform formatting
+
+     ;; Randoop
+     ((and (string-match-p "/\\(randoop\\)" filename)
+	   (not (string-match-p "CloneVisitor\\.java$" filename))
+	   (not (string-match-p "/src/testinput/" filename)))
+      t)
+
+
+
+     ;; No formatting for all other projects
+     (t
+      nil))))
 
 (eval-when-compile (require 'sh-script))
 (defun mde-sh-mode-hook ()
@@ -797,6 +831,8 @@ This is disabled on lines with a comment containing the string \"interned\"."
         (setq sh-basic-offset 2)
         (apheleia-mode +1)))
   (add-hook 'after-save-hook 'shell-script-validate nil 'local)
+  (if (enable-shell-script-formatting-p)
+      (apheleia-mode +1))
   )
 (add-hook 'sh-mode-hook 'mde-sh-mode-hook)
 
@@ -1615,24 +1651,6 @@ How does this differ from whatever is built in?"
    (setq use-package-always-ensure t)
    (require 'use-package)))
 
-;; TODO: Why is all this at the top level? (and repeated from above?)
-(use-package projectile)
-(use-package flycheck)
-(use-package yasnippet :config (yas-global-mode))
-(use-package lsp-mode :hook ((lsp-mode . lsp-enable-which-key-integration)))
-(use-package hydra)
-;; (use-package company)
-(use-package lsp-ui)
-(use-package which-key :config (which-key-mode))
-(use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
-(use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
-(use-package dap-java :ensure nil)
-(use-package helm-lsp)
-(use-package helm
-  ;; :config (helm-mode)
-  )
-(use-package lsp-treemacs)
-
 (setq rust-format-on-save t)
 
 (defun mde-rust-mode-hook ()
@@ -1642,26 +1660,69 @@ How does this differ from whatever is built in?"
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; m4
+;;; m4 and conf
 ;;;
 
-(defun update-conf-mode-hook ()
-  "Run the createcal program after its input files have been edited."
+(defun mde-conf-mode-hook ()
+  "Run the `createcal' program after its input files have been edited."
   ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
   (let ((filename (file-truename buffer-file-name)))
     (if (and (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename)
              (not (string-match "/503/17sp/" filename)))
         (add-hook 'after-save-hook 'run-createcal nil 'local))))
 ;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
-(add-hook 'conf-mode-hook 'update-conf-mode-hook)
+(add-hook 'conf-mode-hook 'mde-conf-mode-hook)
 
 (defun run-createcal ()
-  "Run external program createcal in the parent directory."
+  "Run external program `createcal' in the parent directory."
   (interactive)
-  (shell-command "cd `realpath ..` && createcal")
-  ;; Show output if there is any (it will all be error output)
-  (if (bufferp "*Shell Command Output*")
-      (pop-to-buffer "*Shell Command Output*")))
+  (let ((bufname "*createcal Output*"))
+    (shell-command "cd `realpath ..` && createcal" bufname)
+    ;; Show output if there is any (it will all be error output)
+    (if (bufferp bufname)
+        (pop-to-buffer bufname))))
+
+
+(defun run-createcal ()
+  "Run external program `createcal' in the parent directory."
+  (interactive)
+  (let ((bufname "*createcal Output*"))
+    (shell-command "cd `realpath ..` && createcal" bufname)
+    ;; Show output if there is any (it will all be error output)
+    (if (bufferp bufname)
+        (pop-to-buffer bufname))))
+
+(defun call-process-exit-code-and-output (program &rest args)
+  "Run PROGRAM with ARGS and return the exit code and output in a list."
+  (with-temp-buffer 
+      (list (apply 'call-process program nil (current-buffer) nil args)
+            (buffer-string))))
+
+(defun call-process-show-if-error (program &rest args)
+  "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
+  (let* ((program-name (file-name-nondirectory program))
+         (bufname (concat "*" program-name " Output*"))
+         (status
+          (with-current-buffer (get-buffer-create bufname)
+            (apply 'call-process program nil (current-buffer) nil args))))
+    (if (not (= 0 status))
+        (pop-to-buffer bufname))))
+
+(defun run-make ()
+  "Run external program `make'."
+  (interactive)
+  (call-process-show-if-error "make"))
+
+
+(defun mde-m4-mode-hook ()
+  "Run the `createcal' program after its input files have been edited."
+  ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
+  (if (buffer-file-name)
+      (let* ((filename (file-truename buffer-file-name))
+             (dirname (file-name-directory filename)))
+        (if (file-exists-p (concat dirname "Makefile"))
+            (add-hook 'after-save-hook 'run-make nil 'local)))))
+(add-hook 'm4-mode-hook 'mde-m4-mode-hook)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

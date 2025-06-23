@@ -34,7 +34,7 @@
        ;; Setting default-directory prevents this from failing when that
        ;; is set to a non-existent directory
        (let ((default-directory "/"))
-	   (call-process "ls" nil nil nil "-v" (getenv "HOME"))))
+	 (call-process "ls" nil nil nil "-v" (getenv "HOME"))))
     (setq dired-listing-switches (concat dired-listing-switches "v")))
 (setq dired-find-subdir t)
 
@@ -80,21 +80,21 @@
 
 ;; The default is "^#\\|^\\.$\\|^\\.\\.$" rather than "^#\\|^\\.\\.?$".  Why?
 (defvar dired-omit-regexps-default
-      '("^#"
-	"^\\.$"
-	"^\\.\\.$"
-	"^\\.Z[0-9]+.*\\.tex$"		; slatex temporary files
-	"^\\.latexrun\\.db$"
-	"^paper.synctex(busy)$"
-	"^\\.fls$"			; pdflatex temporary files, I think
-	"^\\.h\\(aux\\|toc\\)$"		; hevea temporary files
-	"^\\.#.+\\.[0-9]+\\.[0-9]+$"	; CVS temporary files
-	"^\\.#"				; symbolic links (for multi-user??)
-	"^R[emqsx][ab][0-9][0-9][0-9][0-9][0-9]$" ; appear in /tmp/
-	"^\\.maildrop-junk\\(-weekly\\)?$"
-	"^System Volume Information$"
-	"^AdobeFnt.lst$"		; acroread file
-	))
+  '("^#"
+    "^\\.$"
+    "^\\.\\.$"
+    "^\\.Z[0-9]+.*\\.tex$"		; slatex temporary files
+    "^\\.latexrun\\.db$"
+    "^paper.synctex(busy)$"
+    "^\\.fls$"			; pdflatex temporary files, I think
+    "^\\.h\\(aux\\|toc\\)$"		; hevea temporary files
+    "^\\.#.+\\.[0-9]+\\.[0-9]+$"	; CVS temporary files
+    "^\\.#"				; symbolic links (for multi-user??)
+    "^R[emqsx][ab][0-9][0-9][0-9][0-9][0-9]$" ; appear in /tmp/
+    "^\\.maildrop-junk\\(-weekly\\)?$"
+    "^System Volume Information$"
+    "^AdobeFnt.lst$"		; acroread file
+    ))
 (setq-default dired-omit-regexps dired-omit-regexps-default)
 (setq dired-omit-files
       (mapconcat (function identity) dired-omit-regexps-default "\\|"))
@@ -142,8 +142,8 @@
     ("\\.E?PS$" "gv * &" "xv" "lpr")	; uppercase
     ("\\.jpg$" "xloadimage -shrink")		; uppercase
     ("\\.JPG$" "xloadimage -shrink")		; uppercase
-    ("\\.pdf$" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; add acroread, gv
-    ("\\.PDF$" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; uppercase
+    ("\\.pdf$" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; add acroread, gv
+    ("\\.PDF$" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; uppercase
     ("\\.mp4$" "vlc")			; not in background
     ("\\.tex\\'" "pdflatex")		; default: ("\\.tex\\'" "latex" "tex")
     ("\\.tgz$" "tar xvfz")
@@ -164,11 +164,11 @@
 (if (equal 'darwin system-type)
     (progn
       (setq my-dired-shell-guesses
-	  (mapcar #'(lambda (extension-and-guesses)
-		      (cons (car extension-and-guesses)
-			    (cons "open"
-				  (cdr extension-and-guesses))))
-		  my-dired-shell-guesses))
+	    (mapcar #'(lambda (extension-and-guesses)
+		        (cons (car extension-and-guesses)
+			      (cons "open"
+				    (cdr extension-and-guesses))))
+		    my-dired-shell-guesses))
       (setq my-dired-shell-guesses
 	    (append
 	     '(

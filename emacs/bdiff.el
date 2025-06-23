@@ -57,6 +57,13 @@ that you can supply to bdiff in a program.)")
   "Flags to pass to diff; for instance, \"a\" if you're using GNU diff
 or \"t\" to expand tabs to spaces.")
 
+;; fset these hooks if you want bdiff to do funky things
+;; on M-- or M-digit prefix arguments
+(or (fboundp 'bdiff---prefix-file)
+    (fset 'bdiff---prefix-file 'bdiff-backup-file))
+(or (fboundp 'bdiff-digit-prefix-file)
+    (fset 'bdiff-digit-prefix-file 'bdiff-backup-file))
+
 (defun bdiff (&optional bfile quiet)
   "*diff the current buffer with the file being visited.
 When called interactively:
@@ -90,25 +97,25 @@ QUIET argument means produce no output, just return a value."
 			     " does not exist\n"))
 	    (save-restriction
 	      (widen)
-	      (setq process-result
-		    (call-process-region (point-min) (point-max)
-					 diff-command nil
-					 (and (not quiet) standard-output)
-					 nil
-					 (if (eq bdiff-context-lines 'unidiff)
-					     "-u"
-					   (format "-C %d" bdiff-context-lines))
-					 (concat
-					  (cond ((eq bdiff-ignore-whitespace t) "-w")
-						(bdiff-ignore-whitespace "-b")
-						;; If bdiff-extra-flags is empty,
-						;; this causes trouble.
-						(t "-"))
-					  (if quiet "q" "")
-					  bdiff-extra-flags)
-					 real-bfile
-					 "-"))
-	      (setq modified (not (zerop process-result))))))
+	      (let ((process-result
+		     (call-process-region (point-min) (point-max)
+					  diff-command nil
+					  (and (not quiet) standard-output)
+					  nil
+					  (if (eq bdiff-context-lines 'unidiff)
+					      "-u"
+					    (format "-C %d" bdiff-context-lines))
+					  (concat
+					   (cond ((eq bdiff-ignore-whitespace t) "-w")
+						 (bdiff-ignore-whitespace "-b")
+						 ;; If bdiff-extra-flags is empty,
+						 ;; this causes trouble.
+						 (t "-"))
+					   (if quiet "q" "")
+					   bdiff-extra-flags)
+					  real-bfile
+					  "-")))
+	        (setq modified (not (zerop process-result)))))))
 	;; old version
 	;; (setq modified (with-current-buffer standard-output
 	;;                  (goto-char (point-min))
@@ -131,10 +138,10 @@ QUIET argument means produce no output, just return a value."
 		      (goto-char (point-min))
 		      (while (re-search-forward "\r$" nil 1)
 			(replace-match "" nil t))))))
-	    (progn
-	      (setq temp-buffer-show-function (function ignore))
-	      (if (and (called-interactively-p 'interactive) (not quiet))
-		  (message "No differences encountered"))))
+	  (progn
+	    (setq temp-buffer-show-function (function ignore))
+	    (if (and (called-interactively-p 'interactive) (not quiet))
+		(message "No differences encountered"))))
 	(with-current-buffer bdiff-buffer-name
 	  (diff-mode))
 	modified))))
@@ -183,13 +190,6 @@ QUIET argument means produce no output, just return a value."
      (file-name-all-completions base-versions default-directory))
     (if mname (expand-file-name mname)
       (error "no backup versions of %s" filename))))
-
-;; fset these hooks if you want bdiff to do funky things
-;; on M-- or M-digit prefix arguments
-(or (fboundp 'bdiff---prefix-file)
-    (fset 'bdiff---prefix-file 'bdiff-backup-file))
-(or (fboundp 'bdiff-digit-prefix-file)
-    (fset 'bdiff-digit-prefix-file 'bdiff-backup-file))
 
 (defun Buffer-menu-bdiff (buf bdiff-arg)
   "Run bdiff on this line's buffer."
@@ -339,11 +339,11 @@ differences and query the user whether the buffer should be reverted."
 		(delete-other-windows (display-buffer buf))
 		(or (not (bdiff t))
 		    (yes-or-no-p
-		      (format "File %s changed on disk.  %s? "
-		       filename
-		       (if (buffer-modified-p buf)
-			   "Flush your changes"
-			 "Re-read from disk")))))
+		     (format "File %s changed on disk.  %s? "
+		             filename
+		             (if (buffer-modified-p buf)
+			         "Flush your changes"
+			       "Re-read from disk")))))
 	      (let* ((w (get-buffer-window buf))
 		     (p (and w (window-point w)))
 		     (s (and w (window-start w))))

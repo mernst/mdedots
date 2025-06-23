@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2154  # conda code snippet :-(
+# shellcheck disable=SC2154,SC2181 # because of conda, see below
 
 # ~/.bashrc: anything desired for interactive command line:
 # command prompt, EDITOR variable, bash aliases.
@@ -192,10 +192,6 @@ unset __conda_setup
 # <<< conda initialize <<<
 ENDCONDA
 
-if [ -n "$DEBUGLOGIN" ]; then
-  echo "Exiting .bashrc"
-fi
-
 # The next line updates PATH for the Google Cloud SDK.
 # shellcheck disable=SC1091
 if [ -f '/home/mernst/bin/install/google-cloud-sdk/path.bash.inc' ]; then . '/home/mernst/bin/install/google-cloud-sdk/path.bash.inc'; fi
@@ -203,3 +199,11 @@ if [ -f '/home/mernst/bin/install/google-cloud-sdk/path.bash.inc' ]; then . '/ho
 # The next line enables shell command completion for gcloud.
 # shellcheck disable=SC1091
 if [ -f '/home/mernst/bin/install/google-cloud-sdk/completion.bash.inc' ]; then . '/home/mernst/bin/install/google-cloud-sdk/completion.bash.inc'; fi
+
+# Generated for envman. Do not edit.
+# shellcheck disable=SC1091 # files might not exist
+[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
+
+if [ -n "$DEBUGLOGIN" ]; then
+  echo "Exiting .bashrc"
+fi

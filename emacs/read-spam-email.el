@@ -7,8 +7,8 @@
 ;; auto-browse to https://mail.google.com/mail/u/1/#spam
 
 (eval-when-compile
-  (require 'mew)           ;; for macro (!) mew-summary-prepare-draft
-  (require 'mew-summary)   ;; for macro (!) mew-summary-prepare-draft
+  (require 'mew)         ;; for macro (!) mew-summary-prepare-draft
+  (require 'mew-summary) ;; for macro (!) mew-summary-prepare-draft
   )
 
 (require 'mew-mde)

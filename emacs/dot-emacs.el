@@ -13,7 +13,8 @@
 (add-to-list 'load-path "~/emacs/mew/elisp")
 (add-to-list 'load-path "~/java/plume-lib/javadoc-lookup/src/main/emacs")
 (let ((default-directory "~/.emacs.d/elpa/"))
-  (normal-top-level-add-subdirs-to-load-path))
+  (if (file-directory-p default-directory)
+      (normal-top-level-add-subdirs-to-load-path)))
 (add-to-list 'load-path "~/java/google-java-format/core/src/main/scripts/")
 
 (eval-when-compile
@@ -370,6 +371,7 @@ Use Vera Sans if Inconsolata is not available."
    ;; Hack is narrower, so I like it better.
    ;; Inconsolata 16 is nearly the same as Hack 14.  Hack has taller half-height, and Hack is bolder.
    ((font-exists-p "Hack") (set-frame-font "Hack 13" nil t))
+   ((font-exists-p "-SRC-Hack-regular-normal-normal-*-*-*-*-*-m-0-iso10646-1") (set-frame-font "Hack 13" nil t))
 
    ((font-exists-p "Inconsolata") (set-frame-font "Inconsolata 14" nil t))
 
@@ -1365,20 +1367,6 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 ;;; Hacks and bug fixes
 ;;;
 
-;;; Experimentally commented out, 2025-04-06.
-;; (defadvice thing-at-point-url-at-point (around no-trailing-paren activate)
-;;   ad-do-it
-;;   (if (and ad-return-value (string-match "^\\([^(]*\\))$" ad-return-value))
-;;       (setq ad-return-value (match-string 1 ad-return-value))))
-
-
-;;; Experimentally commented out, 2025-04-06.
-;; (defadvice comment-padright (before handle-integer-comment-padding activate)
-;;   "If `comment-padding' is an integer, convert it into a string."
-;;   (unless comment-padding (setq comment-padding 0))
-;;   (when (integerp comment-padding)
-;;     (setq comment-padding (make-string comment-padding ? ))))
-
 (with-eval-after-load "ediff"
   (require 'file-comparison)
   )
@@ -1402,6 +1390,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
         ".*/checker-framework[^/]*/checker/bin-devel/\\.git-scripts/.*"
         ".*/checker-framework[^/]*/checker/bin-devel/\\.html-tools/.*"
         ".*/checker-framework[^/]*/checker/bin-devel/\\.plume-scripts/.*"
+        ".*/checker-framework[^/]*/checker/bin-devel/dockerdir/Dockerfile"
         ".*/checker-framework[^/]*/checker/tests/command-line/issue618/out.txt"
         ".*/checker-framework[^/]*/checker/tests/nullness-extra/[^/]*/Out.txt"
         ".*/checker-framework[^/]*/checker/tests/whole-program-inference/annotated/.*" ;; obsolescent
@@ -1458,6 +1447,48 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
         ".*/api/type-search-index.js"
         ".*/\\.git/.*"
         ))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Emacs compatibility
+;;;
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Hacks and bug fixes
+;;;
+
+;;; Experimentally commented out, 2025-04-06.
+;; (defadvice thing-at-point-url-at-point (around no-trailing-paren activate)
+;;   ad-do-it
+;;   (if (and ad-return-value (string-match "^\\([^(]*\\))$" ad-return-value))
+;;       (setq ad-return-value (match-string 1 ad-return-value))))
+
+
+;;; Experimentally commented out, 2025-04-06.
+;; (defadvice comment-padright (before handle-integer-comment-padding activate)
+;;   "If `comment-padding' is an integer, convert it into a string."
+;;   (unless comment-padding (setq comment-padding 0))
+;;   (when (integerp comment-padding)
+;;     (setq comment-padding (make-string comment-padding ? ))))
+
+
+(defun recenter-top-bottom--redraw-frame (&optional arg)
+  "Redraw the frame if called more than once."
+  (if (eq this-command last-command)
+      (redraw-frame)))
+(advice-add 'recenter-top-bottom :after #'recenter-top-bottom--redraw-frame)
+
+
+;; This needs to come first to avoid ":around" clobbering other advice.
+(defun buffer-menu--pop-to-buffer (_buffer-menu-function &optional arg)
+  "Use `pop-to-buffer' instead of `switch-to-buffer'."
+  (pop-to-buffer (list-buffers-noselect arg))
+  (buffer-menu--display-help))
+(advice-add 'buffer-menu :around #'buffer-menu--pop-to-buffer)
 
 
 (defun strip-line-numbers ()
