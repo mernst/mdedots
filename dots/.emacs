@@ -28,7 +28,7 @@
                    flycheck flyspell ggtags gnu-elpa-keyring-update
                    groovy-mode helm helm-lsp lsp-java lsp-javacomp
                    lsp-ui "lsp-ui" magit mmm-mode projectile
-                   python-mode rg rustic shfmt tree-sitter
+                   python-mode rg rustic shfmt transient tree-sitter
                    tree-sitter-langs treesit treesit-auto which-key
                    yaml-mode yasnippet))
  '(safe-local-variable-values

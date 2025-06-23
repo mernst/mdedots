@@ -89,6 +89,9 @@ This is good for modes like Perl, where the parser can get confused."
 
 (setq-default indent-tabs-mode nil)
 
+;; sideline is too distracting.
+(setq lsp-ui-sideline-enable nil)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Key maps

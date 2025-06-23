@@ -31,6 +31,8 @@
 (with-eval-after-load "package"
   (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/") t)
   (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t))
+;; To fix bug with magit and transient.
+(setq package-install-upgrade-built-in t)
 
 ;;; This ought to replace the above, I think, but it doesn't seem to work at CSE on Emacs 27.2, or on my laptop.
 ;;(use-package package
