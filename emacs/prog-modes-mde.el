@@ -1124,7 +1124,8 @@ otherwise, raise an error after the first problem is encountered."
 
 
 ;; Avoid errors if various Python support is not available.
-(eval-when-compile (if (locate-library "python-mode") (require 'python-mode)))
+;; TODO: reinstate
+;; (eval-when-compile (if (locate-library "python-mode") (require 'python-mode)))
 
 (autoload 'python-shell "python" "Start an interactive Python interpreter" t)
 

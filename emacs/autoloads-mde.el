@@ -11,6 +11,7 @@
   (require 'edebug)
   (require 'elide-head)
   (require 'info)
+  (require 'transient)
   (require 'magit))
 
 ;;;
