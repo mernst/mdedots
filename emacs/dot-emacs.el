@@ -29,9 +29,11 @@
 ;;   * tab to the "Install" button and press Enter.
 ;; To update packages, press: U x
 ;; New packages are installed at ~/.emacs.d/elpa/.
+;; Putting melpa-stable before built-in because magit needs the latest transient.
 (with-eval-after-load "package"
-  (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/") t)
-  (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t))
+  (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+  (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/"))
+  )
 ;; To fix bug with magit and transient.
 (setq package-install-upgrade-built-in t)
 

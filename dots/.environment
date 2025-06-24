@@ -114,8 +114,8 @@ else
   # `readlink -f` does not work on Mac OS.
   # Alternatives include `realpath` and: perl -MCwd -e 'print Cwd::abs_path shift'
   # Perl doesn't work here on CentOS 8, though that may be because the path isn't set yet??
-  export JAVA_HOME
-  JAVA_HOME="$(dirname "$(dirname "$(realpath "$(/usr/bin/which --skip-alias javac)")")")"
+  # (Not all versions of `which` support `--skip-alias`, so don't include it.)
+  export JAVA_HOME="$(dirname "$(dirname "$(realpath "$(/usr/bin/which javac)")")")"
 fi
 export GRAALVM_HOME
 # TODO: This isn't working; GRAALVM_HOME is empty.  Why?

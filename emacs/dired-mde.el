@@ -140,7 +140,7 @@
 (defvar my-dired-shell-guesses
   '(("\\.e?ps$" "gv * &" "xv" "lpr")	; ghostview runs in background
     ("\\.E?PS$" "gv * &" "xv" "lpr")	; uppercase
-    ("\\.jpg$" "xloadimage -shrink")		; uppercase
+    ("\\.jpg$" "xloadimage -shrink")
     ("\\.JPG$" "xloadimage -shrink")		; uppercase
     ("\\.pdf$" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; add acroread, gv
     ("\\.PDF$" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; uppercase
@@ -160,6 +160,11 @@
     ("\\.ods$" run-office-program)
     ("\\.odt$" run-office-program)
     ))
+(cse
+  (delete "papers * &" (assoc "\\.pdf$" my-dired-shell-guesses))
+  (delete "papers * &" (assoc "\\.PDF$" my-dired-shell-guesses))
+  )
+
 
 (if (equal 'darwin system-type)
     (progn
