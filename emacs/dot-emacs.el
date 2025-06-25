@@ -82,7 +82,7 @@
              (string-match "24-6-[0-9]+" (system-name))
              (equal "Vigor31" (system-name))
              (equal "JHR" (system-name))
-             (string-match "\.dagstuhl\.de$" (system-name))
+             (string-match "\\.dagstuhl\\.de$" (system-name))
              (equal "ubuntu" (system-name))
              (equal "yoga-ubuntu" (system-name))
              (equal "mdet1700" (system-name))

@@ -160,11 +160,11 @@
     ("\\.ods$" run-office-program)
     ("\\.odt$" run-office-program)
     ))
-(cse
-  (delete "papers * &" (assoc "\\.pdf$" my-dired-shell-guesses))
-  (delete "papers * &" (assoc "\\.PDF$" my-dired-shell-guesses))
-  )
-
+(if (eq system-site 'cse)
+    (progn
+      (delete "papers * &" (assoc "\\.pdf$" my-dired-shell-guesses))
+      (delete "papers * &" (assoc "\\.PDF$" my-dired-shell-guesses))
+      ))
 
 (if (equal 'darwin system-type)
     (progn
