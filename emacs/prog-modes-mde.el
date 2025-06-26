@@ -774,6 +774,40 @@ This is disabled on lines with a comment containing the string \"interned\"."
 ;; (mmm-add-mode-ext-class 'java-mode "\\.java$" 'java-text-block)
 
 
+(defun compilation-fix-java-error-prone ()
+  "Apply the suggestions made by Error Prone in the *compilation* buffer.
+Returns t if any change was made, nil otherwise."
+  (interactive)
+  (let ((result nil))
+    (with-current-buffer "*compilation*"
+      (goto-char (point-min))
+      (while (re-search-forward "^  Did you mean '\\(.*\\)'\\?$" nil t)
+        (let ((replacement (match-string 1)))
+          (save-excursion
+            (re-search-backward "^[^ :]+:[0-9]+:")
+            (compile-goto-error)
+            (beginning-of-line)
+            (skip-chars-forward " \t")
+            (delete-region (point) (progn (end-of-line) (point)))
+            (insert replacement)
+            (save-buffer)))
+        (setq result t)))
+    result))
+
+(defun fix-compilation ()
+  "Fix problems found in the *compilation* buffer."
+  (interactive)
+  (let ((result nil))
+    (if (compilation-fix-java-imports)
+        (setq result t))
+    (if (compilation-fix-java-error-prone)
+        (setq result t))
+    (if result
+        (with-current-buffer "*compilation*"
+          (recompile)
+          (fix-compilation)))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Makefiles and shell scripts
 ;;;
@@ -1696,8 +1730,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer 
-      (list (apply 'call-process program nil (current-buffer) nil args)
-            (buffer-string))))
+    (list (apply 'call-process program nil (current-buffer) nil args)
+          (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."

@@ -73,7 +73,7 @@
 (autoload 'jlookup "javadoc-lookup" "Look up Java entity." t)
 (autoload 'java-insert-import "javadoc-lookup" "Insert Java import statement." t)
 (autoload 'jimport "javadoc-lookup" "Insert Java import statement." t)
-(autoload 'compilation-java-insert-imports "javadoc-lookup" "Insert Java import statements to fix compilation errors" t)
+(autoload 'compilation-fix-java-imports "javadoc-lookup" "Insert Java import statements to fix compilation errors" t)
 
 ;;; Version control
 

@@ -28,8 +28,8 @@
                    groovy-mode helm helm-lsp lsp-java lsp-javacomp
                    lsp-ui "lsp-ui" magit mmm-mode projectile
                    python-mode rg rustic shfmt transient tree-sitter
-                   tree-sitter-langs treesit treesit-auto which-key
-                   yaml-mode yasnippet))
+                   tree-sitter-langs treesit treesit-auto tuareg
+                   which-key yaml-mode yasnippet))
  '(safe-local-variable-values
    '((TeX-master . "../main") (TeX-master . "main") (auto-fill-mode)
      (require-final-newline . t) (mangle-whitespace . t)

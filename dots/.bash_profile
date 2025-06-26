@@ -25,3 +25,11 @@ if [ -f "$HOME/.cargo/env" ]; then
   # shellcheck disable=SC1091  # file does not exist on some file systems
   . "$HOME/.cargo/env"
 fi
+
+# BEGIN opam configuration
+# This is useful if you're using opam as it adds:
+#   - the correct directories to the PATH
+#   - auto-completion for the opam binary
+# This section can be safely removed at any time if needed.
+test -r '/home/mernst/.opam/opam-init/init.sh' && . '/home/mernst/.opam/opam-init/init.sh' > /dev/null 2> /dev/null || true
+# END opam configuration

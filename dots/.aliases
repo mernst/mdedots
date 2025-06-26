@@ -594,6 +594,7 @@ alias clouddesk='xsa dev-dsk-mdernst-2b-8d1f8628.us-west-2'
 alias clouddesky='xsay dev-dsk-mdernst-2b-8d1f8628.us-west-2'
 
 pinghost() { command time ping -q -c 1 -w 1 "$1"; }
+# This sets the local time to whatever the remote host's time is.
 # The first sudo command is to warm up the sudo cache, so that I don't have
 # to wait for the prompt and so that the time isn't incorrect by the few
 # moments it takes me to type the password.
@@ -605,11 +606,11 @@ datehost() {
 
 alias uwplse='xterm -T uwplse -e ssh -X mernst@uwplse.org &'
 
-alias pingmangold='pinghost mernst@mangold.csail.mit.edu'
+alias pingmangold='pinghost mangold.csail.mit.edu'
 alias mangolddate='datehost mernst@mangold.csail.mit.edu'
-alias pingrecycle='pinghost mernst@recycle.cs.washington.edu'
+alias pingrecycle='pinghost recycle.cs.washington.edu'
 alias recycledate='datehost mernst@recycle.cs.washington.edu'
-alias pinggodwit='pinghost mernst@godwit.cs.washington.edu'
+alias pinggodwit='pinghost godwit.cs.washington.edu'
 alias godwitdate='datehost mernst@godwit.cs.washington.edu'
 
 ## Local
