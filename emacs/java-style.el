@@ -32,7 +32,7 @@ These Emacs commands automate some of them."
   (tags-query-replace-noerror "new File(\\([^,)]*\\))" "Paths.get(\\1)")
   (tags-query-replace-noerror "\\(\\(^\\|,\\|(\\|/\\*@\\(NonNull\\|Nullable\\)\\*/\\) *\\)File\\b" "\\1Path")
   (tags-query-replace-noerror "<File>" "<Path>")
-					;; too many other "getName()" methods: (tags-query-replace-noerror "\\.getName()" ".toString()")
+  ;; too many other "getName()" methods: (tags-query-replace-noerror "\\.getName()" ".toString()")
   (tags-query-replace-noerror "\\(file\\|path\\)\\.getName()" "\\1.getFileName().toString()")
   (tags-query-replace-noerror "\\.getParent()" ".getParent().toString()")
   (tags-query-replace-noerror "\\.getParentFile()" ".getParent()")
@@ -43,7 +43,7 @@ These Emacs commands automate some of them."
   (tags-query-replace-noerror "\\b\\([A-Za-z0-9_]+\\)\\b\\.canExecute()" "Files.isExecutable(\\1)")
   (tags-query-replace-noerror "\\b\\([A-Za-z0-9_]+\\)\\b\\.isDirectory()" "Files.isDirectory(\\1)")
   (tags-query-replace-noerror "\\b\\([A-Za-z0-9_]+\\)\\b\\.mkdirs()" "Files.createDirectory(\\1)")
-					;;
+  ;;
   (tags-search "deleteOnExit")
   )
 
@@ -108,79 +108,79 @@ statement.  Does replacement in any file in a currently-visited tags table."
       (if java-style-debug
 	  (message "(point) at top of loop: %s" (point)))
       (let ((start-of-if (match-beginning 1)))
-      ;; (message "Before and after point:\n %s\n %s"
-      ;;          (buffer-substring (max (- (point) 45) (point-min))
-      ;;                            (point))
-      ;;          (buffer-substring (point)
-      ;;                            (min (+ (point) 45) (point-max))))
-      ;; Are tags-search and tags-loop-continue guaranteed to leave the
-      ;; match-data set??  Do looking-at to re-set match-data.
-      (beginning-of-line)
-      ;; Match might not have started at beginning of line
-      ;; (if (not (looking-at tags-regex))
-      ;;          (error "This can't happen"))
+        ;; (message "Before and after point:\n %s\n %s"
+        ;;          (buffer-substring (max (- (point) 45) (point-min))
+        ;;                            (point))
+        ;;          (buffer-substring (point)
+        ;;                            (min (+ (point) 45) (point-max))))
+        ;; Are tags-search and tags-loop-continue guaranteed to leave the
+        ;; match-data set??  Do looking-at to re-set match-data.
+        (beginning-of-line)
+        ;; Match might not have started at beginning of line
+        ;; (if (not (looking-at tags-regex))
+        ;;          (error "This can't happen"))
 
-      (if java-style-debug
-	  (message "Looking at (2): %s"
-		   (buffer-substring (point)
-                                     (min (+ (point) 45) (point-max)))))
-      ;; (message "1 %s" (match-data))
-      (goto-char start-of-if)
-      (if java-style-debug
-	  (message "Looking at (3): %s"
-		   (buffer-substring (point)
-				     (min (+ (point) 45) (point-max)))))
-      (let* ((line (buffer-substring (point) (save-excursion (end-of-line) (point))))
-             (semicolon-terminated (equal ";" (substring line -1))))
-        (if (and (= (how-many-in-string "(" line) (how-many-in-string ")" line))
-                 (= 0 (how-many-in-string "{" line))
-                 (= 0 (how-many-in-string "//" line))
-                 (let ((leading-spaces (progn (string-match "^ *" line)
-                                              (match-string 0 line))))
-                   (if semicolon-terminated
-                       (looking-at (concat leading-spaces "[^ \n].*\n+"
-                                           leading-spaces "[^ ]"))
-                     (and (looking-at (concat leading-spaces "[^ \n].*\n"
-                                              leading-spaces "[ ]"))
-                          (not (looking-at (concat leading-spaces "[^ \n].*\n"
-                                                   leading-spaces "[ ]*\\(for\\|if\\|try\\)\\b")))))))
-            ;; Parens are balanced on the if/for line, and either:
-            ;;  * line ends with ";" and next line is equally indented, or
-            ;;  * line does not end with ";" and next line is indented more.
-            (progn
-              (cond ((looking-at " *\\(if\\|for\\|while\\)")
-                     (forward-sexp 2))
-                    ((looking-at " *\\(}? else\\)")
-                     ;; (message "2 %s" (match-data))
-                     (goto-char (match-end 0)))
-                    (t
-                     (error "This can't happen.  start-of-if=%d (point)=%d.  Looking at: %s"
-			    start-of-if
-			    (point)
-                            (buffer-substring (point)
-                                              (min (+ (point) 45) (point-max))))))
-              (insert " \{")
-              (if semicolon-terminated
-                  (newline-and-indent))
-              (re-search-forward ";\\( *//.*\\)?$")
-              (while (looking-back "^[^;\n]*//[^\n]*$" nil)
-                (re-search-forward ";\\( *//.*\\)?$"))
-              (if (looking-at "\n *\\(else\\)")
+        (if java-style-debug
+	    (message "Looking at (2): %s"
+		     (buffer-substring (point)
+                                       (min (+ (point) 45) (point-max)))))
+        ;; (message "1 %s" (match-data))
+        (goto-char start-of-if)
+        (if java-style-debug
+	    (message "Looking at (3): %s"
+		     (buffer-substring (point)
+				       (min (+ (point) 45) (point-max)))))
+        (let* ((line (buffer-substring (point) (save-excursion (end-of-line) (point))))
+               (semicolon-terminated (equal ";" (substring line -1))))
+          (if (and (= (how-many-in-string "(" line) (how-many-in-string ")" line))
+                   (= 0 (how-many-in-string "{" line))
+                   (= 0 (how-many-in-string "//" line))
+                   (let ((leading-spaces (progn (string-match "^ *" line)
+                                                (match-string 0 line))))
+                     (if semicolon-terminated
+                         (looking-at (concat leading-spaces "[^ \n].*\n+"
+                                             leading-spaces "[^ ]"))
+                       (and (looking-at (concat leading-spaces "[^ \n].*\n"
+                                                leading-spaces "[ ]"))
+                            (not (looking-at (concat leading-spaces "[^ \n].*\n"
+                                                     leading-spaces "[ ]*\\(for\\|if\\|try\\)\\b")))))))
+              ;; Parens are balanced on the if/for line, and either:
+              ;;  * line ends with ";" and next line is equally indented, or
+              ;;  * line does not end with ";" and next line is indented more.
+              (progn
+                (cond ((looking-at " *\\(if\\|for\\|while\\)")
+                       (forward-sexp 2))
+                      ((looking-at " *\\(}? else\\)")
+                       ;; (message "2 %s" (match-data))
+                       (goto-char (match-end 0)))
+                      (t
+                       (error "This can't happen.  start-of-if=%d (point)=%d.  Looking at: %s"
+			      start-of-if
+			      (point)
+                              (buffer-substring (point)
+                                                (min (+ (point) 45) (point-max))))))
+                (insert " \{")
+                (if semicolon-terminated
+                    (newline-and-indent))
+                (re-search-forward ";\\( *//.*\\)?$")
+                (while (looking-back "^[^;\n]*//[^\n]*$" nil)
+                  (re-search-forward ";\\( *//.*\\)?$"))
+                (if (looking-at "\n *\\(else\\)")
+                    (progn
+                      ;; (message "3 %s" (match-data))
+                      (goto-char (match-beginning 1))
+                      (insert "} "))
                   (progn
-                    ;; (message "3 %s" (match-data))
-                    (goto-char (match-beginning 1))
-                    (insert "} "))
-                (progn
-                  (newline-and-indent)
-                  (insert "}")
-                  (c-indent-line-or-region))))
-          (forward-line)))
-      (if java-style-debug
-	  (message "match-data before (fileloop-continue): %s" (match-data)))
-      (fileloop-continue)
-      (if java-style-debug
-	  (message "match-data before (fileloop-continue): %s" (match-data)))
-      )))
+                    (newline-and-indent)
+                    (insert "}")
+                    (c-indent-line-or-region))))
+            (forward-line)))
+        (if java-style-debug
+	    (message "match-data before (fileloop-continue): %s" (match-data)))
+        (fileloop-continue)
+        (if java-style-debug
+	    (message "match-data before (fileloop-continue): %s" (match-data)))
+        )))
 
   ;; This may be subsumed by `examine-and-cleanup-curly-braces'.
 
@@ -205,9 +205,9 @@ Works over the currently-visited tags table."
   (tags-query-replace-noerror
    (concat "^\\( *\\)"
 	   (concat
-	   "\\b\\(\\(?:if\\|for\\) "
-	   "([^\n()]*\\(?:([^\n()]*)[^\n()]*\\)*) \\)"
-	   )
+	    "\\b\\(\\(?:if\\|for\\) "
+	    "([^\n()]*\\(?:([^\n()]*)[^\n()]*\\)*) \\)"
+	    )
 	   "\\([^\n;{}]*;\\)")
    (concat "\\1\\2{\n\\1  \\3\n\\1}")
    )
@@ -243,8 +243,8 @@ Works over the currently-visited tags table."
   (condition-case nil
       (improve-javadoc-description-style)
     (error nil))
-  ;; TODO: execution doesn't get to here.
   (improve-javadoc-tag-style)
+  (improve-javadoc-initial-verb)
   (javadoc-add-summary))
 
 
@@ -342,14 +342,30 @@ for files in the current TAGS tables."
 
   ;; Non-capitalized first letter in the main part of the Javadoc:
   (let ((case-fold-search nil))
-    (tags-replace-capitalize-2 "\\(/\\*\\*[[:space:]]*\\)\\([a-z]\\)"))
+    ;; TODO: implement this
+    ;; (tags-replace-capitalize-2 "\\(/\\*\\*[[:space:]]*\\)\\([a-z]\\)"))
+    )
 
-  ;; Missing period at the end of a Javadoc tag
-  (condition-case nil
-      (tags-replace "^\\( *\\* @[^@./]*\\.[ \n][^@./]*[A-Za-z0-9]\\)\\(\n[ \n*]*\\(\\*/\\|\\* @\\)\\)"
-                    "\\1.\\2")
-    (error nil))
   )
+
+(defun improve-javadoc-initial-verb ()
+  "Make the initial verb in a Javadoc comment be present tense, not a command."
+  (interactive)
+
+  ;; Remove trailing period.  That is, end the phrase with a period
+  ;; only if more text follows it.
+  (let ((regexp "\\(/\\*\\*\n *\\* \\)\\(Get\\) ")
+	(replacement "\\1Returns "))
+    (condition-case nil
+	(tags-replace regexp replacement)
+      (error nil)))
+  (let ((regexp "\\(/\\*\\*\n *\\* \\)\\(Return\\|Increment\\) ")
+	(replacement "\\1\\2s "))
+    (condition-case nil
+	(tags-replace regexp replacement)
+      (error nil)))
+  )
+
 
 (defun improve-javadoc-description-style ()
   "Improve style for Javadoc descriptions, for files in the current TAGS tables.
@@ -367,10 +383,15 @@ The description is everything but the block tags (such as @param and @return)."
 ;; After running, search for "<code>" and "<tt>" to clean up stragglers by hand.
 (defun javadoc-fix-code-tags ()
   (interactive)
-  (tags-query-replace-noerror "^\\( *\\(?:/\\*\\)?\\*.*\\)<\\(?:code\\|tt\\)>\\(?:\n *\\* *\\)?\\([^<>@&]+?\\)\\(?:\n *\\* *\\)?</\\(?:code\\|tt\\)>" "\\1{@code \\2}")
+  (tags-query-replace-noerror (concat "^\\( *\\(?:/\\*\\)?\\*.*\\)"
+                                      "<\\(?:code\\|tt\\)>\\(?:\n *\\* *\\)?"
+                                      "\\([^<>@&{}]+?\\)\\(?:\n *\\* *\\)?"
+                                      "</\\(?:code\\|tt\\)>")
+                              "\\1{@code \\2}")
+  ;; Wouldn't this be caught by the above?
   (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\(false\\|null\\|true\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
   (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\([A-Za-z_0-9\\.()\\[\\]]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
-  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\([^<>]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
+  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\([^<>{}]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
   )
 ;; Same thing, but permitting @ in the body:
 ;;  (tags-query-replace-noerror "^\\( *\\(?:/\\*\\)?\\*.*\\)<\\(?:code\\|tt\\)>\\(?:\n *\\* *\\)?\\([^<>&]+?\\)\\(?:\n *\\* *\\)?</\\(?:code\\|tt\\)>" "\\1{@code \\2}")
@@ -465,8 +486,8 @@ for files in the current TAGS table."
 	tags-loop-operate `(progn
 			     (message "performing at %s" (point))
 			     (perform-replace old-for-loop-regexp
-					    for-loop-replacement
-					    t t nil)
+					      for-loop-replacement
+					      t t nil)
 			     t))
   (fileloop-continue t))
 
@@ -536,9 +557,9 @@ for files in the current TAGS table."
   (interactive)
   (goto-char (point-min))
   (while (search-forward "/*" nil t)
-     (let ((beg (- (point) 2))
-           (end (progn (search-forward "*/") (point))))
-       (delete-region beg end))))
+    (let ((beg (- (point) 2))
+          (end (progn (search-forward "*/") (point))))
+      (delete-region beg end))))
 
 ;; The throw statement is necessary for skeleton files.  For stub
 ;; libraries, replacing the body by a semicolon is more appropriate.
@@ -596,14 +617,14 @@ for files in the current TAGS table."
 ;;;
 
 (defun add-imports (regex package)
-    (tags-search regex)
-    (while t
-      (if (search-backward "\nimport" nil t)
-	  (progn
-	    (search-forward "\n\n")
-	    (insert "/*>>>\nimport " package ";\n*/\n\n")))
-      (goto-char (point-max))
-      (mde-tags-loop-continue)))
+  (tags-search regex)
+  (while t
+    (if (search-backward "\nimport" nil t)
+	(progn
+	  (search-forward "\n\n")
+	  (insert "/*>>>\nimport " package ";\n*/\n\n")))
+    (goto-char (point-max))
+    (mde-tags-loop-continue)))
 
 (defun add-all-imports-to-directory (directory)
 
@@ -656,7 +677,7 @@ for files in the current TAGS table."
    *\\)@Nullable\\(\\(?:
    *@\\(?:Override\\|CanIgnoreReturnValue\\|SuppressWarnings([^)]*)\\)\\)*\\)\\(
    *\\)" modifers-plus-space-regex)
-  "\\2\\3\\4@Nullable ")
+   "\\2\\3\\4@Nullable ")
 
 
   ;; This handles @Nullable on the same line as other code
@@ -672,7 +693,7 @@ for files in the current TAGS table."
    *@Override\\)"
    "\\2\\1")
 
-)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TODO
@@ -795,7 +816,7 @@ It is irrelevant if using a code formatter such as google-java-format."
   (tags-query-replace-noerror "\\b\\(for (.*;\\)\\([^[:space:]\n].*;\\)\\([^[:space:]\n]\\)" "\\1 \\2 \\3")
   (tags-query-replace-noerror "\\b\\(for (.*[^;];\\)\\([^ \t\n;]\\)" "\\1 \\2")
   (tags-query-replace-noerror "\\b\\(throws.*[a-z]\\){" "\\1 {")
-)
+  )
 
 ;; Not needed any more -- just run google-java-format.
 (defun declaration-annotations-to-their-own-line ()

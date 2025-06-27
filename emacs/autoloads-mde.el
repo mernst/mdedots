@@ -19,7 +19,7 @@
 ;;;
 
 (defalias 'copmile 'compile)
-(setq-default compile-command "make ")	; default: "make -k "
+;; (setq-default compile-command "make ")	; default: "make -k "
 
 ;; Coding
                                         ; GNU boilerplate
