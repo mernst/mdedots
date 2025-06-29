@@ -23,13 +23,16 @@
  '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
  '(large-file-warning-threshold nil)
  '(package-selected-packages
-   '(adaptive-wrap apheleia cargo company "company" dap-mode dtrt-indent
-                   flycheck flyspell ggtags gnu-elpa-keyring-update
-                   groovy-mode helm helm-lsp lsp-java lsp-javacomp
-                   lsp-ui "lsp-ui" magit mmm-mode projectile
-                   python-mode rg rustic shfmt transient tree-sitter
-                   tree-sitter-langs treesit treesit-auto tuareg
-                   which-key yaml-mode yasnippet))
+   '(adaptive-wrap aider aidermacs apheleia cargo claude-code company
+                   "company" dap-mode dtrt-indent flycheck flyspell
+                   ggtags gnu-elpa-keyring-update gptel groovy-mode
+                   helm helm-lsp lsp-java lsp-javacomp lsp-ui "lsp-ui"
+                   magit mmm-mode projectile python-mode rg rustic
+                   shfmt transient tree-sitter tree-sitter-langs
+                   treesit treesit-auto tuareg which-key yaml-mode
+                   yasnippet))
+ '(package-vc-selected-packages
+   '((claude-code :url "https://github.com/stevemolitor/claude-code.el")))
  '(safe-local-variable-values
    '((TeX-master . "../main") (TeX-master . "main") (auto-fill-mode)
      (require-final-newline . t) (mangle-whitespace . t)
