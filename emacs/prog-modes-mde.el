@@ -73,8 +73,7 @@ This is good for modes like Perl, where the parser can get confused."
   ;; out of the box, apheleia doesn't format shell scripts
   (setf (alist-get 'sh-mode apheleia-mode-alist)
         'shfmt)
-  (setf (alist-get 'shfmt
-                   apheleia-formatters)
+  (setf (alist-get 'shfmt apheleia-formatters)
         '("shfmt" "-filename" filepath "-ln"
           (cl-case (bound-and-true-p sh-shell) (sh "posix") (t "bash"))
           "-ci" "-bn" "-sr"
@@ -1731,8 +1730,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer 
-      (list (apply 'call-process program nil (current-buffer) nil args)
-            (buffer-string))))
+    (list (apply 'call-process program nil (current-buffer) nil args)
+          (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
