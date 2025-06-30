@@ -16,12 +16,13 @@ CVS
 verification-metadata.dryrun.xml
 
 # Generated directories (differences are ignored if a program uses one of these names!)
-# There is no need to include "api", which is generally a subdirectory of "build".
+# api/ is sometimes a subdirectory of build/.
+api
 build
-# The "javadoc" pattern is problematic, because there can be non-generated directories named `javadoc`.
-# For instance, the JDK source code contains such directories.
+# The JDK source code contains a non-generated directory named `javadoc/`.
 # javadoc
 target
+type-search-index.js
 
 # downloaded/cloned directories
 .git-scripts
