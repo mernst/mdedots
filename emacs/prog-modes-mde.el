@@ -644,7 +644,6 @@ This is disabled on lines with a comment containing the string \"interned\"."
 	    (not (string-match-p "/dataflow/manual/examples/" filename))
 	    (not (string-match-p "/nullness-jspecify-samples/" filename))
 	    )
-       (string-match-p "/annotation-tools" filename)
        (and (or (string-match-p "/object-construction-checker" filename)
 	        (string-match-p "/no-literal-checker" filename))
 	    (not (string-match-p "/tests/\\|/test-lib-java/" filename)))
@@ -1730,8 +1729,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer 
-    (list (apply 'call-process program nil (current-buffer) nil args)
-          (buffer-string))))
+      (list (apply 'call-process program nil (current-buffer) nil args)
+            (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
@@ -2115,16 +2114,6 @@ Use as a hook, like so:
 		   "./gradlew assembleForJavac"
 		 (let ((cf-dir (file-relative-name (match-string 1 default-directory) default-directory)))
 		   (concat cf-dir "/gradlew -p " cf-dir " " "assembleForJavac")))))
-	((string-match "\\(^.*/annotation-tools\\(?:-fork.[^/]*\\|-branch[^/]*\\)?\\)/" default-directory)
-	 (make-local-variable 'compile-command)
-         (setq compile-command
-	       (if (= (match-end 1) (1- (length default-directory)))
-		   "./gradlew build"
-		 (let ((afu-dir (concat (file-relative-name
-					 (match-string 1 default-directory)
-					 default-directory)
-					"/annotation-file-utilities")))
-		   (concat afu-dir "/gradlew -p " afu-dir " build")))))
 
         ((string-match "/bzr/.*/doc/en/user-guide/" default-directory)
          (make-local-variable 'compile-command)

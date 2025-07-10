@@ -626,6 +626,12 @@ proposal")
     (delete-matching-paragraphs "^LaTeX Warning: \\(Citation\\|Reference\\)" nil nil t)
     ))
 
+(defun use-brocket-tt ()
+  "Change uses of \\texttt{...} to \\<...>."
+  (tags-query-replace "\\\\texttt{\\([^{}<>]+\\)}" "\\\\<\\1>")
+  (tags-query-replace "\\\\texttt{\\([^{}]+\\)}" "\\\\codeid{\\1}")
+  )
+
 
 ;;;
 ;;; BibTeX

@@ -182,13 +182,10 @@
   "Look up definition of WORD in a browser."
   (interactive (webster-prompt "Define word"))
   (funcall browse-url-browser-function
-	   ;; (concat "http://work.ucsd.edu:5141/cgi-bin/http_webster?" word)
-	   ;; (concat "http://www.m-w.com/cgi-bin/netdict?book=Dictionary&va=" word)
-	   ;; (concat "http://www.dictionary.com/search?q=" word)
-	   (concat "http://dictionary.reference.com/browse/" word)
-
-	   ;; These do not seem very deep or formal
 	   ;; (concat "http://www.google.com/dictionary?aq=f&langpair=en|en&hl=en&q=" word)
+	   ;; (concat "http://work.ucsd.edu:5141/cgi-bin/http_webster?" word)
+	   ;; (concat "http://dictionary.com/browse/" word)
+	   (concat "https://www.merriam-webster.com/dictionary/" word)
 	   ))
 
 (defun thesaurus-www (word)
