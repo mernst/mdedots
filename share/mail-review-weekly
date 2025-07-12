@@ -6,7 +6,7 @@ import time
 import webbrowser
 
 
-def mail_search(search_term):
+def mail_search(search_term: str) -> None:
     webbrowser.open(
         "https://mail.google.com/mail/u/"
         + "mernst@cs.washington.edu"
@@ -20,7 +20,7 @@ def mail_search(search_term):
     time.sleep(0.3)
 
 
-def mail_label(search_term):
+def mail_label(search_term: str) -> None:
     webbrowser.open(
         "https://mail.google.com/mail/u/"
         + "mernst@cs.washington.edu"
