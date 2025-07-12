@@ -92,7 +92,7 @@ if debug:
     print("MAILBODY=" + MAILBODY.name)
 
 
-def echoautobrowsemaybe(*args):
+def echoautobrowsemaybe(*args: str) -> None:
     """Echo an autobrowse command if there would be anything to see there.
     Each argument can be one of:
       [bracketedtag]

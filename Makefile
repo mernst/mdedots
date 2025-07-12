@@ -6,7 +6,7 @@ all: style-fix style-check git-hooks
 	${MAKE} -C emacs
 
 style-fix: python-style-fix shell-style-fix
-style-check: python-style-check shell-style-check
+style-check: python-style-check python-typecheck shell-style-check
 
 .PHONY: git-hooks
 git-hooks: .git/hooks/pre-commit .git/hooks/post-merge
@@ -15,14 +15,27 @@ git-hooks: .git/hooks/pre-commit .git/hooks/post-merge
 .git/hooks/post-merge: share/mdedots.post-merge
 	cp -pf $< $@
 
-PYTHON_FILES   = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/\|/usr/bin/env \)python'   * | grep -v /.git/ | grep -v '~$$' | grep -v '\.tar$$' | grep -v addrfilter | grep -v cronic-orig | grep -v gradlew | grep -v mail-stackoverflow.sh | grep -v '/old/' | grep -v 'emacs/')
-python-style-fix:
-	@ruff -q format ${PYTHON_FILES}
-	@ruff -q check ${PYTHON_FILES} --fix
-python-style-check:
-	@ruff -q format --check ${PYTHON_FILES}
-	@ruff -q check ${PYTHON_FILES}
-
+PYTHON_FILES:=$(wildcard **/*.py) $(shell grep -r -l --exclude='*.py' --exclude='*~' --exclude='*.tar' --exclude=gradlew --exclude-dir=.git '^\#! \?\(/bin/\|/usr/bin/env \)python')
+PYTHON_FILES_TO_CHECK:=$(filter-out ${lcb_runner},${PYTHON_FILES})
+install-mypy:
+	@if ! command -v mypy ; then pip install mypy ; fi
+install-ruff:
+	@if ! command -v ruff ; then pipx install ruff ; fi
+python-style-fix: install-ruff
+ifneq (${PYTHON_FILES},)
+	@ruff format ${PYTHON_FILES_TO_CHECK}
+	@ruff -q check ${PYTHON_FILES_TO_CHECK} --fix
+endif
+python-style-check: install-ruff
+ifneq (${PYTHON_FILES},)
+	@ruff -q format --check ${PYTHON_FILES_TO_CHECK}
+	@ruff -q check ${PYTHON_FILES_TO_CHECK}
+endif
+python-typecheck: install-mypy
+ifneq (${PYTHON_FILES},)
+	@mypy --strict --scripts-are-modules --install-types --non-interactive ${PYTHON_FILES_TO_CHECK} > /dev/null 2>&1 || true
+	mypy --strict --scripts-are-modules --ignore-missing-imports ${PYTHON_FILES_TO_CHECK}
+endif
 
 SH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)sh' * | grep -v /.git/ | grep -v '~$$' | grep -v addrfilter | grep -v mail-stackoverflow.sh | grep -v mew.texi | grep -v emacs/mew/ | grep -v conda-initialize.sh)
 BASH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)bash' * | grep -v /.git/ | grep -v '~$$' | grep -v emacs/mew/)
@@ -37,5 +50,6 @@ shell-style-check:
 	@checkbashisms -l ${SH_SCRIPTS}
 
 showvars:
+	@echo "PYTHON_FILES=${PYTHON_FILES}"
 	@echo "SH_SCRIPTS=${SH_SCRIPTS}"
 	@echo "BASH_SCRIPTS=${BASH_SCRIPTS}"
