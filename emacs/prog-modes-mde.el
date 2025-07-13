@@ -801,6 +801,8 @@ Returns t if any change was made, nil otherwise."
         (setq result t))
     (if (compilation-fix-java-error-prone)
         (setq result t))
+    (if (compilation-fix-python-ruff)
+        (setq result t))
     (if result
         (with-current-buffer "*compilation*"
           (recompile)
@@ -1261,11 +1263,54 @@ otherwise, raise an error after the first problem is encountered."
 
 
 
+;; TODO: Use ruff instead.
 (defun pyflakes-this-file () (interactive)
        (compile (format "pyflakes %s" (buffer-file-name)))
        )
 
 ;; (add-hook 'python-mode-hook (lambda () (pyflakes-mode t)))
+
+
+(defun compilation-fix-python-ruff ()
+  "Apply the suggestions made by ruff in the *compilation* buffer.
+Returns t if any change was made, nil otherwise."
+  (interactive)
+  (let ((result nil)
+        (roper-buffer (get-buffer-create "*roper output*")))
+    (with-current-buffer "*compilation*"
+      (goto-char (point-min))
+      (while (re-search-forward "^\\(.*\\):[0-9]+:[0-9]+: \\(N802 Function name\\|N806 Variable\\|N816 Variable\\) `\\([a-zA-Z0-9_]+\\)`" nil t)
+        (let* ((filename (match-string 1))
+               (mixedCase (match-string 3))
+               (replacement (string-inflection-underscore-function mixedCase))
+               (roper-args (list "rename-by-name" "--do" filename mixedCase replacement)))
+          (with-current-buffer roper-buffer
+            (insert (format "\nCalling roper on %s\n"  roper-args)))
+          (condition-case err
+              (progn
+                (apply #'call-process "roper" nil roper-buffer nil roper-args)
+                (setq result t))
+            (error
+             ;; do nothing
+             ))))
+      (goto-char (point-min))
+      (while (re-search-forward "^\\(.*\\):[0-9]+:[0-9]+: N816 Variable `\\([a-zA-Z0-9_]+\\)` in global scope should not be mixedCase" nil t)
+
+
+        (let* ((filename (match-string 1))
+               (mixedCase (match-string 2))
+               (replacement (string-inflection-underscore-function mixedCase))
+               (roper-args (list "rename-by-name" "--do" filename mixedCase replacement)))
+          (with-current-buffer roper-buffer
+            (insert (format "\nCalling roper on %s\n"  roper-args)))
+          (condition-case err
+              (progn
+                (apply #'call-process "roper" nil roper-buffer nil roper-args)
+                (setq result t))
+            (error
+             ;; do nothing
+             )))))
+    result))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
