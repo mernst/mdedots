@@ -17,9 +17,9 @@
       (normal-top-level-add-subdirs-to-load-path)))
 (add-to-list 'load-path "~/java/google-java-format/core/src/main/scripts/")
 (setq load-path (append '("~/.emacs.d/elpa/transient-20250624.1357"
-                           "/home/mernst/.emacs.d/elpa/python-0.30"
- "/home/mernst/.emacs.d/elpa/python-mode-20250624.1530"
- "/home/mernst/.emacs.d/elpa/python-mode-20250624.1530/completion")
+                          "/home/mernst/.emacs.d/elpa/python-0.30"
+                          "/home/mernst/.emacs.d/elpa/python-mode-20250624.1530"
+                          "/home/mernst/.emacs.d/elpa/python-mode-20250624.1530/completion")
                         load-path))
 
 
@@ -1381,6 +1381,8 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
   )
 (autoload 'diff-clean "file-comparison"
   "Cleans up a diff to remove uninteresting changes." t)
+(autoload 'diff-clean-imports "file-comparison"
+  "Cleans up a diff to remove uninteresting changes, including all import statements." t)
 (autoload 'diff-clean-javadoc "file-comparison"
   "Cleans up a diff to remove uninteresting changes, including all API documentation." t)
 (autoload 'diff-clean-json "file-comparison"
