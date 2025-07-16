@@ -11,7 +11,7 @@
   (require 'cl-lib)			; for `cl-assert'
   (require 'thingatpt)
   (require 'man)
-)
+  )
 
 (add-hook 'before-save-hook 'time-stamp)
 
@@ -208,10 +208,10 @@ Arbitrary BUFFER may be supplied (defaults to *grep*)."
   (require 'man)
   (let* ((Man-arguments
           (let ((file-name (buffer-file-name)))
-           (if file-name
-               (file-name-sans-extension
-                (file-name-nondirectory file-name))
-             (file-name-sans-extension (buffer-name)))))
+            (if file-name
+                (file-name-sans-extension
+                 (file-name-nondirectory file-name))
+              (file-name-sans-extension (buffer-name)))))
          (buffer (get-buffer-create (concat "*Man " Man-arguments "*"))))
     (save-excursion
       (with-current-buffer buffer
@@ -259,13 +259,13 @@ Find WHAT in any file in or under DIR."
   (let ((default-directory (file-name-as-directory dir)))
     ;;not necessary any more? (require 'compile)
     (let* ((quoted-what (if (string-match "^'.*'$" what)
-                        what
-                      (if (string-match "'" what)
-                          (concat "\"" what "\"")
-                        (concat "'" what "'"))))
-        (command (concat "search -i -n "
+                            what
+                          (if (string-match "'" what)
+                              (concat "\"" what "\"")
+                            (concat "'" what "'"))))
+           (command (concat "search -i -n "
                             (if (string-match "^-" what) "-e " "")
-                         quoted-what)))
+                            quoted-what)))
       ;; Old version
       ;; (compile-internal command
       ;;                   "No more search hits" "grep" nil grep-regexp-alist)
@@ -329,11 +329,11 @@ With just C-u prefix argument, prompt for starting date and days."
                 (setq timezone2 nil))
             (append
              (apply #'append
-             (mapcar #'(lambda (fname)
-                      (let ((f (expand-file-name fname)))
-                        (if (file-exists-p f)
-                            (list "--iCal-URL" (string-trim (file-contents f))))))
-                  '("~/private/iCal-url1" "~/private/iCal-url2" "~/private/iCal-url3")))
+                    (mapcar #'(lambda (fname)
+                                (let ((f (expand-file-name fname)))
+                                  (if (file-exists-p f)
+                                      (list "--iCal-URL" (string-trim (file-contents f))))))
+                            '("~/private/iCal-url1" "~/private/iCal-url2" "~/private/iCal-url3")))
              (list "--days" (format "%s" days))
              (if start-date
                  (list "--date" start-date))
@@ -453,7 +453,7 @@ The first column is omitted if the optional argument is specified."
 
 ;; This is intended for us in ~/private/addresses.tex
 ;; Example use:
-;:   (make-local-variable 'after-change-functions)
+                                        ;:   (make-local-variable 'after-change-functions)
 ;;   (add-hook 'after-change-functions 'latex-timestamp-paragraph)
 ;; MINOR PROBLEM: Edits between paragraphs get recorded in the next one.
 ;; MAJOR PROBLEM: This screws up undo information (and even revert-buffer).
@@ -493,14 +493,14 @@ Not guaranteed to work in all cases."
            (gqalt (grouped qalt))
            del-start del-end)
       (cond  ((string-match (concat gqalt qalternative qalt) whole-regexp)
-             (setq del-start (match-end 1)
-                   del-end (match-end 0)))
+              (setq del-start (match-end 1)
+                    del-end (match-end 0)))
              ((string-match (concat gqopen qalternative qalt) whole-regexp)
-             (setq del-start (match-end 1)
-                   del-end (match-end 0)))
-            ((string-match (concat (grouped (concat qalt qalternative)) gqclose) whole-regexp)
-             (setq del-start (match-beginning 0)
-                   del-end (match-end 0))))
+              (setq del-start (match-end 1)
+                    del-end (match-end 0)))
+             ((string-match (concat (grouped (concat qalt qalternative)) gqclose) whole-regexp)
+              (setq del-start (match-beginning 0)
+                    del-end (match-end 0))))
       (if del-start
           (concat (substring whole-regexp 0 del-start)
                   (substring whole-regexp del-end))
@@ -557,27 +557,27 @@ Not guaranteed to work in all cases."
                   " *AIRLINE LOCATORS: .*-\\([A-Z0-9]+\\) *\n"
                   )
           nil t)
-  (replace-match (concat
-                  (capitalize (substring (match-string 2) 0 3))
-                  " "
-                  (capitalize (match-string 1))
-                  " "
-                  (capitalize (match-string 3))
-                  " "
-                  (match-string 4)
-                  " "
-                  (capitalize (match-string 7))
-                  " "
-                  (match-string 8)
-                  " -> "
-                  (capitalize (match-string 9))
-                  " "
-                  (match-string 10)
-                  " [locator: "
-                  (match-string 13)
-                  "]"
-                  )
-                 'fixedcase)))
+    (replace-match (concat
+                    (capitalize (substring (match-string 2) 0 3))
+                    " "
+                    (capitalize (match-string 1))
+                    " "
+                    (capitalize (match-string 3))
+                    " "
+                    (match-string 4)
+                    " "
+                    (capitalize (match-string 7))
+                    " "
+                    (match-string 8)
+                    " -> "
+                    (capitalize (match-string 9))
+                    " "
+                    (match-string 10)
+                    " [locator: "
+                    (match-string 13)
+                    "]"
+                    )
+                   'fixedcase)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -892,7 +892,8 @@ one in the source code."
 (defun maybe-revert-buffer ()
   "If file has changed on disk, offer to revert the buffer."
   ;; Using (backtrace) here causes infinite regression (stack overflow).
-  (if (and buffer-file-name ; non-nil if the buffer is visiting a file
+  (if (and (frame-focus-state)
+           buffer-file-name ; non-nil if the buffer is visiting a file
            (not disable-maybe-revert-buffer)
            (not revert-buffer-in-progress-p)
            (not (buffer-modified-p))
@@ -988,7 +989,7 @@ Our goal is to diff the buffer with the file."
 ;;
 (defun quote-word-for-shell-command (string)
   (cond ((and (string-match "'" string)
-           (not (string-match "\"" string)))
+              (not (string-match "\"" string)))
          (setq string (concat "\"" string "\"")))
         ((and (string-match "\"" string)
               (not (string-match "\'" string)))
