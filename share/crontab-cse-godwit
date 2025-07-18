@@ -93,9 +93,6 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 ###
 ### Daily
 ###
-02 00 * * *	$AFS echo -n "auto-browse to https://fortress.wa.gov/dol/go/enJtGSjXX48" | $MAILCOMMAND -s "Silas DOL appointment" $EMAIL
-02 09 * * *	$AFS echo -n "auto-browse to https://fortress.wa.gov/dol/go/enJtGSjXX48" | $MAILCOMMAND -s "Silas DOL appointment" $EMAIL
-02 15 * * *	$AFS echo -n "auto-browse to https://fortress.wa.gov/dol/go/enJtGSjXX48" | $MAILCOMMAND -s "Silas DOL appointment" $EMAIL
 03 0 * * *	$AFS echo -n "Clear out inbox from yesterday" | $MAILCOMMAND -s "Clear inbox from yesterday" $EMAIL
 # 04 0 * * *	$AFS echo -e "Local file ~/prof/grants/google/gsoc/2017-students.txt .\nAuto-browse to https://summerofcode.withgoogle.com/dashboard/proposals/shared/?sp-order=-last_update_created_at&sp-organization=4906659840262144" | $MAILCOMMAND -s "Check GSoC applications" $EMAIL
 # Not  /bin/rm `/usr/bin/find $HOME -name core -type f`  because rm might get no args
