@@ -24,13 +24,14 @@
  '(large-file-warning-threshold nil)
  '(package-selected-packages
    '(adaptive-wrap aider aidermacs apheleia cargo caser claude-code
-                   company "company" dap-mode dtrt-indent flycheck
-                   flyspell ggtags gnu-elpa-keyring-update gptel
-                   groovy-mode helm helm-lsp lsp-java lsp-javacomp
-                   lsp-ui "lsp-ui" magit mmm-mode projectile
-                   python-mode rg rustic shfmt string-inflection
-                   transient tree-sitter tree-sitter-langs treesit
-                   treesit-auto tuareg which-key yaml-mode yasnippet))
+                   company "company" coterm dap-mode dtrt-indent
+                   flycheck flyspell ggtags gnu-elpa-keyring-update
+                   gptel groovy-mode helm helm-lsp lsp-java
+                   lsp-javacomp lsp-ui "lsp-ui" magit mmm-mode
+                   projectile python-mode rg rustic shfmt
+                   string-inflection transient tree-sitter
+                   tree-sitter-langs treesit treesit-auto tuareg vterm
+                   which-key yaml-mode yasnippet))
  '(package-vc-selected-packages
    '((claude-code :url "https://github.com/stevemolitor/claude-code.el")))
  '(safe-local-variable-values
