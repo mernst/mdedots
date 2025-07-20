@@ -279,6 +279,7 @@ export sbook="$gsebase"/program-analysis-book
 # export DAIKONDIR="$HOME"/research/invariants/daikon
 
 if [ -d /scratch/mernst/clones ]; then
+  export harvest=/scratch/mernst/clones/harvest
   export inv=/scratch/mernst/clones/invariants
   export pl=/scratch/mernst/clones/plume-lib
   export repair=/scratch/mernst/clones/repair
@@ -288,6 +289,7 @@ if [ -d /scratch/mernst/clones ]; then
   export vc=/scratch/mernst/clones/version-control
   export nlp=/scratch/mernst/clones/nlp
 else
+  export harvest="$HOME"/research/harvest
   export inv="$HOME"/research/invariants
   export pl="$HOME"/java/plume-lib
   export repair="$HOME"/research/repair
@@ -344,6 +346,8 @@ export gn="$HOME"/research/games/notes
 export VERIGAMES="$HOME"/research/games/verigames
 # export SCALA_HOME=/usr/share/java
 export VERIGAMES_ASP_HOME=''
+
+export h="harvest"
 
 export swl=/projects/swlab1
 
