@@ -110,20 +110,21 @@
 			 (remove "^#" dired-omit-regexps-default)
 			 "\\|")))))
 
-;; dired-omit-extensions is defined (and set) in dired-x.el
-;; there must be a character before anything in dired-omit-extensions
+;; Dired-omit-extensions is defined (and set) in dired-x.el.
+;; There must be a character before anything in dired-omit-extensions.
 (defvar dired-omit-extensions-default
-  (cl-delete-duplicates (sort (append
-                               ;; do omit these
-			       '(".backup" ".elc"
-			         ".fdb_latexmk"
-			         ".synctex.gz"
-			         ".ilg" ".pyc" ".pyo")
-			       (cl-set-difference dired-omit-extensions
-                                                  ;; don't omit these
-					          '(".log" ".otl" ".pdf" ".PDF")
-					          :test #'equal)))
-		        :test (function equal)))
+  (cl-delete-duplicates
+   (sort (append
+          ;; do omit these
+	  '(".backup" ".elc"
+	    ".fdb_latexmk"
+	    ".synctex.gz" ; this doesn't work, maybe because it contains two periods
+	    ".ilg" ".pyc" ".pyo")
+	  (cl-set-difference dired-omit-extensions
+                             ;; don't omit these
+			     '(".log" ".otl" ".pdf" ".PDF")
+			     :test #'equal)))
+   :test #'equal))
 (setq-default dired-omit-extensions dired-omit-extensions-default)
 
 (setq dired-omit-size-limit 30000)	; default 20000; my emacs dir is bigger
