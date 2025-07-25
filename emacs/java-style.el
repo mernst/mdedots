@@ -187,6 +187,12 @@ statement.  Does replacement in any file in a currently-visited tags table."
   )
 
 
+;; TODO: Split this into formatting (which is not relevant when using a formatter)
+;; and adding braces.
+;; Here are two searches to find missing braces:
+;; (rg "if \\(.*\\) [^{=|!&][^{]*;$" "java" "~/research/types/checker-framework-fork-mernst-branch-return-braces/")
+;; (rg "else [^{]*;$" "java" "~/research/types/checker-framework-fork-mernst-branch-return-braces/")
+
 (defun examine-and-cleanup-curly-braces ()
   "Investigate Java code that does not use curly braces for compound statements.
 Works over the currently-visited tags table."
@@ -234,18 +240,73 @@ Works over the currently-visited tags table."
 (defun improve-javadoc-style ()
   "Improve Javadoc style in Java files, in the current TAGS table."
   (interactive)
-  ;; Why is this called twice?
+
+  ;; Code in Javadoc.
+  ;; Need to run javadoc-fix-code-tags until it has no effect.
   (javadoc-fix-code-tags)
   (javadoc-fix-code-tags)
   (condition-case nil
       (improve-javadoc-code-style)
     (error nil))
-  (condition-case nil
-      (improve-javadoc-description-style)
-    (error nil))
+
+  ;; Text in Javadoc.
+  (improve-javadoc-description-style)
   (improve-javadoc-tag-style)
+  (javadoc-whether-to-true-if)
   (improve-javadoc-initial-verb)
   (javadoc-add-summary))
+
+
+;; TODO: More Javadoc fixup, for /** and */ not on their own line when they should be:
+;; This is irrelevant if using a formatter such as google-java-format.
+;; (tags-search "/\\*\\* [A-Z].*\n *\\*")
+;; (tags-search "/\\*\\*\\(\n[ \t]*\\*.*\\)+.*\\*/")
+
+
+
+;; Need to run this repeatedly until it has no effect.
+;; After running, search for "<code>" and "<tt>" to clean up stragglers by hand.
+(defun javadoc-fix-code-tags ()
+  (interactive)
+  (tags-query-replace-noerror (concat "^\\( *\\(?:/\\*\\)?\\*.*\\)"
+                                      "<\\(?:code\\|tt\\)> *\\(?:\n *\\* *\\)?"
+                                      "\\([^<>@&{}]+?\\)\\(?:\n *\\* *\\)?"
+                                      " *</\\(?:code\\|tt\\)>")
+                              "\\1{@code \\2}")
+  ;; Wouldn't this be caught by the above?
+  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\(false\\|null\\|true\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
+  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\([A-Za-z_0-9\\.()\\[\\]]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
+  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\([^<>{}]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
+  )
+;; Same thing, but permitting @ in the body:
+;;  (tags-query-replace-noerror "^\\( *\\(?:/\\*\\)?\\*.*\\)<\\(?:code\\|tt\\)>\\(?:\n *\\* *\\)?\\([^<>&]+?\\)\\(?:\n *\\* *\\)?</\\(?:code\\|tt\\)>" "\\1{@code \\2}")
+;; Also:
+;;   (tags-query-replace-noerror "<code>\n" "{@code\n")
+;;   (tags-query-replace-noerror "<code>" "{@code ")
+;;   (tags-query-replace-noerror "</code>" "}")
+
+
+(defun improve-javadoc-code-style ()
+  "Improve style for inline code in Javadoc comments,
+for files in the current TAGS table."
+  (interactive)
+
+  ;; TODO: These should not occur within <code>...</code>
+
+  (tags-query-replace-noerror "&lt;--?&gt;" "&harr;")
+  (tags-query-replace-noerror "&lt;--?" "&larr;")
+  (tags-query-replace-noerror "--?&gt;" "&rarr;")
+  (tags-query-replace-noerror "&lt;==?&gt;" "&hArr;")
+  (tags-query-replace-noerror "&lt;==" "&hArr;")
+  (tags-query-replace-noerror "==?&gt;" "&rArr;")
+
+  (tags-query-replace-noerror "\\({@code[^}]?*\\)&lt;" "\\1<")
+  (tags-query-replace-noerror "\\({@code[^}]?*\\)&gt;" "\\1>")
+
+  ;; Too many false positives, though good to do in general.
+  ;; (tags-query-replace-noerror "&lt;" "<")
+  ;; (tags-query-replace-noerror "&gt;" ">")
+  )
 
 
 (defun downcase-previous-character ()
@@ -348,6 +409,34 @@ for files in the current TAGS tables."
 
   )
 
+(defun improve-javadoc-description-style ()
+  "Improve style for Javadoc descriptions, for files in the current TAGS tables.
+The description is everything but the block tags (such as @param and @return)."
+  (interactive)
+
+  ;; End the first phrase with a period.
+  (tags-query-replace-noerror
+   (concat "\\(^ */\\*\\*\\(?: *\n *\\*\\)? *[A-Z][^.\n]*\\(?: *\n *\\* *[^.\n]*\\)?\\(?:[a-z0-9]\\)\\)"
+	   "\\( *\\(\\*/$\\|\n *\\* *\n\\)\\)")
+   "\\1.\\2")
+  )
+
+(defun javadoc-whether-to-true-if ()
+  "Replace \"whether\" by \"true if\" in Javadoc."
+  (tags-query-replace-noerror "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether to \\(.*\\) or not$" "\\1 if true, \\2")
+  (tags-query-replace-noerror "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether\\(?: or not\\)? to " "\\1 if true, ")
+  (tags-query-replace-noerror "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether \\(.*\\) or not$" "\\1 true if \\2")
+  (tags-query-replace-noerror "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether\\(?: or not\\)? " "\\1 true if ")
+  (tags-query-replace-noerror "\\* \\(?:Return\\|Check\\|Determine\\|Get\\|Indicate\\|Test\\)s?\\(?: to see\\)? whether \\(.*\\) or not\\.$" "* Returns true if \\1.")
+  (tags-query-replace-noerror "\\* \\(?:Return\\|Check\\|Determine\\|Get\\|Indicate\\|Test\\)s?\\(?: to see\\)? whether\\(?: or not\\)? " "* Returns true if ")
+  (tags-query-replace-noerror "\\* Whether\\( or not\\)? to " "* If true, ")
+  (tags-query-replace-noerror "\\* Whether or not " "* True if ")
+  (tags-query-replace-noerror "\\* Whether \\(.*\\) or not\\.$" "* True if \\1.")
+  (tags-query-replace-noerror "\\* Whether to \\(.*\\) or not\\.$" "* If true, \\1.")
+  (tags-query-replace-noerror "\\* Whether " "* True if ")
+  )
+
+
 (defun improve-javadoc-initial-verb ()
   "Make the initial verb in a Javadoc comment be present tense, not a command."
   (interactive)
@@ -367,65 +456,6 @@ for files in the current TAGS tables."
   )
 
 
-(defun improve-javadoc-description-style ()
-  "Improve style for Javadoc descriptions, for files in the current TAGS tables.
-The description is everything but the block tags (such as @param and @return)."
-  (interactive)
-
-  ;; End the first phrase with a period.
-  (tags-replace
-   (concat "\\(^ */\\*\\*\\(?: *\n *\\*\\)? *[A-Z][^.\n]*\\(?: *\n *\\* *[^.\n]*\\)?\\(?:[a-z0-9]\\)\\)"
-	   "\\( *\\(\\*/$\\|\n *\\* *\n\\)\\)")
-   "\\1.\\2")
-  )
-
-;; Need to run this repeatedly until it has no effect.
-;; After running, search for "<code>" and "<tt>" to clean up stragglers by hand.
-(defun javadoc-fix-code-tags ()
-  (interactive)
-  (tags-query-replace-noerror (concat "^\\( *\\(?:/\\*\\)?\\*.*\\)"
-                                      "<\\(?:code\\|tt\\)>\\(?:\n *\\* *\\)?"
-                                      "\\([^<>@&{}]+?\\)\\(?:\n *\\* *\\)?"
-                                      "</\\(?:code\\|tt\\)>")
-                              "\\1{@code \\2}")
-  ;; Wouldn't this be caught by the above?
-  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\(false\\|null\\|true\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
-  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\([A-Za-z_0-9\\.()\\[\\]]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
-  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\([^<>{}]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
-  )
-;; Same thing, but permitting @ in the body:
-;;  (tags-query-replace-noerror "^\\( *\\(?:/\\*\\)?\\*.*\\)<\\(?:code\\|tt\\)>\\(?:\n *\\* *\\)?\\([^<>&]+?\\)\\(?:\n *\\* *\\)?</\\(?:code\\|tt\\)>" "\\1{@code \\2}")
-;; Also:
-;;   (tags-query-replace-noerror "<code>\n" "{@code\n")
-;;   (tags-query-replace-noerror "<code>" "{@code ")
-;;   (tags-query-replace-noerror "</code>" "}")
-
-
-(defun improve-javadoc-code-style ()
-  "Improve style for inline code in Javadoc comments,
-for files in the current TAGS table."
-  (interactive)
-
-  ;; TODO: These should not occur within <code>...</code>
-
-  (tags-query-replace-noerror "&lt;--?&gt;" "&harr;")
-  (tags-query-replace-noerror "&lt;--?" "&larr;")
-  (tags-query-replace-noerror "--?&gt;" "&rarr;")
-  (tags-query-replace-noerror "&lt;==?&gt;" "&hArr;")
-  (tags-query-replace-noerror "&lt;==" "&hArr;")
-  (tags-query-replace-noerror "==?&gt;" "&rArr;")
-
-  (tags-query-replace-noerror "\\({@code[^}]?*\\)&lt;" "\\1<")
-  (tags-query-replace-noerror "\\({@code[^}]?*\\)&gt;" "\\1>")
-
-  (tags-query-replace-noerror "&lt;" "<")
-  (tags-query-replace-noerror "&gt;" ">")
-  )
-
-;; TODO: More Javadoc fixup, for /** and */ not on their own line when they should be:
-;; This is irrelevant if using a formatter such as google-java-format.
-;; (tags-search "/\\*\\* [A-Z].*\n *\\*")
-;; (tags-search "/\\*\\*\\(\n[ \t]*\\*.*\\)+.*\\*/")
 
 
 
