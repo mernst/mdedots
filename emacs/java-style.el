@@ -461,11 +461,11 @@ The description is everything but the block tags (such as @param and @return)."
 
 (defun javadoc-add-summary ()
   (interactive)
-  (tags-query-replace (concat "/\\*\\*\\(?:\n *\\*\\)? \\(\\(?:@param\\(?:[^@\n]+\n\\)* *\\* \\)*\\)"
-			      "@return \\(.*\\(?:\n *\\* [^@\n].+\\)\\{0,1\\}[^\n. ]\\)\\.?"
-			      "\\(\n? *\\*/\\|\n *\\* @\\)")
-		      "/** Returns \\2.\n\\1@return \\2 \\3")
-  (tags-query-replace "/\\*\\* @see \\(.*\\) \\*/" "/**\n   * See {@link \\1}.\n   * @see \\1\n   */")
+  (tags-query-replace-noerror (concat "/\\*\\*\\(?:\n *\\*\\)? \\(\\(?:@param\\(?:[^@\n]+\n\\)* *\\* \\)*\\)"
+			              "@return \\(.*\\(?:\n *\\* [^@\n].+\\)\\{0,1\\}[^\n. ]\\)\\.?"
+			              "\\(\n? *\\*/\\|\n *\\* @\\)")
+		              "/** Returns \\2.\n\\1@return \\2 \\3")
+  (tags-query-replace-noerror "/\\*\\* @see \\(.*\\) \\*/" "/**\n   * See {@link \\1}.\n   * @see \\1\n   */")
   )
 
 
