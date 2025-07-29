@@ -945,6 +945,15 @@ proposal")
 ;;; Shell
 ;;;
 
+(if (fboundp 'coterm-mode)
+  (coterm-mode))
+;; Optional: bind `coterm-char-mode-cycle' to C-; in comint
+(with-eval-after-load 'comint
+  (define-key comint-mode-map (kbd "C-;") #'coterm-char-mode-cycle))
+;; If your process repeats what you have already typed, try customizing
+;; `comint-process-echoes':
+;;   (setq-default comint-process-echoes t)
+
 (require 'mouse-goto-error)
 
 ;; I wish to be able to use aliases in `shell-command' and `dired-do-shell-command'.

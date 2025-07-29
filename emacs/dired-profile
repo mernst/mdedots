@@ -14,21 +14,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun dired-omit-regexp ()
-"\\(^#\\|^\\.\\.?$\\)\\|\\(-\\|~\\|\\.\\(otl\\|err\\|KILL\\|bak\\|cp\\|tp\\|pg\\|ky\\|fn\\|vr\\|bci\\|so\\|o\\|elc\\|bin\\|lbin\\|fasl\\|dvi\\|toc\\|log\\|aux\\|a\\|ln\\|lof\\|blg\\|bbl\\|glo\\|idx\\|lot\\|fmt\\|idx\\|lof\\|lot\\|glo\\|blg\\|bbl\\|cp\\|cps\\|fn\\|fns\\|ky\\|kys\\|pg\\|pgs\\|tp\\|tps\\|vr\\|vrs\\)\\)$"
-)
-
-(defun dired-omit-regexp ()
-  (concat (if dired-omit-files (concat "\\(" dired-omit-files "\\)") "")
-	  (if (and dired-omit-files dired-omit-extensions) "\\|" "")
-	  (if dired-omit-extensions
-	      (concat ".";; a non-extension part should exist
-		      "\\("
-		      (mapconcat 'regexp-quote dired-omit-extensions "\\|")
-		      "\\)$")
-	    "")))
-
-
 
 (defun segregate-by-first-letter (string-list)
   (let* ((result '())
@@ -80,6 +65,20 @@ SORTED-STRING-LIST should be a sorted list of strings."
 (defvar dired-prev-omit-regexp)
 (defvar dired-prev-omit-files)
 (defvar dired-prev-omit-extensions)
+
+;; (defun dired-omit-regexp ()
+;; "\\(^#\\|^\\.\\.?$\\)\\|\\(-\\|~\\|\\.\\(otl\\|err\\|KILL\\|bak\\|cp\\|tp\\|pg\\|ky\\|fn\\|vr\\|bci\\|so\\|o\\|elc\\|bin\\|lbin\\|fasl\\|dvi\\|toc\\|log\\|aux\\|a\\|ln\\|lof\\|blg\\|bbl\\|glo\\|idx\\|lot\\|fmt\\|idx\\|lof\\|lot\\|glo\\|blg\\|bbl\\|cp\\|cps\\|fls\\|fn\\|fns\\|ky\\|kys\\|pg\\|pgs\\|tp\\|tps\\|vr\\|vrs\\)\\)$"
+;; )
+
+;; (defun dired-omit-regexp ()
+;;   (concat (if dired-omit-files (concat "\\(" dired-omit-files "\\)") "")
+;; 	  (if (and dired-omit-files dired-omit-extensions) "\\|" "")
+;; 	  (if dired-omit-extensions
+;; 	      (concat ".";; a non-extension part should exist
+;; 		      "\\("
+;; 		      (mapconcat 'regexp-quote dired-omit-extensions "\\|")
+;; 		      "\\)$")
+;; 	    "")))
 
 (defun dired-omit-regexp ()
   (if (and dired-prev-omit-regexp

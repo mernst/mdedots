@@ -883,56 +883,58 @@ one in the source code."
       (forward-char 1)))
 
 
-;;; This MAY BE a problem because it is too aggressive.
-;; Offer to revert the buffer when changing to a buffer that has been
-;; modified on disk.
-;; (There doesn't seem to be a hook in Emacs that gets called on every buffer
-;; switch, which is a shame; I hope I have advised all the relevant functions.)
-(defvar disable-maybe-revert-buffer nil)
-(defun maybe-revert-buffer ()
-  "If file has changed on disk, offer to revert the buffer."
-  ;; Using (backtrace) here causes infinite regression (stack overflow).
-  (if (and (frame-focus-state)
-           buffer-file-name ; non-nil if the buffer is visiting a file
-           (not disable-maybe-revert-buffer)
-           (not revert-buffer-in-progress-p)
-           (not (buffer-modified-p))
-           (get-buffer-window)          ; only if currently visible
-           (file-readable-p buffer-file-name)
-           ;; `verify-visited-file-modtime' returns t if the file doesn't exist.
-           (not (verify-visited-file-modtime (current-buffer))))
-      ;; This offers to revert the buffer; it does not revert the buffer unconditionally.
-      (revert-buffer-with-fine-grain)))
-(defun Buffer-menu-bdiff--dont-revert (orig-fun &rest args)
-  "Don't offer to revert the buffer from the file.
-Our goal is to diff the buffer with the file."
-  (let ((disable-maybe-revert-buffer t))
-    (apply orig-fun args)))
-(advice-add 'Buffer-menu-bdiff :around #'Buffer-menu-bdiff--dont-revert)
-(defun select-window--maybe-revert-buffer (_window &optional _norecord)
-  "If file has changed on disk, offer to revert the buffer."
-  (maybe-revert-buffer))
-(advice-add 'select-window :after #'select-window--maybe-revert-buffer)
-(defun set-buffer--maybe-revert-buffer (_buffer-or-name)
-  "If file has changed on disk, offer to revert the buffer."
-  (maybe-revert-buffer))
-(advice-add 'set-buffer :after #'set-buffer--maybe-revert-buffer)
-;;; Experimentally commented out, 2025-04-06.  I hope the above are adequate.
-;; (defadvice switch-to-buffer (after maybe-revert-buffer activate)
+(global-auto-revert-mode)
+;; Trying (global-auto-revert-mode) instead.
+;; ;;; This MAY BE a problem because it is too aggressive.
+;; ;; Offer to revert the buffer when changing to a buffer that has been
+;; ;; modified on disk.
+;; ;; (There doesn't seem to be a hook in Emacs that gets called on every buffer
+;; ;; switch, which is a shame; I hope I have advised all the relevant functions.)
+;; (defvar disable-maybe-revert-buffer nil)
+;; (defun maybe-revert-buffer ()
+;;   "If file has changed on disk, offer to revert the buffer."
+;;   ;; Using (backtrace) here causes infinite regression (stack overflow).
+;;   (if (and (frame-focus-state)
+;;            buffer-file-name ; non-nil if the buffer is visiting a file
+;;            (not disable-maybe-revert-buffer)
+;;            (not revert-buffer-in-progress-p)
+;;            (not (buffer-modified-p))
+;;            (get-buffer-window)          ; only if currently visible
+;;            (file-readable-p buffer-file-name)
+;;            ;; `verify-visited-file-modtime' returns t if the file doesn't exist.
+;;            (not (verify-visited-file-modtime (current-buffer))))
+;;       ;; This offers to revert the buffer; it does not revert the buffer unconditionally.
+;;       (revert-buffer-with-fine-grain)))
+;; (defun Buffer-menu-bdiff--dont-revert (orig-fun &rest args)
+;;   "Don't offer to revert the buffer from the file.
+;; Our goal is to diff the buffer with the file."
+;;   (let ((disable-maybe-revert-buffer t))
+;;     (apply orig-fun args)))
+;; (advice-add 'Buffer-menu-bdiff :around #'Buffer-menu-bdiff--dont-revert)
+;; (defun select-window--maybe-revert-buffer (_window &optional _norecord)
 ;;   "If file has changed on disk, offer to revert the buffer."
 ;;   (maybe-revert-buffer))
-;; (defadvice pop-to-buffer (after maybe-revert-buffer activate)
+;; (advice-add 'select-window :after #'select-window--maybe-revert-buffer)
+;; (defun set-buffer--maybe-revert-buffer (_buffer-or-name)
 ;;   "If file has changed on disk, offer to revert the buffer."
 ;;   (maybe-revert-buffer))
-;; (defadvice other-window (after maybe-revert-buffer activate)
-;;   "If file has changed on disk, offer to revert the buffer."
-;;   (maybe-revert-buffer))
-;; (defadvice next-window (after maybe-revert-buffer activate)
-;;   "If file has changed on disk, offer to revert the buffer."
-;;   (maybe-revert-buffer))
-;; (defadvice previous-window (after maybe-revert-buffer activate)
-;;   "If file has changed on disk, offer to revert the buffer."
-;;   (maybe-revert-buffer))
+;; (advice-add 'set-buffer :after #'set-buffer--maybe-revert-buffer)
+;; ;;; Experimentally commented out, 2025-04-06.  I hope the above are adequate.
+;; ;; (defadvice switch-to-buffer (after maybe-revert-buffer activate)
+;; ;;   "If file has changed on disk, offer to revert the buffer."
+;; ;;   (maybe-revert-buffer))
+;; ;; (defadvice pop-to-buffer (after maybe-revert-buffer activate)
+;; ;;   "If file has changed on disk, offer to revert the buffer."
+;; ;;   (maybe-revert-buffer))
+;; ;; (defadvice other-window (after maybe-revert-buffer activate)
+;; ;;   "If file has changed on disk, offer to revert the buffer."
+;; ;;   (maybe-revert-buffer))
+;; ;; (defadvice next-window (after maybe-revert-buffer activate)
+;; ;;   "If file has changed on disk, offer to revert the buffer."
+;; ;;   (maybe-revert-buffer))
+;; ;; (defadvice previous-window (after maybe-revert-buffer activate)
+;; ;;   "If file has changed on disk, offer to revert the buffer."
+;; ;;   (maybe-revert-buffer))
 
 
 ;;; Experimentally commented out, 2025-04-06.
