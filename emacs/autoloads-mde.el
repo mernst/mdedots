@@ -7,12 +7,43 @@
 
 ;;; Code:
 
+(require 'transient)
+
 (eval-when-compile
-  (require 'edebug)
-  (require 'elide-head)
-  (require 'info)
-  (require 'transient)
+  (require 'transient))
+(eval-when-compile
+  (require 'edebug))
+(eval-when-compile
+  (require 'elide-head))
+(eval-when-compile
+  (require 'info))
+(eval-when-compile
+  ;; TODO: Move all this text elsewhere.
+  
+  ;; This command can cause error("Eager macro-expansion failure: %S" (void-function transient--set-layout))
+  ;; After doing
+  ;;  M-x package-delete RET transient RET
+  ;;  rm -rf ~/emacs/*.elc
+  ;;  rm -rf ~/.emacs.d/elpa/magit-20250621.2237/*.elc
+  ;; and restarting, the problem became (void-function transient-define-group).
+  ;; That isn't defined in /usr/share/emacs/30.1/lisp/transient.el, so it must be from a package version of transient.
+
+  ;; Try recompiling all packages:
+  ;; (byte-recompile-directory package-user-dir nil 'force)
+  ;; (byte-recompile-directory package-user-dir 0 'force)
   (require 'magit))
+
+(defun package-reinstall-all-activated-packages ()
+  "Refresh and reinstall all activated packages."
+  (interactive)
+  (package-refresh-contents)
+  (dolist (package-name package-activated-list)
+    (when (package-installed-p package-name)
+      (unless (ignore-errors                   ;some packages may fail to install
+                (package-reinstall package-name))
+        (warn "Package %s failed to reinstall" package-name)))))
+;; Running this finally did the trick!
+;; (package-reinstall-all-activated-packages)
 
 ;;;
 ;;; Coding/programming

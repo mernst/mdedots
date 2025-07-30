@@ -1365,10 +1365,11 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (setq warning-fill-column 120)          ; default 78
 
 (use-package eat :ensure t)
-(use-package claude-code :ensure t
-  :vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
-  :config (claude-code-mode)
-  :bind-keymap ("C-c c" . claude-code-command-map))
+(use-package claude-code :ensure t)
+;; (use-package claude-code :ensure t
+;;   :vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
+;;   :config (claude-code-mode)
+;;   :bind-keymap ("C-c c" . claude-code-command-map))
 (custom-set-faces
  '(claude-code-repl-face ((t (:family "JuliaMono")))))
 
