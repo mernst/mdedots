@@ -945,7 +945,8 @@ proposal")
 ;;; Shell
 ;;;
 
-(coterm-mode)
+(if (fboundp 'coterm-mode)
+  (coterm-mode))
 ;; Optional: bind `coterm-char-mode-cycle' to C-; in comint
 (with-eval-after-load 'comint
   (define-key comint-mode-map (kbd "C-;") #'coterm-char-mode-cycle))
