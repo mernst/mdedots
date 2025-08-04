@@ -19,7 +19,7 @@
   (require 'info))
 (eval-when-compile
   ;; TODO: Move all this text elsewhere.
-  
+
   ;; This command can cause error("Eager macro-expansion failure: %S" (void-function transient--set-layout))
   ;; After doing
   ;;  M-x package-delete RET transient RET
@@ -31,7 +31,7 @@
   ;; Try recompiling all packages:
   ;; (byte-recompile-directory package-user-dir nil 'force)
   ;; (byte-recompile-directory package-user-dir 0 'force)
-  (require 'magit))
+  (require 'magit nil t))
 
 (defun package-reinstall-all-activated-packages ()
   "Refresh and reinstall all activated packages."

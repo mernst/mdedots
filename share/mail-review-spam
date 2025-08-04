@@ -85,6 +85,47 @@ mail_search('"plse"')
 mail_search("uw-security-research")
 
 input("Press ENTER")
+print('Foreign languages and emojis (watch out for "Showing related results")')
+
+## These emoji searches do not work; the search matches all emails.
+# mail_search("💋")
+# mail_search("❤")
+# mail_search("💘")
+## It works if I abut it with a word, like this:
+## mail_search("🔥H0T")
+
+# German
+# This does not seem to work; at least, a "Herzlichen Glückwunsch" email remained
+mail_search(
+    '("Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR "mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR ("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR "guten tag" OR "spende" OR "wir uns" OR ("Ihre" AND "ist"))'
+)
+# Portuguese
+mail_search(
+    '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR reclamação OR eletrônica OR curriculo OR Investigação'
+)
+# Spanish
+mail_search("(mejor AND opción) OR (en su)")
+# Russian
+mail_search("и")
+# Polish
+mail_search(
+    "Proszę OR Słowa OR Dzień OR związku OR Wsparcie OR programistyczne OR spotkania"
+)
+# Italian
+mail_search("Fattura OR pagata OR guardare OR signora OR uomo")
+# Chinese
+mail_search("様")
+
+
+# NOTE: Most of these aren't a problem because the email subject sorts at the end when I review the email in Emacs Mew.
+# mail_search("К")
+# mail_search("и")
+# mail_search("в")
+# mail_search("я")
+# mail_search("في")
+# mail_search("مارس")
+
+input("Press ENTER")
 print("Suspicious senders, part 1")
 
 ## Too broad
@@ -208,6 +249,8 @@ print("Frequent topics")
 # mail_search("pussy")
 # mail_search("temperature")
 
+mail_search("%22sam's club%22")
+
 mail_search("%22nick+hellen%22")
 
 mail_search("subject:conference OR Scopus")
@@ -233,44 +276,6 @@ mail_search("trump")
 
 # mail_search("Kamala Harris")
 
-input("Press ENTER")
-print('Foreign languages and emojis (watch out for "Showing related results")')
-
-## These emoji searches do not work; the search matches all emails.
-# mail_search("💋")
-# mail_search("❤")
-# mail_search("💘")
-## It works if I abut it with a word, like this:
-## mail_search("🔥H0T")
-
-# German
-# This does not seem to work; at least, a "Herzlichen Glückwunsch" email remained
-mail_search(
-    '("Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR "mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR ("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR "guten tag" OR "spende")'
-)
-# Portuguese
-mail_search(
-    '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR reclamação OR eletrônica OR curriculo OR Investigação'
-)
-# Spanish
-mail_search("(mejor AND opción) OR (en su)")
-# Russian
-mail_search("и")
-# Polish
-mail_search("Proszę OR Słowa OR Dzień OR związku")
-# Italian
-mail_search("Fattura OR pagata")
-# Chinese
-mail_search("様")
-
-
-# NOTE: Most of these aren't a problem because the email subject sorts at the end when I review the email in Emacs Mew.
-# mail_search("К")
-# mail_search("и")
-# mail_search("в")
-# mail_search("я")
-# mail_search("في")
-# mail_search("مارس")
 
 input("Now the rest (read these in Emacs, probably at CSE); press ENTER")
 print("1. Sort by from, look for frequent senders with non-uniform subject lines.")

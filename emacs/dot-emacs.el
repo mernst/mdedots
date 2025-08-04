@@ -16,12 +16,6 @@
   (if (file-directory-p default-directory)
       (normal-top-level-add-subdirs-to-load-path)))
 (add-to-list 'load-path "~/java/google-java-format/core/src/main/scripts/")
-(setq load-path (append '("~/.emacs.d/elpa/transient-20250624.1357"
-                          "/home/mernst/.emacs.d/elpa/python-0.30"
-                          "/home/mernst/.emacs.d/elpa/python-mode-20250624.1530"
-                          "/home/mernst/.emacs.d/elpa/python-mode-20250624.1530/completion")
-                        load-path))
-
 
 
 (eval-when-compile
@@ -337,6 +331,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Fonts, colors, etc.
 ;;;
+
+;; Try to eliminate garbled display.  (This doesn't solve the problem!)
+(modify-all-frames-parameters '((inhibit-double-buffering . t)))
 
 ;; Remove some flashy GUI features.
 (menu-bar-mode -1)

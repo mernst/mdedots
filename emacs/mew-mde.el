@@ -951,7 +951,7 @@ even if `mew-window-magic' has been set to a large value."
   (browse-url-once-if-matched "https://jobs.uic.edu/reference-page\\?referenceID=[0-9]+&referenceKey=[0-9a-f]+&formID=[0-9]+&jobId=[0-9]+")
   (browse-url-once-if-matched "You can view, comment on, or merge this pull request online at:\n\n *\\(https://github.com/.*/pull/[0-9]+\\)" 1)
   (browse-url-once-if-matched "remote: Create pull request for .*: *\nremote:   \\(https://bitbucket.org/.*/pull-requests/new?source=.*&t=1\\)" 1)
-  (browse-url-once-if-matched "remote: To create a merge request for .*, visit: *\nremote:   \\(https://gitlab.eclipse.org/.*/merge_requests/new.*? //)" 1)
+  (browse-url-once-if-matched "remote: To create a merge request for .*, visit: *\nremote:   \\(https://gitlab.eclipse.org/.*/merge_requests/new.*? \\)" 1)
   (browse-url-once-if-matched "\\(https://norfolk.cs.washington.edu/recruit/faculty\\?sreview=1&index=[0-9]+\\)" 1)
   (browse-url-once-if-matched "Read this week's newsletter:[ \n]+\\(https?://hamiltonms.seattleschools.org/about/calendar_and_news/hamilton_weekly_news/[^ \t\n]*\\)" 1)
   (browse-url-once-if-matched "auto-browse to \\(https://uw-cse.slack.com/\\)" 1)
@@ -1030,6 +1030,12 @@ the prefix used for filling messages."
 ;; 	(mew-goto-queue-if-nonempty)
 ;; 	(setq mew-visited-queue t))))
 
+
+
+;; To mark for deletion every line in the buffer that contains an emoji:
+;; (while (re-search-forward "[^ -~\r\n\t’…—–]" nil t)
+;;    (mew-summary-delete-one 'nodisplay))
+;; Unfortunately, mew-summary-mark-regexp reads the regex interactively; it is not passed as an argument.  (After that, I would have run mew-summary-mark-delete.)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

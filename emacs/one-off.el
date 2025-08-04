@@ -114,7 +114,7 @@
   (replace-regexp-noninteractive "^ <B>\\(.*\\)</B>" "\n \\1") ; do not anchor with "$"
   (remove-matching-tags "FONT COLOR=\"#993300\"" "/FONT" "\\\\smaller{\\1}")
 
-)
+  )
 
 
 ;; To change URLs like
@@ -135,25 +135,25 @@
 (defun update-checker-framework-urls ()
   (interactive)
   (save-excursion
-  (goto-char (point-min))
-  (query-replace "http://types.cs.washington.edu/checker-framework/current/checkers-manual.html" "https://checkerframework.org/manual/")
-  (goto-char (point-min))
-  (query-replace-regexp "https?://types.cs.washington.edu/annotation-file-utilities/" "https://checkerframework.org/annotation-file-utilities/")
-  (goto-char (point-min))
-  (query-replace-regexp "https?://types.cs.washington.edu/checker-framework/current/checker-framework-manual.html" "https://checkerframework.org/manual/")
-  (goto-char (point-min))
-  (query-replace "http://types.cs.washington.edu/checker-framework/current/api/" "https://checkerframework.org/api/")
-  (goto-char (point-min))
-  (query-replace-regexp "https?://types.cs.washington.edu/checker-framework/(current/)?api/" "https://checkerframework.org/api/")
-  (goto-char (point-min))
-  (query-replace "http://types.cs.washington.edu/checker-framework/tutorial/" "https://checkerframework.org/tutorial/")
-  (goto-char (point-min))
-  (query-replace "http://types.cs.washington.edu/checker-framework/" "https://checkerframework.org/")
-  (goto-char (point-min))
-  (query-replace "http://types.cs.washington.edu/jsr308/" "https://checkerframework.org/jsr308/")
-  (goto-char (point-min))
-  (query-replace "http://checkerframework.org/" "https://checkerframework.org/")
-  ))
+    (goto-char (point-min))
+    (query-replace "http://types.cs.washington.edu/checker-framework/current/checkers-manual.html" "https://checkerframework.org/manual/")
+    (goto-char (point-min))
+    (query-replace-regexp "https?://types.cs.washington.edu/annotation-file-utilities/" "https://checkerframework.org/annotation-file-utilities/")
+    (goto-char (point-min))
+    (query-replace-regexp "https?://types.cs.washington.edu/checker-framework/current/checker-framework-manual.html" "https://checkerframework.org/manual/")
+    (goto-char (point-min))
+    (query-replace "http://types.cs.washington.edu/checker-framework/current/api/" "https://checkerframework.org/api/")
+    (goto-char (point-min))
+    (query-replace-regexp "https?://types.cs.washington.edu/checker-framework/(current/)?api/" "https://checkerframework.org/api/")
+    (goto-char (point-min))
+    (query-replace "http://types.cs.washington.edu/checker-framework/tutorial/" "https://checkerframework.org/tutorial/")
+    (goto-char (point-min))
+    (query-replace "http://types.cs.washington.edu/checker-framework/" "https://checkerframework.org/")
+    (goto-char (point-min))
+    (query-replace "http://types.cs.washington.edu/jsr308/" "https://checkerframework.org/jsr308/")
+    (goto-char (point-min))
+    (query-replace "http://checkerframework.org/" "https://checkerframework.org/")
+    ))
 
 
 
@@ -262,7 +262,7 @@
 	 (recall (/ tp (+ tp fn 0.0)))
 	 (f-measure (* 2 (/ (* precision recall) (+ precision recall)))))
     (list precision recall f-measure)))
-	 
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -424,6 +424,10 @@ Transfer them to source that appears later in the file."
     (goto-char (point-min))
     (replace-regexp-noninteractive "^20[0-9][0-9]-[01][0-9]-[0-3][0-9]T[012][0-9]:[0-5][0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]\\([0-9][0-9][0-9][0-9]Z\\|-[01][0-9]00\\) " "")
     (goto-char (point-min))
+    (replace-regexp-noninteractive "^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]\\+[0-9][0-9][0-9][0-9] " "")
+    (goto-char (point-min))
+    (query-replace-regexp "at \\(Sun\\|Mon\\|Tue\\|Wed\\|Thu\\|Fri\\|Sat\\) \\(Jan\\|Feb\\|Mar\\|Apr\\|May\\|Jun\\|Jul\\|Aug\\|Sep\\|Oct\\|Nov\\|Dec\\) [0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9] PM" "at DATE")
+    (goto-char (point-min))
     (replace-regexp-noninteractive "^/__w/1/s/" "")
     (goto-char (point-min))
     (replace-regexp-noninteractive "^/root/project/" "")
@@ -562,7 +566,7 @@ that differ from run to run, such as times and directory names."
   (save-excursion
     (goto-char (point-min))
     (replace-regexp-noninteractive "@[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]?[0-9a-f]?" "")
-  ))
+    ))
 
 (defun canonicalize-hashcodes ()
   (interactive)
@@ -596,7 +600,7 @@ that is delimited by two lines starting with a colon."
 	      ;; trigger "(eobp)" condition
 	      (goto-char (point-max)))))
       (goto-char (point-max)))))
-	  
+
 (defun sort-gradle-tests-region (beg end)
   "Sort gradle tests in the region."
   (goto-char beg)

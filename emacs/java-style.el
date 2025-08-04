@@ -205,7 +205,7 @@ Works over the currently-visited tags table."
   (tags-query-replace-noerror "\\([{;]\\) *}\n\\( *\\)else" "\\1\n\\2} else")
   (tags-query-replace-noerror "}\n *else" "} else")
   (tags-query-replace-noerror " else\n *{" " else {")
-  (tags-query-replace-noerror "\\( *\\)\\(.*) \\|else \\)\\(return\\b[^;\n]*;\\)$" "\\1\\2{\n\\1  \\3\n\\1}")
+  (tags-query-replace-noerror "\\( *\\)\\(.*) \\|else \\)\\(continue;\\|return\\b[^;\n]*;\\)$" "\\1\\2{\n\\1  \\3\n\\1}")
   (tags-query-replace-noerror "\\(\\(else \\)?if (.*\\|else\\)\n *{" "\\1 {")
 
   (tags-query-replace-noerror
