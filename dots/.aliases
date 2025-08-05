@@ -244,6 +244,7 @@ ens1f() {
   fi
   ens1 -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 ens1fi() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
@@ -252,6 +253,7 @@ ens1fi() {
   fi
   ens1i -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 ens1fsmall() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
@@ -260,6 +262,7 @@ ens1fsmall() {
   fi
   ens1small -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 ens100f() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
@@ -268,6 +271,7 @@ ens100f() {
   fi
   ens100 -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 ens1fsmaller() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
@@ -276,6 +280,7 @@ ens1fsmaller() {
   fi
   ens1smaller -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 ens1fr() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
@@ -284,6 +289,7 @@ ens1fr() {
   fi
   ens1r -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 # Same as ens1f
 ensf() {
@@ -293,6 +299,7 @@ ensf() {
   fi
   ens1 -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 # With line numbers
 ens100fc() {
@@ -302,6 +309,7 @@ ens100fc() {
   fi
   ens100 -C -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 ens1fdiff() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
@@ -310,6 +318,7 @@ ens1fdiff() {
   fi
   ens1diff -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 
 # ASCII input, 2up
@@ -355,12 +364,14 @@ paps1f() {
   file="$1"
   paps --font="Monospace 10" --paper letter "$@" > "$1".ps
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 paps1() { paps1f "$@"; }
 paps2f() {
   file="$1"
   paps --cpi 18 --header --landscape --columns=2 --paper letter "$@" > "$1".ps
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 paps2() { paps2f "$@"; }
 
@@ -378,6 +389,7 @@ ced1f() {
   file="$1"
   cedhead "$@"
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 ced1() { ced1f "$@"; }
 ced() { ced1f "$@"; }
@@ -392,12 +404,14 @@ ced2() { ced2f "$@"; }
 ceds() {
   cedhead "$@" -s 8
   ps2pdf "$1".ps "$1".pdf
+  rm -f "$1".ps
 }
 
 # This usually turns an unprintable PDF file into a printable one
 pdfclean() {
   pdftops "$1" "$1".ps
   ps2pdf "$1".ps
+  rm -f "$1".ps
 }
 
 ###########################################################################

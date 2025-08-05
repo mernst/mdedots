@@ -232,7 +232,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 02 6 27 * *	cd $TYPES/checker-framework-branch-master && $AFS $CRONIC ./gradlew javadoc
 30 6 27 * *	$AFS
 # This won't work because $AFS applies to the first comand but not the redirection.
-# 31 6 27 * *	$AFS sh -c "java -cp $HOME/java/plume-lib/javadoc-lookup/build/libs/javadoc-lookup-all.jar org.plumelib.javadoclookup.CreateJavadocIndex > ~/.javadoc-index.el-NEW && mv ~/.javadoc-index.el-NEW ~/.javadoc-index.el"
+# 31 6 27 * *	$AFS sh -c "java -cp $HOME/java/plume-lib/javadoc-lookup/build/libs/javadoc-lookup-all.jar org.plumelib.javadoclookup.CreateJavadocIndex > ~/.javadoc-index.el-NEW && mv ~/.javadoc-index.el ~/.javadoc-index.el-OLD && mv ~/.javadoc-index.el-NEW ~/.javadoc-index.el"
 01 02 03 * *     $AFS echo -e "Auto-browse to http://egauge6444.egaug.es/ \n If trouble, see https://artisanelectricinc.com/troubleshoot-monitoring-system/" | $MAILCOMMAND -s "Is solar working?" $EMAILPERSONAL
 02 02 03 * *     $AFS echo -e "Merge contacts; instructions in ~/private/contacts/google-contacts/google-contacts-notes.txt" | $MAILCOMMAND -s "Merge contacts" $EMAILPERSONAL
 #CSAIL 10 5 28 * *	$AFS make -C /afs/csail/group/pag/www/daikon pubs
