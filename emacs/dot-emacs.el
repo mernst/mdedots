@@ -189,15 +189,18 @@
 ;; (wcd-test "${HOME}/foo" "e:/home/foo")
 
 (windows
-  (defadvice expand-file-name (before windows-homedir activate)
-    (ad-set-arg 0 (windows-convert-homedir (ad-get-arg 0)))
-    (ad-set-arg 1 (windows-convert-homedir (ad-get-arg 1))))
-  (defadvice substitute-in-file-name (before windows-homedir activate)
-    (ad-set-arg 0 (windows-convert-homedir (ad-get-arg 0))))
+  (defun expand-file-name--windows-homedir (orig-fun name &optional default-directory)
+    (funcall orig-fun
+             (windows-convert-homedir name)
+             (windows-convert-homedir default-directory)))
+  (advice-add 'expand-file-name :around #'expand-file-name--windows-homedir)
+  (defun substitute-in-file-name--windows-homedir (orig-fun filename)
+    (funcall orig-fun (windows-convert-homedir filename)))
+  (advice-add 'substitute-in-file-name :around #'substitute-in-file-name--windows-homedir)
+  ;; Testing:
+  ;; (expand-file-name "foo" "~/")
+  ;; (substitute-in-file-name "${HOME}/foo")
   )
-;; (expand-file-name "foo" "~/")
-;; (substitute-in-file-name "${HOME}/foo")
-
 
 ;; UW CSE-specific
 (defun update-conf-mode-hook ()
@@ -499,7 +502,7 @@ Use Vera Sans if Inconsolata is not available."
     (count-lines (point-min) (point-max))))
 
 (defun timelog-summarize--add-to-dos (_beg _end)
-  (let (;; (messages-summary (timelog-mew-messages-summary))
+  (let ((messages-summary (timelog-mew-messages-summary))
 	(messages-summary (timelog-inbox-threads-summary))
         (to-dos-summary (timelog-to-dos-summary)))
     (insert to-dos-summary
@@ -1194,9 +1197,10 @@ After running this, run from the shell:  print-mail bulk." t)
         ))
 (setq vc-diff-switches '("-u" "-b" "--unidirectional-new-file"))
 (setq svn-status-default-diff-arguments '("-x" "--ignore-eol-style" "-x" "--ignore-space-change"))
-(defadvice vc-diff-internal (around clear-diff-switches activate)
+(defun vc-diff-internal--clear-diff-switches (orig-fun async vc-fileset rev1 rev2 &optional verbose buffer)
   (let ((diff-switches nil))
-    ad-do-it))
+    (funcall orig-fun async vc-fileset rev1 rev2 verbose buffer)))
+(advice-add 'vc-diff-internal :around #'vc-diff-internal--clear-diff-switches)
 
 (defun vc-annotate-revision-next-to-line ()
   "Visit the annotation of the revision after the revision at line.
@@ -1557,20 +1561,9 @@ no more occurrences of REGEX appear in the buffer."
       ;; (setq mac-option-modifier 'alt)
       ;; (setq mac-option-modifier 'super)
       ;; (global-set-key [kp-delete] 'delete-char) ;; sets fn-delete to be right-delete
-
-      ;; Popping up a dialog box causes Emacs to freeze and requires reboot.
-      (defadvice yes-or-no-p (around prevent-dialog activate)
-        "Prevent yes-or-no-p from activating a dialog"
-        (let ((use-dialog-box nil))
-          ad-do-it))
-      (defadvice y-or-n-p (around prevent-dialog activate)
-        "Prevent y-or-n-p from activating a dialog"
-        (let ((use-dialog-box nil))
-          ad-do-it))
-      (defadvice message-box (around prevent-dialog activate)
-        "Prevent message-box from activating a dialog"
-        (apply #'message (ad-get-args 0)))
       ))
+
+(setq use-dialog-box nil)               ; no popups, use keyboard instead
 
 
 (setq rg-group-result nil)

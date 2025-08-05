@@ -19,17 +19,18 @@ but without having the keymap installed.")
       (setq honorary-compilation-minor-mode t))))
 
 ;; ordinarily, only checks compilation-mode and compilation-minor-mode
-(defadvice compilation-buffer-p (after honorary-compilation-buffer activate)
-  (if (not ad-return-value)
-      (with-current-buffer (ad-get-arg 0) ; 0 = first arg, which is buffer name
-        (setq ad-return-value honorary-compilation-minor-mode))))
+(defun compilation-buffer-p--honorary-compilation-buffer (orig-fun buffer)
+  (or (funcall orig-fun buffer)
+      (with-current-buffer buffer
+        honorary-compilation-minor-mode)))
+(advice-add 'compilation-buffer-p :around #'compilation-buffer-p--honorary-compilation-buffer)
 
 ;; In particular, if Vortex is running in a shell buffer, put point in that
 ;; buffer and run next-error.
-(defadvice compilation-find-buffer (around use-current-buffer activate)
+(defun compilation-find-buffer--use-current-buffer (orig-fun &optional avoid-current)
   "If in shell mode, no compilation started, and errors found, use current buffer."
   (condition-case err
-      ad-do-it
+      (funcall orig-fun avoid-current)
     (error
      (if (and (eq (car err) 'error)
               (equal (car (cdr err)) "No compilation started!")
@@ -48,6 +49,7 @@ but without having the keymap installed.")
            (setq honorary-compilation-minor-mode t)
            (setq ad-return-value (current-buffer)))
        (signal (car err) (cdr err))))))
+(advice-add 'compilation-find-buffer :around #'compilation-find-buffer--use-current-buffer)
 
 (provide 'honorary-compile)
 

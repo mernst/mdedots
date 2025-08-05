@@ -193,45 +193,6 @@
 
 
 ;;;
-;;; dired-jump
-;;;
-
-;; Not needed any longer as of 2024-04-06.
-;; ;; There's no key to bind this to, as archive-subfile-mode doesn't have
-;; ;; a keymap of its own.
-;; (defun archive-jump ()
-;;   "Like `dired-jump', but for buffers in `archive-subfile-mode'."
-;;   (interactive)
-;;   (eval-when-compile (require 'arc-mode)) ; file is NOT named archive-mode
-;;   ;; archive-subfile-mode is a vector of the form
-;;   ;; [EXT-FILE-NAME INT-FILE-NAME CASE-FIDDLED MODE ...]
-;;   (let* ((file buffer-file-name)
-;; 	 (ext-file-name (elt archive-subfile-mode 0))
-;; 	 (arc-file (and file
-;; 			(equal (concat ":" ext-file-name)
-;; 			       (substring file (- (1+ (length ext-file-name)))))
-;; 			(substring file 0 (- (1+ (length ext-file-name)))))))
-;;     (if arc-file
-;; 	(find-file arc-file)
-;;       (error "Can't figure out archive file"))
-;;     ;; Now go to the correct line.
-;;     (goto-char (point-min))
-;;     (search-forward (concat "  " ext-file-name "\n"))
-;;     (goto-char (+ 2 (match-beginning 0)))))
-;; 
-;; (defadvice dired-jump (around dired-jump-archive-jump activate)
-;;   "If in `archive-subfile-mode', use `archive-jump'."
-;;   (if (and (boundp 'archive-subfile-mode) archive-subfile-mode)
-;;       (archive-jump)
-;;     ad-do-it))
-;; 
-;; (defadvice dired-jump (before dired-jump-vm-summary-mode activate)
-;;   "Make `dired-jump' work even in the VM summary mode."
-;;   (if (eq major-mode 'vm-summary-mode)
-;;       (vm-select-folder-buffer)))
-
-
-;;;
 ;;; Everything else
 ;;;
 
