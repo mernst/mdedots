@@ -1809,6 +1809,10 @@ How does this differ from whatever is built in?"
 ;;; Compilation
 ;;;
 
+(use-package recompile-on-save :ensure t
+  :init
+  (recompile-on-save-advice compile))
+
 ;; Compile calls `save-some-buffers', but I don't want a question about the current buffer.
 (defun compile--save (_command &optional _comint)
   "Save current buffer before performing compilation.

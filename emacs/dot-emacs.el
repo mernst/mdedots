@@ -9,6 +9,8 @@
 
 ;;; Code:
 
+(setq load-prefer-newer t)
+
 (add-to-list 'load-path "~/emacs")
 (add-to-list 'load-path "~/emacs/mew/elisp")
 (add-to-list 'load-path "~/java/plume-lib/javadoc-lookup/src/main/emacs")
@@ -30,23 +32,19 @@
 ;;   * tab to the "Install" button and press Enter.
 ;; To update packages, press: U x
 ;; New packages are installed at ~/.emacs.d/elpa/.
-;; Putting melpa-stable before built-in because magit needs the latest transient.
-(with-eval-after-load "package"
-  (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-  (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/"))
-  )
+(use-package package
+  :ensure nil
+  :config
+  (package-initialize)
+  :custom
+  (package-native-compile t)
+  ;; Putting melpa-stable before built-in because magit needs the latest transient.
+  (package-archives '(
+                      ("melpa-stable" . "http://stable.melpa.org/packages/")
+                      ("melpa"        . "https://melpa.org/packages/")
+                      ("gnu"          . "http://elpa.gnu.org/packages/"))))
 ;; To fix bug with magit and transient.
 (setq package-install-upgrade-built-in t)
-
-;;; This ought to replace the above, I think, but it doesn't seem to work at CSE on Emacs 27.2, or on my laptop.
-;;(use-package package
-;;  :ensure nil
-;;  :config
-;;  (package-initialize)
-;;  :custom
-;;  (package-native-compile t)
-;;  (package-archives '(("gnu"   . "http://elpa.gnu.org/packages/")
-;;                      ("melpa" . "https://melpa.org/packages/"))))
 
 ;; (require 'benchmark-init nil 'no-error)
 ;; ;; To view, do one of these:
@@ -1562,6 +1560,11 @@ no more occurrences of REGEX appear in the buffer."
       ;; (setq mac-option-modifier 'super)
       ;; (global-set-key [kp-delete] 'delete-char) ;; sets fn-delete to be right-delete
       ))
+
+(defun shell-eval-command--remove-carriage-return (orig-fun command)
+  (replace-regexp-in-string "\r\n\\'" "\n" (funcall orig-fun command)))
+(advice-add 'shell-eval-command :around #'shell-eval-command--remove-carriage-return)
+
 
 (setq use-dialog-box nil)               ; no popups, use keyboard instead
 

@@ -15,8 +15,8 @@ compile: compile-without-mew
 	make -C mew
 
 %.elc: %.el
-#	emacs -q --batch -l ${HOME}/.emacs --eval "(add-to-list 'load-path \".\")" -f batch-byte-compile $<
-	emacs --batch -L . -L ${HOME}/.emacs.d -f batch-byte-compile $<
+#	emacs -q --batch -l ${HOME}/emacs/init.el --eval "(add-to-list 'load-path \".\")" -f batch-byte-compile $<
+	emacs --batch -L . -L ${HOME}/.emacs.d -l ${HOME}/emacs/init.el -f batch-byte-compile $<
 
 .PHONY: javadoc-index
 javadoc-index:
