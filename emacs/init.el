@@ -22,11 +22,7 @@
  ;; If there is more than one, they won't work right.
  '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
  '(large-file-warning-threshold nil)
- '(package-selected-packages
-   '(aider aidermacs apheleia cargo caser claude-code coterm dtrt-indent
-           eat flycheck groovy-mode lsp-java lsp-ui magit python-mode
-           recompile-on-save rg rustic shfmt string-inflection
-           treesit-auto tuareg yaml-mode yasnippet))
+ '(package-selected-packages nil)
  '(package-vc-selected-packages
    '((claude-code :url "https://github.com/stevemolitor/claude-code.el")))
  '(safe-local-variable-values
