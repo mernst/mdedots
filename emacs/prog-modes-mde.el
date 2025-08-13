@@ -1791,6 +1791,7 @@ How does this differ from whatever is built in?"
 (defun run-make ()
   "Run external program `make'."
   (interactive)
+  (make-local-variable 'compile-command)
   (call-process-show-if-error "make"))
 
 
@@ -2152,8 +2153,10 @@ Use as a hook, like so:
 
 	;; Checker Framework manual
 	((string-match "\\(^.*/checker-framework\\(?:-fork.[^/]*\\|-branch[^/]*\\)?\\)/docs/manual/" default-directory)
+         (make-local-variable 'compile-command)
 	 (setq compile-command "make"))
 	((string-match "\\(^.*/checker-framework\\(?:-fork.[^/]*\\|-branch[^/]*\\)?\\)/dataflow/manual/" default-directory)
+         (make-local-variable 'compile-command)
 	 (setq compile-command "make"))
 
 	;; General Checker Framework rule, to rebuild everything rather than just one project.
