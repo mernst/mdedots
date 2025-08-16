@@ -9,6 +9,10 @@
 
 ;;; Code:
 
+;; Temporary, for debugging.
+(add-variable-watcher 'after-save-hook (lambda (&rest x) (message "Variable after-save-hook changed: %S" x)))
+
+
 (setq load-prefer-newer t)
 
 (add-to-list 'load-path "~/emacs")
@@ -42,7 +46,9 @@
   (package-archives '(
                       ("melpa-stable" . "http://stable.melpa.org/packages/")
                       ("melpa"        . "https://melpa.org/packages/")
-                      ("gnu"          . "http://elpa.gnu.org/packages/"))))
+                      ("gnu"          . "http://elpa.gnu.org/packages/")
+                      ("nongnu"       . "https://elpa.nongnu.org/nongnu/")
+                      )))
 ;; To fix bug with magit and transient.
 (setq package-install-upgrade-built-in t)
 
