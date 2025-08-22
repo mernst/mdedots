@@ -28,8 +28,9 @@
               flymake ggtags gnu-elpa-keyring-update groovy-mode
               helm-lsp idlwave lsp-java lsp-ui magit org python
               python-mode recompile-on-save rg rustic track-changes
-              tramp tree-sitter-langs treesit-auto verilog-mode
-              which-key window-tool-bar yaml-mode yasnippet))
+              tramp transient tree-sitter-langs treesit-auto
+              verilog-mode which-key window-tool-bar yaml-mode
+              yasnippet))
  '(package-vc-selected-packages
    '((claude-code :url "https://github.com/stevemolitor/claude-code.el")))
  '(safe-local-variable-values
