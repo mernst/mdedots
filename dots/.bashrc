@@ -111,7 +111,8 @@ export PS1="\h \#% "
 export HISTIGNORE="[   ]*:&:bg:fg"
 
 if [ -d /homes/gws/mernst ]; then
-  export PRINTER=psc541
+  export PRINTER=ps541
+  # export PRINTER=psc541
 fi
 
 # Check the window size after each command and, if necessary,
