@@ -63,14 +63,11 @@ usecf() {
   suffix=${suffix#jdk-}
   suffix=${suffix#jdk11u-}
   suffix=${suffix#jdk17u-}
-  suffix=${suffix#annotation-tools-}
   suffix=${suffix#stubparser-}
   # echo "suffix = ${suffix}"
   (
     cd "${t:?}" \
-      && rm -f annotation-tools
-    if [ -d "annotation-tools-$suffix" ]; then ln -sf "annotation-tools-$suffix" annotation-tools; else ln -sf annotation-tools-branch-master annotation-tools; fi
-    rm -f checker-framework
+      && rm -f checker-framework
     if [ -d "checker-framework-$suffix" ]; then ln -sf "checker-framework-$suffix" checker-framework; else ln -sf checker-framework-branch-master checker-framework; fi
     rm -f demos
     if [ -d "demos-$suffix" ]; then ln -sf "demos-$suffix" demos; else ln -sf demos-branch-master demos; fi
@@ -82,7 +79,7 @@ usecf() {
     if [ -d "jdk17u-$suffix" ]; then ln -sf "jdk17u-$suffix" jdk17u; else ln -sf jdk17u-branch-master jdk17u; fi
   )
 }
-usenocf() { (cd "$t" && rm -f annotation-tools checker-framework stubparser libraries/jdk libraries/jdk11u checker-framework-inference); }
+usenocf() { (cd "$t" && rm -f checker-framework stubparser libraries/jdk libraries/jdk11u checker-framework-inference); }
 
 # Temporary; later there will be a program of this name.
 alias mvc='java -ea -cp ${HOME}/java/plume-lib/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl'
