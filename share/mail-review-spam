@@ -186,6 +186,8 @@ input("Press ENTER")
 print("Suspicious senders, part 3")
 
 # mail_search("from:bee@BAUER.UH.EDU")  # nothing on 8/3/2023
+mail_search("from:jooble.org")
+mail_search("from:deuscustoms.com")
 mail_search("(from:blr OR from:cardio OR from:convergetp.com OR from:demings)")
 mail_search("(from:fortinet OR from:imperva OR from:liberator OR from:linkedin)")
 mail_search(
@@ -252,6 +254,8 @@ print("Frequent topics")
 mail_search("%22sam's club%22")
 
 mail_search("%22nick+hellen%22")
+mail_search("%22michael+duwayne%22")
+mail_search("%22tractor+supply%22")
 
 mail_search("subject:conference OR Scopus")
 mail_search("subject:confirmation")
