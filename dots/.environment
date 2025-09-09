@@ -150,6 +150,12 @@ fi
 if [ -d "$HOME"/java/jdk23 ]; then
   export JAVA23_HOME="$HOME"/java/jdk23
 fi
+if [ -d "$HOME"/java/jdk24 ]; then
+  export JAVA24_HOME="$HOME"/java/jdk24
+fi
+if [ -d "$HOME"/java/jdk24 ]; then
+  export JAVA24_HOME="$HOME"/java/jdk25
+fi
 
 if [ -d /usr/lib/android-sdk ]; then
   export ANDROID_SDK_ROOT=/usr/lib/android-sdk
