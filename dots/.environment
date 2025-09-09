@@ -153,7 +153,7 @@ fi
 if [ -d "$HOME"/java/jdk24 ]; then
   export JAVA24_HOME="$HOME"/java/jdk24
 fi
-if [ -d "$HOME"/java/jdk24 ]; then
+if [ -d "$HOME"/java/jdk25 ]; then
   export JAVA25_HOME="$HOME"/java/jdk25
 fi
 
