@@ -25,6 +25,10 @@
 
 ;;; Code:
 
+(eval-when-compile
+  (require 'xscheme))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; User-visible variables
 ;;;
@@ -168,7 +172,7 @@ adjust `scheme-defform-regexp' to include named-lambda.")
   (let ((code-buffer (current-buffer))
         (code-tab-width tab-width)
         (header-buffer (get-buffer-create
-                          (concat "*Definitions in: " (buffer-name))))
+                        (concat "*Definitions in: " (buffer-name))))
         (current-header (save-excursion
                           (end-of-defun 1) ; associate comments w/following def
                           (beginning-of-defun 1)
@@ -219,6 +223,7 @@ adjust `scheme-defform-regexp' to include named-lambda.")
   "Return the text of the current line of the buffer."
   (buffer-substring (line-beginning-position) (line-end-position)))
 
+(defvar scheme-defform-regexp)
 (defun headers-regexp ()
   "Return a regular expression for finding headers in the current major mode."
   (or headers-regexp
@@ -248,14 +253,14 @@ adjust `scheme-defform-regexp' to include named-lambda.")
              (let ((top-alternatives
                     (list
                      (concat ;; (regexp-opt
-                             ;;  '("abstract" "template" "concrete" "dynamic")
-                             ;;  'paren)
-                             "\\(abstract\\|concrete\\|dynamic\\|template\\)"
-                             "?"
-                             "[ \t]*"
-                             ;; (regexp-opt
-                             ;;  '("representation" "object") 'paren)
-                             "\\(object\\|representation\\)")
+                      ;;  '("abstract" "template" "concrete" "dynamic")
+                      ;;  'paren)
+                      "\\(abstract\\|concrete\\|dynamic\\|template\\)"
+                      "?"
+                      "[ \t]*"
+                      ;; (regexp-opt
+                      ;;  '("representation" "object") 'paren)
+                      "\\(object\\|representation\\)")
                      ;; (regexp-opt
                      ;;  '("type" "predicate" "signature" "method" "module") 'paren)
                      "\\(m\\(ethod\\|odule\\)\\|predicate\\|signature\\|type\\)"

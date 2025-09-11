@@ -47,7 +47,7 @@ but without having the keymap installed.")
              (compilation-setup)
              (setq mode-line-process old-mode-line-process))
            (setq honorary-compilation-minor-mode t)
-           (setq ad-return-value (current-buffer)))
+           (current-buffer))
        (signal (car err) (cdr err))))))
 (advice-add 'compilation-find-buffer :around #'compilation-find-buffer--use-current-buffer)
 

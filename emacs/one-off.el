@@ -196,7 +196,7 @@
 			 (delete-region (match-beginning 1) (match-end 1))))))
       (cond ((looking-at "[-A-Za-z]+\\( [-A-Za-z.]+\\)?, ")
 	     (goto-char (match-end 0))
-	     (backward-delete-char 2)
+	     (delete-char -2)
 	     (let* ((firstname-start (point))
 		    (firstname-end (progn (end-of-line) (point)))
 		    (firstname (buffer-substring firstname-start firstname-end)))

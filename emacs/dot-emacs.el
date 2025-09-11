@@ -192,11 +192,13 @@
 ;; (wcd-test "${HOME}/" "e:/home/")
 ;; (wcd-test "${HOME}/foo" "e:/home/foo")
 
+(declare-function expand-file-name--windows-homedir "dot-emacs")
+(declare-function substitute-in-file-name--windows-homedir "dot-emacs")
 (windows
-  (defun expand-file-name--windows-homedir (orig-fun name &optional default-directory)
+  (defun expand-file-name--windows-homedir (orig-fun name &optional directory)
     (funcall orig-fun
              (windows-convert-homedir name)
-             (windows-convert-homedir default-directory)))
+             (windows-convert-homedir directory)))
   (advice-add 'expand-file-name :around #'expand-file-name--windows-homedir)
   (defun substitute-in-file-name--windows-homedir (orig-fun filename)
     (funcall orig-fun (windows-convert-homedir filename)))
@@ -507,7 +509,7 @@ Use Vera Sans if Inconsolata is not available."
 
 (defun timelog-summarize--add-to-dos (_beg _end)
   (let ((messages-summary (timelog-mew-messages-summary))
-	(messages-summary (timelog-inbox-threads-summary))
+	(messages-summary-2 (timelog-inbox-threads-summary))
         (to-dos-summary (timelog-to-dos-summary)))
     (insert to-dos-summary
 	    messages-summary
@@ -730,13 +732,14 @@ After running this, run from the shell:  print-mail bulk." t)
 (if (not noninteractive)
     (server-start))
 
-;; For Google Chrome "Edit with Emacs" extension
-(require 'edit-server nil t)
-(if (featurep 'edit-server)
-    (progn
-      (setq edit-server-new-frame nil)
-      (edit-server-start)))
-(define-key ctl-x-map "\C-c" 'save-buffers-kill-emacs)
+;;; Todo: re-enable?
+;; ;; For Google Chrome "Edit with Emacs" extension
+;; (require 'edit-server nil t)
+;; (if (featurep 'edit-server)
+;;     (progn
+;;       (setq edit-server-new-frame nil)
+;;       (edit-server-start)))
+;; (define-key ctl-x-map "\C-c" 'save-buffers-kill-emacs)
 
 
 
@@ -1397,11 +1400,11 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (autoload 'diff-clean "file-comparison"
   "Cleans up a diff to remove uninteresting changes." t)
 (autoload 'diff-clean-imports "file-comparison"
-  "Cleans up a diff to remove uninteresting changes, including all import statements." t)
+  "Cleans up a diff to remove uninteresting changes, including import statements." t)
 (autoload 'diff-clean-javadoc "file-comparison"
-  "Cleans up a diff to remove uninteresting changes, including all API documentation." t)
+  "Cleans up a diff to remove uninteresting changes, including API documentation." t)
 (autoload 'diff-clean-json "file-comparison"
-  "Cleans up a diff to remove uninteresting changes, including all .json files." t)
+  "Cleans up a diff to remove uninteresting changes, including .json files." t)
 ;; This is for pathnames.
 ;; For basenames (simple file names), use file ~/bin/src/mdedots/dots/diff-exclude-patterns.txt,
 ;; but that file isn't respected by `git diff`, only by `diff`.
@@ -1502,7 +1505,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 ;;     (setq comment-padding (make-string comment-padding ? ))))
 
 
-(defun recenter-top-bottom--redraw-frame (&optional arg)
+(defun recenter-top-bottom--redraw-frame (&optional _arg)
   "Redraw the frame if called more than once."
   (if (eq this-command last-command)
       (redraw-frame)))

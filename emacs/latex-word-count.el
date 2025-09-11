@@ -88,14 +88,14 @@ Strips off TeX commands, comments, figures, etc."
     ;; wc counts these as words!
     (goto-char (point-min))
     (while (search-forward "{ " nil t)
-      (delete-backward-char 2))
+      (delete-char -2))
     (goto-char (point-min))
     (while (search-forward "{\n" nil t)
-      (delete-backward-char 2))
+      (delete-char -2))
 
     (goto-char (point-min))
     (while (re-search-forward "\\s ,\\s " nil t)
-      (delete-backward-char 2)
+      (delete-char -2)
       (backward-char 1))
 
     ;; Kill comment, again (for those that used to follow a TeX command).

@@ -150,7 +150,9 @@ is easier than clicking on the error."
           (pop-to-buffer buffer)
           (if (= line 0)
               (message "unknown line; not moving point")
-            (goto-line line)))
+            (progn
+              (goto-char (point-min))
+              (forward-line (1- line)))))
       ;; Click was not on an error/warning
       (mouse-yank-at-click click arg))))
 

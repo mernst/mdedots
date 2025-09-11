@@ -1,3 +1,5 @@
+;;; -*- lexical-binding: t -*-
+
 ;;; .emacs file
 ;;; Michael D. Ernst
 

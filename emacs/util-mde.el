@@ -36,8 +36,8 @@
 (defmacro %-base-1 (x y)
   "Like %, but if (% x y) = 0, (%-base-1 x y) = y."
   `(let* ((y-value ,y)
-            (result (% ,x y-value)))
-       (if (zerop result) y-value result)))
+          (result (% ,x y-value)))
+     (if (zerop result) y-value result)))
 (defalias 'mod-base-1 '%-base-1)
 
 (defun power (x y)
@@ -381,8 +381,8 @@ after that, its first partial elements appear.  The length of LIST is
   "Shuffle the elements in LIST.
 shuffling is done in place."
   (cl-loop for i in (reverse (number-sequence 1 (1- (length LIST))))
-        do (let ((j (random (+ i 1))))
-             (swap LIST i j)))
+           do (let ((j (random (+ i 1))))
+                (swap LIST i j)))
   LIST)
 
 
@@ -438,7 +438,7 @@ just supply foo itself."
     (if (not (= (max noargs1 noargs2) noargs))
         (progn
           (byte-compile-warn "`%s' was vararg-called with a maximum of %d arguments, but you supplied %d."
-                           func (max noargs1 noargs2) noargs)
+                             func (max noargs1 noargs2) noargs)
           (setq args (firstn (max noargs1 noargs2) args))))
     (setq nocommon-args (min noargs1 noargs2))
     (if (= noargs1 noargs2)
@@ -454,19 +454,19 @@ just supply foo itself."
       (setq common-vars (nreverse common-vars)
             common-bindings (nreverse common-bindings))
       `(let (, common-bindings)
-           (condition-case err
-               ;; Try calling it with first number of arguments.
-               (,func (,@ common-vars)
-                (,@ (if (< nocommon-args noargs1) args)))
-             (wrong-number-of-arguments
-              ;; Call it with second number of arguments.
-              (,func (,@ common-vars)
-               (,@ (if (< nocommon-args noargs2) args))))
-             (error
-              ;; Otherwise resignal; "while t" makes this work under the
-              ;; debugger (see, eg, the code for the "error" function).
-              (while t
-                (signal (car err) (cdr err)))))))))
+         (condition-case err
+             ;; Try calling it with first number of arguments.
+             (,func (,@ common-vars)
+                    (,@ (if (< nocommon-args noargs1) args)))
+           (wrong-number-of-arguments
+            ;; Call it with second number of arguments.
+            (,func (,@ common-vars)
+                   (,@ (if (< nocommon-args noargs2) args))))
+           (error
+            ;; Otherwise resignal; "while t" makes this work under the
+            ;; debugger (see, eg, the code for the "error" function).
+            (while t
+              (signal (car err) (cdr err)))))))))
 
 ;; Test cases:
 ;; (macroexpand '(vararg-call foo 3 1 bar baz bum))
@@ -589,8 +589,8 @@ or nil for the current directory."
 
 (defun delete-file-maybe (file)
   "Delete FILE if it exists; do nothing otherwise."
- (if (and file (file-exists-p file))
-     (delete-file file)))
+  (if (and file (file-exists-p file))
+      (delete-file file)))
 
 ;; ;; Isn't this built into Emacs 19 somewhere?
 ;; (defun same-file-p (file1 file2)
@@ -678,13 +678,13 @@ otherwise like `with-output-to-temp-buffer' with the \"*Help*\" buffer.
 Ehelp is loaded if necessary.
 BODY is not a thunk (a function of no arguments) but simply a set of forms."
   `(if use-electric-help-p
-         (progn
-           (require 'ehelp)
-           (with-electric-help
-            (function (lambda ()
-                        ,@body))))
-       (with-output-to-temp-buffer "*Help*"
-         ,@body)))
+       (progn
+         (require 'ehelp)
+         (with-electric-help
+          (function (lambda ()
+                      ,@body))))
+     (with-output-to-temp-buffer "*Help*"
+       ,@body)))
 
 ;; Originally by Joe Wells <jbw@cs.bu.edu>
 (defun best-fit-message (text &optional buffer)
@@ -715,10 +715,10 @@ BODY is not a thunk (a function of no arguments) but simply a set of forms."
   "Evaluate BODY with no messages to the minibuffer.
 This will not disable any messages from built-in C subroutines."
   `(let ((f (symbol-function 'message)))
-       (unwind-protect
-           (progn (fset 'message (symbol-function 'ignore))
-                  ,@body)
-         (fset 'message f))))
+     (unwind-protect
+         (progn (fset 'message (symbol-function 'ignore))
+                ,@body)
+       (fset 'message f))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -738,7 +738,7 @@ This will not disable any messages from built-in C subroutines."
 (defmacro beginning-of-line-point ()
   "Return the location of the beginning of the line."
   `(point-after
-     (beginning-of-line)))
+    (beginning-of-line)))
 ;; Sometimes, use of beginning-of-line-point as a macro causes problems.
 ;; If so, evaluate the below defun, and possibly inline it as:
 ;;   (save-excursion (beginning-of-line) (point))
@@ -836,7 +836,7 @@ Optional fourth argument OBJECT is the string or buffer containing the text."
           (put-text-property start next-change prop pushed-value object)
         (remove-text-properties start next-change (list prop 'ignore) object))
       (setq start next-change))
-  (remove-text-properties orig-start end (list pushed-prop 'ignore) object)))
+    (remove-text-properties orig-start end (list pushed-prop 'ignore) object)))
 
 (defun add-list-text-properties (pos prop new-elts &optional object)
   "Add, at position POS, to the value of the PROP text-proprty.
@@ -1055,8 +1055,8 @@ Programmatically, non-nil argument ARG means raise; if nil, then bury."
   "With the point set to the beginning of each line between BEGIN and
 END, apply FUNCTION to ARGS and return a list of the result."
   (let* ((p (point-marker))
-        (mlist (list 'mlist))
-        (mtail (last mlist)))
+         (mlist (list 'mlist))
+         (mtail (last mlist)))
     (save-restriction
       (narrow-to-region beg end)
       (goto-char (point-min))
@@ -1080,11 +1080,11 @@ END, apply FUNCTION to ARGS and return a list of the result."
 This is more useful than `with-curent-buffer' for window manipulation,
 as by `scroll-up'."
   `(let ((this-window (selected-window)))
-       (unwind-protect
-           (progn
-             (select-window ,window)
-             ,@body)
-         (select-window this-window))))
+     (unwind-protect
+         (progn
+           (select-window ,window)
+           ,@body)
+       (select-window this-window))))
 (put 'in-window 'lisp-indent-hook 1)
 (put 'in-window 'edebug-form-spec '(&rest form))
 
@@ -1182,8 +1182,8 @@ as by `scroll-up'."
 (defmacro re-search-forward-maybe (regexp &rest args)
   "Like re-search-forward, but if regexp is nil, then return nil."
   `(let ((re ,regexp))
-       (if re
-           (re-search-forward re ,@args))))
+     (if re
+         (re-search-forward re ,@args))))
 (put 're-search-forward-maybe 'edebug-form-spec '(&rest form))
 
 (defun regexps->regexp (&rest regexps)
@@ -1207,35 +1207,35 @@ No optional arguments are permitted."
 
 ;;; Skipping regexps
 
-(defmacro skip-regexp-forward (regexp &optional match-no)
+(defun skip-regexp-forward (regexp &optional match-no)
   "If point is at REGEXP, move past it and return point;
 otherwise return nil.
 Point is left at the end of match MATCH-NO if it is specified."
-  `(if (looking-at ,regexp)
-         (goto-char (match-end (or (, match-no) 0)))))
+  (if (looking-at regexp)
+      (goto-char (match-end (or match-no 0)))))
 
-(defmacro skip-regexp-forward-maybe (regexp &optional _match-no)
-  "Return nil if REGEXP is nil; otherwise like skip-regexp-forward."
-  `(let ((re ,regexp))
-       (if re
-           (skip-regexp-forward re))))
+(defun skip-regexp-forward-maybe (regexp &optional match-no)
+  "Return nil if REGEXP is nil; otherwise like `skip-regexp-forward'."
+  (let ((re regexp))
+    (if re
+        (skip-regexp-forward re match-no))))
 
-(defmacro skip-regexp-backward (regexp &optional _match-no)
+(defun skip-regexp-backward (regexp &optional _match-no)
   "If point is after REGEXP, move past it and return point;
 otherwise return nil."
-  `(let ((here (point)))
-       (if (re-search-backward ,regexp nil t)
-           (if (= here (match-end 0))
-               t
-             (progn
-               (goto-char here)
-               nil)))))
+  (let ((here (point)))
+    (if (re-search-backward regexp nil t)
+        (if (= here (match-end 0))
+            t
+          (progn
+            (goto-char here)
+            nil)))))
 
-(defmacro skip-regexp-backward-maybe (regexp &optional _match-no)
+(defun skip-regexp-backward-maybe (regexp &optional _match-no)
   "Return nil if REGEXP is nil; otherwise like skip-regexp-backward."
-  `(let ((re ,regexp))
-       (if re
-           (skip-regexp-backward re))))
+  (let ((re regexp))
+    (if re
+        (skip-regexp-backward re))))
 
 ;;; Skipping strings
 
@@ -1245,18 +1245,18 @@ otherwise return nil."
   "If point is at STRING, move past it and return non-nil;
 otherwise return nil."
   `(let ((s ,string))
-       (if (empty-string-p s)
-           t
-         (if (search-forward s (+ (point) (length s)) t)
-             (goto-char (match-end 0))))))
+     (if (empty-string-p s)
+         t
+       (if (search-forward s (+ (point) (length s)) t)
+           (goto-char (match-end 0))))))
 
 (defmacro skip-string-backward (string)
   "If point is after STRING, move back past it and return t;
 otherwise return nil."
   `(let ((s ,string))
-       (if (empty-string-p s)
-           t
-         (search-backward s (- (point) (length s)) t))))
+     (if (empty-string-p s)
+         t
+       (search-backward s (- (point) (length s)) t))))
 
 ;;; Extracting matches
 
@@ -1294,9 +1294,9 @@ otherwise return nil."
 REGEXP should not match the empty string."
   (let ((count 0))
     (save-excursion
-     (while (re-search-forward regexp nil t)
-       (goto-char (1+ (match-beginning 0)))
-       (setq count (1+ count))))
+      (while (re-search-forward regexp nil t)
+        (goto-char (1+ (match-beginning 0)))
+        (setq count (1+ count))))
     count))
 (fset 'count-matches-regexp-overlapping 'how-many-regexp-overlapping)
 
@@ -1306,9 +1306,9 @@ REGEXP should not match the empty string."
   "Return number of matches for STRING following point, including overlapping ones."
   (let ((count 0))
     (save-excursion
-     (while (search-forward string nil t)
-       (goto-char (1+ (match-beginning 0)))
-       (setq count (1+ count))))
+      (while (search-forward string nil t)
+        (goto-char (1+ (match-beginning 0)))
+        (setq count (1+ count))))
     count))
 (fset 'count-matches-string-overlapping 'how-many-string-overlapping)
 
@@ -1432,8 +1432,8 @@ screen column."
 
 ;; The interior delq is to catch some nils at compile time.
 (defmacro insert-maybe (&rest args)
-   "Like insert, but ignores any arguments which are nil."
-   `(apply (function insert) (delq nil (, (cons 'list (delq nil args))))))
+  "Like insert, but ignores any arguments which are nil."
+  `(apply (function insert) (delq nil (, (cons 'list (delq nil args))))))
 (put 'insert-maybe 'edebug-form-spec '(&rest form))
 
 
@@ -1458,17 +1458,17 @@ return a list of replacements creating ambiguity."
 
   (if backward
       (setq substitutions (mapcar (function (lambda (sub-cons)
-                                     (cons (cdr sub-cons) (car sub-cons))))
+                                              (cons (cdr sub-cons) (car sub-cons))))
                                   (reverse substitutions))))
     ;;; Much too tricky, and modified the argument besides.
-    ;; (let ((subs (reverse substitutions))
-    ;;      temp)
-    ;;  (while subs
-    ;;    (setq temp (caar subs))
-    ;;    (setcar (car subs) (cdar subs))
-    ;;    (setcdr (car subs) temp)
-    ;;    (setq subs (cdr subs)))
-    ;;  (setq substitutions (nreverse substitutions)))
+  ;; (let ((subs (reverse substitutions))
+  ;;      temp)
+  ;;  (while subs
+  ;;    (setq temp (caar subs))
+  ;;    (setcar (car subs) (cdar subs))
+  ;;    (setcdr (car subs) temp)
+  ;;    (setq subs (cdr subs)))
+  ;;  (setq substitutions (nreverse substitutions)))
 
   ;; (message "buffer-substitute:  substitutions = %s" substitutions)
 
@@ -1539,8 +1539,8 @@ return a list of replacements creating ambiguity."
 (defmacro deflocalvar (&rest args)
   "Like defvar, but defines a buffer-local variable."
   `(progn
-       (defvar ,@args)
-       (make-variable-buffer-local (quote (, (car args))))))
+     (defvar ,@args)
+     (make-variable-buffer-local (quote (, (car args))))))
 (put 'deflocalvar 'edebug-form-spec '(&rest form))
 
 
@@ -1592,54 +1592,6 @@ Uses the current tags table."
       (if (looking-at "\)")
           (fileloop-continue)
         (skip-chars-forward " \t\n")))))
-
-;;;
-;;; Documentation strings
-;;;
-
-(defconst non-quote-regexp
-  "\\([^\"\\]\\|\\\\.\\|\n\\)*"
-  "Regular expression matching strings not containing unbackquoted quotation marks.")
-
-(defun for-all-docstrings (function)
-  "Call FUNCTION once for each documentation string.
-Its three arguments are the name being defined \(a string\) and the beginning
-and end of the documentation string \(as buffer positions\)."
-  (let (defname begin end)
-    (tags-search "^\(def")
-    (while t
-      (setq begin nil)
-      (cond ((skip-regexp-forward "un\\|macro\\|subst")
-             (skip-regexp-forward "\\s *")
-             (setq defname (point))
-             (forward-sexp 1)
-             (setq defname (buffer-substring defname (point)))
-             (if (skip-regexp-forward " \(.*\)\n  \"")
-                 (setq begin (point))))
-            ((skip-regexp-forward "var\\|const\\|localvar")
-             (skip-regexp-forward "\\s *")
-             (setq defname (point))
-             (forward-sexp 1)
-             (setq defname (buffer-substring defname (point)))
-             (if (not (looking-at "\)"))
-                 (progn
-                   (forward-sexp 1)     ; value
-                   (if (skip-regexp-forward "[ \t\n]*\"")
-                       (setq begin (point)))))))
-      (if begin
-          (progn
-            (looking-at non-quote-regexp)
-            (setq end (match-end 0))
-            (funcall function defname begin end)))
-      (fileloop-continue))))
-
-(defun princ-docstring-region (defname beg end)
-  (princ "\n--- ")
-  (princ (upcase defname))
-  (princ "\n")
-  (princ (buffer-substring beg end)))
-
-;; (with-output-to-temp-buffer "*Docstrings*" (for-all-docstrings 'princ-docstring-region))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

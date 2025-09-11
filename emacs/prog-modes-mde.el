@@ -28,6 +28,8 @@
   (require 'util-mde)                   ; for `save-buffer-if-modified', `replace-string-noninteractive', etc.
   (require 'mode-hooks-mde)
   (require 'dtrt-indent nil 'noerror)
+  (require 'string-inflection)
+  (require 'xscheme)
   )
 
 (autoload 'save-buffer-if-modified "util-mde"
@@ -1287,7 +1289,7 @@ Returns t if any change was made, nil otherwise."
                (roper-args (list "rename-by-name" "--do" filename mixedCase replacement)))
           (with-current-buffer roper-buffer
             (insert (format "\nCalling roper on %s\n"  roper-args)))
-          (condition-case err
+          (condition-case _err
               (progn
                 (apply #'call-process "roper" nil roper-buffer nil roper-args)
                 (setq result t))
@@ -1304,7 +1306,7 @@ Returns t if any change was made, nil otherwise."
                (roper-args (list "rename-by-name" "--do" filename mixedCase replacement)))
           (with-current-buffer roper-buffer
             (insert (format "\nCalling roper on %s\n"  roper-args)))
-          (condition-case err
+          (condition-case _err
               (progn
                 (apply #'call-process "roper" nil roper-buffer nil roper-args)
                 (setq result t))
@@ -1534,9 +1536,9 @@ If the value is neither nil nor t, then the user is queried first.")
 ;;; Common Lisp
 ;;;
 
-(defadvice fi::get-lisp-interactive-arguments (before dont-ask activate)
-  "Set `first-time' to nil, so that I'm not prompted for ACL arguments."
-  (ad-set-arg 0 nil))
+;; (defadvice fi::get-lisp-interactive-arguments (before dont-ask activate)
+;;   "Set `first-time' to nil, so that I'm not prompted for ACL arguments."
+;;   (ad-set-arg 0 nil))
 (defun mde-fi:common-lisp-mode-hook ()
   "Michael Ernst's \"fi:\" Common Lisp mode hook."
   (run-hooks 'lisp-mode-hook)
@@ -1767,7 +1769,8 @@ How does this differ from whatever is built in?"
   "Run external program `createcal' in the parent directory."
   (interactive)
   (let ((bufname "*createcal Output*"))
-    (shell-command "cd `realpath ..` && createcal" bufname)
+    (let ((default-directory (parent-directory default-directory)))
+      (call-process-show-if-error "createcal"))
     ;; Show output if there is any (it will all be error output)
     (if (bufferp bufname)
         (pop-to-buffer bufname))))
@@ -1781,7 +1784,7 @@ How does this differ from whatever is built in?"
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
   (let* ((program-name (file-name-nondirectory program))
-         (bufname (concat "*" program-name " Output*"))
+         (bufname (concat "*" program-name " " default-directory " Output*"))
          (status
           (with-current-buffer (get-buffer-create bufname)
             (apply 'call-process program nil (current-buffer) nil args))))
@@ -1792,6 +1795,7 @@ How does this differ from whatever is built in?"
   "Run external program `make'."
   (interactive)
   (make-local-variable 'compile-command)
+  ;; TODO: Don't do this if `make` is going to be run anyway.
   (call-process-show-if-error "make"))
 
 

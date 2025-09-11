@@ -63,6 +63,8 @@ or \"t\" to expand tabs to spaces.")
     (fset 'bdiff---prefix-file 'bdiff-backup-file))
 (or (fboundp 'bdiff-digit-prefix-file)
     (fset 'bdiff-digit-prefix-file 'bdiff-backup-file))
+(declare-function bdiff---prefix-file "bdiff")
+(declare-function bdiff-digit-prefix-file "bdiff")
 
 (defun bdiff (&optional bfile quiet)
   "*diff the current buffer with the file being visited.

@@ -199,6 +199,7 @@ Arbitrary BUFFER may be supplied (defaults to *grep*)."
 
 (eval-when-compile '(require 'man))     ; for Man-fontify-manpage-flag
 
+(declare-function Man-mode "man")
 ;;; Was "man-format", but that conflicts with "manual-entry" for completion.
 ;; This seems to work, but point is left in the Man buffer and the messages
 ;; speak of nil, not what Man-arguments really ought to be.
@@ -1167,13 +1168,13 @@ If called interactively, prompt for which index."
 
 
 ;; Tags
-(add-hook 'c-mode-common-hook
-          (lambda ()
-            (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
-	      ;; gtags sometimes fails; stick with etags for now
-              ;; (ggtags-mode 1)
-              nil ;; avoid warning "when with empty body"
-	      )))
+;; (add-hook 'c-mode-common-hook
+;;           (lambda ()
+;;             (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
+;; 	      ;; gtags sometimes fails; stick with etags for now
+;;               ;; (ggtags-mode 1)
+;;               nil ;; avoid warning "when with empty body"
+;; 	      )))
 ;; Older etags
 (with-eval-after-load "etags"
   (load "etags-mde"))

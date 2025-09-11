@@ -27,6 +27,8 @@
 (autoload 'browse-url-once "browse-url-once")
 
 
+(make-variable-buffer-local 'before-save-hook)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Utilities
 ;;;
@@ -242,13 +244,13 @@ and KILLP is non-nil if prefix arg was specified."
 (add-hook 'sieve-mode-hook 'mde-sieve-mode-hook)
 
 
-;; add char x4240 wherever "\u00a0" appears in character classes "[...]".
-(defadvice sentence-end (after add-x4240-char activate)
-  (let ((char-x4240-string (make-string 1 2208)))
-    (setq ad-return-value
-	  (replace-regexp-in-string
-	   "\u00a0" (concat "\u00a0" char-x4240-string)
-	   ad-return-value))))
+(defvar char-x4240-string (make-string 1 2208))
+(defun sentence-end--add-x4240-char (orig-fun &rest args)
+  "Add char x4240 wherever \"\u00a0\" appears in character classes \"[...]\"."
+  (replace-regexp-in-string
+   "\u00a0" (concat "\u00a0" char-x4240-string)
+   (apply orig-fun args)))
+(advice-add 'sentence-end :around #'sentence-end--add-x4240-char)
 
 
 (defun mde-change-log-mode-hook ()
@@ -287,7 +289,7 @@ Intended to run after `visual-line-mode' runs."
 ;; This has to be advice because visual-line-mode-hook is not run early enough
 ;; to affect variable `fringe-indicator-alist` which is set from variable
 ;; `visual-line-fringe-indicators` within function `visual-line-mode`.
-(defun visual-line-mode--set-visual-line-fringe-indicators (&optional arg)
+(defun visual-line-mode--set-visual-line-fringe-indicators (&optional _arg)
   "Set `visual-line-fringe-indicators` to be arrows in both fringes."
   (setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow)))
 (advice-add 'visual-line-mode :before #'visual-line-mode--set-visual-line-fringe-indicators)
@@ -441,8 +443,8 @@ Actually CHAR may be a string as well. CHAR should be regexp-quoted already."
   (concat text-page-delimiter-equals
 	  "\\|" text-page-delimiter-hypens))
 
-(defadvice pages-directory (before set-text-page-delimiter activate)
-  "Set `page-delimiter' if in text mode and it doesn't match anything in the buffer."
+(defun pages-directory--set-page-delimiter (&rest _args)
+  "Set `page-delimiter' if in text mode and it doesn't match in the buffer."
   (save-excursion
     (if (and (eq major-mode 'text-mode)
 	     (not (save-excursion
@@ -462,17 +464,19 @@ Actually CHAR may be a string as well. CHAR should be regexp-quoted already."
 			    (how-many text-page-delimiter-equals-or-hyphens))))
 		     (if (> equals-or-hypens-count 3)
 			 (setq page-delimiter text-page-delimiter-equals-or-hyphens))))))))))
+(advice-add 'pages-directory :before #'pages-directory--set-page-delimiter)
 
-(defadvice pages-copy-header-and-position (around use-text-page-delimiter activate)
+(defun pages-copy-header-and-position--adjust-point (orig-fun count-lines-p)
   "Adjust point if using my text mode page delimiter.
 That delimiter follows the section name rather than preceding it."
   (save-excursion
     (if (or (eq page-delimiter text-page-delimiter-equals)
 	    (eq page-delimiter text-page-delimiter-equals-or-hyphens))
 	(forward-line -3))
-    ad-do-it)
+    (funcall orig-fun count-lines-p))
   (end-of-line 1)			; from original definition
   )
+(advice-add 'pages-copy-header-and-position :around #'pages-copy-header-and-position--adjust-point)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -568,9 +572,7 @@ proposal")
 
   ;; Delete trailing whitespace for some files
   (if (string-match "docs/manual$" (directory-file-name default-directory))
-      (progn
-	(make-variable-buffer-local 'before-save-hook)
-	(add-hook 'before-save-hook 'delete-trailing-whitespace)))
+      (add-hook 'before-save-hook 'delete-trailing-whitespace))
   )
 (add-hook 'tex-mode-hook 'mde-tex-mode-hook)
 (add-hook 'latex-mode-hook 'mde-tex-mode-hook)
@@ -686,9 +688,7 @@ proposal")
   ;; I want a nil fill-prefix outside BibTeX entries, but the existing one
   ;; is OK inside them...
   (setq fill-prefix nil)
-  (progn
-    (make-variable-buffer-local 'before-save-hook)
-    (add-hook 'before-save-hook 'delete-trailing-whitespace))
+  (add-hook 'before-save-hook 'delete-trailing-whitespace)
   )
 (add-hook 'bibtex-mode-hook 'mde-bibtex-mode-hook)
 
@@ -946,7 +946,7 @@ proposal")
 ;;;
 
 (if (fboundp 'coterm-mode)
-  (coterm-mode))
+    (coterm-mode))
 ;; Optional: bind `coterm-char-mode-cycle' to C-; in comint
 (with-eval-after-load 'comint
   (define-key comint-mode-map (kbd "C-;") #'coterm-char-mode-cycle))
@@ -1017,14 +1017,14 @@ proposal")
 ;;   (delete-region (match-end 0) (point-max))
 ;;   (goto-char (point-max)))
 
-(defadvice comint-next-input (around next-command-line activate)
+(defun comint-next-input--go-to-command-line (_arg)
   "When invoked not at a command line, go to next command line."
   (if (not (comint-after-pmark-p))
       (if (not (re-search-forward comint-prompt-regexp nil t))
-	  (error "Can't find next command line"))
-    ad-do-it))
+	  (error "Can't find next command line"))))
+(advice-add 'comint-next-input :before #'comint-next-input--go-to-command-line)
 
-(defadvice comint-previous-input (around previous-command-line activate)
+(defun comint-previous-input--go-to-command-line (_arg)
   "When invoked not at a command line, go to previous command line."
   (if (not (comint-after-pmark-p))
       (if (progn
@@ -1032,29 +1032,29 @@ proposal")
 	    (forward-line 0)
 	    (re-search-backward comint-prompt-regexp nil t))
 	  (goto-char (match-end 0))
-	(error "Can't find previous command line"))
-    ad-do-it))
+	(error "Can't find previous command line"))))
+(advice-add 'comint-previous-input :before #'comint-previous-input--go-to-command-line)
 
 (add-hook 'comint-output-filter-functions
           'comint-watch-for-password-prompt nil nil)
 
-;; Like the above, but for ACL
-(defadvice fi:push-input (around next-command-line activate)
-  "When invoked not at a command line, go to next command line."
-  (if (not (comint-after-pmark-p))
-      (if (not (re-search-forward comint-prompt-regexp nil t))
-	  (error "Can't find previous command line"))
-    ad-do-it))
-(defadvice fi:comint-previous-input (around previous-command-line activate)
-  "When invoked not at a command line, go to previous command line."
-  (if (not (comint-after-pmark-p))
-      (if (progn
-	    ;; like (beginning-of-line 1), but ignore field boundaries
-	    (forward-line 0)
-	    (re-search-backward comint-prompt-regexp nil t))
-	  (goto-char (match-end 0))
-	(error "Can't find previous command line"))
-    ad-do-it))
+;; ;; Like the above, but for ACL
+;; (defadvice fi:push-input (around next-command-line activate)
+;;   "When invoked not at a command line, go to next command line."
+;;   (if (not (comint-after-pmark-p))
+;;       (if (not (re-search-forward comint-prompt-regexp nil t))
+;; 	  (error "Can't find previous command line"))
+;;     ad-do-it))
+;; (defadvice fi:comint-previous-input (around previous-command-line activate)
+;;   "When invoked not at a command line, go to previous command line."
+;;   (if (not (comint-after-pmark-p))
+;;       (if (progn
+;; 	    ;; like (beginning-of-line 1), but ignore field boundaries
+;; 	    (forward-line 0)
+;; 	    (re-search-backward comint-prompt-regexp nil t))
+;; 	  (goto-char (match-end 0))
+;; 	(error "Can't find previous command line"))
+;;     ad-do-it))
 
 (defun mde-comint-mode-hook ()
   (auto-fill-mode 0))
@@ -1115,11 +1115,11 @@ proposal")
       (with-current-buffer buf
         (xterm-color-colorize-buffer)))))
 
-(defun xterm-color-colorize-shell-command-output-advice (proc &rest rest)
-  (xterm-color-colorize-shell-command-output))
-
-(advice-add 'shell-command :after #'xterm-color-colorize-shell-command-output-advice)
-;; (advice-remove 'shell-command #'xterm-color-colorize-shell-command-output-advice)
+;; (defun xterm-color-colorize-shell-command-output-advice (proc &rest rest)
+;;   (xterm-color-colorize-shell-command-output))
+;; 
+;; (advice-add 'shell-command :after #'xterm-color-colorize-shell-command-output-advice)
+;; ;; (advice-remove 'shell-command #'xterm-color-colorize-shell-command-output-advice)
 
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
 
