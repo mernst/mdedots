@@ -1,5 +1,7 @@
 #!/bin/sh
 
+mvc pull --search-prefix
+
 ### Update my forks from upstream.
 
 # Pull from $org/$repo into $parentdir/$localname-fork-mernst
