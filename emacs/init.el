@@ -29,7 +29,7 @@
    '(0blayout adaptive-wrap apheleia auto-compile cargo claude-code
               dtrt-indent eat editorconfig eglot faceup flycheck
               flymake ggtags gnu-elpa-keyring-update groovy-mode
-              helm-lsp idlwave lsp-java lsp-ui magit org python
+              idlwave lsp-java lsp-ui magit org python
               python-mode recompile-on-save rg rustic track-changes
               tramp transient tree-sitter-langs treesit-auto
               verilog-mode which-key window-tool-bar yaml-mode

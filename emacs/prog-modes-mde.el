@@ -254,8 +254,8 @@ if point is not in a function."
 ;;; Java
 ;;;
 
-(require 'lsp-java nil 'noerror)
-(add-hook 'java-mode-hook #'lsp)
+;; (require 'lsp-java nil 'noerror)
+;; (add-hook 'java-mode-hook #'lsp)
 
 (require 'use-package)
 
@@ -272,20 +272,20 @@ if point is not in a function."
 
 ;; TODO: Why is all this at the top level?
 (use-package flycheck)
-(use-package yasnippet :config (yas-global-mode))
-(use-package lsp-mode :hook ((lsp-mode . lsp-enable-which-key-integration)))
-(use-package lsp-ui)
+;; (use-package yasnippet :config (yas-global-mode))
+;; (use-package lsp-mode :hook ((lsp-mode . lsp-enable-which-key-integration)))
+;; (use-package lsp-ui)
 (use-package which-key :config (which-key-mode))
-(use-package lsp-treemacs)
-(use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
-(use-package dap-java :ensure nil)
+;; (use-package lsp-treemacs)
+;; (use-package dap-mode :after lsp-mode :config (dap-auto-configure-mode))
+;; (use-package dap-java :ensure nil)
 
-(use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
-(with-eval-after-load "lsp-mode"
-  (define-key lsp-mode-map (kbd "C-c C-l") lsp-command-map))
+;; (use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
+;; (with-eval-after-load "lsp-mode"
+;;   (define-key lsp-mode-map (kbd "C-c C-l") lsp-command-map))
 
 
-(use-package apheleia)
+(use-package apheleia)          ; auto-format code on save
 ;; For debugging:
 ;; (setq apheleia-log-only-errors nil)
 ;; (setq apheleia-log-debug-info t)
@@ -1778,8 +1778,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer 
-      (list (apply 'call-process program nil (current-buffer) nil args)
-            (buffer-string))))
+    (list (apply 'call-process program nil (current-buffer) nil args)
+          (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
