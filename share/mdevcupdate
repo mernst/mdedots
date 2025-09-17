@@ -1,5 +1,6 @@
 #!/bin/sh
 
+alias mvc='java -ea -cp ${HOME}/java/plume-lib/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl'
 mvc pull --search-prefix
 
 ### Update my forks from upstream.
