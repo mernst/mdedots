@@ -662,12 +662,11 @@ alias git-diff-all="(git diff && git-diff-new)"
 
 alias gcb=git-checkout-branch
 alias gnb=git-new-branch
+alias rmgob='rm -rf $(git-orphaned-branches)'
 
 # shellcheck disable=SC2046 # want argument splitting
 git_log_show() { git show $(git log --format=format:%H "$@"); }
 alias git-log-show=git_log_show
-
-alias rmgob='rm -rf $(git-orphaned-branches)'
 
 # Pretty-print a .json or .jsonl file.
 json_pp() {

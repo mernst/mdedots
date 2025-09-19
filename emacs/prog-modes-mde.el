@@ -811,6 +811,16 @@ Returns t if any change was made, nil otherwise."
           (recompile)
           (fix-compilation)))))
 
+;; Don't spell-check symbols in Javadoc
+(add-to-list 'ispell-skip-region-alist '("\\*[ \t]+@param[ \t]+[a-zA-Z0-9_]+"))
+(add-to-list 'ispell-skip-region-alist '("{@link [^{}]*}"))
+(add-to-list 'ispell-skip-region-alist '("{@code [^{}]*}"))
+(add-to-list 'ispell-skip-region-alist '("\\*[ \t]+@see.*"))
+(add-to-list 'ispell-skip-region-alist '("</?ul>"))
+(add-to-list 'ispell-skip-region-alist '("</?ol>"))
+(add-to-list 'ispell-skip-region-alist '("</?li>"))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Makefiles and shell scripts
@@ -1778,8 +1788,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer 
-    (list (apply 'call-process program nil (current-buffer) nil args)
-          (buffer-string))))
+      (list (apply 'call-process program nil (current-buffer) nil args)
+            (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
@@ -1787,6 +1797,8 @@ How does this differ from whatever is built in?"
          (bufname (concat "*" program-name " " default-directory " Output*"))
          (status
           (with-current-buffer (get-buffer-create bufname)
+            (if (get-buffer-process bufname)
+                (sleep-for .5))
             (apply 'call-process program nil (current-buffer) nil args))))
     (if (not (= 0 status))
         (pop-to-buffer bufname))))
@@ -1795,10 +1807,12 @@ How does this differ from whatever is built in?"
   "Run external program `make'."
   (interactive)
   (make-local-variable 'compile-command)
+
   ;; TODO: Don't do this if `make` is going to be run anyway.
   (call-process-show-if-error "make"))
 
 
+(make-variable-buffer-local 'after-save-hook)
 (defun mde-m4-mode-hook ()
   "Run the `createcal' program after its input files have been edited."
   ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
