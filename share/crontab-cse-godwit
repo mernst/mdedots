@@ -254,7 +254,6 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 01 6 1 9 *	$AFS echo -e "Wash outside windows" | $MAILCOMMAND -s "Wash outside windows" $EMAILFAMILY
 01 6 15 7 *	$AFS echo -e "Clean hair from vacuum cleaner beater roller" | $MAILCOMMAND -s "Clean hair from vacuum cleaner beater roller" $EMAILFAMILY
 01 5 15 7 *	$AFS echo -e "Buy America the Beautiful pass (adjust month if necessary)" | $MAILCOMMAND -s "Buy America the Beautiful pass" $EMAILFAMILY
-01 6 1 9 *	$AFS echo -e "Buy Discover Pass together with car tabs" | $MAILCOMMAND -s "Buy Discover Pass together with car tabs" $EMAILFAMILY
 01 6 12 3 *	$AFS echo -e "Reseed lawn in mid-March and mid-October" | $MAILCOMMAND -s "Reseed lawn in mid-March and mid-October" $EMAILFAMILY
 01 6 12 10 *	$AFS echo -e "Reseed lawn in mid-March and mid-October" | $MAILCOMMAND -s "Reseed lawn in mid-March and mid-October" $EMAILFAMILY
 ###

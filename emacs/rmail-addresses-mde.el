@@ -1972,8 +1972,7 @@ Set `rmail-default-rmail-file' to this name as well as returning it."
 ;;;
 
 ;;; Local Variables:
-;;; eval: (make-local-variable 'after-save-hook)
-;;; eval: (add-hook 'after-save-hook #'(lambda () (eval-buffer)))
+;;; eval: (add-hook 'after-save-hook #'(lambda () (eval-buffer)) nil 'local)
 ;;; end:
 
 ;;; rmail-addresses-mde.el ends here

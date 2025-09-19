@@ -96,6 +96,22 @@ This is good for modes like Perl, where the parser can get confused."
 (setq lsp-ui-sideline-enable nil)
 
 
+(defun run-command (buffer command &rest args)
+  "Run `command' and show output if it fails.  BUFFER is optional.
+Intended for use in after-save-hook."
+  (if (not buffer)
+      (setq buffer (concat "*run-" command "*")))
+  (if (get-buffer buffer)
+      (with-current-buffer (get-buffer buffer)
+	(erase-buffer)))
+  (let* ((compilation-ask-about-save nil)
+         (process-status (save-excursion (apply #'call-process command nil buffer nil args))))
+    (if (not (equal process-status 0))
+	(progn
+	  (pop-to-buffer buffer)
+	  (error "Command failed: %s %s" command args)))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Key maps
 ;;;
@@ -889,26 +905,12 @@ Returns t if any change was made, nil otherwise."
 
 (defun shell-script-validate ()
   "Validate this shell script."
-  (buffer-validate (symbol-name sh-shell) "-n")
+  (run-command nil (symbol-name sh-shell) "-n")
   (if (equal sh-shell 'sh)
-      (buffer-validate "checkbashisms"))
+      (run-command nil "checkbashisms"))
   ;; TODO: Add -P that includes both "." and the top-level of the git repository (if in a git repository).
-  (buffer-validate "shellcheck" "-x" "--format=gcc" "-P" "SCRIPTDIR")
+  (run-command nil "shellcheck" "-x" "--format=gcc" "-P" "SCRIPTDIR")
   )
-
-(defun buffer-validate (validator &rest args)
-  "Runs a validation validation on the current buffer's file.
-Use this in an after-save-hook.
-VALIDATOR is a program to run.
-ARGS are args to pass it.  Buffer file name is provided as last arg."
-  (if (get-buffer "*validate*")
-      (kill-buffer "*validate*"))
-  (let ((process-status (apply #'call-process validator nil "*validate*" nil
-			       (append args (list (buffer-file-name))))))
-    (if (not (equal process-status 0))
-	(progn
-	  (pop-to-buffer "*validate*")
-	  (error "Invalid shell script")))))
 
 (defun enable-shell-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
@@ -1803,16 +1805,7 @@ How does this differ from whatever is built in?"
     (if (not (= 0 status))
         (pop-to-buffer bufname))))
 
-(defun run-make ()
-  "Run external program `make'."
-  (interactive)
-  (make-local-variable 'compile-command)
 
-  ;; TODO: Don't do this if `make` is going to be run anyway.
-  (call-process-show-if-error "make"))
-
-
-(make-variable-buffer-local 'after-save-hook)
 (defun mde-m4-mode-hook ()
   "Run the `createcal' program after its input files have been edited."
   ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
@@ -1820,7 +1813,7 @@ How does this differ from whatever is built in?"
       (let* ((filename (file-truename buffer-file-name))
              (dirname (file-name-directory filename)))
         (if (file-exists-p (concat dirname "Makefile"))
-            (add-hook 'after-save-hook 'run-make nil 'local)))))
+            (add-hook 'after-save-hook '(lambda () (run-command nil "make")) nil 'local)))))
 (add-hook 'm4-mode-hook 'mde-m4-mode-hook)
 
 
