@@ -109,7 +109,7 @@ Intended for use in after-save-hook."
     (if (not (equal process-status 0))
 	(progn
 	  (pop-to-buffer buffer)
-	  (error "Command failed: %s %s" command args)))))
+	  (error "Command failed in %s: %s %s" default-directory command args)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -905,12 +905,16 @@ Returns t if any change was made, nil otherwise."
 
 (defun shell-script-validate ()
   "Validate this shell script."
-  (run-command nil (symbol-name sh-shell) "-n")
-  (if (equal sh-shell 'sh)
-      (run-command nil "checkbashisms"))
-  ;; TODO: Add -P that includes both "." and the top-level of the git repository (if in a git repository).
-  (run-command nil "shellcheck" "-x" "--format=gcc" "-P" "SCRIPTDIR")
-  )
+  (let* ((bfilename (buffer-file-name))
+         (filename (and bfilename (file-name-nondirectory bfilename))))
+    (if filename
+        (progn
+          (run-command nil (symbol-name sh-shell) "-n" filename)
+          (if (equal sh-shell 'sh)
+              (run-command nil "checkbashisms" filename))
+          ;; TODO: Add -P that includes both "." and the top-level of the git repository (if in a git repository).
+          (run-command nil "shellcheck" "-x" "--format=gcc" "-P" "SCRIPTDIR" filename)
+          ))))
 
 (defun enable-shell-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
