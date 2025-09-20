@@ -111,7 +111,9 @@ export PS1="\h \#% "
 export HISTIGNORE="[   ]*:&:bg:fg"
 
 if [ -d /homes/gws/mernst ]; then
-  export PRINTER=ps541
+  export PRINTER=pg270
+  # export PRINTER=pgc270
+  # export PRINTER=ps541
   # export PRINTER=psc541
 fi
 
