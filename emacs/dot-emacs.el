@@ -373,13 +373,13 @@
        (x-list-fonts font)))
 ;; (font-exists-p "Inconsolata")
 
-(defun inconsolata (size)
-  "Set font to Inconsolata at the given font size.
-Use Vera Sans if Inconsolata is not available."
-  (interactive "nSize for Inconsolata font: ")
-  (if (font-exists-p "Inconsolata")
-      (set-frame-font (format "Inconsolata %d" size)))
-  (maximize-frame-height))
+;; (defun inconsolata (size)
+;;   "Set font to Inconsolata at the given font size.
+;; Use Vera Sans if Inconsolata is not available."
+;;   (interactive "nSize for Inconsolata font: ")
+;;   (if (font-exists-p "Inconsolata")
+;;       (set-frame-font (format "Inconsolata %d" size)))
+;;   (maximize-frame-height))
 
 (when (window-system)
   (cond
