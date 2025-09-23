@@ -12,6 +12,10 @@
 ;; Temporary, for debugging.
 (add-variable-watcher 'after-save-hook (lambda (&rest x) (message "Variable after-save-hook changed: %S" x)))
 
+;; Put these first to put packages before built-ins, on the load-path.
+(setq load-path (cons package-user-dir load-path))
+(package-initialize)
+
 
 (setq load-prefer-newer t)
 
