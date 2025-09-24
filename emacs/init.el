@@ -27,12 +27,13 @@
  '(large-file-warning-threshold nil)
  '(package-selected-packages
    '(0blayout adaptive-wrap apheleia auto-compile cargo claude-code
-              dtrt-indent eat editorconfig eglot faceup flycheck
-              flymake ggtags gnu-elpa-keyring-update groovy-mode
-              idlwave lsp-java lsp-ui magit org python python-mode
-              recompile-on-save rg rustic track-changes tramp
-              transient tree-sitter-langs treesit-auto verilog-mode
-              which-key window-tool-bar yaml-mode yasnippet))
+              claude-shell dtrt-indent eat editorconfig eglot faceup
+              flycheck flymake ggtags gnu-elpa-keyring-update
+              groovy-mode idlwave lsp-java lsp-ui magit org python
+              python-mode recompile-on-save rg rustic shell-maker
+              track-changes tramp transient tree-sitter-langs
+              treesit-auto verilog-mode which-key window-tool-bar
+              yaml-mode yasnippet))
  '(package-vc-selected-packages
    '((claude-code :url "https://github.com/stevemolitor/claude-code.el")))
  '(safe-local-variable-values
