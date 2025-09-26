@@ -403,7 +403,10 @@ With prefix arg, goes to end of class; otherwise to end of method."
     (setq inleft-string "// ")
     (setq paragraph-start (concat " */* *<p>\\|" paragraph-separate))
     (setq paragraph-separate (concat ".*<p>\\|" paragraph-separate))
-    (define-key java-mode-map "\C-hf" 'javadoc-lookup)
+    (if (boundp 'java-mode-map)
+        (define-key java-mode-map "\C-hf" 'javadoc-lookup))
+    (if (boundp 'java-ts-mode-map)
+        (define-key java-ts-mode-map "\C-hf" 'javadoc-lookup))
     (add-hook 'before-save-hook 'change-returns-to-return)
     (add-hook 'before-save-hook 'sort-checkerframework-code)
     (if (string-match "/\\(checker-framework\\|plume-lib\\|randoop\\)/"
