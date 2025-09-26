@@ -10,16 +10,21 @@
 ## Uncomment to enable debugging, or pass `--debug` on the command line.
 # DEBUG=1
 
-while :; do
+while [ $# -gt 0 ]; do
   case $1 in
     --debug)
-      DEBUG=1
+      DEBUG=--debug
+      shift # past argument
       ;;
-    *) # Default case: If no more options then break out of the loop.
-      break ;;
+    -*)
+      echo "Unknown option $1"
+      exit 2
+      ;;
+    *)
+      echo "Do not pass arguments to $0"
+      exit 2
+      ;;
   esac
-
-  shift
 done
 
 if [ -n "$DEBUG" ]; then

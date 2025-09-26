@@ -750,6 +750,35 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; (define-key ctl-x-map "\C-c" 'save-buffers-kill-emacs)
 
 
+;; from https://github.com/progfolio/.emacs.d#vterm
+(use-package vterm
+  :ensure (vterm :post-build
+                 (progn
+                   (setq vterm-always-compile-module t)
+                   (require 'vterm)
+                   ;;print compilation info for elpaca
+                   (with-current-buffer (get-buffer-create vterm-install-buffer-name)
+                     (goto-char (point-min))
+                     (while (not (eobp))
+                       (message "%S"
+                                (buffer-substring (line-beginning-position)
+                                                  (line-end-position)))
+                       (forward-line)))
+                   (when-let* ((so (expand-file-name "./vterm-module.so"))
+                               ((file-exists-p so)))
+                     (make-symbolic-link
+                      so (expand-file-name (file-name-nondirectory so)
+                                           "../../builds/vterm")
+                      'ok-if-already-exists))))
+  :commands (vterm vterm-other-window)
+  :general
+  (+general-global-application
+   "t" '(:ignore t :which-key "terminal")
+   "tt" 'vterm-other-window
+   "t." 'vterm)
+  :config
+  (evil-set-initial-state 'vterm-mode 'emacs))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Key bindings

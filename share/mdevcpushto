@@ -1,5 +1,23 @@
 #!/bin/sh
 
+while [ $# -gt 0 ]; do
+  case $1 in
+    --debug)
+      # shellcheck disable=SC2034 # DEBUG is not used yet
+      DEBUG=--debug
+      shift # past argument
+      ;;
+    -*)
+      echo "Unknown option $1"
+      exit 2
+      ;;
+    *)
+      echo "Do not pass arguments to $0"
+      exit 2
+      ;;
+  esac
+done
+
 ## Each of these commands is temporary.  It keeps dependent branches up to date.
 
 # shellcheck disable=SC2154 # var is defined
@@ -44,3 +62,5 @@
 #             daikon-fork-mernst-branch-agora-without-alwaysempty \
 #             daikon-fork-mernst-branch-agora-without-alwaysempty-2 && \
 # true
+
+true
