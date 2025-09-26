@@ -42,7 +42,8 @@
 	amend = commit --amend --no-edit
 	stat = status
 	s = status
-	blamex = git blame -M -C
+	blamex = !git blame -M -C
+        diffs = !git diff --staged
 
 # The parent branch of the current branch.  From
 # https://stackoverflow.com/questions/3161204/find-the-parent-branch-of-a-git-branch/3162929 .
