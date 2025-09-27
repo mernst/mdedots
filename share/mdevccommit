@@ -21,7 +21,7 @@ while [ $# -gt 0 ]; do
       exit 2
       ;;
     *)
-      echo "Do not pass arguments to $0"
+      echo "Do not pass arguments to $0: $1"
       exit 2
       ;;
   esac
