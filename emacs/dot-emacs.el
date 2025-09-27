@@ -16,12 +16,11 @@
 (setq load-path (cons package-user-dir load-path))
 (package-initialize)
 
+(setq load-prefer-newer t)
 
 (require 'auto-compile)
 (auto-compile-on-load-mode)
 (auto-compile-on-save-mode)
-
-(setq load-prefer-newer t)
 
 (add-to-list 'load-path "~/emacs")
 (add-to-list 'load-path "~/emacs/mew/elisp")
