@@ -2312,6 +2312,9 @@ Use as a hook, like so:
 
           ;; Ruff
           '("error: Failed to parse \\([^ ]+\\):\\([0-9]+\\):\\([0-9]+\\)" 1 2 3)
+
+          ;; Markdownlint omits the last colon (:).
+          '("^\\(.*\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\) MD" 1 2)
 	  )
 
 	 compilation-error-regexp-alist
