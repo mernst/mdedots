@@ -24,7 +24,8 @@ fi
 # shellcheck disable=SC2046 # git-orphaned-branches prints multiple directories
 (cd && rm -rf $(git-orphaned-branches)) &
 
-mdevccommit "${DEBUG}"
+# shellcheck disable=SC2086
+mdevccommit ${DEBUG}
 mdevcupdate
 cronic mdevcpushto
 
