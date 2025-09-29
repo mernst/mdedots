@@ -158,6 +158,50 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Markdown
+;;;
+
+;; Converting from Asciidoc to Markdown
+;; # I was not very happy with this; more direct file translation would have retained
+;; # more formatting.
+;; # So, probably I should have used something like https://github.com/opendevise/downdoc .
+;; for f in *.adoc; do
+;;   echo ${f}:
+;;   # Or: --wrap=none
+;;   asciidoctor -b docbook -o $f.xml $f
+;;   pandoc --wrap=preserve -t gfm -f docbook -o $f.md $f.xml
+;; done
+
+
+
+
+(defun unindent-fence ()
+  "Move text within a ```...``` Markdown fence as far leftward as possible."
+  (interactive)
+  (let ((num-blockindent-spaces 16))
+    (while (> num-blockindent-spaces -1)
+      (let* ((blockindent-spaces-string (make-string num-blockindent-spaces 32)))
+        (let ((num-spaces 16))
+          (while (> num-spaces 0)
+            (let* ((spaces-string (make-string num-spaces 32))
+                   (all-spaces-string (concat blockindent-spaces-string spaces-string))
+                   (regex (concat
+                           "^" blockindent-spaces-string "```.*\n"
+                           "\\(" all-spaces-string "[^ ].*\\(\n" all-spaces-string ".*\\)*\\)"
+                           "\n" blockindent-spaces-string "```")))
+              (condition-case nil
+                  (progn
+                    (tags-search regex)
+                    (while t
+                      (indent-rigidly (match-beginning 1) (match-end 1) (- num-spaces))
+                      (fileloop-continue)))
+                (t t)))
+            (setq num-spaces (1- num-spaces)))))
+      (setq num-blockindent-spaces (1- num-blockindent-spaces)))))
+;; (unindent-fence)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Address labels
 ;;;
 

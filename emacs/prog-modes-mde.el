@@ -2245,6 +2245,9 @@ Use as a hook, like so:
   (setq compilation-error-regexp-alist
 	(append
 	 (list
+          ;; Markdownlint omits the last colon (:).
+          '("^\\(.*\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)? MD" 1 2)
+
 	  ;; Java stack trace, as printed by a program
 	  ;; This permits 2 or 4 leading spaces.
 	  '("\\(?:^[ ][ ]\\(?:[ ][ ]\\)?\\|; Stack trace: \\)[A-Za-z0-9_.$]+\\(?:\\.<init>\\)?(\\([A-Za-z0-9_.]+\\):\\([0-9]+\\))$" 1 2)
@@ -2312,9 +2315,6 @@ Use as a hook, like so:
 
           ;; Ruff
           '("error: Failed to parse \\([^ ]+\\):\\([0-9]+\\):\\([0-9]+\\)" 1 2 3)
-
-          ;; Markdownlint omits the last colon (:).
-          '("^\\(.*\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\) MD" 1 2)
 	  )
 
 	 compilation-error-regexp-alist
