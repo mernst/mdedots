@@ -1,8 +1,21 @@
 #!/bin/sh
 
-if [ "$#" -ne 0 ]; then
-  echo "Do not pass arguments to $0"
-fi
+while [ $# -gt 0 ]; do
+  case $1 in
+    --debug)
+      DEBUG=--debug
+      shift # past argument
+      ;;
+    -*)
+      echo "Unknown option $1"
+      exit 2
+      ;;
+    *)
+      echo "Do not pass arguments to $0"
+      exit 2
+      ;;
+  esac
+done
 
 # shellcheck disable=SC2046 # git-orphaned-branches prints multiple directories
 if [ -d /scratch/mernst/clones ]; then
@@ -11,7 +24,8 @@ fi
 # shellcheck disable=SC2046 # git-orphaned-branches prints multiple directories
 (cd && rm -rf $(git-orphaned-branches)) &
 
-mdevccommit
+# shellcheck disable=SC2086
+mdevccommit ${DEBUG}
 mdevcupdate
 cronic mdevcpushto
 

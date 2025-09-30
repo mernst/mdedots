@@ -39,7 +39,7 @@
               faceup flycheck flymake ggtags gnu-elpa-keyring-update
               gptel groovy-mode hydra idlwave lsp-java lsp-ui magit org
               pfuture python python-mode recompile-on-save rg rustic
-              string-inflection track-changes tramp transient
+              track-changes tramp transient
               tree-sitter-langs treesit-auto verilog-mode which-key
               window-tool-bar yaml-mode yasnippet
               adaptive-wrap apheleia auto-compile cargo claude-code cfrs
@@ -51,10 +51,12 @@
               which-key window-tool-bar yaml-mode yasnippet
               adaptive-wrap aidermacs apheleia auto-compile cargo cfrs
               claude-code dtrt-indent eat editorconfig eglot faceup eldoc
+              0blayout adaptive-wrap aidermacs apheleia auto-compile cargo cfrs
+              claude-code dtrt-indent eat editorconfig eglot faceup
               flycheck flymake ggtags gnu-elpa-keyring-update gptel
               groovy-mode hydra idlwave lsp-java lsp-ui magit org
               pfuture python python-mode recompile-on-save rg rustic
-              string-inflection track-changes tramp transient
+              track-changes tramp transient
               tree-sitter-langs treesit-auto verilog-mode which-key
               window-tool-bar yaml-mode yasnippet))
  '(package-vc-selected-packages
