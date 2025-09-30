@@ -263,12 +263,19 @@ export pseq=24sp
 export pse="$psebase/$pseq"
 export psen="$psebase"/notes
 
+# dp stands for "data programming"
 # export dpbase="$HOME"/class/190p
 # export dpq=12su
 export dpbase="$HOME"/class/160
 export dpb="$dpbase"
 export dpq=13wi
 export dp="$dpbase/$dpq"
+
+# htp stands for "how to phd"
+export htpbase="$HOME"/class/how-to-phd
+export htpb="$htpbase"
+export htpq=13wi
+export htp="$htpbase/$htpq"
 
 # My current teaching (must come after $sdi or $se or $gse is defined).
 # export s="$sdi"

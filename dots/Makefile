@@ -13,7 +13,8 @@ showvars:
 	@echo "SH_SCRIPTS=${SH_SCRIPTS}"
 	@echo "BASH_SCRIPTS=${BASH_SCRIPTS}"
 
-# If the .sorted file is up to date, then the main file is sorted
+# If the .sorted file is up to date, then the main file is sorted.
+# Sorting prevents merge conflicts.
 .hunspell_en_US.sorted: .hunspell_en_US
 	LC_ALL=C sort < $< | uniq > $@ && cp -pf $@ $<
 
