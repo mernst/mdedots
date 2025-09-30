@@ -17,6 +17,10 @@
 (package-initialize)
 
 
+(require 'auto-compile)
+(auto-compile-on-load-mode)
+(auto-compile-on-save-mode)
+
 (setq load-prefer-newer t)
 
 (add-to-list 'load-path "~/emacs")
@@ -512,8 +516,8 @@
     (count-lines (point-min) (point-max))))
 
 (defun timelog-summarize--add-to-dos (_beg _end)
-  (let ((messages-summary (timelog-mew-messages-summary))
-	(messages-summary-2 (timelog-inbox-threads-summary))
+  (let (;; (messages-summary (timelog-mew-messages-summary))
+	(messages-summary (timelog-inbox-threads-summary))
         (to-dos-summary (timelog-to-dos-summary)))
     (insert to-dos-summary
 	    messages-summary

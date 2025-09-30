@@ -33,7 +33,30 @@
               python-mode recompile-on-save rg rustic shell-maker
               track-changes tramp transient tree-sitter-langs
               treesit-auto verilog-mode which-key window-tool-bar
-              yaml-mode yasnippet))
+              yaml-mode yasnippet
+              0blayout adaptive-wrap aidermacs apheleia auto-compile cargo cfrs
+              claude-code dtrt-indent eat editorconfig eglot eldoc
+              faceup flycheck flymake ggtags gnu-elpa-keyring-update
+              gptel groovy-mode hydra idlwave lsp-java lsp-ui magit org
+              pfuture python python-mode recompile-on-save rg rustic
+              string-inflection track-changes tramp transient
+              tree-sitter-langs treesit-auto verilog-mode which-key
+              window-tool-bar yaml-mode yasnippet
+              adaptive-wrap apheleia auto-compile cargo claude-code cfrs
+              dtrt-indent eat editorconfig eglot eldoc faceup flycheck
+              flymake ggtags gnu-elpa-keyring-update groovy-mode hydra
+              idlwave lsp-java lsp-ui magit org pfuture python python-mode
+              recompile-on-save rg rustic track-changes tramp
+              transient tree-sitter-langs treesit-auto verilog-mode
+              which-key window-tool-bar yaml-mode yasnippet
+              adaptive-wrap aidermacs apheleia auto-compile cargo cfrs
+              claude-code dtrt-indent eat editorconfig eglot faceup eldoc
+              flycheck flymake ggtags gnu-elpa-keyring-update gptel
+              groovy-mode hydra idlwave lsp-java lsp-ui magit org
+              pfuture python python-mode recompile-on-save rg rustic
+              string-inflection track-changes tramp transient
+              tree-sitter-langs treesit-auto verilog-mode which-key
+              window-tool-bar yaml-mode yasnippet))
  '(package-vc-selected-packages
    '((claude-code :url "https://github.com/stevemolitor/claude-code.el")))
  '(safe-local-variable-values
