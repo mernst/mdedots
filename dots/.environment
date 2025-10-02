@@ -274,13 +274,13 @@ export dp="$dpbase/$dpq"
 # htp stands for "how to phd"
 export htpbase="$HOME"/class/how-to-phd
 export htpb="$htpbase"
-export htpq=13wi
-export htp="$htpbase/$htpq"
+export htpy=2025
+export htp="$htpbase/$htpy"
 
-# My current teaching (must come after $sdi or $se or $gse is defined).
-# export s="$sdi"
+# My current quarter teaching (must come after $sdi or $se or $gse is defined).
+export s="$sdi"
 # export s="$se"
-export s="$gse"
+# export s="$gse"
 
 export sbook="$gsebase"/program-analysis-book
 
