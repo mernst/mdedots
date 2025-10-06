@@ -336,8 +336,6 @@
 
 
 (defvar office-program "libreoffice" "A program such as Star Office, Open Office, or Libre Office")
-(cse
-  (setq office-program "soffice"))
 
 ;; This appears early so that even if there's an error elsewhere in
 ;; this init file, the autoloaded functions still get defined.
@@ -414,6 +412,11 @@
   (cond ((font-exists-p "Inconsolata")
          (set-face-attribute 'fixed-pitch nil :family "Inconsolata"))
         ))
+
+(defun hack-font (size)
+  "Set the font to Hack, in the given size."
+  (interactive "nFont size for Hack: ")
+  (set-frame-font (concat "Hack " (int-to-string size))))
 
 ;; This is ugly
 (defun sans-mono-font (size)
