@@ -1416,6 +1416,13 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 ;;   :bind-keymap ("C-c c" . claude-code-command-map))
 (custom-set-faces
  '(claude-code-repl-face ((t (:family "JuliaMono")))))
+(autoload 'claude-code-vterm-mode "claude-code-ui")
+;; Claude-code uses projectile
+(defun projectile-project-root--not-nil (orig-fn &optional dir)
+  "Avoid returning nil from `projectile-project-root'. Can still sometimes do so."
+  (let ((result (funcall orig-fn dir)))
+    (or result dir default-directory)))
+(advice-add 'projectile-project-root :around #'projectile-project-root--not-nil)
 
 
 
