@@ -234,6 +234,17 @@ Works over the currently-visited tags table."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Comments
+;;;
+
+(defun improve-java-comment-style ()
+  "Add periods at end of sentences.  Requires examination of each match."
+  (tags-query-replace-noerror "^\\( *// [A-Z].*[^.!?,;:]\\)$" "\\1.")
+  (tags-query-replace-noerror "\\(^ *// [^\n]*[^.!?,;:\n]\\)\\(\n *[^/ \n]\\)" "\\1.\\2")
+  )
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Javadoc
 ;;;
 
