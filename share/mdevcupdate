@@ -245,6 +245,9 @@ update_fork SRI-CSL ETB2 ~/prof/grants
 update_fork benedikt-schesch AST-Merging-Evaluation ~/research/version-control
 update_fork benedikt-schesch AST-Merging-Evaluation /scratch/mernst/clones/version-control
 
+update_fork vikramnitin9 rust_verification ~/research/harvest
+update_fork vikramnitin9 rust_verification /scratch/mernst/clones/harvest
+
 ### Special cases
 
 ## This doesn't work because mernst/stubparser is the name of my fork of javaparser/javaparser,
