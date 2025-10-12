@@ -754,24 +754,7 @@ After running this, run from the shell:  print-mail bulk." t)
 
 ;; from https://github.com/progfolio/.emacs.d#vterm
 (use-package vterm
-  :ensure (vterm :post-build
-                 (progn
-                   (setq vterm-always-compile-module t)
-                   (require 'vterm)
-                   ;;print compilation info for elpaca
-                   (with-current-buffer (get-buffer-create vterm-install-buffer-name)
-                     (goto-char (point-min))
-                     (while (not (eobp))
-                       (message "%S"
-                                (buffer-substring (line-beginning-position)
-                                                  (line-end-position)))
-                       (forward-line)))
-                   (when-let* ((so (expand-file-name "./vterm-module.so"))
-                               ((file-exists-p so)))
-                     (make-symbolic-link
-                      so (expand-file-name (file-name-nondirectory so)
-                                           "../../builds/vterm")
-                      'ok-if-already-exists))))
+  :ensure t
   :commands (vterm vterm-other-window)
   :general
   (+general-global-application
@@ -780,6 +763,31 @@ After running this, run from the shell:  print-mail bulk." t)
    "t." 'vterm)
   :config
   (evil-set-initial-state 'vterm-mode 'emacs))
+;;; This block is used for alpaca or straight, not standard use-package.
+;;   :ensure (vterm :post-build
+;;                  (progn
+;;                    (setq vterm-always-compile-module t)
+;;                    (require 'vterm)
+;;                    ;;print compilation info for elpaca
+;;                    (with-current-buffer (get-buffer-create vterm-install-buffer-name)
+;;                      (goto-char (point-min))
+;;                      (while (not (eobp))
+;;                        (message "%S"
+;;                                 (buffer-substring (line-beginning-position)
+;;                                                   (line-end-position)))
+;;                        (forward-line)))
+;;                    (when-let* ((so (expand-file-name "./vterm-module.so"))
+;;                                ((file-exists-p so)))
+;;                      (make-symbolic-link
+;;                       so (expand-file-name (file-name-nondirectory so)
+;;                                            "../../builds/vterm")
+;;                       'ok-if-already-exists))))
+
+(use-package whisper
+  :vc (:url "https://github.com/natrys/whisper.el" :branch "master"))
+(setq whisper-model "medium.en")
+(global-set-key "\C-c\C-w" 'whisper-run)
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1420,6 +1428,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (custom-set-faces
  '(claude-code-repl-face ((t (:family "JuliaMono")))))
 (autoload 'claude-code-vterm-mode "claude-code-ui")
+(autoload 'vterm-mode "vterm")
 ;; Claude-code uses projectile
 (defun projectile-project-root--not-nil (orig-fn &optional dir)
   "Avoid returning nil from `projectile-project-root'. Can still sometimes do so."

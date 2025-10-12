@@ -26,41 +26,44 @@
  '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
  '(large-file-warning-threshold nil)
  '(package-selected-packages
-   '(0blayout adaptive-wrap apheleia auto-compile cargo claude-code
-              claude-shell dtrt-indent eat editorconfig eglot faceup
-              flycheck flymake ggtags gnu-elpa-keyring-update
-              groovy-mode idlwave lsp-java lsp-ui magit org python
-              python-mode recompile-on-save rg rustic shell-maker
-              track-changes tramp transient tree-sitter-langs
-              treesit-auto verilog-mode which-key window-tool-bar
-              yaml-mode yasnippet
-              0blayout adaptive-wrap aidermacs apheleia auto-compile cargo cfrs
-              claude-code dtrt-indent eat editorconfig eglot eldoc
-              faceup flycheck flymake ggtags gnu-elpa-keyring-update
-              gptel groovy-mode hydra idlwave lsp-java lsp-ui magit org
-              pfuture python python-mode recompile-on-save rg rustic
-              track-changes tramp transient
-              tree-sitter-langs treesit-auto verilog-mode which-key
-              window-tool-bar yaml-mode yasnippet
-              adaptive-wrap apheleia auto-compile cargo claude-code cfrs
-              dtrt-indent eat editorconfig eglot eldoc faceup flycheck
-              flymake ggtags gnu-elpa-keyring-update groovy-mode hydra
-              idlwave lsp-java lsp-ui magit org pfuture python python-mode
-              recompile-on-save rg rustic track-changes tramp
-              transient tree-sitter-langs treesit-auto verilog-mode
-              which-key window-tool-bar yaml-mode yasnippet
-              adaptive-wrap aidermacs apheleia auto-compile cargo cfrs
-              claude-code dtrt-indent eat editorconfig eglot faceup eldoc
-              0blayout adaptive-wrap aidermacs apheleia auto-compile cargo cfrs
-              claude-code dtrt-indent eat editorconfig eglot faceup
-              flycheck flymake ggtags gnu-elpa-keyring-update gptel
-              groovy-mode hydra idlwave lsp-java lsp-ui magit org
-              pfuture python python-mode recompile-on-save rg rustic
-              track-changes tramp transient
-              tree-sitter-langs treesit-auto verilog-mode which-key
-              window-tool-bar yaml-mode yasnippet))
+   '(0blayout 0blayout 0blayout adaptive-wrap adaptive-wrap adaptive-wrap
+              adaptive-wrap adaptive-wrap aidermacs aidermacs
+              aidermacs apheleia apheleia apheleia apheleia apheleia
+              auto-compile auto-compile auto-compile auto-compile
+              auto-compile cargo cargo cargo cargo cargo cfrs cfrs
+              cfrs cfrs claude-code claude-code claude-code
+              claude-code claude-code claude-shell dtrt-indent
+              dtrt-indent dtrt-indent dtrt-indent dtrt-indent eat eat
+              eat eat eat editorconfig editorconfig editorconfig
+              editorconfig editorconfig eglot eglot eglot eglot eglot
+              eldoc eldoc eldoc faceup faceup faceup faceup faceup
+              flycheck flycheck flycheck flycheck flymake flymake
+              flymake flymake ggtags ggtags ggtags ggtags
+              gnu-elpa-keyring-update gnu-elpa-keyring-update
+              gnu-elpa-keyring-update gnu-elpa-keyring-update gptel
+              gptel groovy-mode groovy-mode groovy-mode groovy-mode
+              hydra hydra hydra idlwave idlwave idlwave idlwave
+              lsp-java lsp-java lsp-java lsp-java lsp-ui lsp-ui lsp-ui
+              lsp-ui magit magit magit magit org org org org pfuture
+              pfuture pfuture python python python python python-mode
+              python-mode python-mode python-mode recompile-on-save
+              recompile-on-save recompile-on-save recompile-on-save rg
+              rg rg rg rustic rustic rustic rustic shell-maker
+              track-changes track-changes track-changes track-changes
+              tramp tramp tramp tramp transient transient transient
+              transient tree-sitter-langs tree-sitter-langs
+              tree-sitter-langs tree-sitter-langs treesit-auto
+              treesit-auto treesit-auto treesit-auto verilog-mode
+              verilog-mode verilog-mode verilog-mode which-key
+              which-key which-key which-key whisper window-tool-bar
+              window-tool-bar window-tool-bar window-tool-bar
+              yaml-mode yaml-mode yaml-mode yaml-mode yasnippet
+              yasnippet yasnippet yasnippet))
  '(package-vc-selected-packages
-   '((claude-code :url "https://github.com/stevemolitor/claude-code.el")))
+   '((whisper :url "https://github.com/natrys/whisper.el" :branch
+              "master")
+     (claude-code :url
+                  "https://github.com/stevemolitor/claude-code.el")))
  '(safe-local-variable-values
    '((checkdoc-allow-quoting-nil-and-t . t) (TeX-master . "../main")
      (TeX-master . "main") (auto-fill-mode)

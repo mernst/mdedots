@@ -91,9 +91,4 @@ done
 # it only if there is a problem such as a timeout, especially since
 # compiling mew produces so much output.
 
-## syncthing warnings
-
-# Warn about conflict markers in directories that are synchronized.
-(cd ~/sync && find . -name '*.sync-conflict-*' | sed -e "s:^\./:~/sync/:")
-(cd ~/private && find . -name '*.sync-conflict-*' | sed -e "s:^\./:~/private/:")
-(cd ~/public_html/tmp72112 && find . -name '*.sync-conflict-*' | sed -e "s:^\./:~/public_html/tmp33333/:")
+make -C ~/bib push

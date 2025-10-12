@@ -466,7 +466,7 @@ Actually CHAR may be a string as well. CHAR should be regexp-quoted already."
 			 (setq page-delimiter text-page-delimiter-equals-or-hyphens))))))))))
 (advice-add 'pages-directory :before #'pages-directory--set-page-delimiter)
 
-(defun pages-copy-header-and-position--adjust-point (orig-fun count-lines-p)
+(defun pages-copy-header-and-position--text-mode-adjust-point (orig-fun count-lines-p)
   "Adjust point if using my text mode page delimiter.
 That delimiter follows the section name rather than preceding it."
   (save-excursion
@@ -476,7 +476,16 @@ That delimiter follows the section name rather than preceding it."
     (funcall orig-fun count-lines-p))
   (end-of-line 1)			; from original definition
   )
-(advice-add 'pages-copy-header-and-position :around #'pages-copy-header-and-position--adjust-point)
+(advice-add 'pages-copy-header-and-position :around
+            #'pages-copy-header-and-position--text-mode-adjust-point)
+
+(defun pages-copy-header-and-position--html-mode-adjust-point (count-lines-p)
+  "Adjust point if using my text mode page delimiter.
+That delimiter follows the section name rather than preceding it."
+  (if (eq page-delimiter html-headers-page-delimiter)
+      (beginning-of-line)))
+(advice-add 'pages-copy-header-and-position :before
+            #'pages-copy-header-and-position--html-mode-adjust-point)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -858,12 +867,16 @@ proposal")
 (add-to-list 'auto-mode-alist
 	     '("/www\\.blogger\\.com\\.[^/]+\\.txt\\'" . html-mode))
 
+(defvar html-headers-page-delimiter "\n *<h[1-6]")
 (defun mde-html-mode-hook ()
   (mde-text-mode-hook)
   ;; Try using the default.
   ;; (setq paragraph-start "^[ \t]*$\\|^[\f<]")
   ;; (setq paragraph-separate paragraph-start)
   (setq indent-tabs-mode nil)		; never insert tab characters
+
+  (make-local-variable 'page-delimiter)
+  (setq page-delimiter html-headers-page-delimiter)
   )
 (add-hook 'html-mode-hook 'mde-html-mode-hook)
 

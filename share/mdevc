@@ -44,3 +44,8 @@ find "${HOME}" -name SKIP-REQUIRE-JAVADOC
 if [ -d /scratch/mernst/clones ]; then
   find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name SKIP-REQUIRE-JAVADOC -print0 \)
 fi
+
+# Warn about conflict markers in directories that are synchronized.
+for dir in ~/sync ~/private ~/public_html/tmp72112; do
+  (cd ${dir} && find . -name '*.sync-conflict-*' | sed -e "s:^\./:${dir}:")
+done
