@@ -32,7 +32,7 @@
               auto-compile auto-compile auto-compile auto-compile
               auto-compile cargo cargo cargo cargo cargo cfrs cfrs
               cfrs cfrs claude-code claude-code claude-code
-              claude-code claude-code claude-shell dtrt-indent
+              claude-code claude-code claude-shell company dtrt-indent
               dtrt-indent dtrt-indent dtrt-indent dtrt-indent eat eat
               eat eat eat editorconfig editorconfig editorconfig
               editorconfig editorconfig eglot eglot eglot eglot eglot
