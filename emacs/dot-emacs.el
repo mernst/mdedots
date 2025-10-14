@@ -1077,10 +1077,8 @@ After running this, run from the shell:  print-mail bulk." t)
         ("/g[1-6]/users/\\([a-z0-9_]+\\)/" . "~\\1/")
         ("/afs/csail.mit.edu/u/[a-z]/\\([a-z0-9_]+\\)/" . "~\\1/")
         ;; UW
-        ("/homes/\\(gws\\|fish\\|rivers\\)/mernst/" . "~/")
-        ("/homes/\\(gws\\|fish\\|rivers\\)/\\([a-z]+\\)/" . "~\\2/")
-        ("/a/glacier/glacier4/u1/mernst/" . "~/") ; pre-2000 UW file server
-        ("/a/dark/dark4/u1/mernst/" . "~/")
+        ("/homes/gws/mernst/" . "~/")
+        ("/homes/gws/\\([a-z]+\\)/" . "~\\1/")
 
         ("~mernst\\b" . "~")
 
@@ -1100,8 +1098,6 @@ After running this, run from the shell:  print-mail bulk." t)
         ("/scratch/mernst/clones/types/checker-framework/checker/" . "$ch/")
         ("~/research/types/checker-framework/" . "$cf/")
         ("/scratch/mernst/clones/types/checker-framework/" . "$cf/")
-        ("~/research/types/annotation-tools/" . "$at/")
-        ("/scratch/mernst/clones/types/annotation-tools/" . "$at/")
         ("~/research/types/checker-framework-inference/" . "$cfi/")
         ("/scratch/mernst/clones/types/checker-framework-inference/" . "$cfi/")
         ("~/research/types/notes/" . "$qn/")
