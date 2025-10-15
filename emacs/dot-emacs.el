@@ -32,6 +32,7 @@
 
 
 (eval-when-compile
+  (require 'ispell)
   (require 'vc-annotate)
   (require 'smerge-mode)
   (require 'rg-result nil t)
