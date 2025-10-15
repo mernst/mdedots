@@ -14,7 +14,7 @@
 
 ;; Put these first to put packages before built-ins, on the load-path.
 (setq load-path (cons package-user-dir load-path))
-(package-initialize)
+(package-initialize)                    ; seems necessary for compiling via makefile
 
 (setq load-prefer-newer t)
 
