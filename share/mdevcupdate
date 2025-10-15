@@ -77,6 +77,7 @@ update_fork_with_hosting_and_userid() {
     echo "6=$6"
     exit 2
   fi
+  cp -pf ~/private/.git-credentials-SAVE ~/private/.git-credentials
   if [ -d "$parentdir/$localname-fork-$userid" ]; then
     git_pull_command="git pull -q --ff-only git@${hosting}:$org/$repo --tags"
     if [ -n "$DEBUG" ]; then
