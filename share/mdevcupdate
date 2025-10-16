@@ -217,6 +217,8 @@ update_fork Thomsch untangling-tools-benchmark ~/research/version-control
 update_fork apache logging-log4j2 ~/java
 update_fork google guava ~/java
 update_fork gradle gradle ~/java
+update_fork nebula-plugins gradle-lint-plugin ~/java
+update_fork michel-kraemer gradle-download-task ~/java
 update_fork ical4j ical4j ~/java
 update_fork jhy jsoup ~/java
 update_fork liflab beepbeep-3 ~/java
