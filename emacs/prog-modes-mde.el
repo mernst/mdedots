@@ -2257,6 +2257,9 @@ Use as a hook, like so:
 	  '("Build file '\\(.*\\)' line: \\([0-9]+\\)$" 1 2)
 	  '("^  build file '\\([^']+\\)': \\([0-9]+\\): " 1 2) ;; column number is also available
           
+          ;; Kotlin
+          '("^e: file://\\(.*\\):\\([0-9]\\):\\([0-9]\\): " 1 2 3)
+
 	  ;; For dmalloc's ra_info output
 	  '("^Line \\([0-9]+\\) of \"\\([^\"]*\\)\"" 2 1)
 	  ;; For linkchecker
