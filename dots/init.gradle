@@ -1,10 +1,10 @@
 initscript {
   repositories {
     mavenCentral()
-    maven { url "https://plugins.gradle.org/m2" }
+    maven { url = "https://plugins.gradle.org/m2" }
   }
   dependencies {
-    classpath "com.dorongold.plugins:task-tree:4.0.1"
+    classpath = "com.dorongold.plugins:task-tree:4.0.1"
   }
 }
 
