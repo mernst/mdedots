@@ -176,7 +176,7 @@ def echoautobrowsemaybe(*args: str) -> None:
         data = response.read()
 
     if debug:
-        print("data = " + data.decode("utf-8"), file=MAILBODY)
+        print("data = " + data, file=MAILBODY)
     if data == b'{"total":0}':
         if debug:
             print("Nothing to see in " + URL, file=MAILBODY)
