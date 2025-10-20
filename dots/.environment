@@ -343,12 +343,11 @@ export anno="$t"/annotation-tools
 
 export qn="$t"/notes
 
-export at="$t"/annotation-tools
-export afu="$at"/annotation-file-utilities
 if [ -z "$CHECKERFRAMEWORK" ]; then
   export CHECKERFRAMEWORK="$t"/checker-framework
 fi
 export cf="$CHECKERFRAMEWORK"
+export afu="$cf"/annotation-file-utilities
 export cfi="$t"/checker-framework-inference
 # Note that this does NOT change if CHECKERFRAMEWORK changes.  It always uses $t/checker-framework/.
 export ch="$cf"/checker
