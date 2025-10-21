@@ -150,6 +150,7 @@ update_fork typetools jdk /scratch/mernst/clones/types/libraries
 # update_fork typetools jdk11u /scratch/mernst/clones/types/libraries
 update_fork typetools jdk17u ~/research/types/libraries
 update_fork typetools jdk17u /scratch/mernst/clones/types/libraries
+update_fork kelloggm checkerframework-gradle-plugin ~/research/types
 update_fork kelloggm run-dljc ~/research/types
 update_fork kelloggm wpi-many ~/research/types
 update_fork kelloggm wpi-many-tests-bcel-util ~/research/types
@@ -254,6 +255,8 @@ update_fork benedikt-schesch AST-Merging-Evaluation /scratch/mernst/clones/versi
 
 update_fork vikramnitin9 rust_verification ~/research/harvest
 update_fork vikramnitin9 rust_verification /scratch/mernst/clones/harvest
+
+update_fork uwplse uwplse.github.io.git ~/research uwplse-webpage
 
 ### Special cases
 
