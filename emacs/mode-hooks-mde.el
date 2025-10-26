@@ -18,6 +18,7 @@
   (require 'cl-lib)				; for second
   (require 'replace-paragraphs)
   (require 'startup-functions-mde)
+  (require 'browse-url-once)
   )
 
 (require 'compile)
@@ -25,6 +26,11 @@
 (autoload 'replace-regexp-noninteractive "util-mde")
 (autoload 'replace-string-noninteractive "util-mde")
 (autoload 'browse-url-once "browse-url-once")
+(autoload 'browse-url-once "browse-url-once")
+(autoload 'browse-url-if-matched "browse-url-once")
+(autoload 'browse-url-once-if-matched "browse-url-once")
+(autoload 'browse-url-once-via-text-properties "browse-url-once")
+
 
 
 (make-variable-buffer-local 'before-save-hook)
@@ -1105,10 +1111,9 @@ proposal")
 	(with-current-buffer buffer
 	  (save-excursion
 	    (goto-char (point-min))
-	    (if (re-search-forward
-		 "^remote:      \\(https://github.com/.*/pull/new/[^ \n]+\\)"
-		 nil t)
-		(browse-url-once (match-string 1))))))))
+            (browse-url-once-if-matched "You can view, comment on, or merge this pull request online at:\n\n *\\(https://github.com/.*/pull/[0-9]+\\)" 1)
+            (browse-url-once-if-matched "remote: Create pull request for .*: *\nremote:   \\(https://bitbucket.org/.*/pull-requests/new?source=.*&t=1\\)" 1)
+            (browse-url-once-if-matched "remote: To create a merge request for .*, visit: *\nremote:   \\(https://gitlab\\..*/merge_requests/new.*?\\) " 1))))))
 (advice-add 'shell-command :after #'shell-command--auto-browse)
 
 (with-eval-after-load "diff-mode"

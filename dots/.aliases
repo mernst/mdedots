@@ -538,17 +538,12 @@ alias csail='xsc login'
 
 alias laptop='(xterm -T laptop -e ssh -X -p 58512 mernst2.no-ip.org &)'
 
+# Godwit can only be logged into from a CSE machine, not from outside the CSE network.
 alias godwit='xsw godwit'
-# Eel can only be logged into from a CSE machine, not from outside the CSE network.
-alias eel='xsw eel'
-# Cremosa runs CentOS 8.  It can only be logged into from a CSE machine, not from outside the CSE network.
-alias cremosa='xsw cremosa'
+alias gitlab06='xsw gitlab06'
 alias attu='xsw attu'
-alias jicama='xsw jicama'
 alias honu='xswj honu'
 alias singular='xswj singular'
-alias hummingbird='xsw hummingbird'
-alias buffalo='xsw buffalo'
 alias tern='xsw tern'
 alias umnak='xsw umnak'
 alias warfa='xsw warfa'
