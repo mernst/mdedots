@@ -208,6 +208,7 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
 (defun diff-clean-only (regex)
   "Like `diff-clean', but only does the specified files.
 The regex matches the whole filename. It must not start with ^ nor end with $."
+  (interactive "sRegex for whole filename (no ^$): ")
   (let ((diff-clean-removed-files (list regex)))
     (diff-clean)))
 

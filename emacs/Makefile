@@ -7,6 +7,7 @@ EL_FILES = $(wildcard *.el)
 EL_FILES := $(filter-out vm-w3m.el, $(EL_FILES))
 EL_FILES := $(filter-out mew-mde.el, $(EL_FILES))
 EL_FILES := $(filter-out read-spam-email.el, $(EL_FILES))
+EL_FILES := $(filter-out early-init.el, $(EL_FILES))
 ELC_FILES = $(patsubst %.el,%.elc,$(EL_FILES))
 
 .PHONY: compile compile-without-mew
