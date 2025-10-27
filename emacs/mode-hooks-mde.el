@@ -1112,6 +1112,7 @@ proposal")
 	  (save-excursion
 	    (goto-char (point-min))
             (browse-url-once-if-matched "You can view, comment on, or merge this pull request online at:\n\n *\\(https://github.com/.*/pull/[0-9]+\\)" 1)
+            (browse-url-once-if-matched "remote: Create a pull request for .*: *\nremote: *\\(https://github.com/.*/pull/new/[^ \n]*\\)" 1)
             (browse-url-once-if-matched "remote: Create pull request for .*: *\nremote:   \\(https://bitbucket.org/.*/pull-requests/new?source=.*&t=1\\)" 1)
             (browse-url-once-if-matched "remote: To create a merge request for .*, visit: *\nremote:   \\(https://gitlab\\..*/merge_requests/new.*?\\) " 1))))))
 (advice-add 'shell-command :after #'shell-command--auto-browse)
