@@ -153,12 +153,12 @@ update_fork typetools jdk17u /scratch/mernst/clones/types/libraries
 update_fork kelloggm checkerframework-gradle-plugin ~/research/types
 update_fork kelloggm run-dljc ~/research/types
 update_fork kelloggm wpi-many ~/research/types
-update_fork kelloggm wpi-many-tests-bcel-util ~/research/types
-update_fork kelloggm wpi-many-tests-bibtex-clean ~/research/types
-update_fork kelloggm wpi-many-tests-ensures-called-methods ~/research/types
-update_fork kelloggm wpi-many-tests-html-pretty-print ~/research/types
-update_fork kelloggm -wpi-many-tests-bibtex-clean ~/research/types
-update_fork Nargeshdb wpi-many-tests-owning-field ~/research/types
+update_fork kelloggm wpi-many-tests-bcel-util ~/research/types/wpi-many-tests
+update_fork kelloggm wpi-many-tests-bibtex-clean ~/research/types/wpi-many-tests
+update_fork kelloggm wpi-many-tests-ensures-called-methods ~/research/types/wpi-many-tests
+update_fork kelloggm wpi-many-tests-html-pretty-print ~/research/types/wpi-many-tests
+update_fork kelloggm -wpi-many-tests-bibtex-clean ~/research/types/wpi-many-tests
+update_fork Nargeshdb wpi-many-tests-owning-field ~/research/types/wpi-many-tests
 
 update_fork_kelloggm typetools annotation-tools ~/research/types
 update_fork_kelloggm typetools annotation-tools /scratch/mernst/clones/types
