@@ -165,10 +165,9 @@ export PATH=${PATH}:$HOME/bin/install/cov-analysis-linux64-7.7.0/bin
 
 export PATH=${PATH}:$HOME/bin/install/global-6.6.3-install/bin
 
-export PATH="$PATH:$HOME/.local/pipx/venvs/black/bin"
-export PATH="$PATH:$HOME/.local/pipx/venvs/html5validator/bin"
+# Experimentally commented out (use uv, not venv), 2025-11-03.
+# export PATH=${HOME}/.venv/bin:${PATH}
 export PATH="$HOME/.local/bin:$PATH"
-export PATH=${HOME}/.venv/bin:${PATH}
 export PATH="$PATH:/root/.local/bin"
 if command -v register-python-argcomplete > /dev/null; then
   eval "$(register-python-argcomplete pipx)"

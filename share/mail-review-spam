@@ -104,7 +104,7 @@ spam_search(
     '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR reclamação OR eletrônica OR curriculo OR Investigação'
 )
 # Spanish
-spam_search("(mejor AND opción) OR (en su)")
+spam_search("(mejor AND opción) OR (%22en su%22)")
 # Russian
 spam_search("и")
 # Polish
