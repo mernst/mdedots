@@ -738,6 +738,7 @@ This is disabled on lines with a comment containing the string \"interned\"."
 	  (string-match-p "/git-scripts" filename)
 	  (string-match-p "/plume-scripts" filename)
           (string-match-p "/prompt-mutation-experiments" filename)
+          (string-match-p "/rust_verification" filename)
           )
       t)
 
@@ -1797,8 +1798,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer 
-    (list (apply 'call-process program nil (current-buffer) nil args)
-          (buffer-string))))
+      (list (apply 'call-process program nil (current-buffer) nil args)
+            (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
