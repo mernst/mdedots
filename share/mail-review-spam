@@ -206,6 +206,8 @@ spam_search("bara@kolliers.com")
 input("Press ENTER")
 print("Suspicious senders, part 4")
 
+spam_search("from:eyebuydirect.com")
+
 spam_search("from:journal")
 spam_search("from:team")
 
