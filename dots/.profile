@@ -230,6 +230,9 @@ export PATH=$HOME/.cargo/bin:$PATH
 export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 export PATH="$HOME/.nix-profile/bin:$PATH"
 
+# For Ruby gems.
+export PATH="$HOME/bin:$PATH"
+
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/gc-7.1-install/lib
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/old-lib
 # # Isn't this needed for F15?

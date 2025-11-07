@@ -2319,6 +2319,10 @@ Use as a hook, like so:
 
           ;; Ruff
           '("error: Failed to parse \\([^ ]+\\):\\([0-9]+\\):\\([0-9]+\\)" 1 2 3)
+
+          ;; htmlproofer
+          '("^\\* At \\(.*\\):\\([0-9]+\\):" 1 2)
+
 	  )
 
 	 compilation-error-regexp-alist
