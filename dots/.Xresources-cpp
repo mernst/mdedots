@@ -48,7 +48,6 @@ XLoad*paned*grip.height: 1
 XLoad*foreground: blue
 XLoad*showGrip: false
 
-Emacs.FontBackend: xft
 #ifdef cse
 emacs.geometry:			101x88+0+0
 #else
@@ -81,36 +80,7 @@ Emacs.pointer*attributeForeground: blue
 
 Scrollbar.JumpCursor:	True
 
-XDvi*font: 7x13
-XDvi*expert: true
 /*
-! This second "expert" line is needed for MPI-SWS
-! XDvi.expert: true
-*/
-XDvi*Margin: 1.5
-/*
-! XDvi.magnifierSize3:	600
-*/
-/* Location:  far right, slightly off the screen: */
-#ifdef cse
-/* Size 4 for CSE monitor */
-XDvi.shrinkFactor:	4
-XDvi*geometry:	1282x1548--40+0
-#endif
-#ifdef laptop
-/* Size 5 for home monitor */
-XDvi.shrinkFactor:	5
-XDvi*geometry:	950x1180--40+0
-#endif
-XDvi.background:                        white
-XDvi.borderColor:                       black
-XDvi.cursorColor:                       blue
-XDvi.foreground:                        black
-XDvi.highlight:                         black
-
-/*
-! A problem with this after-save-hook is that it blows away any existing
-! *compilation* buffer.  Let's hope this isn't too big an annoyance.
 ! Local variables:
 ! eval: (auto-fill-mode 0)
 ! eval: (add-hook 'after-save-hook '(lambda () (run-command nil "make")))

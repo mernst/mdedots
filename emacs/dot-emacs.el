@@ -348,7 +348,7 @@
 ;;;
 
 ;; Try to eliminate garbled display.  (This doesn't solve the problem!)
-(modify-all-frames-parameters '((inhibit-double-buffering . t)))
+;; (modify-all-frames-parameters '((inhibit-double-buffering . t)))
 
 ;; Remove some flashy GUI features.
 (menu-bar-mode -1)
