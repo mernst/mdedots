@@ -2325,6 +2325,9 @@ Use as a hook, like so:
           ;; asciidoc-linter
           '("✗ \\([^,]+\\), line \\([0-9]+\\):" 1 2)
 
+          ;; htmlproofer
+          '("^\\* At \\(.*\\):\\([0-9]+\\):" 1 2)
+
 	  )
 
 	 compilation-error-regexp-alist
