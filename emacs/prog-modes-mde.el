@@ -2328,6 +2328,9 @@ Use as a hook, like so:
           ;; htmlproofer
           '("^\\* At \\(.*\\):\\([0-9]+\\):" 1 2)
 
+          ;; Spotless
+          '("^ *\\(.*\\):L\\([0-9]+\\) " 1 2)
+
 	  )
 
 	 compilation-error-regexp-alist
