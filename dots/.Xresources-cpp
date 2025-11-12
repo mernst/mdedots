@@ -57,7 +57,7 @@ emacs.geometry:			101x88+0+0
 */
 emacs.geometry:			101x60+0+0
 #endif
-/* 
+/*
 ! Emacs*font:			9x15
 */
 /*

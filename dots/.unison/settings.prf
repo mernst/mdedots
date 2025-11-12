@@ -32,8 +32,8 @@ diff = diff -y -W 79 --suppress-common-lines
 logfile = .unison/unison.log
 
 # Programs that perform merging
-# merge2 = emacs -q --eval '(ediff-merge-files "CURRENT1" "CURRENT2" nil "NEW")' 
-# merge = emacs -q --eval '(ediff-merge-files-with-ancestor "CURRENT1" "CURRENT2" "OLD" nil "NEW")' 
+# merge2 = emacs -q --eval '(ediff-merge-files "CURRENT1" "CURRENT2" nil "NEW")'
+# merge = emacs -q --eval '(ediff-merge-files-with-ancestor "CURRENT1" "CURRENT2" "OLD" nil "NEW")'
 
 # Do not use this; it causes "no matching comp found: client zlib server none"
 # # Improve transfer speed when using ssh
