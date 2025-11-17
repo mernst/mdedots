@@ -38,7 +38,7 @@ print("Part 1")
 
 # Merged pull requests
 
-mail_search("merged+(%22into+master%22+OR+%22into+main%22)")
+mail_label("pr-merged")
 
 # Kids' daily & weekly email
 
@@ -46,6 +46,11 @@ mail_search("category%3Apromotions+label%3Asilas+label%3Ainbox")
 mail_search("category%3Asocial+label%3Asilas+label%3Ainbox")
 # mail_search("category%3Apromotions+label%3Amaeve+label%3Ainbox")
 # mail_search("category%3Asocial+label%3Amaeve+label%3Ainbox")
+
+# Specific promotions email
+
+mail_search("from%3Ascancafe+label%3Ainbox")
+mail_search("from%3Aextracare+label%3Ainbox")
 
 input("Press ENTER")
 print("Part 2")

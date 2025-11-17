@@ -30,7 +30,7 @@ alias killacroread='kill -9 `ps -elfw | grep acroread | grep -v grep | cut -c 14
 alias lookup='java -ea -jar ${HOME}/java/plume-lib/lookup/build/libs/lookup-all.jar -a'
 # Note there is also a ~/bin/share/doc program that is nearly identical to this.
 alias doc='lookup -f ${HOME}/wisdom/root_user --two-blank-lines'
-alias bibfind='lookup -l -f ${HOME}/bib/bibroot'
+alias bibfind='lookup -l -f ${HOME}/bib/bibroot --two-blank-lines'
 alias rolo='lookup -f ${HOME}/private/addresses.tex --comment-re='
 alias quotefind='lookup -f ${HOME}/private/quotes1 -f ${HOME}/private/quotes'
 
