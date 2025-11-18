@@ -913,7 +913,7 @@ Write the result to a file named ...Test2.java."
   ;; ;; overlap.
   ;; (save-excursion (query-replace-regexp "\\(\n\\|\\`\\)\n\\( *//.*\n\\)+$" ""))
 
-  (save-excursion (replace-regexp-noninteractive "^.* \\([A-Za-z0-9_]+\\)(.*" "  @Test\n  public void test_\\1() {\n    // Tests go here.\n  }"))
+  (save-excursion (replace-regexp-noninteractive "^.* \\([A-Za-z0-9_]+\\)(.*" "  /** Test \\1(). */\n  @Test\n  public void test_\\1() {\n    // Tests go here.\n  }"))
 
   (let* ((classname (file-name-base (buffer-file-name))))
     (goto-char (point-min))
