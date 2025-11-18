@@ -869,3 +869,86 @@ This is not necessary when using script `run-google-java-format'."
   (tags-query-replace-noerror "^\\( *\\)/\\*\\(@SideEffectFree\\|@Pure\\|@Deterministic\\)\\*/ \\(public\\|private\\|protected\\|boolean\\|int\\|static\\)" "\\1/*\\2*/\n\\1\\3")
   )
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Creating tests
+;;;
+
+(defvar junit-imports
+  (concat
+   "/*\n"
+   "import static org.junit.jupiter.api.Assertions.assertArrayEquals;\n"
+   "import static org.junit.jupiter.api.Assertions.assertEquals;\n"
+   "import static org.junit.jupiter.api.Assertions.assertFalse;\n"
+   "import static org.junit.jupiter.api.Assertions.assertNotSame;\n"
+   "import static org.junit.jupiter.api.Assertions.assertSame;\n"
+   "import static org.junit.jupiter.api.Assertions.assertTrue;\n"
+   "*/"
+   "\n"
+   "import org.junit.jupiter.api.Test;\n"
+   ))
+
+(defun java-file-to-test-file ()
+  "Convert a Java file into a file of empty tests for the public methods.
+Write the result to a file named ...Test2.java."
+  (text-mode)
+  (goto-char (point-min))
+  (delete-matching-lines "^//")
+  (delete-matching-lines "^[ ][ ][ ]+//")
+  (delete-matching-lines "^[ ][ ].*\bclass\b")
+  (delete-non-matching-paragraphs "^[ ][ ]public .*(\\|^ *//\\|^package ")
+  ;; retain empty lines, those with comments, and those with "package"
+  (delete-non-matching-lines "^$\\|^ *//\\|^ *public \\|^package ")
+  ;; constructors:
+  ;; (delete-matching-lines "^ *public +[A-Za-z0-9_]+(")
+  ;; 4 comment lines:
+  (delete-matching-paragraphs "^ *//.*\n *//.*\n *//.*\n *//.*")
+  ;; Two non-empty comment lines:
+  (delete-matching-paragraphs "^ *// [^ /].*\n  *// [^ /]")
+
+  ;; TODO
+  ;; ;; Manually delete some headers.
+  ;; ;; Problem: this does not handle adjacent headers that should be
+  ;; ;; deleted, because the regexps that would match the two paragraphs
+  ;; ;; overlap.
+  ;; (save-excursion (query-replace-regexp "\\(\n\\|\\`\\)\n\\( *//.*\n\\)+$" ""))
+
+  (save-excursion (replace-regexp-noninteractive "^.* \\([A-Za-z0-9_]+\\)(.*" "  @Test\n  public void test_\\1() {\n    // Tests go here.\n  }"))
+
+  (let* ((classname (file-name-base (buffer-file-name))))
+    (goto-char (point-min))
+    ;; Skip over `package ` declaration, if present.
+    (re-search-forward "^package .*;.*\n" nil t)
+    (insert "\n" junit-imports "\n" "final class " classname "Test {\n")
+
+    (goto-char (point-max))
+    (insert "\n}\n")
+
+    (let ((outfile (string-replace
+                    "/src/main/" "/src/test/"
+                    (string-replace
+                     ".java" "Test2.java"
+                     (buffer-file-name)))))
+      (make-directory (file-name-directory outfile) t)
+      (condition-case err
+          (write-file outfile)
+        (t nil)))))
+
+(defun java-files-to-test-files ()
+  "Convert every Java file into a file of empty tests for the public methods.
+Operates on all files in the TAGS table of the current directory."
+  (interactive)
+  (let* ((dir default-directory)
+         (tags-files (progn
+                       (visit-tags-table "TAGS")
+                       (with-current-buffer (get-file-buffer "TAGS")
+                         (tags-table-files)))))
+    (unless tags-files
+      (error "No tags table is loaded or it is empty"))
+    (dolist (file tags-files)
+      (if (and (s-ends-with-p ".java" file)
+               (not (s-ends-with-p "package-info.java" file)))
+          (let ((full-path (expand-file-name file dir)))
+            (find-file full-path)
+            (with-current-buffer (current-buffer)
+              (java-file-to-test-file)))))))
