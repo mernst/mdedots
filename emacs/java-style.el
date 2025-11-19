@@ -919,7 +919,9 @@ Write the result to a file named ...Test2.java."
     (goto-char (point-min))
     ;; Skip over `package ` declaration, if present.
     (re-search-forward "^package .*;.*\n" nil t)
-    (insert "\n" junit-imports "\n" "final class " classname "Test {\n")
+    (insert "\n" junit-imports "\n"
+            "/** Test the " classname " class. */\n"
+            "final class " classname "Test {\n")
 
     (goto-char (point-max))
     (insert "\n}\n")
