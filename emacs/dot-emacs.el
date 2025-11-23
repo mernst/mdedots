@@ -1627,6 +1627,16 @@ no more occurrences of REGEX appear in the buffer."
 (advice-add 'shell-eval-command :around #'shell-eval-command--remove-carriage-return)
 
 
+;; Needed on Ubuntu 25.10 and Emacs 30.2.  Was fine on Ubuntu 25.04 and Emacs 30.2.
+(defun dired-move-to-end-of-filename--handle-symbolic-link (orig-fun &optional no-error)
+  (if-let* ((arrow-end (save-excursion (search-forward " -> " (line-end-position) 'noerror))))
+      (progn
+        (goto-char (- arrow-end 4))
+        (point))
+    (funcall orig-fun no-error)))
+(advice-add 'dired-move-to-end-of-filename :around #'dired-move-to-end-of-filename--handle-symbolic-link)
+
+
 (setq use-dialog-box nil)               ; no popups, use keyboard instead
 
 
