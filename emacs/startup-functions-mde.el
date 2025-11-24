@@ -531,7 +531,9 @@ Not guaranteed to work in all cases."
      (offer-to-change-if-read-only)
      (if buffer-read-only
          (signal (car e) (cdr e))))))
+(if (not (equal "sl7" (system-name)))
 (advice-add 'barf-if-buffer-read-only :around #'barf-if-buffer-read-only--make-buffer-modifiable)
+)
 
 (autoload 'flush-paragraphs "replace-paragraphs"
   "Delete paragraphs containing matches for REGEXP." t)
