@@ -11,4 +11,10 @@
 
 (setq load-prefer-newer t)
 
+(if (equal "sl7" (system-name))
+    (progn
+      (setq no-native-compile t)
+      (setq tramp-gvfs-enabled nil)))
+
+
 ;;; early-init.el ends here
