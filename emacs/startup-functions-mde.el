@@ -725,34 +725,34 @@ Not guaranteed to work in all cases."
       ))
 
 
-(defadvice bdiff (around emacs-diff-context activate)
-  "For Emacs patches, use context diff format rather than unidiff format."
-  (let* ((filename (if (stringp (ad-get-arg 0))
-                       (expand-file-name (ad-get-arg 0))
-                     (buffer-file-name)))
-         (patch-p (and filename
-                       (eq bdiff-context-lines 'unidiff)
-                       (emacs-source-file-p filename)
-                       (y-or-n-p "Use context diff format (for patch submission)? ")))
-         (bdiff-context-lines (if patch-p
-                                  2
-                                bdiff-context-lines))
-         (bdiff-ignore-whitespace (if patch-p
-                                      nil
-                                    bdiff-ignore-whitespace)))
-    ad-do-it))
-
-(defadvice diff (around emacs-diff-context activate)
-  "For Emacs patches, use context diff format rather than unidiff format."
-  (let* ((filename (if (stringp (ad-get-arg 0))
-                       (expand-file-name (ad-get-arg 0))
-                     (buffer-file-name)))
-         (patch-p (and filename
-                       (not (equal diff-switches "-c"))
-                       (emacs-source-file-p filename)
-                       (y-or-n-p "Use context diff format (for patch submission)? ")))
-         (diff-switches (if patch-p "-c" diff-switches)))
-    ad-do-it))
+;; (defadvice bdiff (around emacs-diff-context activate)
+;;   "For Emacs patches, use context diff format rather than unidiff format."
+;;   (let* ((filename (if (stringp (ad-get-arg 0))
+;;                        (expand-file-name (ad-get-arg 0))
+;;                      (buffer-file-name)))
+;;          (patch-p (and filename
+;;                        (eq bdiff-context-lines 'unidiff)
+;;                        (emacs-source-file-p filename)
+;;                        (y-or-n-p "Use context diff format (for patch submission)? ")))
+;;          (bdiff-context-lines (if patch-p
+;;                                   2
+;;                                 bdiff-context-lines))
+;;          (bdiff-ignore-whitespace (if patch-p
+;;                                       nil
+;;                                     bdiff-ignore-whitespace)))
+;;     ad-do-it))
+;; 
+;; (defadvice diff (around emacs-diff-context activate)
+;;   "For Emacs patches, use context diff format rather than unidiff format."
+;;   (let* ((filename (if (stringp (ad-get-arg 0))
+;;                        (expand-file-name (ad-get-arg 0))
+;;                      (buffer-file-name)))
+;;          (patch-p (and filename
+;;                        (not (equal diff-switches "-c"))
+;;                        (emacs-source-file-p filename)
+;;                        (y-or-n-p "Use context diff format (for patch submission)? ")))
+;;          (diff-switches (if patch-p "-c" diff-switches)))
+;;     ad-do-it))
 
 ;; Emacs 20.2.99 introduced `compare-with-file', so I need another way to type
 ;; `compare-windows' conveniently.
@@ -771,10 +771,10 @@ Not guaranteed to work in all cases."
 ;;     ad-do-it))
 
 
-(defadvice compilation-find-file (before substitute-env-vars activate)
-  "Call `substitute-in-file-name' if first character of argument is `$'."
-  (if (= ?$ (elt (ad-get-arg 1) 0))
-      (ad-set-arg 1 (substitute-in-file-name (ad-get-arg 1)))))
+;; (defadvice compilation-find-file (before substitute-env-vars activate)
+;;   "Call `substitute-in-file-name' if first character of argument is `$'."
+;;   (if (= ?$ (elt (ad-get-arg 1) 0))
+;;       (ad-set-arg 1 (substitute-in-file-name (ad-get-arg 1)))))
 
 
 ;;; File groups
@@ -855,35 +855,35 @@ Not guaranteed to work in all cases."
 ;; ;; (add-hook 'write-file-hooks 'remember-old-group)
 
 
-;; (This is still needed as of Emacs 30.1, released in 2025.
-;; But maybe a better approach would be to stop using $(...) in Makefiles.)
-;; It would be better to surround the variable name by braces, not parens.
-;; `substitute-in-file-name' deals correctly with braces, and so does the
-;; shell; neither handles parens.  But the paren version is still common
-;; in Makefiles (even though they, too, support braces), so retain this.
-(defadvice substitute-in-file-name (before drop-parens activate)
-  "Substitute variables whose names are surrounded by parentheses."
-  (let ((fname (ad-get-arg 0)))
-    (while (string-match "\\$(\\([A-Za-z_]+\\))" fname)
-      (setq fname (concat
-                   (substring fname 0 (match-beginning 0))
-                   (or (getenv (match-string 1 fname))
-                       (error (concat "Substituting nonexistent environment variable \""
-                                      (match-string 1 fname)
-                                      "\"")))
-                   (substring fname (match-end 0)))))
-    (ad-set-arg 0 fname)))
-;; Testing
-;; (substitute-in-file-name "$HOME/.emacs")
-;; (substitute-in-file-name "${HOME}/.emacs")
-;; (substitute-in-file-name "$(HOME)/.emacs")
+;; ;; (This is still needed as of Emacs 30.1, released in 2025.
+;; ;; But maybe a better approach would be to stop using $(...) in Makefiles.)
+;; ;; It would be better to surround the variable name by braces, not parens.
+;; ;; `substitute-in-file-name' deals correctly with braces, and so does the
+;; ;; shell; neither handles parens.  But the paren version is still common
+;; ;; in Makefiles (even though they, too, support braces), so retain this.
+;; (defadvice substitute-in-file-name (before drop-parens activate)
+;;   "Substitute variables whose names are surrounded by parentheses."
+;;   (let ((fname (ad-get-arg 0)))
+;;     (while (string-match "\\$(\\([A-Za-z_]+\\))" fname)
+;;       (setq fname (concat
+;;                    (substring fname 0 (match-beginning 0))
+;;                    (or (getenv (match-string 1 fname))
+;;                        (error (concat "Substituting nonexistent environment variable \""
+;;                                       (match-string 1 fname)
+;;                                       "\"")))
+;;                    (substring fname (match-end 0)))))
+;;     (ad-set-arg 0 fname)))
+;; ;; Testing
+;; ;; (substitute-in-file-name "$HOME/.emacs")
+;; ;; (substitute-in-file-name "${HOME}/.emacs")
+;; ;; (substitute-in-file-name "$(HOME)/.emacs")
 
-(defadvice outline-next-preface (after dont-go-backward activate)
-  "Don't print an extra blank line above outline entries that have
-one in the source code."
-  (if (and (not (looking-at (concat "\n\\(" outline-regexp "\\)")))
-           (looking-at (concat "\n\n\\(" outline-regexp "\\)")))
-      (forward-char 1)))
+;; (defadvice outline-next-preface (after dont-go-backward activate)
+;;   "Don't print an extra blank line above outline entries that have
+;; one in the source code."
+;;   (if (and (not (looking-at (concat "\n\\(" outline-regexp "\\)")))
+;;            (looking-at (concat "\n\n\\(" outline-regexp "\\)")))
+;;       (forward-char 1)))
 
 
 (global-auto-revert-mode)
@@ -1178,10 +1178,10 @@ If called interactively, prompt for which index."
 ;;               nil ;; avoid warning "when with empty body"
 ;; 	      )))
 ;; Older etags
-(with-eval-after-load "etags"
-  (load "etags-mde"))
-(autoload 'tags-replace "tags-replace"
-  "Do `replace-regexp' of FROM with TO on all files listed in tags table." t)
+;; (with-eval-after-load "etags"
+;;   (load "etags-mde"))
+;; (autoload 'tags-replace "tags-replace"
+;;   "Do `replace-regexp' of FROM with TO on all files listed in tags table." t)
 (define-key esc-map "," 'mde-tags-loop-continue) ; was tags-loop-continue
 (setq tags-find-related-names-functions '(mit-scheme-tags-find-related-names))
 (setq tags-revert-without-query t)

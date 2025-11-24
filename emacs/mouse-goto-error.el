@@ -195,50 +195,50 @@ is easier than clicking on the error."
 ;; Note that not all numbers following "@" are valid arguments to "dump",
 ;; so stick with those starting with "0x" for now.
 
-(defvar hex-re "\\b0x[0-9a-fA-F]+\\b")
-
-(defadvice mouse-yank-or-goto-error (around jdb-dump activate)
-  "If click is on a hex number, dump a Java object.
-Note the usual Emacs problem with the buffer being the wrong one when this
-is invoked the first time; the jdb buffer needs to be current before using
-this mouseclick."
-  ;; arguments: (click arg)
-  (let* ((click-advice (ad-get-arg 0))
-         (click-point (posn-point (event-end click-advice)))
-         (hex-at-point
-          (and (eq major-mode 'gud-mode)
-               (boundp 'gud-find-file)
-               (eq gud-find-file 'jde-db-find-file)
-               (or (save-excursion
-                     (goto-char click-point)
-                     (if (re-search-backward "\\s-" nil t)
-                         (progn
-                           (forward-char 1)
-                           (if (looking-at hex-re)
-                               (match-string 0)))))
-                   (save-excursion
-                     (goto-char click-point)
-                     (if (re-search-forward "\\s-" nil t)
-                         (progn
-                           (forward-char -1)
-                           (if (looking-back hex-re (save-excursion (beginning-of-line) (point)))
-                               (match-string 0)))))))))
-    (if hex-at-point
-        (let* ((command (concat "dump " hex-at-point))
-               (prev-output
-                (save-excursion
-                  (goto-char (point-min))
-                  (search-forward (concat "] " command "\n") nil t))))
-          ;; If we already printed this value, go to that point rather
-          ;; than cluttering the buffer with duplicate output.
-          ;; (This could be a problem if some slot values have changed...)
-          (if prev-output
-              (goto-char prev-output)
-            (progn
-              (goto-char (point-max))
-              (insert command)
-              (comint-send-input))))
-      ad-do-it)))
+;; (defvar hex-re "\\b0x[0-9a-fA-F]+\\b")
+;; 
+;; (defadvice mouse-yank-or-goto-error (around jdb-dump activate)
+;;   "If click is on a hex number, dump a Java object.
+;; Note the usual Emacs problem with the buffer being the wrong one when this
+;; is invoked the first time; the jdb buffer needs to be current before using
+;; this mouseclick."
+;;   ;; arguments: (click arg)
+;;   (let* ((click-advice (ad-get-arg 0))
+;;          (click-point (posn-point (event-end click-advice)))
+;;          (hex-at-point
+;;           (and (eq major-mode 'gud-mode)
+;;                (boundp 'gud-find-file)
+;;                (eq gud-find-file 'jde-db-find-file)
+;;                (or (save-excursion
+;;                      (goto-char click-point)
+;;                      (if (re-search-backward "\\s-" nil t)
+;;                          (progn
+;;                            (forward-char 1)
+;;                            (if (looking-at hex-re)
+;;                                (match-string 0)))))
+;;                    (save-excursion
+;;                      (goto-char click-point)
+;;                      (if (re-search-forward "\\s-" nil t)
+;;                          (progn
+;;                            (forward-char -1)
+;;                            (if (looking-back hex-re (save-excursion (beginning-of-line) (point)))
+;;                                (match-string 0)))))))))
+;;     (if hex-at-point
+;;         (let* ((command (concat "dump " hex-at-point))
+;;                (prev-output
+;;                 (save-excursion
+;;                   (goto-char (point-min))
+;;                   (search-forward (concat "] " command "\n") nil t))))
+;;           ;; If we already printed this value, go to that point rather
+;;           ;; than cluttering the buffer with duplicate output.
+;;           ;; (This could be a problem if some slot values have changed...)
+;;           (if prev-output
+;;               (goto-char prev-output)
+;;             (progn
+;;               (goto-char (point-max))
+;;               (insert command)
+;;               (comint-send-input))))
+;;       ad-do-it)))
 
 
 (provide 'mouse-goto-error)

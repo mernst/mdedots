@@ -8,7 +8,7 @@
 (defvar java-style-debug nil)
 
 (require 'etags)
-(require 'etags-mde)
+;; (require 'etags-mde)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

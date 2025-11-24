@@ -10,7 +10,7 @@
 ;; 
 
 (defun tags-replace (from to &optional delimited files)
-  "Do `replace-regexp' of FROM with TO on all files listed in tags table.
+  "Do `replace-regexp' of FROM with TO on all files listed in tags table, without query.g
 Third arg DELIMITED (prefix arg) means replace only word-delimited matches.
 If you exit (\\[keyboard-quit], RET or q), you can resume the query replace
 with the command \\[fileloop-continue].
