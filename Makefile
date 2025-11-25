@@ -15,7 +15,7 @@ git-hooks: .git/hooks/pre-commit .git/hooks/post-merge
 .git/hooks/post-merge: share/mdedots.post-merge
 	cp -pf $< $@
 
-PYTHON_FILES:=$(wildcard **/*.py) $(shell grep -r -l --exclude='*.py' --exclude='*~' --exclude='*.tar' --exclude=gradlew --exclude-dir=.git '^\#! \?\(/bin/\|/usr/bin/env \)python')
+PYTHON_FILES:=$(wildcard **/*.py) $(shell grep -r -l --exclude='*.py' --exclude='#*' --exclude='*~' --exclude='*.tar' --exclude=gradlew --exclude-dir=.git '^\#! \?\(/bin/\|/usr/bin/env \)python')
 PYTHON_FILES_TO_CHECK:=$(filter-out ${lcb_runner},${PYTHON_FILES})
 python-style-fix:
 ifneq (${PYTHON_FILES},)

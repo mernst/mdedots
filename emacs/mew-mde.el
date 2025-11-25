@@ -663,16 +663,16 @@
 ;; Surprisingly, setting mew-reply-regex does not seem to affet sorting nor
 ;; replies.
 
-(defun mew-subject-simplify-ml-no-github (str)
-  "Like `mew-subject-simplify-ml', but don't strip off GitHub notificatons."
-  ;; The only change is to add a "/" to the regex.
-  (if (string-match "^[[(][^])/]+[])][ \t]*" str)
-      (substring str (match-end 0))
-    str))
-(defadvice mew-subject-simplify-ml (around no-github activate)
-  (setq ad-return-value (mew-subject-simplify-ml-no-github (ad-get-arg 0))))
-;; Testing:
-;; (mew-subject-simplify-ml (mew-subject-simplify-ml "[Brass] [uwplse/brass] 84f91e: revised task 11"))
+;; (defun mew-subject-simplify-ml-no-github (str)
+;;   "Like `mew-subject-simplify-ml', but don't strip off GitHub notificatons."
+;;   ;; The only change is to add a "/" to the regex.
+;;   (if (string-match "^[[(][^])/]+[])][ \t]*" str)
+;;       (substring str (match-end 0))
+;;     str))
+;; (defadvice mew-subject-simplify-ml (around no-github activate)
+;;   (setq ad-return-value (mew-subject-simplify-ml-no-github (ad-get-arg 0))))
+;; ;; Testing:
+;; ;; (mew-subject-simplify-ml (mew-subject-simplify-ml "[Brass] [uwplse/brass] 84f91e: revised task 11"))
 
 ;; Used in function `mew-subject-simplify', which is used to strip leading
 ;; text and otherwise change the subject line for sorting and replying.
@@ -822,11 +822,11 @@
 ;; when no new messages are retrieved).
 (setq line-number-display-limit-width 500) ; lines can easily be 400 chars wide
 
-(defadvice mew-syntax-format (around reset-mew-window-magic activate)
-  "Ensure that MIME attachments don't wrap during message composition,
-even if `mew-window-magic' has been set to a large value."
-  (let ((mew-window-magic (window-width)))
-    ad-do-it))
+;; (defadvice mew-syntax-format (around reset-mew-window-magic activate)
+;;   "Ensure that MIME attachments don't wrap during message composition,
+;; even if `mew-window-magic' has been set to a large value."
+;;   (let ((mew-window-magic (window-width)))
+;;     ad-do-it))
 
 
 (defun mew-time-int-to-mon-str (i)
@@ -974,27 +974,27 @@ even if `mew-window-magic' has been set to a large value."
 ;; (add-hook 'mew-message-hook 'fixup-w3m-output)
 
 
-;; From Christophe.Troestler@umons.ac.be, with "if" test added by me.
-(defadvice mew-fill-match-adaptive-prefix (after mew-remove-itemize-chars activate)
-  "Remove the symbols commonly used as indicators for itemize lists from
-the prefix used for filling messages."
-  ;; (message "%s" ad-return-value) ; debugging
-  (if ad-return-value
-      (setq ad-return-value
-	    (replace-regexp-in-string "[-*•]" " " ad-return-value))))
+;; ;; From Christophe.Troestler@umons.ac.be, with "if" test added by me.
+;; (defadvice mew-fill-match-adaptive-prefix (after mew-remove-itemize-chars activate)
+;;   "Remove the symbols commonly used as indicators for itemize lists from
+;; the prefix used for filling messages."
+;;   ;; (message "%s" ad-return-value) ; debugging
+;;   (if ad-return-value
+;;       (setq ad-return-value
+;; 	    (replace-regexp-in-string "[-*•]" " " ad-return-value))))
 
 (defun mew-set-fill-column ()
   (setq fill-column (min 82 (frame-width))))
 (add-hook 'mew-message-mode-hook 'mew-set-fill-column)
 
 
-(defvar mew-sent-queued-mail nil)
-(defadvice mew (after send-queued-mail activate)
-  "Try to send queued mail upon Mew startup."
-  (if (not mew-sent-queued-mail)
-      (progn
-	(setq mew-sent-queued-mail t)
-	(mew-summary-send-message))))
+;; (defvar mew-sent-queued-mail nil)
+;; (defadvice mew (after send-queued-mail activate)
+;;   "Try to send queued mail upon Mew startup."
+;;   (if (not mew-sent-queued-mail)
+;;       (progn
+;; 	(setq mew-sent-queued-mail t)
+;; 	(mew-summary-send-message))))
 
 
 ;;; The send-queued-mail advice is a more direct way to do this.
@@ -1149,17 +1149,17 @@ the prefix used for filling messages."
   )
 
 
-;; If I try to send again from the same message buffer, this doesn't seem
-;; to get invoked. Workaround: kill the buffer, get the message from the
-;; drafts folder, and try again.
-(defadvice mew-encode-flowed (before warn-if-delsp activate)
-  "Warn if the charset sets delsp.
-If delsp is set, then format=flowed breaks words arbirtary locations,
-not just on word boundaries."
-  (let ((delsp (mew-charset-to-delsp charset)))
-    (if (and delsp
-             (not (y-or-n-p (concat "Charset " charset " sets delsp. OK? "))))
-	(error (concat "Charset " charset " sets delsp")))))
+;; ;; If I try to send again from the same message buffer, this doesn't seem
+;; ;; to get invoked. Workaround: kill the buffer, get the message from the
+;; ;; drafts folder, and try again.
+;; (defadvice mew-encode-flowed (before warn-if-delsp activate)
+;;   "Warn if the charset sets delsp.
+;; If delsp is set, then format=flowed breaks words arbirtary locations,
+;; not just on word boundaries."
+;;   (let ((delsp (mew-charset-to-delsp charset)))
+;;     (if (and delsp
+;;              (not (y-or-n-p (concat "Charset " charset " sets delsp. OK? "))))
+;; 	(error (concat "Charset " charset " sets delsp")))))
 
 ;; Headers
 (setq mew-x-mailer nil)
@@ -1268,30 +1268,30 @@ not just on word boundaries."
 ;;; Killing draft buffer
 ;;;
 
-(defvar disable-maybe-kill-mew-draft nil)
-(defun maybe-kill-mew-draft ()
-  "Ask whether to kill the mew draft along with the buffer."
-  (if (and (not disable-maybe-kill-mew-draft)
-	   (equal major-mode 'mew-draft-mode))
-      (mew-draft-kill)))
-;; Test whether the body is empty. There's no point to this unless I call
-;; a version of mew-draft-kill that does no user querying.
-;; 	   (or (save-excursion
-;; 		 (goto-char (point-max))
-;; 		 (while (= ?\n (char-before))
-;; 		   (backward-char 1))
-;; 		 (equal mew-header-separator
-;; 			(buffer-substring (- (point) (length mew-header-separator))
-;; 					  (point)))))
-
-(defadvice mew-draft-kill (around disable-maybe-kill-mew-draft activate)
-  (let ((disable-maybe-kill-mew-draft t))
-    ad-do-it))
-(defadvice mew-remove-buffer (around disable-maybe-kill-mew-draft activate)
-  (let ((disable-maybe-kill-mew-draft t))
-    ad-do-it))
-
-(add-hook 'kill-buffer-hook 'maybe-kill-mew-draft)
+;; (defvar disable-maybe-kill-mew-draft nil)
+;; (defun maybe-kill-mew-draft ()
+;;   "Ask whether to kill the mew draft along with the buffer."
+;;   (if (and (not disable-maybe-kill-mew-draft)
+;; 	   (equal major-mode 'mew-draft-mode))
+;;       (mew-draft-kill)))
+;; ;; Test whether the body is empty. There's no point to this unless I call
+;; ;; a version of mew-draft-kill that does no user querying.
+;; ;; 	   (or (save-excursion
+;; ;; 		 (goto-char (point-max))
+;; ;; 		 (while (= ?\n (char-before))
+;; ;; 		   (backward-char 1))
+;; ;; 		 (equal mew-header-separator
+;; ;; 			(buffer-substring (- (point) (length mew-header-separator))
+;; ;; 					  (point)))))
+;; 
+;; (defadvice mew-draft-kill (around disable-maybe-kill-mew-draft activate)
+;;   (let ((disable-maybe-kill-mew-draft t))
+;;     ad-do-it))
+;; (defadvice mew-remove-buffer (around disable-maybe-kill-mew-draft activate)
+;;   (let ((disable-maybe-kill-mew-draft t))
+;;     ad-do-it))
+;; 
+;; (add-hook 'kill-buffer-hook 'maybe-kill-mew-draft)
 
 
 
@@ -1416,50 +1416,50 @@ is inserted before the cursor, the short name is expanded to its address."
 ;;;
 
 
-;; default: (list mew-from: mew-subj: mew-date:)
-(setq mew-cite-fields (list mew-subj: mew-from: mew-to: mew-date:))
-;; default: "From: %s\nSubject: %s\nDate: %s\n\n"
-(setq mew-cite-format "Subject: %s\nFrom: %s\nTo: %s\nDate: %s\n\n")
-;; This quoting within mew-cite-format does not work because it doesn't
-;; quote continuation lines in, for example, the To: field.
-;; (setq mew-cite-format "> Subject: %s\n> From: %s\n> To: %s\n> Date: %s> \n> \n")
-(defadvice mew-cite-strings (after quote-it activate)
-  (let ((mail-yank-prefix (mew-compute-mail-yank-prefix)))
-    (setq ad-return-value
-	  (concat mail-yank-prefix
-		  (replace-regexp-in-string "\n" (concat "\n" mail-yank-prefix)
-					    ad-return-value)))))
+;; ;; default: (list mew-from: mew-subj: mew-date:)
+;; (setq mew-cite-fields (list mew-subj: mew-from: mew-to: mew-date:))
+;; ;; default: "From: %s\nSubject: %s\nDate: %s\n\n"
+;; (setq mew-cite-format "Subject: %s\nFrom: %s\nTo: %s\nDate: %s\n\n")
+;; ;; This quoting within mew-cite-format does not work because it doesn't
+;; ;; quote continuation lines in, for example, the To: field.
+;; ;; (setq mew-cite-format "> Subject: %s\n> From: %s\n> To: %s\n> Date: %s> \n> \n")
+;; (defadvice mew-cite-strings (after quote-it activate)
+;;   (let ((mail-yank-prefix (mew-compute-mail-yank-prefix)))
+;;     (setq ad-return-value
+;; 	  (concat mail-yank-prefix
+;; 		  (replace-regexp-in-string "\n" (concat "\n" mail-yank-prefix)
+;; 					    ad-return-value)))))
 
 (setq mew-summary-reply-with-citation-position 'body)
 
-(defun mew-compute-mail-yank-prefix ()
-  "Compute a value for `mail-yank-prefix'."
-  (cond
-   (mew-cite-prefix-function
-    (funcall mew-cite-prefix-function))
-   (mew-cite-prefix
-    mew-cite-prefix)
-   (t
-    mew-cite-default-prefix)))
-
-(defadvice mew-cite-original (after set-mail-yank-prefix activate)
-  (make-local-variable 'mail-yank-prefix)
-  (setq mail-yank-prefix
-	(mew-compute-mail-yank-prefix)))
-
-(defadvice mew-cite-original (around move-point-to-beginning activate)
-  "Remove blank lines at end, and move point to beginning."
-  (let ((start (min (marker-position (mark-marker)) (point))))
-    ad-do-it
-    (while (looking-back ">+[ \t]*\n" (save-excursion (beginning-of-line) (point)))
-      (delete-region (match-beginning 0) (point)))
-    (goto-char start)
-    ;; This might replace in more than the quoted text. I think that's OK.
-    (replace-string-noninteractive " " " ")
-    (goto-char start)
-    ;; This might replace in more than the quoted text. I think that's OK.
-    (replace-string-noninteractive "\n> -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n" "\n> ----------------------------------------------------------------------\n")
-    (goto-char start)))
+;; (defun mew-compute-mail-yank-prefix ()
+;;   "Compute a value for `mail-yank-prefix'."
+;;   (cond
+;;    (mew-cite-prefix-function
+;;     (funcall mew-cite-prefix-function))
+;;    (mew-cite-prefix
+;;     mew-cite-prefix)
+;;    (t
+;;     mew-cite-default-prefix)))
+;; 
+;; (defadvice mew-cite-original (after set-mail-yank-prefix activate)
+;;   (make-local-variable 'mail-yank-prefix)
+;;   (setq mail-yank-prefix
+;; 	(mew-compute-mail-yank-prefix)))
+;; 
+;; (defadvice mew-cite-original (around move-point-to-beginning activate)
+;;   "Remove blank lines at end, and move point to beginning."
+;;   (let ((start (min (marker-position (mark-marker)) (point))))
+;;     ad-do-it
+;;     (while (looking-back ">+[ \t]*\n" (save-excursion (beginning-of-line) (point)))
+;;       (delete-region (match-beginning 0) (point)))
+;;     (goto-char start)
+;;     ;; This might replace in more than the quoted text. I think that's OK.
+;;     (replace-string-noninteractive " " " ")
+;;     (goto-char start)
+;;     ;; This might replace in more than the quoted text. I think that's OK.
+;;     (replace-string-noninteractive "\n> -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n" "\n> ----------------------------------------------------------------------\n")
+;;     (goto-char start)))
 
 ;;; Don't do this, because it screws up format="flowed" processing.
 ;; (defadvice mew-cite-format-flowed (after always-insert-space activate)
@@ -1490,12 +1490,12 @@ is inserted before the cursor, the short name is expanded to its address."
   (call-interactively 'mew-summary-reply-to-sender))
 
 
-;; This needs to happen before the "use-full-name" advice
-(defadvice mew-to-cc-newsgroups (after remove-dcc-value first activate)
-  "If there is a dcc value, remove it from the cc list."
-  (setf (nth 1 ad-return-value)
-	(remove (mew-cfent-value mew-case 'dcc 'defaultvalue)
-		(nth 1 ad-return-value))))
+;; ;; This needs to happen before the "use-full-name" advice
+;; (defadvice mew-to-cc-newsgroups (after remove-dcc-value first activate)
+;;   "If there is a dcc value, remove it from the cc list."
+;;   (setf (nth 1 ad-return-value)
+;; 	(remove (mew-cfent-value mew-case 'dcc 'defaultvalue)
+;; 		(nth 1 ad-return-value))))
 
 ;; When an HTML message is displayed using w3m or eww in Mew, its lines are
 ;; broken.  Then, when it is yanked into a reply buffer, the broken lines
@@ -1556,94 +1556,81 @@ is inserted before the cursor, the short name is expanded to its address."
   (with-current-buffer (mew-buffer-message)
     (mew-message-line-status)))
 
-(defadvice mew-draft-cite (before refill-wide activate)
-  (mew-cite-refill-message-wide))
+;; (defadvice mew-draft-cite (before refill-wide activate)
+;;   (mew-cite-refill-message-wide))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Forwarding
 ;;;
 
-;; Maybe the default should depend on whether the current message is MIME
-;; and/or has attachments?
-(defadvice mew-summary-forward (around maybe-inline activate)
-  "With prefix argument, insert the original message inline
-rather than as an attachment."
-  (if current-prefix-arg
-      (jl-forward-inline)
-    ad-do-it))
-
-;; Originally from http://cermics.enpc.fr/~lelong/Emacs/dotmewdotel.html,
-;; slightly modified.
-(defun jl-forward-inline ()
-  "Forwards a message inline. Inspired by mew-summary-reply."
-  (interactive)
-  (mew-summary-msg-or-part
-   (mew-summary-not-in-draft
-    (mew-current-set-window-config)
-    (let* ((owin (selected-window))
-           (fld (mew-summary-folder-name))
-           (msg (mew-summary-message-number2))
-           (draft (mew-folder-new-message mew-draft-folder))
-           (to (and mew-ask-to (mew-input-address (concat mew-to: " "))))
-           (cc (and mew-ask-cc (mew-input-address (concat mew-cc: " "))))
-           (asked (or mew-ask-to mew-ask-cc))
-           msg-subject msg-to msg-from msg-date fwsubject cwin)
-      (mew-summary-prepare-draft
-       (mew-draft-find-and-switch draft t)
-       (mew-delete-directory-recursively (mew-attachdir draft))
-       (setq cwin (selected-window)) ;; draft
-       (select-window owin)
-       (mew-summary-set-message-buffer fld msg)
-       (setq msg-subject (mew-header-get-value mew-subj:))
-       (setq msg-to (mew-header-get-value mew-to:))
-       (setq msg-from (mew-header-get-value mew-from:))
-       (setq msg-date (mew-header-get-value mew-date:))
-       (if msg-subject
-           (setq fwsubject (mew-subject-simplify (concat mew-forward-string msg-subject))))
-       (select-window cwin) ;; draft
-       ;;
-       (mew-draft-header fwsubject 'nl to cc nil nil nil nil asked)
-       (mew-draft-mode)
-       (save-excursion
-	 (goto-char (point-max))
-	 (insert "------- Start of forwarded message -------\n")
-         (insert "Subject: ") (insert msg-subject) (insert "\n")
-         (insert "Date: ") (insert msg-date) (insert "\n")
-         (insert "From: ") (insert msg-from) (insert "\n")
-         (insert "To: ") (insert msg-to) (insert "\n")
-         (insert "\n\n")
-         (mew-draft-yank)
-	 (insert "------- End of forwarded message -------\n"))
-       ;; Do fixups, should really be integrated into `mew-draft-yank' or `mew-draft-cite'.
-       (save-excursion
-	 (replace-string-noninteractive " " " ")))))))
+;; ;; Maybe the default should depend on whether the current message is MIME
+;; ;; and/or has attachments?
+;; (defadvice mew-summary-forward (around maybe-inline activate)
+;;   "With prefix argument, insert the original message inline
+;; rather than as an attachment."
+;;   (if current-prefix-arg
+;;       (jl-forward-inline)
+;;     ad-do-it))
+;; 
+;; ;; Originally from http://cermics.enpc.fr/~lelong/Emacs/dotmewdotel.html,
+;; ;; slightly modified.
+;; (defun jl-forward-inline ()
+;;   "Forwards a message inline. Inspired by mew-summary-reply."
+;;   (interactive)
+;;   (mew-summary-msg-or-part
+;;    (mew-summary-not-in-draft
+;;     (mew-current-set-window-config)
+;;     (let* ((owin (selected-window))
+;;            (fld (mew-summary-folder-name))
+;;            (msg (mew-summary-message-number2))
+;;            (draft (mew-folder-new-message mew-draft-folder))
+;;            (to (and mew-ask-to (mew-input-address (concat mew-to: " "))))
+;;            (cc (and mew-ask-cc (mew-input-address (concat mew-cc: " "))))
+;;            (asked (or mew-ask-to mew-ask-cc))
+;;            msg-subject msg-to msg-from msg-date fwsubject cwin)
+;;       (mew-summary-prepare-draft
+;;        (mew-draft-find-and-switch draft t)
+;;        (mew-delete-directory-recursively (mew-attachdir draft))
+;;        (setq cwin (selected-window)) ;; draft
+;;        (select-window owin)
+;;        (mew-summary-set-message-buffer fld msg)
+;;        (setq msg-subject (mew-header-get-value mew-subj:))
+;;        (setq msg-to (mew-header-get-value mew-to:))
+;;        (setq msg-from (mew-header-get-value mew-from:))
+;;        (setq msg-date (mew-header-get-value mew-date:))
+;;        (if msg-subject
+;;            (setq fwsubject (mew-subject-simplify (concat mew-forward-string msg-subject))))
+;;        (select-window cwin) ;; draft
+;;        ;;
+;;        (mew-draft-header fwsubject 'nl to cc nil nil nil nil asked)
+;;        (mew-draft-mode)
+;;        (save-excursion
+;; 	 (goto-char (point-max))
+;; 	 (insert "------- Start of forwarded message -------\n")
+;;          (insert "Subject: ") (insert msg-subject) (insert "\n")
+;;          (insert "Date: ") (insert msg-date) (insert "\n")
+;;          (insert "From: ") (insert msg-from) (insert "\n")
+;;          (insert "To: ") (insert msg-to) (insert "\n")
+;;          (insert "\n\n")
+;;          (mew-draft-yank)
+;; 	 (insert "------- End of forwarded message -------\n"))
+;;        ;; Do fixups, should really be integrated into `mew-draft-yank' or `mew-draft-cite'.
+;;        (save-excursion
+;; 	 (replace-string-noninteractive " " " ")))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Fixes
 ;;;
 
-;; As of 10/2009, mew-summary-mode-line crashes frequently, because
-;; (mew-sinfo-get-mid-marker) returns nil. So catch that error.
-(defadvice mew-summary-mode-line (around catch-error activate)
-  (condition-case err
-      ad-do-it
-    (error
-     (message "Caught error in mew-summary-mode-line: %s" err))))
-
-
-;; This depends on using a version of Mew that contains this patch:
-;; https://github.com/kazu-yamamoto/Mew/pull/38
-(let ((redhat-version
-       (and (file-exists-p "/etc/redhat-release")
-	    (shell-command-to-string "cat /etc/redhat-release"))))
-  (if (and redhat-version
-	   (string-match "Fedora release 19" redhat-version)
-	   )
-      ;; This is not necessary with stunnel 5, because fips is off by default
-      (setq mew-prog-ssl-arg "fips=no\n")
-    ))
+;; ;; As of 10/2009, mew-summary-mode-line crashes frequently, because
+;; ;; (mew-sinfo-get-mid-marker) returns nil. So catch that error.
+;; (defadvice mew-summary-mode-line (around catch-error activate)
+;;   (condition-case err
+;;       ad-do-it
+;;     (error
+;;      (message "Caught error in mew-summary-mode-line: %s" err))))
 
 
 ;;; I have submitted a patch that should make the below unnecessary.

@@ -14,13 +14,9 @@
 
 ;; Put these first to put packages before built-ins, on the load-path.
 (setq load-path (cons package-user-dir load-path))
-(package-initialize)                    ; seems necessary for compiling via makefile
+;; (package-initialize)                    ; seems necessary for compiling via makefile
 
 (setq load-prefer-newer t)
-
-(require 'auto-compile)
-(auto-compile-on-load-mode)
-(auto-compile-on-save-mode)
 
 (add-to-list 'load-path "~/emacs")
 (add-to-list 'load-path "~/emacs/mew/elisp")
@@ -30,13 +26,19 @@
       (normal-top-level-add-subdirs-to-load-path)))
 (add-to-list 'load-path "~/java/google-java-format/core/src/main/scripts/")
 
+(require 'auto-compile)
+(auto-compile-on-load-mode)
+(auto-compile-on-save-mode)
+
 
 (eval-when-compile
+  (require 'auto-compile)
   (require 'ispell)
   (require 'vc-annotate)
   (require 'smerge-mode)
   (require 'rg-result nil t)
-  (require 'file-comparison))
+  (require 'file-comparison)
+  (require 'dbus))
 
 ;; To use the ELPA package manager, call  M-x list-packages
 ;; To install a package:  M-x package-install RET magit RET , or:
@@ -97,6 +99,8 @@
              ;; Actually WSL Ubuntu
              (equal "sb2" (system-name))
              (equal "sb2.localdomain" (system-name))
+             (equal "sl7" (system-name))
+             (equal "sl7.localdomain" (system-name))
              ;; Generally for machines not connected to a university-managed
              ;; file system.
              (equal "warfa.cs.washington.edu" (system-name))
@@ -501,6 +505,8 @@
 ;;;
 
 ;; Inserting these files' contents would make this file really big.
+
+(require 'dbus)
 
 (load "mode-hooks-mde" nil t)
 
@@ -1281,8 +1287,16 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (setq tramp-default-method "scp")
 
 (custom-set-variables
- '(tramp-password-prompt-regexp "^.*\\([pP]assword\\|passphrase\\|Response\\).*:\^@? *")
- )
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
+ '(package-selected-packages nil)
+ '(package-vc-selected-packages
+   '((whisper :url "https://github.com/natrys/whisper.el" :branch
+              "master")))
+ '(tramp-password-prompt-regexp "^.*\\([pP]assword\\|passphrase\\|Response\\).*:\0? *"))
 
 
 ;; To debug tramp, do:
@@ -1423,7 +1437,11 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 ;;   :config (claude-code-mode)
 ;;   :bind-keymap ("C-c c" . claude-code-command-map))
 (custom-set-faces
- '(claude-code-repl-face ((t (:family "JuliaMono")))))
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
 (autoload 'claude-code-vterm-mode "claude-code-ui")
 (autoload 'vterm-mode "vterm")
 ;; Claude-code uses projectile
