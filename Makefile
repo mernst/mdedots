@@ -2,7 +2,7 @@ all: style-fix style-check git-hooks
 	${MAKE} style-check
 	${MAKE} -C dots
 	${MAKE} -C share
-	# Emacs comes last to prevent masking other problems
+# Emacs comes last to prevent masking other problems
 	${MAKE} -C emacs
 
 style-fix: python-style-fix shell-style-fix
@@ -15,26 +15,28 @@ git-hooks: .git/hooks/pre-commit .git/hooks/post-merge
 .git/hooks/post-merge: share/mdedots.post-merge
 	cp -pf $< $@
 
-PYTHON_FILES:=$(wildcard **/*.py) $(shell grep -r -l --exclude='*.py' --exclude='#*' --exclude='*~' --exclude='*.tar' --exclude=gradlew --exclude-dir=.git '^\#! \?\(/bin/\|/usr/bin/env \)python')
-PYTHON_FILES_TO_CHECK:=$(filter-out ${lcb_runner},${PYTHON_FILES})
+PYTHON_FILES:=$(wildcard **/*.py) $(shell grep -r -l --exclude-dir=.git --exclude-dir=.venv --exclude='*.py' --exclude='#*' --exclude='*~' --exclude='*.tar' --exclude=gradlew --exclude=lcb_runner '^\#! \?\(/bin/\|/usr/bin/\|/usr/bin/env \)python')
 python-style-fix:
 ifneq (${PYTHON_FILES},)
-	@ruff format ${PYTHON_FILES_TO_CHECK}
-	@ruff -q check ${PYTHON_FILES_TO_CHECK} --fix
+	@ruff --version
+	@ruff -q format ${PYTHON_FILES}
+	@ruff -q check ${PYTHON_FILES} --fix
 endif
 python-style-check:
 ifneq (${PYTHON_FILES},)
-	@ruff -q format --check ${PYTHON_FILES_TO_CHECK}
-	@ruff -q check ${PYTHON_FILES_TO_CHECK}
+	@ruff --version
+	@ruff -q format --check ${PYTHON_FILES}
+	@ruff -q check ${PYTHON_FILES}
 endif
 python-typecheck:
 ifneq (${PYTHON_FILES},)
-	@mypy --strict --scripts-are-modules --install-types --non-interactive ${PYTHON_FILES_TO_CHECK} > /dev/null 2>&1 || true
-	mypy --strict --scripts-are-modules --ignore-missing-imports ${PYTHON_FILES_TO_CHECK}
+	@mypy --version
+	@mypy --strict --scripts-are-modules --install-types --non-interactive ${PYTHON_FILES} > /dev/null 2>&1 || true
+	mypy --strict --scripts-are-modules --ignore-missing-imports ${PYTHON_FILES}
 endif
 
-SH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)sh' * | grep -v /.git/ | grep -v '~$$' | grep -v addrfilter | grep -v mail-stackoverflow.sh | grep -v mew.texi | grep -v emacs/mew/ | grep -v conda-initialize.sh)
-BASH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)bash' * | grep -v /.git/ | grep -v '~$$' | grep -v emacs/mew/)
+SH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)sh' * | grep -v /.git/ | grep -v '~$$' | grep -v addrfilter | grep -v mail-stackoverflow.sh | grep -v mew.texi | grep -v emacs/mew/ | grep -v conda-initialize.sh | grep -v emacs/apheleia)
+BASH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)bash' * | grep -v /.git/ | grep -v '~$$' | grep -v emacs/mew/ | grep -v emacs/apheleia)
 
 shell-style-fix:
 	@shfmt -w -i 2 -ci -bn -sr ${SH_SCRIPTS} ${BASH_SCRIPTS}

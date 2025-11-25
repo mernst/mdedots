@@ -110,7 +110,7 @@
 			 (remove "^#" dired-omit-regexps-default)
 			 "\\|")))))
 
-;; Dired-omit-extensions is defined (and set) in dired-x.el.
+;; dired-omit-extensions is defined (and set) in dired-x.el.
 ;; There must be a character before anything in dired-omit-extensions.
 (defvar dired-omit-extensions-default
   (cl-delete-duplicates

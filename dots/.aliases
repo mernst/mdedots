@@ -185,7 +185,7 @@ if [ -d "/homes/gws/mernst" ]; then
   alias lpr='lpr -o fit-to-page'
 fi
 if [ -d "/homes/gws/mernst" ]; then
-  alias lprc='lpr -P pgc270'
+  alias lprc='lpr -P pgc224'
 fi
 
 # psnup can read from standard input, but then it can't take an argument

@@ -920,6 +920,20 @@ Returns t if any change was made, nil otherwise."
           (run-command nil "shellcheck" "-x" "--format=gcc" "-P" "SCRIPTDIR" filename)
           ))))
 
+(defun buffer-validate (validator &rest args)
+  "Runs a validation validation on the current buffer's file.
+Use this in an after-save-hook.
+VALIDATOR is a program to run.
+ARGS are args to pass it.  Buffer file name is provided as last arg."
+  (if (get-buffer "*validate*")
+      (kill-buffer "*validate*"))
+  (let ((process-status (apply #'call-process validator nil "*validate*" nil
+			       (append args (list (buffer-file-name))))))
+    (if (not (equal process-status 0))
+	(progn
+	  (pop-to-buffer "*validate*")
+	  (error "Invalid shell script")))))
+
 (defun enable-shell-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
   (let ((filename (buffer-file-name)))
