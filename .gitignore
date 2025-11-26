@@ -34,7 +34,7 @@ dots/.unison/unison.log
 
 emacs/*.dynvars
 emacs/.path.el
-emacs/apheleia-4.3/
+emacs/apheleia-*/
 emacs/apheleia
 emacs/athena
 emacs/bbdb-2.35

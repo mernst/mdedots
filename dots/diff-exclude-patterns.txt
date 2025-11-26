@@ -19,7 +19,9 @@ verification-metadata.dryrun.xml
 # api/ is sometimes a subdirectory of build/.
 api
 build
-# The JDK source code contains a non-generated directory named `javadoc/`.
+
+# The "javadoc" pattern is problematic, because there can be non-generated directories
+# named `javadoc/`.  For instance, the JDK source code contains such directories.
 # javadoc
 target
 type-search-index.js

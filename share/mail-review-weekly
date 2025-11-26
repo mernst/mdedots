@@ -1,36 +1,31 @@
 #! /usr/bin/env python3
 
+"""Review weekly mail in Gmail.
+
 # Usage: mail-review-weekly
+"""
 
 import time
 import webbrowser
 
 
 def mail_search(search_term: str) -> None:
+    """Search for a term in both of my inboxes."""
     webbrowser.open(
-        "https://mail.google.com/mail/u/"
-        + "mernst@cs.washington.edu"
-        + "/#search/"
-        + search_term
+        "https://mail.google.com/mail/u/" + "mernst@cs.washington.edu" + "/#search/" + search_term
     )
     time.sleep(0.3)
-    webbrowser.open(
-        "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/" + search_term
-    )
+    webbrowser.open("https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/" + search_term)
     time.sleep(0.3)
 
 
 def mail_label(search_term: str) -> None:
+    """Search for a label in both of my inboxes."""
     webbrowser.open(
-        "https://mail.google.com/mail/u/"
-        + "mernst@cs.washington.edu"
-        + "/#label/"
-        + search_term
+        "https://mail.google.com/mail/u/" + "mernst@cs.washington.edu" + "/#label/" + search_term
     )
     time.sleep(0.3)
-    webbrowser.open(
-        "https://mail.google.com/mail/u/" + "michael.ernst" + "/#label/" + search_term
-    )
+    webbrowser.open("https://mail.google.com/mail/u/" + "michael.ernst" + "/#label/" + search_term)
     time.sleep(0.3)
 
 
@@ -73,24 +68,18 @@ print("Part 3")
 # The regular mail_label() does not work with additional keywords.
 # These come early so that the delay-weekly label might update before I get to it.
 webbrowser.open(
-    "https://mail.google.com/mail/u/"
-    + "mernst@cs.washington.edu"
-    + "/#search/label%3Adelay-weekly+seworld"
+    "https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/label%3Adelay-weekly+seworld"
+)
+webbrowser.open(
+    "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/label%3Adelay-weekly+seworld"
 )
 webbrowser.open(
     "https://mail.google.com/mail/u/"
-    + "michael.ernst"
-    + "/#search/label%3Adelay-weekly+seworld"
+    "mernst@cs.washington.edu"
+    "/#search/label%3Adelay-weekly+ecoop-info"
 )
 webbrowser.open(
-    "https://mail.google.com/mail/u/"
-    + "mernst@cs.washington.edu"
-    + "/#search/label%3Adelay-weekly+ecoop-info"
-)
-webbrowser.open(
-    "https://mail.google.com/mail/u/"
-    + "michael.ernst"
-    + "/#search/label%3Adelay-weekly+ecoop-info"
+    "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/label%3Adelay-weekly+ecoop-info"
 )
 mail_search("label%3Adelay-junk+%22micheal%22")
 mail_search("to:it-fmeurope-events")

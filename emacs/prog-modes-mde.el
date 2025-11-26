@@ -205,14 +205,14 @@ Intended for use in after-save-hook."
 		(error "Invalid .circleci/config.yml file")))))))
 
 
-;; I was afraid this would blow away prefix argument info; maybe it doesn't.
-(defadvice c-electric-slash (around not-at-left-margin activate)
-  "Don't indent if at left column."
-  (interactive "P")
-  (if (and (eq ?/ (char-after (- (point) 1)))
-           (eq ?\n (char-after (- (point) 2))))
-      (self-insert-command (prefix-numeric-value arg))
-    ad-do-it))
+;; ;; I was afraid this would blow away prefix argument info; maybe it doesn't.
+;; (defadvice c-electric-slash (around not-at-left-margin activate)
+;;   "Don't indent if at left column."
+;;   (interactive "P")
+;;   (if (and (eq ?/ (char-after (- (point) 1)))
+;;            (eq ?\n (char-after (- (point) 2))))
+;;       (self-insert-command (prefix-numeric-value arg))
+;;     ad-do-it))
 
 (defun mde-c++-mode-hook ()
   "Michael Ernst's C++ mode hook."
@@ -222,10 +222,10 @@ Intended for use in after-save-hook."
   (c++-set-compile-command))
 (add-hook 'c++-mode-hook 'mde-c++-mode-hook)
 
-;; Infinite loop in c-fill-paragraph if fill-prefix is empty string.
-(defadvice c-fill-paragraph (before avoid-empty-string-fill-prefix activate)
-  (if (equal fill-prefix "")
-      (setq fill-prefix nil)))
+;; ;; Infinite loop in c-fill-paragraph if fill-prefix is empty string.
+;; (defadvice c-fill-paragraph (before avoid-empty-string-fill-prefix activate)
+;;   (if (equal fill-prefix "")
+;;       (setq fill-prefix nil)))
 
 
 ;; This is generally useful, but not currently used.
@@ -751,23 +751,23 @@ This is disabled on lines with a comment containing the string \"interned\"."
  )
 
 
-(defadvice jdb (after set-gud-jdb-sourcepath activate)
-  "Hard-code some directories whose bin/jar is on my classpath."
-  (setq gud-jdb-sourcepath
-	(append
-	 gud-jdb-sourcepath
-	 (mapcar #'expand-file-name
-		 '(
-		   "~/research/types/annotation-tools/annotation-file-utilities/src"
-		   "~/research/types/annotation-tools/scene-lib/src"
-		   "~/research/types/annotation-tools/scene-lib/src-devel"
-		   "~/research/types/annotation-tools/asmx/src"
-		   "~/research/types/checker-framework/checker/src"
-		   "~/research/types/jsr308-langtools/src/share/classes"
-		   "~/java/java-6-src"
-		   "~/java/junit-4.5-src"
-		   "~/java/iCal4j/source"
-		   )))))
+;; (defadvice jdb (after set-gud-jdb-sourcepath activate)
+;;   "Hard-code some directories whose bin/jar is on my classpath."
+;;   (setq gud-jdb-sourcepath
+;; 	(append
+;; 	 gud-jdb-sourcepath
+;; 	 (mapcar #'expand-file-name
+;; 		 '(
+;; 		   "~/research/types/annotation-tools/annotation-file-utilities/src"
+;; 		   "~/research/types/annotation-tools/scene-lib/src"
+;; 		   "~/research/types/annotation-tools/scene-lib/src-devel"
+;; 		   "~/research/types/annotation-tools/asmx/src"
+;; 		   "~/research/types/checker-framework/checker/src"
+;; 		   "~/research/types/jsr308-langtools/src/share/classes"
+;; 		   "~/java/java-6-src"
+;; 		   "~/java/junit-4.5-src"
+;; 		   "~/java/iCal4j/source"
+;; 		   )))))
 
 
 
@@ -920,6 +920,20 @@ Returns t if any change was made, nil otherwise."
           (run-command nil "shellcheck" "-x" "--format=gcc" "-P" "SCRIPTDIR" filename)
           ))))
 
+(defun buffer-validate (validator &rest args)
+  "Runs a validation validation on the current buffer's file.
+Use this in an after-save-hook.
+VALIDATOR is a program to run.
+ARGS are args to pass it.  Buffer file name is provided as last arg."
+  (if (get-buffer "*validate*")
+      (kill-buffer "*validate*"))
+  (let ((process-status (apply #'call-process validator nil "*validate*" nil
+			       (append args (list (buffer-file-name))))))
+    (if (not (equal process-status 0))
+	(progn
+	  (pop-to-buffer "*validate*")
+	  (error "Invalid shell script")))))
+
 (defun enable-shell-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
   (let ((filename (buffer-file-name)))
@@ -992,30 +1006,30 @@ Returns t if any change was made, nil otherwise."
 (add-hook 'perl-mode-hook 'mde-perl-mode-hook)
 
 (autoload 'perldoc "perldoc" "Run perldoc on the given STRING." t)
-(defadvice perldoc (before supply-default activate)
-  "Provide a default of the thing at point."
-  (interactive
-   (list (let* ((default (or (thing-at-point 'word)
-                             (thing-at-point 'filename)))
-                (default-prompt (and default (concat " (default " default ")"))))
-           (completing-read (concat "Perl function or module" default-prompt ": ")
-                            (perldoc-functions-alist) nil nil
-                            nil nil default)))))
-(defadvice perldoc-start-process (after bind-perldoc activate)
-  "Set `C-h f' key to run `perldoc'."
-  (local-set-key "\C-hf" 'perldoc))
-
-(defadvice indent-perl-exp (after unspace-brace-hash activate)
-  "Insert no space before a hash (#) immediately following an open brace."
-  (let* ((eol (save-excursion (end-of-line) (point)))
-	 (end (save-excursion
-		(while (<= (point) eol)
-		  (forward-sexp 1))
-		(point))))
-    (save-excursion
-      (while (re-search-forward "[\{\(]\\(\\s-+\\)#" end t)
-	;; replace first submatch by a single space
-	(replace-match " " t t nil 1)))))
+;; (defadvice perldoc (before supply-default activate)
+;;   "Provide a default of the thing at point."
+;;   (interactive
+;;    (list (let* ((default (or (thing-at-point 'word)
+;;                              (thing-at-point 'filename)))
+;;                 (default-prompt (and default (concat " (default " default ")"))))
+;;            (completing-read (concat "Perl function or module" default-prompt ": ")
+;;                             (perldoc-functions-alist) nil nil
+;;                             nil nil default)))))
+;; (defadvice perldoc-start-process (after bind-perldoc activate)
+;;   "Set `C-h f' key to run `perldoc'."
+;;   (local-set-key "\C-hf" 'perldoc))
+;; 
+;; (defadvice indent-perl-exp (after unspace-brace-hash activate)
+;;   "Insert no space before a hash (#) immediately following an open brace."
+;;   (let* ((eol (save-excursion (end-of-line) (point)))
+;; 	 (end (save-excursion
+;; 		(while (<= (point) eol)
+;; 		  (forward-sexp 1))
+;; 		(point))))
+;;     (save-excursion
+;;       (while (re-search-forward "[\{\(]\\(\\s-+\\)#" end t)
+;; 	;; replace first submatch by a single space
+;; 	(replace-match " " t t nil 1)))))
 
 (defun perl-in-comment ()
   "Return non-nil if in a Perl comment."
@@ -1213,17 +1227,17 @@ otherwise, raise an error after the first problem is encountered."
   )
 (add-hook 'python-mode-hook 'mde-python-mode-hook)
 
-(defadvice beginning-of-defun (around python-bod activate)
-  "Extension to work in Python mode."
-  (if (eq major-mode 'python-mode)
-      (beginning-of-python-def-or-class 'either (ad-get-arg 0))
-    ad-do-it))
-
-(defadvice end-of-defun (around python-eod activate)
-  "Extension to work in Python mode."
-  (if (eq major-mode 'python-mode)
-      (end-of-python-def-or-class 'either (ad-get-arg 0))
-    ad-do-it))
+;; (defadvice beginning-of-defun (around python-bod activate)
+;;   "Extension to work in Python mode."
+;;   (if (eq major-mode 'python-mode)
+;;       (beginning-of-python-def-or-class 'either (ad-get-arg 0))
+;;     ad-do-it))
+;; 
+;; (defadvice end-of-defun (around python-eod activate)
+;;   "Extension to work in Python mode."
+;;   (if (eq major-mode 'python-mode)
+;;       (end-of-python-def-or-class 'either (ad-get-arg 0))
+;;     ad-do-it))
 
 ;; It would be cleaner to do this kill-buffer-and-window hacking with advice instead.
 (defun python-override-kill-buffer-and-window ()
@@ -1268,13 +1282,13 @@ otherwise, raise an error after the first problem is encountered."
       (max (if (bolp) 0 (1+ (current-column)))
            comment-column))))
 
-(defadvice indent-for-tab-command (around move-to-text activate)
-  "In Python mode, if at first column, then move to first non-space character."
-  (if (and (eq major-mode 'python-mode)
-           (zerop (current-column))
-           (looking-at "[ \t]+[^ \t\n]"))
-      (goto-char (1- (match-end 0)))
-    ad-do-it))
+;; (defadvice indent-for-tab-command (around move-to-text activate)
+;;   "In Python mode, if at first column, then move to first non-space character."
+;;   (if (and (eq major-mode 'python-mode)
+;;            (zerop (current-column))
+;;            (looking-at "[ \t]+[^ \t\n]"))
+;;       (goto-char (1- (match-end 0)))
+;;     ad-do-it))
 
 ;; To fix later.  Executing this causes the error
 ;;   "Info-insert-dir: Can't find the Info directory node"
@@ -2435,33 +2449,33 @@ if its name ends in `.scm' and the `.bin' or `.com' file also exists."
 ;;; Debugging
 ;;;
 
-;; Is there not a way to do this in GDB itself?
-;; Did I want this only for Vortex, or is there some other reason?
-(defvar gud-filter-sigsegv-gcfindlimit-state nil)
-(make-variable-buffer-local 'gud-filter-sigsegv-gcfindlimit-state)
-(defadvice gud-filter (before skip-sigsegv-in-gcfindlimit activate)
-  "Continue past segmentation faults in procedure GC_find_limit."
-  (let ((str (ad-get-arg 1)))           ; not "string" as that's the formal name
-    ;; Leave this in for debugging, for the time being.
-    ;; (message "filter (state %s) got <<%s>>" gud-filter-sigsegv-gcfindlimit-state str)
-    (cond
-     ((and (not gud-filter-sigsegv-gcfindlimit-state)
-           (equal str "Program received signal SIGSEGV, Segmentation fault.\n"))
-      (setq gud-filter-sigsegv-gcfindlimit-state 'saw-sigsegv))
-     ((and (eq gud-filter-sigsegv-gcfindlimit-state 'saw-sigsegv)
-           (string-match "^0x[0-9a-f]* in GC_find_limit ()\n$" str))
-      (setq gud-filter-sigsegv-gcfindlimit-state 'saw-sigsegv-in-gcfindlimit))
-     ((or (and (eq gud-filter-sigsegv-gcfindlimit-state 'saw-sigsegv-in-gcfindlimit)
-               (equal str "(gdb) "))
-          (and (not gud-filter-sigsegv-gcfindlimit-state)
-               (string-match "\\(^\\|\n\\)Program received signal SIGSEGV, Segmentation fault.\n0x[0-9a-f]* in GC_find_limit ()\n(gdb) $" str)))
-      (setq gud-filter-sigsegv-gcfindlimit-state nil)
-      ;; (message "Calling gud-cont")
-      (gud-cont nil))
-     (t
-      (setq gud-filter-sigsegv-gcfindlimit-state nil))))
-  ;; (message (format "filter ends in state %s" gud-filter-sigsegv-gcfindlimit-state))
-  )
+;; ;; Is there not a way to do this in GDB itself?
+;; ;; Did I want this only for Vortex, or is there some other reason?
+;; (defvar gud-filter-sigsegv-gcfindlimit-state nil)
+;; (make-variable-buffer-local 'gud-filter-sigsegv-gcfindlimit-state)
+;; (defadvice gud-filter (before skip-sigsegv-in-gcfindlimit activate)
+;;   "Continue past segmentation faults in procedure GC_find_limit."
+;;   (let ((str (ad-get-arg 1)))           ; not "string" as that's the formal name
+;;     ;; Leave this in for debugging, for the time being.
+;;     ;; (message "filter (state %s) got <<%s>>" gud-filter-sigsegv-gcfindlimit-state str)
+;;     (cond
+;;      ((and (not gud-filter-sigsegv-gcfindlimit-state)
+;;            (equal str "Program received signal SIGSEGV, Segmentation fault.\n"))
+;;       (setq gud-filter-sigsegv-gcfindlimit-state 'saw-sigsegv))
+;;      ((and (eq gud-filter-sigsegv-gcfindlimit-state 'saw-sigsegv)
+;;            (string-match "^0x[0-9a-f]* in GC_find_limit ()\n$" str))
+;;       (setq gud-filter-sigsegv-gcfindlimit-state 'saw-sigsegv-in-gcfindlimit))
+;;      ((or (and (eq gud-filter-sigsegv-gcfindlimit-state 'saw-sigsegv-in-gcfindlimit)
+;;                (equal str "(gdb) "))
+;;           (and (not gud-filter-sigsegv-gcfindlimit-state)
+;;                (string-match "\\(^\\|\n\\)Program received signal SIGSEGV, Segmentation fault.\n0x[0-9a-f]* in GC_find_limit ()\n(gdb) $" str)))
+;;       (setq gud-filter-sigsegv-gcfindlimit-state nil)
+;;       ;; (message "Calling gud-cont")
+;;       (gud-cont nil))
+;;      (t
+;;       (setq gud-filter-sigsegv-gcfindlimit-state nil))))
+;;   ;; (message (format "filter ends in state %s" gud-filter-sigsegv-gcfindlimit-state))
+;;   )
 
 
 
@@ -2486,66 +2500,66 @@ if its name ends in `.scm' and the `.bin' or `.com' file also exists."
 ;; (defvar Info-current-file) also does no good.
 ;; But putting eval-when-compile *in the defadvice body* does the trick.
 
-(defadvice shell (around choose-alternate-shell activate)
-  "Select the appropriate shell.
-If in Python mode, look for a buffer associated with a python process, etc."
-  ;; This causes an error from M-x edebug-defun:
-  ;;   While compiling toplevel forms:
-  ;;     !! Wrong type argument ((consp nil))
-  (eval-when-compile (defvar Info-current-file))
-  (cond ((and (or (eq major-mode 'cecil-mode)
-                  ;; I ought to know which mode I should be in when this
-                  ;; search will succeed.
-                  (save-excursion
-                    (goto-char (point-min))
-                    (or (looking-at "#include \"vortex-defs-C\\+\\+\\.h\"\n")
-                        (looking-at "#include \"vortex-defs-Cecil\\.h\"\n")
-                        (search-forward "\n(** language(\"C++\") **)"
-                                        ;; not just 200 if buffer is narrowed
-                                        (+ (point-min) 200) t))))
-              (get-buffer "*vortex*"))
-         (switch-to-buffer (get-buffer "*vortex*")))
-        ((and (memq major-mode '(lisp-mode
-                                 fi:common-lisp-mode fi:clman-mode
-                                 fi:lisp-listener-mode))
-              (or (get-buffer "*allegro*")
-                  (get-buffer "*inferior-lisp*")))
-         (switch-to-buffer (or (get-buffer "*allegro*")
-                               (get-buffer "*inferior-lisp*"))))
-        ((and (or (memq major-mode '(python-mode))
-                  (and (eq major-mode 'Info-mode)
-                       (string-match "python" Info-current-file)))
-              (get-buffer "*Python*"))
-         (switch-to-buffer (get-buffer "*Python*")))
-        ((and (memq major-mode '(comint-mode shell-mode inferior-lisp-mode
-                                             fi:inferior-common-lisp-mode))
-              (not (eobp)))
-         (goto-char (point-max)))
-        (t
-         (let ((processes (process-list))
-               (dir default-directory)
-               (result nil))
-           (while processes
-             (let* ((process (car processes))
-                    (pbuffer (process-buffer process)))
-               (if (and pbuffer
-                        (buffer-live-p pbuffer)
-                        (not (eq pbuffer (current-buffer)))
-                        (eq 'run (process-status process))
-                        (equal default-directory
-                               (with-current-buffer pbuffer
-                                 default-directory))
-                        (with-current-buffer pbuffer
-                          (and
-                           (memq major-mode '(comint-mode shell-mode inferior-lisp-mode
-                                                          fi:inferior-common-lisp-mode))
-                           (not (string-equal (buffer-name) "*Async Shell Command*")))))
-                   (setq result pbuffer
-                         processes nil)
-                 (setq processes (cdr processes)))))
-           (if result
-               (switch-to-buffer result)
-             ad-do-it)))))
+;; (defadvice shell (around choose-alternate-shell activate)
+;;   "Select the appropriate shell.
+;; If in Python mode, look for a buffer associated with a python process, etc."
+;;   ;; This causes an error from M-x edebug-defun:
+;;   ;;   While compiling toplevel forms:
+;;   ;;     !! Wrong type argument ((consp nil))
+;;   (eval-when-compile (defvar Info-current-file))
+;;   (cond ((and (or (eq major-mode 'cecil-mode)
+;;                   ;; I ought to know which mode I should be in when this
+;;                   ;; search will succeed.
+;;                   (save-excursion
+;;                     (goto-char (point-min))
+;;                     (or (looking-at "#include \"vortex-defs-C\\+\\+\\.h\"\n")
+;;                         (looking-at "#include \"vortex-defs-Cecil\\.h\"\n")
+;;                         (search-forward "\n(** language(\"C++\") **)"
+;;                                         ;; not just 200 if buffer is narrowed
+;;                                         (+ (point-min) 200) t))))
+;;               (get-buffer "*vortex*"))
+;;          (switch-to-buffer (get-buffer "*vortex*")))
+;;         ((and (memq major-mode '(lisp-mode
+;;                                  fi:common-lisp-mode fi:clman-mode
+;;                                  fi:lisp-listener-mode))
+;;               (or (get-buffer "*allegro*")
+;;                   (get-buffer "*inferior-lisp*")))
+;;          (switch-to-buffer (or (get-buffer "*allegro*")
+;;                                (get-buffer "*inferior-lisp*"))))
+;;         ((and (or (memq major-mode '(python-mode))
+;;                   (and (eq major-mode 'Info-mode)
+;;                        (string-match "python" Info-current-file)))
+;;               (get-buffer "*Python*"))
+;;          (switch-to-buffer (get-buffer "*Python*")))
+;;         ((and (memq major-mode '(comint-mode shell-mode inferior-lisp-mode
+;;                                              fi:inferior-common-lisp-mode))
+;;               (not (eobp)))
+;;          (goto-char (point-max)))
+;;         (t
+;;          (let ((processes (process-list))
+;;                (dir default-directory)
+;;                (result nil))
+;;            (while processes
+;;              (let* ((process (car processes))
+;;                     (pbuffer (process-buffer process)))
+;;                (if (and pbuffer
+;;                         (buffer-live-p pbuffer)
+;;                         (not (eq pbuffer (current-buffer)))
+;;                         (eq 'run (process-status process))
+;;                         (equal default-directory
+;;                                (with-current-buffer pbuffer
+;;                                  default-directory))
+;;                         (with-current-buffer pbuffer
+;;                           (and
+;;                            (memq major-mode '(comint-mode shell-mode inferior-lisp-mode
+;;                                                           fi:inferior-common-lisp-mode))
+;;                            (not (string-equal (buffer-name) "*Async Shell Command*")))))
+;;                    (setq result pbuffer
+;;                          processes nil)
+;;                  (setq processes (cdr processes)))))
+;;            (if result
+;;                (switch-to-buffer result)
+;;              ad-do-it)))))
 
 ;; (defadvice shell-directory-tracker (before handle-back activate)
 ;;   "Convert \"back\" into \"cd -\", which `shell-directory-tracker' understands."
@@ -2568,17 +2582,17 @@ If in Python mode, look for a buffer associated with a python process, etc."
 ;;; Commenting
 ;;;
 
-(defadvice comment-region (around strip-whitespace activate)
-  "If `comment-start' begins with a space and `comment-padding' is 1,
-then set `comment-padding' to nil."
-  (let ((comment-padding
-         (if (and (or (and (numberp comment-padding) (= 1 comment-padding))
-                      (and (stringp comment-padding) (equal " " comment-padding)))
-                  comment-start
-                  (= ?\  (aref comment-start (1- (length comment-start)))))
-             nil
-           comment-padding)))
-    ad-do-it))
+;; (defadvice comment-region (around strip-whitespace activate)
+;;   "If `comment-start' begins with a space and `comment-padding' is 1,
+;; then set `comment-padding' to nil."
+;;   (let ((comment-padding
+;;          (if (and (or (and (numberp comment-padding) (= 1 comment-padding))
+;;                       (and (stringp comment-padding) (equal " " comment-padding)))
+;;                   comment-start
+;;                   (= ?\  (aref comment-start (1- (length comment-start)))))
+;;              nil
+;;            comment-padding)))
+;;     ad-do-it))
 
 
 
