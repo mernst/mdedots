@@ -679,7 +679,9 @@ This is disabled on lines with a comment containing the string \"interned\"."
        (and (string-match-p "/daikon" filename)
 	    (not (string-match-p "/daikon-gradle-plugin" filename))
 	    (not (string-match-p "\\.jpp$" filename))
-	    (not (string-match-p "nonnull-interned-demo" filename)))
+	    (not (string-match-p "nonnull-interned-demo" filename))
+            (not (string-match-p "/tests/daikon-tests/" filename))
+            (not (string-match-p "/tests/sources/" filename)))
 
        ;; Toradocu
        (and (string-match-p "/toradocu" filename)
