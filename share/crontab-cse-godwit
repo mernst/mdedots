@@ -123,7 +123,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 # Removed from the below: \nAuto-browse to https://uwcsephdadmits2023.slack.com/
 30 5 * * 1-5    $AFS echo -e "Auto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
 30 12 * * 1-5   $AFS echo -e "Auto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
-11 6 * * *	$AFS $CRONIC make -C $HOME/public_html validate
+11 6 * * *	$AFS $CRONIC make -C $HOME/public_html style-check
 ###
 ### Daily -- verify that Checker Framework tests pass; also use for timing information
 ###
@@ -219,10 +219,10 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 09 5 2 * *	$AFS PATH=${PATH}:${HOME}/bin/src/git-tools $CRONIC make -C $HOME/public_html/advice/
 10 5 3 * *	$AFS $CRONIC make -C $HOME/public_html/pubs
 #CSAIL#(copy to UW eventually) 10 5 10 * *	$AFS make -C /afs/csail/group/pag/www/pubs
-# 11 5 12 * *	$AFS html5validator -emacs `/usr/bin/find $HOME/public_html -name '*.html' -a \( ! -name 'research-index*-headfoot.html' \) -a \( ! -name 'pubs-bytopic*-headfoot.html' \) -a \( ! -wholename '*public_html/grant/index.html' \) -a \( ! -name agre-networking-on-the-network-20050814.html \)`
+# 11 5 12 * *	$AFS uvx html5validator -emacs `/usr/bin/find $HOME/public_html -name '*.html' -a \( ! -name 'research-index*-headfoot.html' \) -a \( ! -name 'pubs-bytopic*-headfoot.html' \) -a \( ! -wholename '*public_html/grant/index.html' \) -a \( ! -name agre-networking-on-the-network-20050814.html \)`
 # AFS validation problems with this line; maybe fixed with $AFS in backtick
 # But, now I get "/afs/csail.mit.edu/u/m/mernst/bin/share/afs-cron-wrapper: Argument list too long"
-# 12 5 12 * *	$AFS html5validator -emacs `$AFS find /afs/csail/group/pag/www/ \( -name '*_manual_html' -o -wholename /afs/csail/group/pag/www/daikon/download/doc/developer.html -o -wholename /afs/csail/group/pag/www/daikon/download/doc/daikon.html -o -name index-tree.html -o -name people-tree.html -o -name jdoc -o -name staging-daikon -o -name '*-old' -o -name application_communities -o -name application_communities_cvs -o -name old-projects.html -o -name continuoustesting-beta -o -name ct-eclipse -o -wholename /afs/csail/group/pag/www/darpa  -o -wholename /afs/csail/group/pag/www/darpa_ac -o -wholename /afs/csail/group/pag/www/jsr308/readonly-repo -o -wholename /afs/csail/group/pag/www/jsr308/releases -o -name java-annotation-design*.html -o -name gnu_lgpl.html -o -name javac_lifecycle \) -prune -o \( -name '*.html' \) -print | $PLUMESCRIPTS/bin/sort-directory-order`
+# 12 5 12 * *	$AFS uvx html5validator -emacs `$AFS find /afs/csail/group/pag/www/ \( -name '*_manual_html' -o -wholename /afs/csail/group/pag/www/daikon/download/doc/developer.html -o -wholename /afs/csail/group/pag/www/daikon/download/doc/daikon.html -o -name index-tree.html -o -name people-tree.html -o -name jdoc -o -name staging-daikon -o -name '*-old' -o -name application_communities -o -name application_communities_cvs -o -name old-projects.html -o -name continuoustesting-beta -o -name ct-eclipse -o -wholename /afs/csail/group/pag/www/darpa  -o -wholename /afs/csail/group/pag/www/darpa_ac -o -wholename /afs/csail/group/pag/www/jsr308/readonly-repo -o -wholename /afs/csail/group/pag/www/jsr308/releases -o -name java-annotation-design*.html -o -name gnu_lgpl.html -o -name javac_lifecycle \) -prune -o \( -name '*.html' \) -print | $PLUMESCRIPTS/bin/sort-directory-order`
 ## Daikon (at the end of the month, before the beginning-of-month release)
 ## Because of February, end-of-month really should happen by the 28th.
 # 11 5 26 * *	$AFS make -C $DAIKONDIR/java USER=mernst-cron PATH=$HOME/java/jdk/bin:$PATH findbugs

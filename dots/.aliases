@@ -185,7 +185,7 @@ if [ -d "/homes/gws/mernst" ]; then
   alias lpr='lpr -o fit-to-page'
 fi
 if [ -d "/homes/gws/mernst" ]; then
-  alias lprc='lpr -P pgc270'
+  alias lprc='lpr -P pgc224'
 fi
 
 # psnup can read from standard input, but then it can't take an argument
@@ -412,6 +412,11 @@ pdfclean() {
   pdftops "$1" "$1".ps
   ps2pdf "$1".ps
   rm -f "$1".ps
+}
+
+# Convert a markdown file into a HTML file.
+md2html() {
+  pandoc --standalone --css "${HOME}"/dots/fullwidth.css < "$1" > "${1%.*}".html
 }
 
 ###########################################################################

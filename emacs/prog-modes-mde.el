@@ -41,6 +41,9 @@
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 
+(defvar dont-check-parens nil
+  "A user should set this to non-nil to avoid errors \"Unmatched bracket or quote\".
+For instance, set it when editing files with version control merge conflicts.")
 (defvar check-parens-previous-try nil
   "A buffer name if the previous call to check-parens failed.
 Nil if the previous call to check-parens succeeded.
@@ -49,7 +52,8 @@ There might or might not have been edits between the two attempts.")
 (defun check-parens-ignore-on-retry ()
   "Like `check-parens' (which see), but a second retry in a row causes success.
 This is good for modes like Perl, where the parser can get confused."
-  (if (not (equal check-parens-previous-try (buffer-name)))
+  (if (and (not dont-check-parens)
+           (not (equal check-parens-previous-try (buffer-name))))
       (progn
         (setq check-parens-previous-try (buffer-name))
         (check-parens)
@@ -679,7 +683,9 @@ This is disabled on lines with a comment containing the string \"interned\"."
        (and (string-match-p "/daikon" filename)
 	    (not (string-match-p "/daikon-gradle-plugin" filename))
 	    (not (string-match-p "\\.jpp$" filename))
-	    (not (string-match-p "nonnull-interned-demo" filename)))
+	    (not (string-match-p "nonnull-interned-demo" filename))
+            (not (string-match-p "/tests/daikon-tests/" filename))
+            (not (string-match-p "/tests/sources/" filename)))
 
        ;; Toradocu
        (and (string-match-p "/toradocu" filename)
@@ -718,7 +724,9 @@ This is disabled on lines with a comment containing the string \"interned\"."
 
 (defun enable-python-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
-  (let ((filename (buffer-file-name)))
+  (let* ((filename (buffer-file-name))
+         (dirpath (and filename (file-name-directory filename)))
+         (dir-simple-name (and dirpath (file-name-nondirectory dirpath))))
 
     (cond
 
@@ -739,6 +747,10 @@ This is disabled on lines with a comment containing the string \"interned\"."
 	  (string-match-p "/plume-scripts" filename)
           (string-match-p "/prompt-mutation-experiments" filename)
           (string-match-p "/rust_verification" filename)
+          (and (string-match-p "/grt-testing" filename)
+               (or (starts-with "grt-testing" dir-simple-name)
+                   (equals "subject-programs" dir-simple-name)))
+          
           )
       t)
 
@@ -919,6 +931,20 @@ Returns t if any change was made, nil otherwise."
           ;; TODO: Add -P that includes both "." and the top-level of the git repository (if in a git repository).
           (run-command nil "shellcheck" "-x" "--format=gcc" "-P" "SCRIPTDIR" filename)
           ))))
+
+(defun buffer-validate (validator &rest args)
+  "Runs a validation validation on the current buffer's file.
+Use this in an after-save-hook.
+VALIDATOR is a program to run.
+ARGS are args to pass it.  Buffer file name is provided as last arg."
+  (if (get-buffer "*validate*")
+      (kill-buffer "*validate*"))
+  (let ((process-status (apply #'call-process validator nil "*validate*" nil
+			       (append args (list (buffer-file-name))))))
+    (if (not (equal process-status 0))
+	(progn
+	  (pop-to-buffer "*validate*")
+	  (error "Invalid shell script")))))
 
 (defun enable-shell-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
@@ -1284,14 +1310,6 @@ otherwise, raise an error after the first problem is encountered."
 ;;         (cons (substitute-in-file-name "$HOME/emacs/auctex-11.85/doc")
 ;;               Info-directory-list)))
 
-
-
-;; TODO: Use ruff instead.
-(defun pyflakes-this-file () (interactive)
-       (compile (format "pyflakes %s" (buffer-file-name)))
-       )
-
-;; (add-hook 'python-mode-hook (lambda () (pyflakes-mode t)))
 
 
 (defun compilation-fix-python-ruff ()
@@ -1768,8 +1786,9 @@ How does this differ from whatever is built in?"
 (defun mde-conf-mode-hook ()
   "Run the `createcal' program after its input files have been edited."
   ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
-  (let ((filename (file-truename buffer-file-name)))
-    (if (and (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename)
+  (let ((filename (and buffer-file-name (file-truename buffer-file-name))))
+    (if (and filename
+             (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename)
              (not (string-match "/503/17sp/" filename)))
         (add-hook 'after-save-hook 'run-createcal nil 'local))))
 ;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
@@ -2247,7 +2266,7 @@ Use as a hook, like so:
 	(append
 	 (list
           ;; Markdownlint omits the last colon (:).
-          '("^\\([^\n:]*+\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)? MD" 1 2)
+          '("^\\([^\n:]*+\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?\\( error\\)? MD" 1 2)
 
 	  ;; Java stack trace, as printed by a program
 	  ;; This permits 2 or 4 leading spaces.
@@ -2301,6 +2320,8 @@ Use as a hook, like so:
 	  ;; Python error messages
 	  '("^ *File \"\\(.*\\)\", line \\([0-9]+\\)" 1 2) 
 	  '("^SyntaxError: ('invalid syntax', ('\\(.*\\)', \\([0-9]+\\), " 1 2) 
+          ;; Python ty typechecker messages
+	  '("^ *--> \\(.*\\):\\([0-9]+\\):\\([0-9]+\\)$" 1 2 3)
 
 	  ;; Parse CMUCL error messages.
 	  ;; Problem: these are character numbers, not line numbers.

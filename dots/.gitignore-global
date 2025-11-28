@@ -47,6 +47,9 @@ Thumbs.db
 # My files
 find-output
 
+# Perl
+*.tdy
+
 # Python
 .pytest_cache/
 .mypy_cache/

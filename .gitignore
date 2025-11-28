@@ -34,7 +34,7 @@ dots/.unison/unison.log
 
 emacs/*.dynvars
 emacs/.path.el
-emacs/apheleia-4.3/
+emacs/apheleia-*/
 emacs/apheleia
 emacs/athena
 emacs/bbdb-2.35
@@ -72,6 +72,9 @@ share/validate
 share/validate-html4
 share/R
 share/wikify.py
+
+# Obtained via Git
+/.plume-scripts
 
 syntax: regexp
 # Not a glob because it starts with # which looks like a comment.

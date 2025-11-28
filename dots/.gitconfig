@@ -45,13 +45,13 @@
 	blamex = !git blame -M -C
         diffs = !git diff --staged
         ba = !git branch --all
+        logg = !git log --graph
 
 # The parent branch of the current branch.  From
 # https://stackoverflow.com/questions/3161204/find-the-parent-branch-of-a-git-branch/3162929 .
 [alias]
 	parent = "!git show-branch | grep '*' | grep -v \"$(git rev-parse --abbrev-ref HEAD)\" | head -n1 | sed 's/.*\\[\\(.*\\)\\].*/\\1/' | sed 's/[\\^~].*//' #"
 	dog = log --decorate --oneline --graph
-	logg = log --decorate --oneline --graph
 #	dag = log --graph --format='format:%C(yellow)%h%C(reset) %C(blue)%an <%ae>%C(reset) %C(magenta)%cr%C(reset)%C(auto)%d%C(reset)%n%s' --date-order
 
 ###
