@@ -21,11 +21,15 @@ import webbrowser
 def spam_search(search_term: str) -> None:
     """Search for a term in spam mail."""
     webbrowser.open(
-        "https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/in:spam+" + search_term
+        "https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/in:spam+"
+        + search_term
     )
     time.sleep(0.3)
     webbrowser.open(
-        "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/in:spam+" + search_term
+        "https://mail.google.com/mail/u/"
+        + "michael.ernst"
+        + "/#search/in:spam+"
+        + search_term
     )
     time.sleep(0.3)
 
@@ -112,7 +116,9 @@ spam_search("(mejor AND opción) OR (%22en su%22)")
 # Russian
 spam_search("и")
 # Polish
-spam_search("Proszę OR Słowa OR Dzień OR związku OR Wsparcie OR programistyczne OR spotkania")
+spam_search(
+    "Proszę OR Słowa OR Dzień OR związku OR Wsparcie OR programistyczne OR spotkania"
+)
 # Italian
 spam_search("Fattura OR pagata OR guardare OR signora OR uomo")
 # Chinese
@@ -179,7 +185,9 @@ spam_search("(from:BeTechly OR from:Bloomberg OR from:EDIBON OR from:ESET)")
 spam_search("(from:Egnyte OR from:Ginja OR from:Helpdesk OR from:Hitradio)")
 spam_search("(from:McAfee OR from:Norton OR from:Planview OR from:RingCentral)")
 spam_search("from:SeguridadHB")
-spam_search("(from:Avantor OR from:ATC-NY OR from:SimpsonScarborough OR from:VinFuture)")
+spam_search(
+    "(from:Avantor OR from:ATC-NY OR from:SimpsonScarborough OR from:VinFuture)"
+)
 spam_search("(from:%22Check Point%22 OR from:%22Staples Technology Solutions%22)")
 spam_search("(from:FB)")
 
@@ -191,7 +199,9 @@ spam_search("from:jooble.org")
 spam_search("from:deuscustoms.com")
 spam_search("(from:blr OR from:cardio OR from:convergetp.com OR from:demings)")
 spam_search("(from:fortinet OR from:imperva OR from:liberator OR from:linkedin)")
-spam_search("(from:sci_ed@info.vwr.com OR from:sonicwall OR from:uCertify OR from:whitmer)")
+spam_search(
+    "(from:sci_ed@info.vwr.com OR from:sonicwall OR from:uCertify OR from:whitmer)"
+)
 spam_search("(from:CashApp OR from:temu OR from:howida)")
 spam_search("from:email")
 spam_search("(from:bytesize OR from:nfina)")
