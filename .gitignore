@@ -73,6 +73,8 @@ share/validate-html4
 share/R
 share/wikify.py
 
+.plume-scripts
+
 syntax: regexp
 # Not a glob because it starts with # which looks like a comment.
 (.*/)?\#[^/]*\#$
