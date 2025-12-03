@@ -1,7 +1,6 @@
+default: all
 all: style-fix style-check git-hooks
-	${MAKE} style-check
 	${MAKE} -C dots
-	${MAKE} -C share
 # Emacs comes last to prevent masking other problems
 	${MAKE} -C emacs
 
@@ -15,7 +14,7 @@ git-hooks: .git/hooks/pre-commit .git/hooks/post-merge
 .git/hooks/post-merge: share/mdedots.post-merge
 	cp -pf $< $@
 
-PYTHON_FILES:=$(wildcard **/*.py) $(shell grep -r -l --exclude-dir=.git --exclude-dir=.venv --exclude='*.py' --exclude='#*' --exclude='*~' --exclude='*.tar' --exclude=gradlew --exclude=lcb_runner '^\#! \?\(/bin/\|/usr/bin/\|/usr/bin/env \)python')
+PYTHON_FILES:=$(wildcard **/*.py) $(shell grep -r -l --exclude-dir=.git --exclude-dir=.plume-scripts --exclude-dir=.venv --exclude='*.py' --exclude='#*' --exclude='*~' --exclude='*.tar' --exclude=gradlew --exclude=lcb_runner '^\#! \?\(/bin/\|/usr/bin/\|/usr/bin/env \)python')
 python-style-fix: .plume-scripts
 ifneq (${PYTHON_FILES},)
 	@.plume-scripts/cronic ruff --version
@@ -35,17 +34,31 @@ ifneq (${PYTHON_FILES},)
 	@.plume-scripts/cronic mypy --strict --scripts-are-modules --ignore-missing-imports ${PYTHON_FILES}
 endif
 
-SH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)sh' * | grep -v /.git/ | grep -v '~$$' | grep -v addrfilter | grep -v mail-stackoverflow.sh | grep -v mew.texi | grep -v emacs/mew/ | grep -v conda-initialize.sh | grep -v emacs/apheleia)
-BASH_SCRIPTS = $(shell grep -r -l '^\#! \?\(/bin/\|/usr/bin/env \)bash' * | grep -v /.git/ | grep -v '~$$' | grep -v emacs/mew/ | grep -v emacs/apheleia)
+# Explicitly mention some scripts that don't have a shebang line.
+SH_SCRIPTS   := $(shell grep -r -l --exclude='#*' --exclude='*~' --exclude='*.tar' --exclude=gradlew --exclude-dir apheleia --exclude-dir 'apheleia-*' --exclude-dir=mew --exclude-dir=.git --exclude-dir=.plume-scripts --exclude-dir=old '^\#! \?\(/bin/\|/usr/bin/env \)sh'   | grep -v addrfilter | grep -v conda-initialize.sh | grep -v cronic-orig | grep -v mail-stackoverflow.sh) dots/.aliases dots/.environment dots/.profile 
+BASH_SCRIPTS := $(shell grep -r -l --exclude='#*' --exclude='*~' --exclude='*.tar' --exclude=gradlew --exclude-dir apheleia --exclude-dir 'apheleia-*' --exclude-dir=mew --exclude-dir=.git --exclude-dir=.plume-scripts --exclude-dir=old '^\#! \?\(/bin/\|/usr/bin/env \)bash' | grep -v addrfilter | grep -v conda-initialize.sh | grep -v cronic-orig | grep -v mail-stackoverflow.sh) dots/.bashrc dots/.bash_profile
+CHECKBASHISMS := $(shell if command -v checkbashisms > /dev/null ; then \
+	  echo "checkbashisms" ; \
+	else \
+	  wget -q -N https://homes.cs.washington.edu/~mernst/software/checkbashisms && \
+	  mv checkbashisms .checkbashisms && \
+	  chmod +x ./.checkbashisms && \
+	  echo "./.checkbashisms" ; \
+	fi)
 
 shell-style-fix: .plume-scripts
+ifneq ($(SH_SCRIPTS)$(BASH_SCRIPTS),)
 	@.plume-scripts/cronic shfmt -w -i 2 -ci -bn -sr ${SH_SCRIPTS} ${BASH_SCRIPTS}
 	@.plume-scripts/cronic shellcheck -x -P SCRIPTDIR --format=diff ${SH_SCRIPTS} ${BASH_SCRIPTS} | patch -p1
-
+endif
 shell-style-check: .plume-scripts
+ifneq ($(SH_SCRIPTS)$(BASH_SCRIPTS),)
 	@.plume-scripts/cronic shfmt -d -i 2 -ci -bn -sr ${SH_SCRIPTS} ${BASH_SCRIPTS}
 	@.plume-scripts/cronic shellcheck -x -P SCRIPTDIR --format=gcc ${SH_SCRIPTS} ${BASH_SCRIPTS}
-	@.plume-scripts/cronic checkbashisms -l ${SH_SCRIPTS}
+endif
+ifneq ($(SH_SCRIPTS),)
+	@.plume-scripts/cronic ${CHECKBASHISMS} -l ${SH_SCRIPTS}
+endif
 
 plume-scripts-update: .plume-scripts
 	@git -q -C .plume-scripts pull --ff-only
