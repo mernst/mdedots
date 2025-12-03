@@ -720,7 +720,9 @@ This is disabled on lines with a comment containing the string \"interned\"."
 
 (defun enable-python-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
-  (let ((filename (buffer-file-name)))
+  (let* ((filename (buffer-file-name))
+         (dirpath (and filename (file-name-directory filename)))
+         (dir-simple-name (and dirpath (file-name-nondirectory dirpath))))
 
     (cond
 
@@ -741,6 +743,10 @@ This is disabled on lines with a comment containing the string \"interned\"."
 	  (string-match-p "/plume-scripts" filename)
           (string-match-p "/prompt-mutation-experiments" filename)
           (string-match-p "/rust_verification" filename)
+          (and (string-match-p "/grt-testing" filename)
+               (or (starts-with "grt-testing" dir-simple-name)
+                   (equals "subject-programs" dir-simple-name)))
+          
           )
       t)
 
