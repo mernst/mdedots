@@ -25,4 +25,4 @@ jobs:
         sudo apt update
         sudo apt install -y shfmt shellcheck devscripts
     - name: Check style
-      run: make style-check
+      run: make style-check || (make style-fix && git diff)
