@@ -21,7 +21,9 @@ ifneq (${PYTHON_FILES},)
 	@.plume-scripts/cronic ruff format ${PYTHON_FILES}
 	@.plume-scripts/cronic ruff check ${PYTHON_FILES} --fix
 endif
-python-style-check: .plume-scripts
+.ruff.toml: dots/.ruff.toml
+	ln -s $< $@
+python-style-check: .plume-scripts .ruff.toml
 ifneq (${PYTHON_FILES},)
 	@.plume-scripts/cronic ruff --version
 	@.plume-scripts/cronic ruff format --check ${PYTHON_FILES}
