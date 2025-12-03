@@ -19,14 +19,14 @@ PYTHON_FILES:=$(wildcard **/*.py) $(shell grep -r -l --exclude-dir=.git --exclud
 python-style-fix:
 ifneq (${PYTHON_FILES},)
 	@ruff --version
-	@ruff -q format ${PYTHON_FILES}
-	@ruff -q check ${PYTHON_FILES} --fix
+	@ruff format ${PYTHON_FILES}
+	@ruff check ${PYTHON_FILES} --fix
 endif
 python-style-check:
 ifneq (${PYTHON_FILES},)
 	@ruff --version
-	@ruff -q format --check ${PYTHON_FILES}
-	@ruff -q check ${PYTHON_FILES}
+	@ruff format --check ${PYTHON_FILES}
+	@ruff check ${PYTHON_FILES}
 endif
 python-typecheck:
 ifneq (${PYTHON_FILES},)
