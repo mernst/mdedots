@@ -16,10 +16,8 @@ jobs:
       with:
         python-version: '3.14.1'
     - run: python --version
-    - name: Install Python programs
-      run: |
-        pip install ruff
-        pip install mypy
+    - name: Install Python `uv`
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
     - name: Install shellcheck and checkbashisms
       run: |
         sudo apt update
