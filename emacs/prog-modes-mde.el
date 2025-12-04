@@ -2323,6 +2323,8 @@ Use as a hook, like so:
 	  ;; Python error messages
 	  '("^ *File \"\\(.*\\)\", line \\([0-9]+\\)" 1 2) 
 	  '("^SyntaxError: ('invalid syntax', ('\\(.*\\)', \\([0-9]+\\), " 1 2) 
+          ;; Python ty typechecker messages
+	  '("^ *--> \\(.*\\):\\([0-9]+\\):\\([0-9]+\\)$" 1 2 3)
 
 	  ;; Parse CMUCL error messages.
 	  ;; Problem: these are character numbers, not line numbers.
