@@ -2269,7 +2269,7 @@ Use as a hook, like so:
 	(append
 	 (list
           ;; Markdownlint omits the last colon (:).
-          '("^\\([^\n:]*+\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)? MD" 1 2)
+          '("^\\([^\n:]*+\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?\\( error\\)? MD" 1 2)
 
 	  ;; Java stack trace, as printed by a program
 	  ;; This permits 2 or 4 leading spaces.
