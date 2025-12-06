@@ -1,3 +1,5 @@
+.PHONY: all
+
 default: all
 all: style-fix style-check git-hooks
 	${MAKE} -C dots
