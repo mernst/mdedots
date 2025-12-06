@@ -13,6 +13,7 @@ CVS
 .hgtags
 .git
 .svn
+.venv
 verification-metadata.dryrun.xml
 
 # Generated directories (differences are ignored if a program uses one of these names!)
