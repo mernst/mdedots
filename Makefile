@@ -13,7 +13,7 @@ git-hooks: .git/hooks/pre-commit .git/hooks/post-merge
 .git/hooks/post-merge: share/mdedots.post-merge
 	cp -pf $< $@
 
-# Code style
+# Code style; defines `style-check` and `style-fix`.
 SH_SCRIPTS_USER := dots/.aliases dots/.environment dots/.profile
 BASH_SCRIPTS_USER := dots/.bashrc dots/.bash_profile
 CODE_STYLE_EXCLUSIONS_USER := --exclude-dir apheleia --exclude-dir 'apheleia-*' --exclude-dir=mew --exclude=csail-athena-tickets.bash --exclude=conda-initialize.sh --exclude=addrfilter
