@@ -1308,14 +1308,6 @@ otherwise, raise an error after the first problem is encountered."
 
 
 
-;; TODO: Use ruff instead.
-(defun pyflakes-this-file () (interactive)
-       (compile (format "pyflakes %s" (buffer-file-name)))
-       )
-
-;; (add-hook 'python-mode-hook (lambda () (pyflakes-mode t)))
-
-
 (defun compilation-fix-python-ruff ()
   "Apply the suggestions made by ruff in the *compilation* buffer.
 Returns t if any change was made, nil otherwise."
