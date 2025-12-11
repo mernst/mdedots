@@ -21,19 +21,7 @@ import webbrowser
 def spam_search(search_term: str) -> None:
     """Search for a term in spam mail."""
     webbrowser.open(
-<<<<<<< HEAD
-        "https://mail.google.com/mail/u/"
-         "mernst@cs.washington.edu"
-         "/#search/in:spam+"
-        + search_term
-||||||| 5a76180
-        "https://mail.google.com/mail/u/"
-        + "mernst@cs.washington.edu"
-        + "/#search/in:spam+"
-        + search_term
-=======
         "https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/in:spam+" + search_term
->>>>>>> f3329c1bc55b0eb01bf439015b9059fd5dbd9bc6
     )
     time.sleep(0.3)
     webbrowser.open(

@@ -177,16 +177,8 @@ def echoautobrowsemaybe(*args: str) -> None:
         if debug:
             print("Nothing to see in " + url, file=MAILBODY)
     else:
-<<<<<<< HEAD
-        print("Auto-browse to " + URL, file=MAILBODY)
-        print(file=MAILBODY)  # add newline, to avoid confusing GMail
-||||||| 5a76180
-        print("Auto-browse to " + URL, file=MAILBODY)
-        print("", file=MAILBODY)  # add newline, to avoid confusing GMail
-=======
         print("Auto-browse to " + url, file=MAILBODY)
         print(file=MAILBODY)  # add newline, to avoid confusing GMail
->>>>>>> f3329c1bc55b0eb01bf439015b9059fd5dbd9bc6
 
     if debug:
         MAILBODY.flush()
@@ -280,16 +272,6 @@ if debug:
     print([MAILE, "-s", SUBJECT, "mernst"])
 
 # `${COMMAND} |& ${MAILE} -s "${SUBJECT}" mernst`
-<<<<<<< HEAD
-mailbody_stdin = pathlib.Path(MAILBODY.name).open()
-p = subprocess.Popen([MAILE, "-s", SUBJECT, "mernst"], stdin=mailbody_stdin)
-p.wait()
-||||||| 5a76180
-mailbody_stdin = open(MAILBODY.name)
-p = subprocess.Popen([MAILE, "-s", SUBJECT, "mernst"], stdin=mailbody_stdin)
-p.wait()
-=======
 with pathlib.Path(MAILBODY.name).open() as mailbody_stdin:
     p = subprocess.Popen([MAILE, "-s", SUBJECT, "mernst"], stdin=mailbody_stdin)
     p.wait()
->>>>>>> f3329c1bc55b0eb01bf439015b9059fd5dbd9bc6

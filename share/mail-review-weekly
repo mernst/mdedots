@@ -68,36 +68,15 @@ print("Part 3")
 # The regular mail_label() does not work with additional keywords.
 # These come early so that the delay-weekly label might update before I get to it.
 webbrowser.open(
-<<<<<<< HEAD
-    "https://mail.google.com/mail/u/"
-     "mernst@cs.washington.edu"
-     "/#search/label%3Adelay-weekly+seworld"
-)
-webbrowser.open(
-    "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/label%3Adelay-weekly+seworld"
-||||||| 5a76180
-    "https://mail.google.com/mail/u/"
-    + "mernst@cs.washington.edu"
-    + "/#search/label%3Adelay-weekly+seworld"
-=======
     "https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/label%3Adelay-weekly+seworld"
 )
 webbrowser.open(
     "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/label%3Adelay-weekly+seworld"
->>>>>>> f3329c1bc55b0eb01bf439015b9059fd5dbd9bc6
 )
 webbrowser.open(
     "https://mail.google.com/mail/u/"
-<<<<<<< HEAD
-     "mernst@cs.washington.edu"
-     "/#search/label%3Adelay-weekly+ecoop-info"
-||||||| 5a76180
-    + "michael.ernst"
-    + "/#search/label%3Adelay-weekly+seworld"
-=======
     "mernst@cs.washington.edu"
     "/#search/label%3Adelay-weekly+ecoop-info"
->>>>>>> f3329c1bc55b0eb01bf439015b9059fd5dbd9bc6
 )
 webbrowser.open(
     "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/label%3Adelay-weekly+ecoop-info"
