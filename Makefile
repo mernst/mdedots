@@ -21,3 +21,9 @@ ifeq (,$(wildcard .plume-scripts))
 dummy != git clone -q https://github.com/plume-lib/plume-scripts.git .plume-scripts
 endif
 include .plume-scripts/code-style.mak
+
+diff-dots-with-plume-scripts:
+	git -C .plume-scripts pull --ff-only
+	diff .markdownlint-cli2.yaml dots/.markdownlint-cli2.yaml
+	diff .pymarkdown dots/.pymarkdown
+	diff .ruff.toml dots/.ruff.toml

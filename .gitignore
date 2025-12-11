@@ -74,8 +74,10 @@ share/R
 share/wikify.py
 
 # Auto-generated files
-.plume-scripts
-.ruff.toml
+/.plume-scripts
+/.markdownlint-cli2.yaml
+/.pymarkdown
+/.ruff.toml
 
 syntax: regexp
 # Not a glob because it starts with # which looks like a comment.
