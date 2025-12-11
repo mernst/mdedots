@@ -2,15 +2,14 @@
 
 import gzip
 import os
-from io import BytesIO
+import pathlib
 import subprocess
 import tempfile
+import urllib.parse
 
 # import requests                 # replaces urllib and urllib2
 import urllib.request
-import urllib.parse
-import urllib.error
-
+from io import BytesIO
 
 # I can't screen-scrape Stack Exchange because of throttling they have implemented.
 
@@ -23,21 +22,15 @@ import urllib.error
 # and don't even show the ones that don't have any matches
 # Note that ?filter=total gives the number of items matching criteria, which is probably what I want.
 
-TODAY_USER_FRIENDLY = (
-    subprocess.check_output(["date", "+%h %d"]).strip().decode("utf-8")
-)
+TODAY_USER_FRIENDLY = subprocess.check_output(["date", "+%h %d"]).strip().decode("utf-8")
 SUBJECT = "Check Stack Overflow for " + TODAY_USER_FRIENDLY
 YESTERDAY = (
-    subprocess.check_output(["date", "--date", "yesterday", "+%Y-%m-%d"])
-    .strip()
-    .decode("utf-8")
+    subprocess.check_output(["date", "--date", "yesterday", "+%Y-%m-%d"]).strip().decode("utf-8")
 )
 ## For testing
 # YESTERDAY="2015-01-01"
 YESTERDAY_UNIX = (
-    subprocess.check_output(["date", "--date", YESTERDAY, "+%s"])
-    .strip()
-    .decode("utf-8")
+    subprocess.check_output(["date", "--date", YESTERDAY, "+%s"]).strip().decode("utf-8")
 )
 
 # On Solaris, don't use "mail", which is /bin/mail;
@@ -97,8 +90,8 @@ def echoautobrowsemaybe(*args: str) -> None:
     Each argument can be one of:
       [bracketedtag]
       -[negatedbracketedtag]
-      term"""
-
+      term
+    """
     if debug:
         print("echoautobrowsemaybe " + " ".join(args), file=MAILBODY)
 
@@ -117,16 +110,12 @@ def echoautobrowsemaybe(*args: str) -> None:
     if tagged == []:
         apitagged = ""
     else:
-        apitagged = "&tagged=" + urllib.parse.quote(
-            ";".join([tag[1:-1] for tag in tagged])
-        )
+        apitagged = "&tagged=" + urllib.parse.quote(";".join([tag[1:-1] for tag in tagged]))
 
     if nottagged == []:
         apinottagged = ""
     else:
-        apinottagged = "&tagged=" + urllib.parse.quote(
-            ";".join([tag[2:-1] for tag in nottagged])
-        )
+        apinottagged = "&tagged=" + urllib.parse.quote(";".join([tag[2:-1] for tag in nottagged]))
 
     if terms == []:
         apiquery = ""
@@ -182,7 +171,7 @@ def echoautobrowsemaybe(*args: str) -> None:
             print("Nothing to see in " + URL, file=MAILBODY)
     else:
         print("Auto-browse to " + URL, file=MAILBODY)
-        print("", file=MAILBODY)  # add newline, to avoid confusing GMail
+        print(file=MAILBODY)  # add newline, to avoid confusing GMail
 
     if debug:
         MAILBODY.flush()
@@ -276,6 +265,6 @@ if debug:
     print([MAILE, "-s", SUBJECT, "mernst"])
 
 # `${COMMAND} |& ${MAILE} -s "${SUBJECT}" mernst`
-mailbody_stdin = open(MAILBODY.name)
+mailbody_stdin = pathlib.Path(MAILBODY.name).open()
 p = subprocess.Popen([MAILE, "-s", SUBJECT, "mernst"], stdin=mailbody_stdin)
 p.wait()
