@@ -1,24 +1,39 @@
 #! /usr/bin/env python3
 
-# Usage: mail-review-spam
+"""Review spam mail in Gmail.
+
+Usage: mail-review-spam
+"""
 
 # I would prefer not to display tabs containing "No messages matched your search."
 # However, I don't see how to obtain the content of the page.
 # This doesn't seem to work:  it doesn't get my cookies and shows the login page.
-#   google-chrome --headless=new --user-data-dir --enable-logging --disable-gpu --dump-dom https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/in%3Aspam+from%3A8x8 > out.html
+#   google-chrome --headless=new --user-data-dir --enable-logging --disable-gpu \
+#     --dump-dom \
+#     https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/in%3Aspam+from%3A8x8 \
+#     > out.html
 # I guess I could do the culling within Emacs...
-
 
 import time
 import webbrowser
 
 
 def spam_search(search_term: str) -> None:
+    """Search for a term in spam mail."""
     webbrowser.open(
+<<<<<<< HEAD
         "https://mail.google.com/mail/u/"
          "mernst@cs.washington.edu"
          "/#search/in:spam+"
         + search_term
+||||||| 5a76180
+        "https://mail.google.com/mail/u/"
+        + "mernst@cs.washington.edu"
+        + "/#search/in:spam+"
+        + search_term
+=======
+        "https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/in:spam+" + search_term
+>>>>>>> f3329c1bc55b0eb01bf439015b9059fd5dbd9bc6
     )
     time.sleep(0.3)
     webbrowser.open(
@@ -94,11 +109,15 @@ print('Foreign languages (watch out for "Showing related results")')
 # German
 # This does not seem to work; at least, a "Herzlichen Glückwunsch" email remained
 spam_search(
-    '("Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR "mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR ("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR "guten tag" OR "spende" OR "wir uns" OR ("Ihre" AND "ist"))'
+    '("Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR '
+    '"mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR '
+    '("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR '
+    '"guten tag" OR "spende" OR "wir uns" OR ("Ihre" AND "ist"))'
 )
 # Portuguese
 spam_search(
-    '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR reclamação OR eletrônica OR curriculo OR Investigação'
+    '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR '
+    "reclamação OR eletrônica OR curriculo OR Investigação"
 )
 # Spanish
 spam_search("(mejor AND opción) OR (%22en su%22)")
@@ -112,8 +131,9 @@ spam_search("Fattura OR pagata OR guardare OR signora OR uomo")
 spam_search("様")
 
 
-# NOTE: Most of these aren't a problem because the email subject sorts at the end when I review the email in Emacs Mew.
-# spam_search("К")
+# NOTE: Most of these aren't a problem because the email subject sorts
+# at the end when I review the email in Emacs Mew.
+# spam_search("К")  # noqa
 # spam_search("и")
 # spam_search("в")
 # spam_search("я")

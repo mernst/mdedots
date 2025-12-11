@@ -13,13 +13,16 @@ CVS
 .hgtags
 .git
 .svn
+.venv
 verification-metadata.dryrun.xml
 
 # Generated directories (differences are ignored if a program uses one of these names!)
 # api/ is sometimes a subdirectory of build/.
 api
 build
-# The JDK source code contains a non-generated directory named `javadoc/`.
+
+# The "javadoc" pattern is problematic, because there can be non-generated directories
+# named `javadoc/`.  For instance, the JDK source code contains such directories.
 # javadoc
 target
 type-search-index.js
@@ -96,6 +99,7 @@ chainlink.pdf
 
 dfepl-flow.eps
 config-options.texinfo
+ChicoryTest.log
 
 # Commons BCEL
 

@@ -36,29 +36,29 @@
               dtrt-indent dtrt-indent dtrt-indent dtrt-indent eat eat
               eat eat eat editorconfig editorconfig editorconfig
               editorconfig editorconfig eglot eglot eglot eglot eglot
-              eldoc eldoc eldoc faceup faceup faceup faceup faceup
+              eldoc eldoc eldoc erc faceup faceup faceup faceup faceup
               flycheck flycheck flycheck flycheck flymake flymake
               flymake flymake ggtags ggtags ggtags ggtags
               gnu-elpa-keyring-update gnu-elpa-keyring-update
               gnu-elpa-keyring-update gnu-elpa-keyring-update gptel
               gptel groovy-mode groovy-mode groovy-mode groovy-mode
               hydra hydra hydra idlwave idlwave idlwave idlwave
-              lsp-java lsp-java lsp-java lsp-java lsp-ui lsp-ui lsp-ui
-              lsp-ui magit magit magit magit org org org org pfuture
-              pfuture pfuture python python python python python-mode
-              python-mode python-mode python-mode recompile-on-save
-              recompile-on-save recompile-on-save recompile-on-save rg
-              rg rg rg rustic rustic rustic rustic shell-maker
-              track-changes track-changes track-changes track-changes
-              tramp tramp tramp tramp transient transient transient
-              transient tree-sitter-langs tree-sitter-langs
-              tree-sitter-langs tree-sitter-langs treesit-auto
-              treesit-auto treesit-auto treesit-auto verilog-mode
-              verilog-mode verilog-mode verilog-mode which-key
-              which-key which-key which-key whisper window-tool-bar
-              window-tool-bar window-tool-bar window-tool-bar
-              yaml-mode yaml-mode yaml-mode yaml-mode yasnippet
-              yasnippet yasnippet yasnippet))
+              jsonrpc lsp-java lsp-java lsp-java lsp-java lsp-ui
+              lsp-ui lsp-ui lsp-ui magit magit magit magit org org org
+              org pfuture pfuture pfuture python python python python
+              python-mode python-mode python-mode python-mode
+              recompile-on-save recompile-on-save recompile-on-save
+              recompile-on-save rg rg rg rg rustic rustic rustic
+              rustic shell-maker track-changes track-changes
+              track-changes track-changes tramp tramp tramp tramp
+              transient transient transient transient
+              tree-sitter-langs tree-sitter-langs tree-sitter-langs
+              tree-sitter-langs treesit-auto treesit-auto treesit-auto
+              treesit-auto verilog-mode verilog-mode verilog-mode
+              verilog-mode which-key which-key which-key which-key
+              whisper window-tool-bar window-tool-bar window-tool-bar
+              window-tool-bar yaml-mode yaml-mode yaml-mode yaml-mode
+              yasnippet yasnippet yasnippet yasnippet))
  '(package-vc-selected-packages
    '((whisper :url "https://github.com/natrys/whisper.el" :branch
               "master")

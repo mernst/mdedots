@@ -226,6 +226,7 @@ update_fork bernaferrari GradleKotlinConverter ~/java
 
 update_fork apache logging-log4j2 ~/java
 update_fork google guava ~/java
+update_fork gradle gradle ~/java
 update_fork ical4j ical4j ~/java
 update_fork jhy jsoup ~/java
 update_fork liflab beepbeep-3 ~/java

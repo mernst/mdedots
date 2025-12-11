@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+"""Send email about recent Stack Overflow posts."""
+
 import gzip
 import os
 import pathlib
@@ -17,10 +19,12 @@ from io import BytesIO
 
 # Idea:  use the Stack Exchange API only for simple searches that I can usually flter out.
 
-# I could instead use the Stack Exchange API; see https://api.stackexchange.com/docs .  For instance, run:
+# I could instead use the Stack Exchange API; see https://api.stackexchange.com/docs .
+# For instance, run:
 # wget 'https://api.stackexchange.com/2.2/search/advanced?order=desc&sort=activity&tagged=%5Bchecker-framework%5D&site=stackoverflow'
 # and don't even show the ones that don't have any matches
-# Note that ?filter=total gives the number of items matching criteria, which is probably what I want.
+# Note that ?filter=total gives the number of items matching criteria,
+# which is probably what I want.
 
 TODAY_USER_FRIENDLY = subprocess.check_output(["date", "+%h %d"]).strip().decode("utf-8")
 SUBJECT = "Check Stack Overflow for " + TODAY_USER_FRIENDLY
@@ -40,7 +44,8 @@ YESTERDAY_UNIX = (
 MAILE = os.environ["HOME"] + "/bin/src/plume-scripts/mail-e"
 
 
-## TODO: I can add negative tags to these searches, by prefixing with a hyphen.  TThat may be useful.
+## TODO: I can add negative tags to these searches, by prefixing with
+## a hyphen.  That may be useful.
 
 ## I expected these to give exactly the same results; it isn't quite the same but is similar.
 # http://stackoverflow.com/search?tab=newest&q=%5bjava%5d%20%5bannotations%5d%20is%3aquestion%20lastactive%3a2014-12-04..
@@ -50,7 +55,8 @@ MAILE = os.environ["HOME"] + "/bin/src/plume-scripts/mail-e"
 # https://api.stackexchange.com/docs
 # https://api.stackexchange.com/docs/excerpt-search
 
-## Searching for tags:  these are identical -- the first redirects to the third (which is a bug -- it should redirect to the second!)
+## Searching for tags:  these are identical -- the first redirects to the third
+## (which is a bug -- it should redirect to the second!)
 # http://stackoverflow.com/search?tab=newest&q=%5bjava%5d+%5bannotations%5d
 # http://stackoverflow.com/questions/tagged/java+annotations?sort=newest
 # http://stackoverflow.com/questions/tagged/java+annotations
@@ -80,13 +86,14 @@ debug = False
 # debug = True
 
 
-MAILBODY = tempfile.NamedTemporaryFile(mode="w", delete=not debug)
+MAILBODY = tempfile.NamedTemporaryFile(mode="w", delete=not debug)  # noqa
 if debug:
     print("MAILBODY=" + MAILBODY.name)
 
 
 def echoautobrowsemaybe(*args: str) -> None:
     """Echo an autobrowse command if there would be anything to see there.
+
     Each argument can be one of:
       [bracketedtag]
       -[negatedbracketedtag]
@@ -122,7 +129,7 @@ def echoautobrowsemaybe(*args: str) -> None:
     else:
         apiquery = "&q=" + urllib.parse.quote(" ".join(terms))
 
-    URL = (
+    url = (
         "http://stackoverflow.com/search?tab=newest&q="
         + urllib.parse.quote(" ".join(args))
         + "%20is%3aquestion%20lastactive%3a"
@@ -133,7 +140,7 @@ def echoautobrowsemaybe(*args: str) -> None:
     # I cannot use wget with the URL above because StackOverflow gives a
     # CAPTCHA; I don't get the same webpage text that I see when I go to the
     # URL using a browser.
-    APIURL = (
+    api_url = (
         "https://api.stackexchange.com/2.2/search/advanced?fromdate="
         + YESTERDAY_UNIX
         + apitagged
@@ -146,14 +153,14 @@ def echoautobrowsemaybe(*args: str) -> None:
     ## That's why we only use this filtering for certain simple queries.
 
     if debug:
-        print("pinged " + APIURL, file=MAILBODY)
-    # wget -q "$APIURL" -O - | gunzip > "${WGETRESULT}"
-    response = urllib.request.urlopen(APIURL)
+        print("pinged " + api_url, file=MAILBODY)
+    # wget -q "$api_url" -O - | gunzip > "${WGETRESULT}"
+    response = urllib.request.urlopen(api_url)
     # contentgzipped = response.read()
     # f = gzip.GzipFile(fileobj=contentgzipped)
     # content = f.read()
 
-    request = urllib.request.Request(APIURL)
+    request = urllib.request.Request(api_url)
     request.add_header("Accept-encoding", "gzip")
     response = urllib.request.urlopen(request)
     data = None
@@ -168,10 +175,18 @@ def echoautobrowsemaybe(*args: str) -> None:
         print("data = " + str(data), file=MAILBODY)
     if data == b'{"total":0}':
         if debug:
-            print("Nothing to see in " + URL, file=MAILBODY)
+            print("Nothing to see in " + url, file=MAILBODY)
     else:
+<<<<<<< HEAD
         print("Auto-browse to " + URL, file=MAILBODY)
         print(file=MAILBODY)  # add newline, to avoid confusing GMail
+||||||| 5a76180
+        print("Auto-browse to " + URL, file=MAILBODY)
+        print("", file=MAILBODY)  # add newline, to avoid confusing GMail
+=======
+        print("Auto-browse to " + url, file=MAILBODY)
+        print(file=MAILBODY)  # add newline, to avoid confusing GMail
+>>>>>>> f3329c1bc55b0eb01bf439015b9059fd5dbd9bc6
 
     if debug:
         MAILBODY.flush()
@@ -265,6 +280,16 @@ if debug:
     print([MAILE, "-s", SUBJECT, "mernst"])
 
 # `${COMMAND} |& ${MAILE} -s "${SUBJECT}" mernst`
+<<<<<<< HEAD
 mailbody_stdin = pathlib.Path(MAILBODY.name).open()
 p = subprocess.Popen([MAILE, "-s", SUBJECT, "mernst"], stdin=mailbody_stdin)
 p.wait()
+||||||| 5a76180
+mailbody_stdin = open(MAILBODY.name)
+p = subprocess.Popen([MAILE, "-s", SUBJECT, "mernst"], stdin=mailbody_stdin)
+p.wait()
+=======
+with pathlib.Path(MAILBODY.name).open() as mailbody_stdin:
+    p = subprocess.Popen([MAILE, "-s", SUBJECT, "mernst"], stdin=mailbody_stdin)
+    p.wait()
+>>>>>>> f3329c1bc55b0eb01bf439015b9059fd5dbd9bc6

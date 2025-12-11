@@ -18,10 +18,6 @@
 
 (setq load-prefer-newer t)
 
-(require 'auto-compile)
-(auto-compile-on-load-mode)
-(auto-compile-on-save-mode)
-
 (add-to-list 'load-path "~/emacs")
 (add-to-list 'load-path "~/emacs/mew/elisp")
 (add-to-list 'load-path "~/java/plume-lib/javadoc-lookup/src/main/emacs")
@@ -30,8 +26,13 @@
       (normal-top-level-add-subdirs-to-load-path)))
 (add-to-list 'load-path "~/java/google-java-format/core/src/main/scripts/")
 
+(require 'auto-compile)
+(auto-compile-on-load-mode)
+(auto-compile-on-save-mode)
+
 
 (eval-when-compile
+  (require 'auto-compile)
   (require 'ispell)
   (require 'vc-annotate)
   (require 'smerge-mode)
