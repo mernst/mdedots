@@ -1199,7 +1199,10 @@ After running this, run from the shell:  print-mail bulk." t)
   (push `("en_US_apostrophe" ,(substitute-in-file-name "$HOME/dots/en_US_apostrophe.aff"))
 	ispell-hunspell-dict-paths-alist)
   (setq ispell-local-dictionary-alist
-	`(("en_US_apostrophe" "[[:alpha:]]" "[^[:alpha:]]" "[0-9'’]" t ("-d" ,(substitute-in-file-name "$HOME/dots/en_US_apostrophe")) nil utf-8))))
+	`(("en_US_apostrophe" "[[:alpha:]]" "[^[:alpha:]]" "[0-9'’]" t ("-d" ,(substitute-in-file-name "$HOME/dots/en_US_apostrophe")) nil utf-8)))
+  (setq ispell-local-dictionary-alist
+        '((nil "[[:alpha:]]" "[^[:alpha:]]" "['\x2019\x201C\x201D\x2018\x201E]" nil ("-B") nil utf-8)))
+  )
 
 (with-eval-after-load "ispell"
   ;; Hunspell treats apostrophes as part of a word, which behaves badly
