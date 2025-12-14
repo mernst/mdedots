@@ -1782,8 +1782,9 @@ How does this differ from whatever is built in?"
 (defun mde-conf-mode-hook ()
   "Run the `createcal' program after its input files have been edited."
   ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
-  (let ((filename (file-truename buffer-file-name)))
-    (if (and (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename)
+  (let ((filename (and buffer-file-name (file-truename buffer-file-name))))
+    (if (and filename
+             (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename)
              (not (string-match "/503/17sp/" filename)))
         (add-hook 'after-save-hook 'run-createcal nil 'local))))
 ;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
