@@ -123,7 +123,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 # Removed from the below: \nAuto-browse to https://uwcsephdadmits2023.slack.com/
 30 5 * * 1-5    $AFS echo -e "Auto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
 30 12 * * 1-5   $AFS echo -e "Auto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
-11 6 * * *	$AFS $CRONIC make -C $HOME/public_html validate
+11 6 * * *	$AFS $CRONIC make -C $HOME/public_html style-check
 ###
 ### Daily -- verify that Checker Framework tests pass; also use for timing information
 ###
