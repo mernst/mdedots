@@ -414,6 +414,11 @@ pdfclean() {
   rm -f "$1".ps
 }
 
+# Convert a markdown file into a HTML file.
+md2html() {
+  pandoc --standalone --css "${HOME}"/dots/fullwidth.css < "$1" > "${1%.*}".html
+}
+
 ###########################################################################
 ### Java
 ###
