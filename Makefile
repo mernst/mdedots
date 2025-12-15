@@ -24,6 +24,8 @@ include .plume-scripts/code-style.mak
 
 diff-dots-with-plume-scripts:
 	git -C .plume-scripts pull --ff-only
-	diff .markdownlint-cli2.yaml dots/.markdownlint-cli2.yaml
-	diff .pymarkdown dots/.pymarkdown
-	diff .ruff.toml dots/.ruff.toml
+	diff .plume-scripts/.coderabbit.yaml dots/.coderabbit.yaml
+	diff .plume-scripts/.markdownlint-cli2.yaml dots/.markdownlint-cli2.yaml
+	diff .plume-scripts/.pymarkdown dots/.pymarkdown
+	diff .plume-scripts/.ruff.toml dots/.ruff.toml
+	diff .plume-scripts/.yamllint.yaml dots/.yamllint.yaml
