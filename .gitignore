@@ -73,11 +73,8 @@ share/validate-html4
 share/R
 share/wikify.py
 
-# Auto-generated files
+# Obtained via Git
 /.plume-scripts
-/.markdownlint-cli2.yaml
-/.pymarkdown
-/.ruff.toml
 
 syntax: regexp
 # Not a glob because it starts with # which looks like a comment.
