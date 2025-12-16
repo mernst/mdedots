@@ -52,6 +52,7 @@ org.eclipse.jdt.core.prefs
 .pytest_cache
 .ruff_cache
 __pycache__
+*.tdy
 
 ## Files
 
