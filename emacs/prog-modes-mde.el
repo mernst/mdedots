@@ -41,6 +41,9 @@
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 
+(defvar dont-check-parens nil
+  "A user should set this to non-nil to avoid errors \"Unmatched bracket or quote\".
+For instance, set it when editing files with version control merge conflicts.")
 (defvar check-parens-previous-try nil
   "A buffer name if the previous call to check-parens failed.
 Nil if the previous call to check-parens succeeded.
@@ -49,7 +52,8 @@ There might or might not have been edits between the two attempts.")
 (defun check-parens-ignore-on-retry ()
   "Like `check-parens' (which see), but a second retry in a row causes success.
 This is good for modes like Perl, where the parser can get confused."
-  (if (not (equal check-parens-previous-try (buffer-name)))
+  (if (and (not dont-check-parens)
+           (not (equal check-parens-previous-try (buffer-name))))
       (progn
         (setq check-parens-previous-try (buffer-name))
         (check-parens)
