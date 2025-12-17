@@ -45,6 +45,7 @@
 	blamex = !git blame -M -C
         diffs = !git diff --staged
         ba = !git branch --all
+        logg = !git log --graph
 
 # The parent branch of the current branch.  From
 # https://stackoverflow.com/questions/3161204/find-the-parent-branch-of-a-git-branch/3162929 .
