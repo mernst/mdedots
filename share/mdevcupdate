@@ -148,8 +148,8 @@ update_fork typetools jdk ~/research/types/libraries
 update_fork typetools jdk /scratch/mernst/clones/types/libraries
 # update_fork typetools jdk11u ~/research/types/libraries
 # update_fork typetools jdk11u /scratch/mernst/clones/types/libraries
-update_fork typetools jdk17u ~/research/types/libraries
-update_fork typetools jdk17u /scratch/mernst/clones/types/libraries
+update_fork typetools jdk21u ~/research/types/libraries
+update_fork typetools jdk21u /scratch/mernst/clones/types/libraries
 update_fork kelloggm checkerframework-gradle-plugin ~/research/types
 update_fork kelloggm run-dljc ~/research/types
 update_fork kelloggm wpi-many ~/research/types
@@ -168,8 +168,8 @@ update_fork_kelloggm typetools stubparser ~/research/types
 update_fork_kelloggm typetools stubparser /scratch/mernst/clones/types
 update_fork_kelloggm typetools jdk ~/research/types/libraries
 update_fork_kelloggm typetools jdk /scratch/mernst/clones/types/libraries
-update_fork_kelloggm typetools jdk17u ~/research/types/libraries
-update_fork_kelloggm typetools jdk17u /scratch/mernst/clones/types/libraries
+update_fork_kelloggm typetools jdk21u ~/research/types/libraries
+update_fork_kelloggm typetools jdk21u /scratch/mernst/clones/types/libraries
 
 update_fork jonathan-m-phillips ASHE_Automated-Software-Hardening-for-Entrypoints ~/research/types
 update_fork jonathan-m-phillips ASHE_Automated-Software-Hardening-for-Entrypoints /scratch/mernst/clones/types
