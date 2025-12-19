@@ -689,6 +689,8 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; For the buffer menu, see variable `buffer-menu-replacement-alist'.
 (load "ffap-mde" nil t)
 ;;; Experimentally commented out.
+;;; TODO: Commenting out is bad because it leaves looong filenames in dired
+;;; buffers.  So, restore it.
 ;; (setq ffap-semi-env-vars
 ;;       (append ffap-semi-env-vars
 ;;               '(
