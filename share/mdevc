@@ -35,26 +35,30 @@ java -ea -cp "${HOME}/java/plume-lib/multi-version-control/build/libs/multi-vers
 
 ## Replace `.plume-scripts` directories by symbolic links.
 
-# By design, this only finds directories, not symbolic links, named `.plume-scripts`.
+# By design, this only finds directories named `.plume-scripts`.
 # `find -exec` works but issues a warning (because we are changing directories out from under it.)
-tempfile=$(mktemp)
-find "$HOME" -type d -name .plume-scripts > "${tempfile}"
-while IFS= read -r line; do
-  cd "$(dirname "$line")" || exit
-  rm -rf .plume-scripts
-  ln -sr "$HOME"/bin/src/plume-scripts .plume-scripts
-done < tmp.tmp
-rm -f "${tempfile}"
-
-if [ -d /scratch/mernst/clones ]; then
+# Argumets are: directory in which to search, dir to replace, file to link to.
+replace_dir_by_link() {
+  dir="$1"
+  to_replace="$2"
+  replacement="$3"
   tempfile=$(mktemp)
-  find /scratch/mernst/clones -type d -name .plume-scripts > "${tempfile}"
+  find "$dir" -type d -name "${to_replace}" > "${tempfile}"
   while IFS= read -r line; do
     cd "$(dirname "$line")" || exit
-    rm -rf .plume-scripts
-    ln -sr /scratch/mernst/clones/plume-lib/plume-scripts .plume-scripts
+    rm -rf "${to_replace}"
+    ln -sr "$replacement" "$to_replace"
   done < tmp.tmp
   rm -f "${tempfile}"
+}
+
+replace_dir_by_link "$HOME" .git-scripts "$HOME/bin/src/git-scripts"
+replace_dir_by_link "$HOME" .html-tools "$HOME/bin/src/html-tools"
+replace_dir_by_link "$HOME" .plume-scripts "$HOME/bin/src/plume-scripts"
+if [ -d /scratch/mernst/clones ]; then
+  replace_dir_by_link /scratch/mernst/clones .git-scripts /scratch/mernst/clones/plume-lib/git-scripts
+  replace_dir_by_link /scratch/mernst/clones .html-tools /scratch/mernst/clones/plume-lib/html-tools
+  replace_dir_by_link /scratch/mernst/clones .plume-scripts /scratch/mernst/clones/plume-lib/plume-scripts
 fi
 
 ## Run `git prune` where needed.
