@@ -26,21 +26,15 @@ from io import BytesIO
 # Note that ?filter=total gives the number of items matching criteria,
 # which is probably what I want.
 
-TODAY_USER_FRIENDLY = (
-    subprocess.check_output(["date", "+%h %d"]).strip().decode("utf-8")
-)
+TODAY_USER_FRIENDLY = subprocess.check_output(["date", "+%h %d"]).strip().decode("utf-8")
 SUBJECT = "Check Stack Overflow for " + TODAY_USER_FRIENDLY
 YESTERDAY = (
-    subprocess.check_output(["date", "--date", "yesterday", "+%Y-%m-%d"])
-    .strip()
-    .decode("utf-8")
+    subprocess.check_output(["date", "--date", "yesterday", "+%Y-%m-%d"]).strip().decode("utf-8")
 )
 ## For testing
 # YESTERDAY="2015-01-01"
 YESTERDAY_UNIX = (
-    subprocess.check_output(["date", "--date", YESTERDAY, "+%s"])
-    .strip()
-    .decode("utf-8")
+    subprocess.check_output(["date", "--date", YESTERDAY, "+%s"]).strip().decode("utf-8")
 )
 
 # On Solaris, don't use "mail", which is /bin/mail;
@@ -123,16 +117,12 @@ def echoautobrowsemaybe(*args: str) -> None:
     if tagged == []:
         apitagged = ""
     else:
-        apitagged = "&tagged=" + urllib.parse.quote(
-            ";".join([tag[1:-1] for tag in tagged])
-        )
+        apitagged = "&tagged=" + urllib.parse.quote(";".join([tag[1:-1] for tag in tagged]))
 
     if nottagged == []:
         apinottagged = ""
     else:
-        apinottagged = "&tagged=" + urllib.parse.quote(
-            ";".join([tag[2:-1] for tag in nottagged])
-        )
+        apinottagged = "&tagged=" + urllib.parse.quote(";".join([tag[2:-1] for tag in nottagged]))
 
     if terms == []:
         apiquery = ""
