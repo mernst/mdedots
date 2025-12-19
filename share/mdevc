@@ -36,18 +36,25 @@ java -ea -cp "${HOME}/java/plume-lib/multi-version-control/build/libs/multi-vers
 ## Replace `.plume-scripts` directories by symbolic links.
 
 # By design, this only finds directories, not symbolic links, named `.plume-scripts`.
-find "$HOME" -type d -name .plume-scripts -exec sh -c '
-  cd $(dirname "$dir")
+# `find -exec` works but issues a warning (because we are changing directories out from under it.)
+tempfile=$(mktemp)
+find "$HOME" -type d -name .plume-scripts > "${tempfile}"
+while IFS= read -r line; do
+  cd "$(dirname "$line")" || exit
   rm -rf .plume-scripts
   ln -sr "$HOME"/bin/src/plume-scripts .plume-scripts
-  ' sh {} \; &
+done < tmp.tmp
+rm -f "${tempfile}"
 
 if [ -d /scratch/mernst/clones ]; then
-  find /scratch/mernst/clones -type d -name .plume-scripts -exec sh -c '
-    cd $(dirname "$dir")
+  tempfile=$(mktemp)
+  find /scratch/mernst/clones -type d -name .plume-scripts > "${tempfile}"
+  while IFS= read -r line; do
+    cd "$(dirname "$line")" || exit
     rm -rf .plume-scripts
     ln -sr /scratch/mernst/clones/plume-lib/plume-scripts .plume-scripts
-    ' sh {} \; &
+  done < tmp.tmp
+  rm -f "${tempfile}"
 fi
 
 ## Run `git prune` where needed.
