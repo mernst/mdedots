@@ -17,12 +17,16 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Start removing orphaned branch directories as early as possible,
+# because it takes a while to complete and we don't want error
+# messages later about clones that belong to branches that have been
+# deleted.
+# shellcheck disable=SC2046 # git-orphaned-branches prints multiple directories
+(cd && rm -rf $(git-orphaned-branches)) &
 # shellcheck disable=SC2046 # git-orphaned-branches prints multiple directories
 if [ -d /scratch/mernst/clones ]; then
   (cd /scratch/mernst/clones && rm -rf $(git-orphaned-branches)) &
 fi
-# shellcheck disable=SC2046 # git-orphaned-branches prints multiple directories
-(cd && rm -rf $(git-orphaned-branches)) &
 
 # shellcheck disable=SC2086
 mdevccommit ${DEBUG}
@@ -66,5 +70,5 @@ fi
 
 # Warn about conflict markers in directories that are synchronized.
 for dir in ~/sync ~/private ~/public_html/tmp72112; do
-  (cd ${dir} && find . -name '*.sync-conflict-*' | sed -e "s:^\./:${dir}:")
+  find "${dir}" -name '*.sync-conflict-*'
 done
