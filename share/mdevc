@@ -48,7 +48,7 @@ replace_dir_by_link() {
     cd "$(dirname "$line")" || exit
     rm -rf "${to_replace}"
     ln -sr "$replacement" "$to_replace"
-  done < tmp.tmp
+  done < "${tempfile}"
   rm -f "${tempfile}"
 }
 

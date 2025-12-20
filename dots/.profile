@@ -239,6 +239,8 @@ export PATH="$HOME/bin:$PATH"
 # # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/lib64
 export LD_LIBRARY_PATH=${HOME}/.local/lib/:${LD_LIBRARY_PATH}
 
+. "$HOME/.cargo/env"
+
 ###########################################################################
 ### Clean up the path
 ###
