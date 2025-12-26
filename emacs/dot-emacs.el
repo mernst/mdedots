@@ -908,6 +908,7 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; (define-key esc-map "s" 'center-line)        ; was undefined
 (define-key esc-map "?" 'describe-key)  ; was undefined
 (define-key esc-map ":" 'tags-search)   ; was undefined
+(define-key esc-map "," 'fileloop-continue) ; was xref-go-back
 (define-key esc-map "\e" 'eval-expression) ; was keymap
 ;; I hit M-C-w too often when I mean to hit M-w
 (define-key esc-map "\C-w" 'kill-ring-save) ; was append-next-kill

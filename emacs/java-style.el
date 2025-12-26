@@ -666,7 +666,7 @@ The description is everything but the block tags (such as @param and @return)."
 	  (search-forward "\n\n")
 	  (insert "/*>>>\nimport " package ";\n*/\n\n")))
     (goto-char (point-max))
-    (mde-tags-loop-continue)))
+    (fileloop-continue)))
 
 (defun add-all-imports-to-directory (directory)
 

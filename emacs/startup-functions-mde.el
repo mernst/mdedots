@@ -1182,7 +1182,7 @@ If called interactively, prompt for which index."
 ;;   (load "etags-mde"))
 ;; (autoload 'tags-replace "tags-replace"
 ;;   "Do `replace-regexp' of FROM with TO on all files listed in tags table." t)
-(define-key esc-map "," 'mde-tags-loop-continue) ; was tags-loop-continue
+;; (define-key esc-map "," 'mde-tags-loop-continue) ; was tags-loop-continue
 (setq tags-find-related-names-functions '(mit-scheme-tags-find-related-names))
 (setq tags-revert-without-query t)
 (setq tags-add-tables nil)              ; always use just one TAGS table at a time
