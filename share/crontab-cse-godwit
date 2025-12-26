@@ -158,7 +158,6 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 # Better to use etags in $HOME/bin/linux/; can't build for Solaris.
 11 4 * * Sun	$AFS $HOME/bin/share/mail-checkdates
 12 4 * * Sun	cd $HOME/emacs; $AFS /usr/bin/etags *.el
-13 4 * * Sun	$AFS echo "Run: make -C ~/bib push" | $MAILCOMMAND -s "Update plume-bib" $EMAIL
 10 5 * * *	$AFS $HOME/bin/share/mail-stackoverflow
 58 23 * * Tue	$AFS echo "Auto-browse to https://my.ooma.com/phone/voicemail ; auto-browse to https://voice.google.com/u/0/voicemail" | $MAILCOMMAND -s "Listen to voicemail" $EMAIL
 58 23 * * Fri	$AFS echo "Auto-browse to https://my.ooma.com/phone/voicemail ; auto-browse to https://voice.google.com/u/0/voicemail" | $MAILCOMMAND -s "Listen to voicemail" $EMAIL
