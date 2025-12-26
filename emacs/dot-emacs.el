@@ -1702,6 +1702,7 @@ no more occurrences of REGEX appear in the buffer."
 
 (if (eq system-type 'darwin)
     (progn
+      (defvar mac-command-modifier) ;; avoid compiler warning
       ;; Emacs should interpret the Apple/Command key as the Meta key
       (setq mac-command-modifier 'meta)
       ;; Other possibilities:
