@@ -397,7 +397,10 @@
   (cond
    ;; Hack is narrower, so I like it better.
    ;; Inconsolata 16 is nearly the same as Hack 14.  Hack has taller half-height, and Hack is bolder.
-   ((font-exists-p "Hack") (set-frame-font "Hack 13" nil t))
+   ((font-exists-p "Hack")
+    (if (string-equal (system-name) "sl7")
+        (set-frame-font "Hack 16" nil t)
+      (set-frame-font "Hack 13" nil t)))
    ((font-exists-p "-SRC-Hack-regular-normal-normal-*-*-*-*-*-m-0-iso10646-1") (set-frame-font "Hack 13" nil t))
 
    ((font-exists-p "Inconsolata") (set-frame-font "Inconsolata 14" nil t))
@@ -418,6 +421,8 @@
 (with-eval-after-load "faces"
   (cond ((font-exists-p "Inconsolata")
          (set-face-attribute 'fixed-pitch nil :family "Inconsolata"))
+        ((font-exists-p "Hack")
+         (set-face-attribute 'fixed-pitch nil :family "Hack"))
         ))
 
 (defun hack-font (size)
@@ -447,6 +452,14 @@
   (interactive)
   (set-frame-parameter (selected-frame) 'width 121)
   (set-frame-parameter (selected-frame) 'fullscreen 'fullheight))
+
+(setq initial-frame-alist
+      '((top . 1) (left . 1) (width . 101) (fullscreen . fullheightheight)))
+(if (eq system-site 'laptop)
+    (101-column-frame))
+(if (string-equal (system-name) "sl7")
+    (set-frame-parameter (selected-frame) 'height 65))
+
 
 
 ;;;
