@@ -56,13 +56,13 @@ replace_dir_by_link() {
   rm -f "${tempfile}"
 }
 
-replace_dir_by_link "$HOME" .git-scripts "$HOME/bin/src/git-scripts"
-replace_dir_by_link "$HOME" .html-tools "$HOME/bin/src/html-tools"
-replace_dir_by_link "$HOME" .plume-scripts "$HOME/bin/src/plume-scripts"
+replace_dir_by_link "$HOME" .git-scripts "$HOME/bin/src/git-scripts" &
+replace_dir_by_link "$HOME" .html-tools "$HOME/bin/src/html-tools" &
+replace_dir_by_link "$HOME" .plume-scripts "$HOME/bin/src/plume-scripts" &
 if [ -d /scratch/mernst/clones ]; then
-  replace_dir_by_link /scratch/mernst/clones .git-scripts /scratch/mernst/clones/plume-lib/git-scripts
-  replace_dir_by_link /scratch/mernst/clones .html-tools /scratch/mernst/clones/plume-lib/html-tools
-  replace_dir_by_link /scratch/mernst/clones .plume-scripts /scratch/mernst/clones/plume-lib/plume-scripts
+  replace_dir_by_link /scratch/mernst/clones .git-scripts /scratch/mernst/clones/bin/src/git-scripts &
+  replace_dir_by_link /scratch/mernst/clones .html-tools /scratch/mernst/clones/bin/src/html-tools &
+  replace_dir_by_link /scratch/mernst/clones .plume-scripts /scratch/mernst/clones/bin/src/plume-scripts &
 fi
 
 ## Run `git prune` where needed.
