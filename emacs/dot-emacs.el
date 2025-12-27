@@ -397,7 +397,10 @@
   (cond
    ;; Hack is narrower, so I like it better.
    ;; Inconsolata 16 is nearly the same as Hack 14.  Hack has taller half-height, and Hack is bolder.
-   ((font-exists-p "Hack") (set-frame-font "Hack 13" nil t))
+   ((font-exists-p "Hack")
+    (if (string-equal (system-name) "sl7")
+        (set-frame-font "Hack 16" nil t)
+      (set-frame-font "Hack 13" nil t)))
    ((font-exists-p "-SRC-Hack-regular-normal-normal-*-*-*-*-*-m-0-iso10646-1") (set-frame-font "Hack 13" nil t))
 
    ((font-exists-p "Inconsolata") (set-frame-font "Inconsolata 14" nil t))
@@ -418,6 +421,8 @@
 (with-eval-after-load "faces"
   (cond ((font-exists-p "Inconsolata")
          (set-face-attribute 'fixed-pitch nil :family "Inconsolata"))
+        ((font-exists-p "Hack")
+         (set-face-attribute 'fixed-pitch nil :family "Hack"))
         ))
 
 (defun hack-font (size)
@@ -447,6 +452,14 @@
   (interactive)
   (set-frame-parameter (selected-frame) 'width 121)
   (set-frame-parameter (selected-frame) 'fullscreen 'fullheight))
+
+(setq initial-frame-alist
+      '((top . 1) (left . 1) (width . 101) (fullscreen . fullheightheight)))
+(if (eq system-site 'laptop)
+    (101-column-frame))
+(if (string-equal (system-name) "sl7")
+    (set-frame-parameter (selected-frame) 'height 65))
+
 
 
 ;;;
@@ -895,6 +908,7 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; (define-key esc-map "s" 'center-line)        ; was undefined
 (define-key esc-map "?" 'describe-key)  ; was undefined
 (define-key esc-map ":" 'tags-search)   ; was undefined
+(define-key esc-map "," 'fileloop-continue) ; was xref-go-back
 (define-key esc-map "\e" 'eval-expression) ; was keymap
 ;; I hit M-C-w too often when I mean to hit M-w
 (define-key esc-map "\C-w" 'kill-ring-save) ; was append-next-kill
@@ -1066,71 +1080,109 @@ After running this, run from the shell:  print-mail bulk." t)
 (setq require-final-newline t)          ; files must end with a newline
 ;; (setq next-line-add-newlines t)
 
+
+(defun anchor-directory (dir)
+  "Return \"^DIR/\"."
+  (concat "^" dir "\\(/\\|$\\)"))
+
+(defun process-environment-vars-directories-element (elt)
+  (if (consp elt)
+      (cons (anchor-directory (car elt))
+            (concat (cdr elt) "/"))
+    (cons (anchor-directory (substitute-in-file-name elt))
+          (concat elt "/"))))
+
+
+(setq environment-vars-directories
+      (mapcar
+       #'process-environment-vars-directories-element
+       ;; This list has super-matches first, sub-matches after.
+       '(
+         ;; Teaching
+         "$sdi"
+
+         ;; Research
+         "$macros"
+         "$fcut"
+
+         "$d"
+         ("/scratch/mernst/clones/invariants/daikon" . "$d")
+         "$inv"
+         ("/scratch/mernst/clones/invariants" . "$inv")
+
+         "$nlp"
+         ("/scratch/mernst/clones/nlp" . "$nlp")
+
+         "$ch"
+         ("/scratch/mernst/clones/types/checker-framework/checker" . "$ch")
+         "$cf"
+         ("/scratch/mernst/clones/types/checker-framework" . "$cf")
+         "$cfi"
+         ("/scratch/mernst/clones/types/checker-framework-inference" . "$cfi")
+         "$t"
+         ("/scratch/mernst/clones/types" . "$t")
+         "$qn"
+         ("/scratch/mernst/clones/types/notes" . "$qn")
+
+         "$randoop"
+         ("/scratch/mernst/clones/testing/randoop" . "$randoop")
+         "$testing"
+         ("/scratch/mernst/clones/testing" . "$testing")
+
+         "$vc"
+         ("/scratch/mernst/clones/version-control" . "$vc")
+
+         ("/afs/csail\\(.mit.edu\\)?/group/pag" . "$pag")
+
+         ;; Programming
+         "$pl"
+         ("/scratch/mernst/clones/plume-lib" . "$pl")
+
+         )
+       ))
+
+
+;; According to the documentation of `directory-abbrev-alist`, "TO should be an absolute directory name."
+(if nil ; TODO
+    (setq directory-abbrev-alist
+          (mapcar #'process-environment-vars-directories-element
+                  environment-vars-directories)))
+
+
+
+
 (setq buffer-menu-replacement-alist
-      '(
-        ;; Replacement is performed for each element in turn.
-        ;; Regexps are anchored to beginning of filename.
+      (append
 
-        ;; Remote directories
-        ("/mernst@theory.csail.mit.edu:/u/mernst/" . "th:~/")
-        ("/mernst@theory.csail.mit.edu" . "th")
-        ("/mernst@theory.csail.mit.edu:/u/mernst/" . "th:~/")
-        ("/mernst@theory.csail.mit.edu" . "th")
 
-        ;; Filesystem alternate names
-        ("/projects/null/" . "/projects/")
-        ("/SDG/" . "/")
-        ("/PAG/" . "/")
-        ("/var/mnt/uns.share/" . "/uns/share/")
+       '(
+         ;; Replacement is performed for each element in turn.
+         ;; Regexps are anchored to beginning of filename.
 
-        ;; Home directories
-        ;; PAG CSAIL
-        ("/g[1-6]/users/\\([a-z0-9_]+\\)/" . "~\\1/")
-        ("/afs/csail.mit.edu/u/[a-z]/\\([a-z0-9_]+\\)/" . "~\\1/")
-        ;; UW
-        ("/homes/gws/mernst/" . "~/")
-        ("/homes/gws/\\([a-z]+\\)/" . "~\\1/")
+         ;; Remote directories
+         ("/mernst@theory.csail.mit.edu:/u/mernst" . "th:~")
+         ("/mernst@theory.csail.mit.edu" . "th")
+         ("/mernst@theory.csail.mit.edu:/u/mernst" . "th:~")
+         ("/mernst@theory.csail.mit.edu" . "th")
 
-        ("~mernst\\b" . "~")
+         ;; Filesystem alternate names
+         ("/projects/null" . "/projects")
+         ("/SDG" . "")
+         ("/PAG" . "")
+         ("/var/mnt/uns.share" . "/uns/share")
 
-        ;; Teaching
-        ("~/class/331/18au/" . "$sdi/")
+         ;; Home directories
+         ;; PAG CSAIL
+         ("/g[1-6]/users/\\([a-z0-9_]+\\)" . "~\\1")
+         ("/afs/csail.mit.edu/u/[a-z]/\\([a-z0-9_]+\\)" . "~\\1")
+         ;; UW
+         ("/homes/gws/mernst" . "~")
+         ("/homes/gws/\\([a-z]+\\)" . "~\\1")
 
-        ;; Research
-        ("~/research/macros/" . "$macros/")
-        ("~/research/fcut/" . "$fcut/")
-        ("~/research/invariants/daikon/" . "$d/")
-        ("/scratch/mernst/clones/invariants/daikon/" . "$d/")
-        ;; ("/projects/se/people/mernst/rothermel/" . "$inv/rothermel/")
-        ("~/research/invariants/" . "$inv/")
-        ("~/research/nlp/" . "$nlp/")
-        ("/scratch/mernst/clones/nlp/" . "$nlp/")
-        ("~/research/types/checker-framework/checker/" . "$ch/")
-        ("/scratch/mernst/clones/types/checker-framework/checker/" . "$ch/")
-        ("~/research/types/checker-framework/" . "$cf/")
-        ("/scratch/mernst/clones/types/checker-framework/" . "$cf/")
-        ("~/research/types/checker-framework-inference/" . "$cfi/")
-        ("/scratch/mernst/clones/types/checker-framework-inference/" . "$cfi/")
-        ("~/research/types/notes/" . "$qn/")
-        ("/scratch/mernst/clones/types/notes/" . "$qn/")
-        ("~/research/testing/" . "$testing/")
-        ("/scratch/mernst/clones/testing/" . "$testing/")
-        ("~/research/testing/randoop/" . "$randoop/")
-        ("/scratch/mernst/clones/testing/randoop/" . "$randoop/")
-        ("~/research/types/" . "$t/")
-        ("/scratch/mernst/clones/types/" . "$t/")
-        ("~/research/notes/version-control/" . "$vc/notes/")
-        ("~/research/version-control/" . "$vc/")
-        ("~/java/plume-lib/" . "$pl/")
-        ("/scratch/mernst/clones/plume-lib/" . "$pl/")
+         ("~mernst\\b" . "~")
 
-        ("/scratch/mernst/clones/version-control/" . "$vc/")
-        ("/afs/csail\\(.mit.edu\\)?/group/pag/" . "$pag/")
-
-        ;; AI research
-        ("~/class/573/project/" . "$medic/")
-
-        ))
+         )
+       environment-vars-directories))
 ;; Testing
 ;; (Buffer-menu-abbreviate-file-name "~/research/invariants/java")
 ;; (Buffer-menu-abbreviate-file-name "~mernst/research/invariants/java")
@@ -1164,8 +1216,19 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; Testing
 ;; (abbreviate-file-name "/home/mernst/emacs/two-window.el")
 ;; (abbreviate-file-name "/a/santa/comet/mernst/emacs/two-window.el")
-;; (abbreviate-file-name "/homes/gws/gjb/bin/share/")
-;; (abbreviate-file-name "/homes/gws/mernst/bin/share/")
+;; (abbreviate-file-name "/homes/gws/gjb/bin/share")
+;; (abbreviate-file-name "/homes/gws/mernst/bin/share")
+
+;; In `abbreviate-file-name`, replacement of the home directory to "~" is done LAST.
+(if nil
+    (progn
+      (cl-assert (string-equal (abbreviate-file-name "~/research/types/") "$t/"))
+      (cl-assert (string-equal (abbreviate-file-name "~/research/types") "$t"))
+      (cl-assert (string-equal (abbreviate-file-name "/home/mernst/research/types/") "$t/"))
+      (cl-assert (string-equal (abbreviate-file-name "/home/mernst/research/types") "$t")))
+  )
+
+
 
 (setq find-file-existing-other-name t)
 (setq find-file-suppress-same-file-warnings t)
@@ -1639,6 +1702,7 @@ no more occurrences of REGEX appear in the buffer."
 
 (if (eq system-type 'darwin)
     (progn
+      (defvar mac-command-modifier) ;; avoid compiler warning
       ;; Emacs should interpret the Apple/Command key as the Meta key
       (setq mac-command-modifier 'meta)
       ;; Other possibilities:

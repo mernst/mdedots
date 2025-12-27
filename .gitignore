@@ -75,6 +75,8 @@ share/wikify.py
 
 # Obtained via Git
 /.plume-scripts
+/.pymarkdown
+/.ruff.toml
 
 syntax: regexp
 # Not a glob because it starts with # which looks like a comment.
