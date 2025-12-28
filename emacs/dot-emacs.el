@@ -1751,6 +1751,14 @@ no more occurrences of REGEX appear in the buffer."
 ;;      (define-key rg-mode-map "\M-p" 'rg-prev-file)  ; was unbound
 ;;      )
 
+(when (string-match "-[Mm]icrosoft" (shell-command-to-string "uname -a"))
+  ;; WSL: WSL1 has "-Microsoft", WSL2 has "-microsoft-standard"
+  (add-to-list 'browse-url-filename-alist
+               (cons "^file:///"
+                     "file://wsl.localhost/Ubuntu/")
+               'append))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End of file
