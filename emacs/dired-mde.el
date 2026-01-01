@@ -143,8 +143,9 @@
     ("\\.E?PS$" "gv * &" "xv" "lpr")	; uppercase
     ("\\.jpg$" "xloadimage -shrink")
     ("\\.JPG$" "xloadimage -shrink")		; uppercase
-    ("\\.pdf$" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; add acroread, gv
-    ("\\.PDF$" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; uppercase
+    ;; These PDF entries are edited below.
+    ("\\.pdf$" "okular * &" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; add acroread, gv
+    ("\\.PDF$" "okular * &" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; uppercase
     ("\\.mp4$" "vlc")			; not in background
     ("\\.tex\\'" "pdflatex")		; default: ("\\.tex\\'" "latex" "tex")
     ("\\.tgz$" "tar xvfz")
@@ -161,6 +162,7 @@
     ("\\.ods$" run-office-program)
     ("\\.odt$" run-office-program)
     ))
+;; It would be better to remove programs that are not available (by calling `command -v`).
 (if (eq system-site 'cse)
     (progn
       (delete "papers * &" (assoc "\\.pdf$" my-dired-shell-guesses))
