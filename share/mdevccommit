@@ -36,7 +36,7 @@ fi
 if [ -n "$DEBUG" ]; then
   echo "Skipping compilation"
 else
-  cronic make -C "$HOME"/bib test
+  cronic make -C "$HOME"/bib test push
   # I'm not sure why this is necessary, given the Git hooks
   cronic make -C ~/bin/src/mdedots
 fi

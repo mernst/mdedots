@@ -25,7 +25,7 @@
 (eval-when-compile
   (require 'cl-lib)			; for `cl-assert'
   (require 'dired)			; for `dired-re-mark'
-)
+  )
 
 (defvar debug-buffer-menu-mde t)
 
@@ -121,6 +121,7 @@ to whitespace).
 
 You need not include a mapping of your home directory to \"~\", as that is
 hard-coded in.  However, list-buffers does not respect `directory-abbrev-alist'.
+(Though as of version 30, maybe it does.)
 
 Here is an example setting:
     (setq buffer-menu-replacement-alist
@@ -153,6 +154,10 @@ Here is an example setting:
                                                  (1+ (match-beginning 0)))
                                to))))))
 
+;;;; TODO: instead, advise one of these functions:
+;;;; Buffer-menu--pretty-name
+;;;; Buffer-menu--pretty-file-name
+;;; Set variable directory-abbrev-alist instead.
 ;;; This does not seem to be used.
 ;; ;; What I really want is an unsubstitute-in-file-name or
 ;; ;; abbreviate-file-name-for-display that is used for display and other
@@ -173,6 +178,8 @@ Here is an example setting:
 ;;       (setq replacements (cdr replacements))))
 ;;   filename)
 
+(abbreviate-file-name "/home/mernst/research/version-control/LLMerge-paper")
+(Buffer-menu--pretty-file-name "/home/mernst/research/version-control/LLMerge-paper")
 
 ;;;
 ;;; Omit temporary buffers
@@ -180,35 +187,35 @@ Here is an example setting:
 
 ;; Made this a separate variable to avoid the mapconcat per invocation.
 (defvar Buffer-menu-kill-regexp
-   (concat (regexp-opt
-            ;; list of strings (buffer prefixes), NOT regular expressions.
-            '("*Buffer List*"
-              "*Directory*"             ; for M-x revert-buffer
-              "*Completions*"
-              "*TeX background*"
-              "*Definitions in: "
-              "*info-perl*"
-              "*ff-paths-locate*"
-              "info dir"
-              "sent reply to "
-              "sent forward of "
-              "sent resend of "
-              ;; I think I don't need these
-              ;; "*ispell*"
-              ;; "*ispell choices*"
-              ".newsrc-dribble"
-              ".type-break"
-              "#.type-break#"
-              ))
-           ;; This is a list of regular expressions
-           "\\|"
-           (mapconcat (function identity)
-                      (list
-                       ;; VM buffers, such as "INBOX Summary"
-                       ".* Summary"
-                       ".* Presentation"
-                       )
-                      "\\|"))
+  (concat (regexp-opt
+           ;; list of strings (buffer prefixes), NOT regular expressions.
+           '("*Buffer List*"
+             "*Directory*"             ; for M-x revert-buffer
+             "*Completions*"
+             "*TeX background*"
+             "*Definitions in: "
+             "*info-perl*"
+             "*ff-paths-locate*"
+             "info dir"
+             "sent reply to "
+             "sent forward of "
+             "sent resend of "
+             ;; I think I don't need these
+             ;; "*ispell*"
+             ;; "*ispell choices*"
+             ".newsrc-dribble"
+             ".type-break"
+             "#.type-break#"
+             ))
+          ;; This is a list of regular expressions
+          "\\|"
+          (mapconcat (function identity)
+                     (list
+                      ;; VM buffers, such as "INBOX Summary"
+                      ".* Summary"
+                      ".* Presentation"
+                      )
+                     "\\|"))
   "Regular expression matching lines to kill from buffer listings.
 The regular expressions are implicitly anchored at the front.")
 
