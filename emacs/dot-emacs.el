@@ -696,6 +696,12 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; Let shell buffers act like compilation buffers
 (require 'honorary-compile)
 
+(autoload 'replace-string-noninteractive "util-mde"
+  "Like `replace-string', but doesn't modify mark or the mark ring.")
+(autoload 'replace-regexp-noninteractive "util-mde"
+  "Like `replace-regexp', but doesn't modify mark or the mark ring.")
+
+
 
 ;;; Instead of editing this, I often want to edit the definition of
 ;;; `buffer-menu-replacement-alist', which is later in this file.

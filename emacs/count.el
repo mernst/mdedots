@@ -9,28 +9,7 @@
 ;; ESC = (count-lines-region) should not only count lines, but words and
 ;; characters as well:
 
-(define-key esc-map "=" 'count-region)
-(defun count-region (start end)
-  "Count lines, words and characters in region."
-  (interactive "r")
-  (let ((l (count-lines start end))
-	(w (count-words start end))
-	(c (- end start)))
-    (message "Region has %d line%s, %d word%s, and %d character%s."
-	     l (if (= 1 l) "" "s")
-	     w (if (= 1 w) "" "s")
-	     c (if (= 1 c) "" "s"))))
-
-(defun count-words (start end)
-  "Return number of words between START and END."
-  (let ((count 0))
-    (save-excursion
-      (save-restriction
-	(narrow-to-region start end)
-	(goto-char (point-min))
-	(while (forward-word 1)
-	  (setq count (1+ count)))))
-    count))
+(define-key esc-map "=" 'count-words-region)
 
 (define-key ctl-x-map "=" 'what-cursor-position-and-line)
 (defun what-cursor-position-and-line ()

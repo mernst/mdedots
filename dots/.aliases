@@ -43,7 +43,8 @@ alias ls='ls -bCFv'
 
 # alias java='java -ea'
 alias javac='javac -g'
-alias javatags='etags `find . -type f -name '"'"'*.java'"'"'`'
+alias javatags="find . -type f -name '*.java' -print0 | xargs -0 etags"
+alias rusttags="find . -type f -name '*.rs' -print0 | xargs -0 etags"
 
 alias usejdk8='(cd ~/java && rm -f jdk && ln -s jdk8 jdk)'
 alias usejdk11='(cd ~/java && rm -f jdk && ln -s jdk11 jdk)'
@@ -63,6 +64,7 @@ usecf() {
   suffix=${suffix#jdk-}
   suffix=${suffix#jdk11u-}
   suffix=${suffix#jdk17u-}
+  suffix=${suffix#jdk21u-}
   suffix=${suffix#stubparser-}
   # echo "suffix = ${suffix}"
   (
@@ -75,8 +77,8 @@ usecf() {
     if [ -d "stubparser-$suffix" ]; then ln -sf "stubparser-$suffix" stubparser; else ln -sf stubparser-branch-master stubparser; fi
     cd "$t/libraries" && rm -f jdk
     if [ -d "jdk-$suffix" ]; then ln -sf "jdk-$suffix" jdk; else ln -sf jdk-branch-master jdk; fi
-    cd "$t/libraries" && rm -f jdk17u
-    if [ -d "jdk17u-$suffix" ]; then ln -sf "jdk17u-$suffix" jdk17u; else ln -sf jdk17u-branch-master jdk17u; fi
+    cd "$t/libraries" && rm -f jdk21u
+    if [ -d "jdk21u-$suffix" ]; then ln -sf "jdk21u-$suffix" jdk21u; else ln -sf jdk21u-branch-master jdk21u; fi
   )
 }
 usenocf() { (cd "$t" && rm -f checker-framework stubparser libraries/jdk libraries/jdk11u checker-framework-inference); }
