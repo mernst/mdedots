@@ -33,42 +33,58 @@ def spam_search(search_term: str) -> None:
 # To avoid "Showing related results", double-quote the term.
 
 print("Stop and re-start Chrome.")
-
 input("Press ENTER")
+
+print("My username in the subject line")
+# also catches "Michael Ernst"
+spam_search(
+    "(subject:michaelernst OR subject:michael.ernst OR subject:mernst OR subject:cs.washington.edu)"
+)
+input("Press ENTER")
+
+print("Mail forged to be from me")
+spam_search("(from:michaelernst OR from:michael.ernst OR from:mernst)")
+input("Press ENTER")
+
 print('Misspelled "Micheal"')
-
 spam_search('"Micheal"')
-
 input("Press ENTER")
-print("Likely false positives (part 1)")
 
+print('"Michael" in the subject line or "Hi Michael"')
+spam_search("subject:Michael")
+spam_search('"Hi Michael"')
+input("Press ENTER")
+
+print("Likely false positives (by sender)")
 spam_search("from:amazon.com")
-spam_search("from:builds@circleci.com")
-spam_search("from:%22Google%20Calendar%22")
-spam_search("from:%22Mail Delivery System%22")
-spam_search("from:%22Mail%20Delivery@20Subsystem%22")
 spam_search("from:auto-reply@usps.com")
+spam_search("from:builds@circleci.com")
 spam_search("from:centurylink.com")
 spam_search("from:checker-framework-dev")
 spam_search("from:cs.washington.edu")
 spam_search("from:fredhutch.org")
 spam_search("from:hallowelltodaro.com")
-spam_search("from:lls.org")
+spam_search("from:info@mountaineers.org")
+spam_search("from:jsagarin@verizon.net")
 spam_search("from:lincolnseattleptsa.org")
+spam_search("from:lls.org")
 spam_search("from:mygoodtogo.com")
 spam_search("from:newyorktimes.com")
-# spam_search("from:sadieemurphey@gmail.com")
+spam_search("from:noreply@steampowered.com")
+spam_search("from:pnc.com")
 spam_search("from:seattlecca.org")
 spam_search("from:spl.org")
 spam_search("from:trenduw@uw.edu")
-# spam_search("from:uwcascadia@uw.edu")
 spam_search("from:uw.edu")
 spam_search("from:washington.edu")
-
+spam_search('from:"Google%20Calendar"')
+spam_search('from:"Mail Delivery System"')
+spam_search('from:"Mail%20Delivery@20Subsystem"')
 input("Press ENTER")
-print("Likely false positives (part 2)")
 
-spam_search("subject:%22security+alert+for%22")
+print("Likely false positives (other than by sender)")
+
+spam_search('subject:"security alert for"')
 spam_search("subject:seajug")
 spam_search("subject:seworld")
 spam_search("subject:typetools")
@@ -77,14 +93,14 @@ spam_search("to:eit@mit.edu")
 spam_search("to:mit1989@mailman-alum.mit.edu")
 # spam_search("to:sgcyouth@googlegroups.com")
 
-spam_search("%22Allen School%22")
+spam_search('"Allen School"')
 spam_search("ecoop-info")
 spam_search("lombok")
 spam_search("maeveahowell@gmail.com")
 spam_search('"plse"')
 spam_search("uw-security-research")
-
 input("Press ENTER")
+
 print('Foreign languages (watch out for "Showing related results")')
 
 ## These emoji searches do not work; the search matches all emails.
@@ -97,10 +113,31 @@ print('Foreign languages (watch out for "Showing related results")')
 # German
 # This does not seem to work; at least, a "Herzlichen Glückwunsch" email remained
 spam_search(
-    '("Geschäft" OR "Sehr geehrter" OR "und mit" OR "nur vom" OR "wie geht es dir" OR '
-    '"mit der" OR "Herzlichen" OR "Glückwunsch" OR "ich bin" OR "kann ich" OR '
-    '("wir" AND "die") OR ("ab" AND "im") OR ("und" AND "von") OR ("ist" AND "diese") OR '
-    '"guten tag" OR "spende" OR "wir uns" OR ("Ihre" AND "ist"))'
+    "("
+    + " OR ".join(  # noqa: FLY002
+        [
+            '("Geschäft"',
+            '"Sehr geehrter"',
+            '"und mit"',
+            '"nur vom"',
+            '"wie geht es dir"',
+            '"mit der"',
+            '"Herzlichen"',
+            '"Glückwunsch"',
+            "ich",
+            '("wir" AND "die")',
+            '("ab" AND "im")',
+            '("und" AND "von")',
+            '("ist" AND "diese")',
+            '"guten tag"',
+            '"spende"',
+            '"wir uns"',
+            '("Ihre" AND "ist")',
+            'Gutschein or "kannst du"',
+            '("hallo" AND "ist")',
+        ]
+    )
+    + ")"
 )
 # Portuguese
 spam_search(
@@ -108,7 +145,7 @@ spam_search(
     "reclamação OR eletrônica OR curriculo OR Investigação"
 )
 # Spanish
-spam_search("(mejor AND opción) OR (%22en su%22)")
+spam_search('(mejor AND opción) OR ("en su")')
 # Russian
 spam_search("и")
 # Polish
@@ -129,18 +166,19 @@ spam_search("様")
 # spam_search("مارس")
 
 input("Press ENTER")
+
 print("Suspicious senders, part 1")
 
 ## Too broad
 # spam_search("from:mail")
 ## Had no search results for 3 months
-# spam_search("from:%22Mustafa%20Ayvaz%22")
-# spam_search("from:%22Ted's%20Wood%20Working%22")
-# spam_search("from:%22ZEISS%20Microscopy%22")
+# spam_search('from:"Mustafa%20Ayvaz"')
+# spam_search('from:"Ted's%20Wood%20Working"')
+# spam_search('from:"ZEISS%20Microscopy"')
 # spam_search("from:GreenNewDealNetwork.org")
 # spam_search("from:Plantronics")
 # spam_search("from:isualum@mail.iastate.edu")
-# spam_search("%22Scoop+News%22") # nothing on 8/3/2022, 9/5/2022
+# spam_search('"Scoop+News"') # nothing on 8/3/2022, 9/5/2022
 # spam_search("CyberScoop") # nothing on 8/3/2022, 9/5/2022
 # spam_search("EdScoop") # nothing on 8/3/2022, 9/5/2022
 # spam_search("FedScoop") # nothing on 8/3/2022, 9/5/2022
@@ -153,39 +191,38 @@ print("Suspicious senders, part 1")
 
 spam_search("(from:dr OR from:mr OR from:mrs OR from:ms)")
 
-spam_search("from:%22Anand%20Raghavan%22")  # nothing on 9/5/2022 # nothing on 8/3/2023
-spam_search("from:%22Cooling%20Bra%20Pro%22")  # nothing on 9/5/2022
-spam_search("from:%22EMILYs List%22")  # nothing on 8/3/2023
-spam_search("from:%22Fluke Corporation%22")  # nothing on 8/3/2023
-spam_search("from:%22Harbor Freight%22")  # nothing on 8/3/2023
-spam_search("from:%22IKA Works%22")
-spam_search("from:%22Innovation%20News%20Network%22")
-spam_search("from:%22Mend The Marriage%22")  # nothing on 8/3/2023
-spam_search("from:%22Michael Weber%22")
-spam_search("from:%22Survival Ops Tactical%22")  # nothing on 8/3/2023
-spam_search("from:%22TPC Training%22")  # nothing on 8/3/2023
-spam_search("from:%22Team OutSystems%22")  # nothing on 8/3/2023
-spam_search("from:%22Tracy Zettinig%22")  # nothing on 8/3/2023
-spam_search("from:%22Windstream Enterprise%22")  # nothing on 8/3/2023
+spam_search('from:"Anand%20Raghavan"')  # nothing on 9/5/2022 # nothing on 8/3/2023
+spam_search('from:"Cooling%20Bra%20Pro"')  # nothing on 9/5/2022
+spam_search('from:"EMILYs List"')  # nothing on 8/3/2023
+spam_search('from:"Fluke Corporation"')  # nothing on 8/3/2023
+spam_search('from:"Harbor Freight"')  # nothing on 8/3/2023
+spam_search('from:"IKA Works"')
+spam_search('from:"Innovation%20News%20Network"')
+spam_search('from:"Mend The Marriage"')  # nothing on 8/3/2023
+spam_search('from:"Michael Weber"')
+spam_search('from:"Survival Ops Tactical"')  # nothing on 8/3/2023
+spam_search('from:"TPC Training"')  # nothing on 8/3/2023
+spam_search('from:"Team OutSystems"')  # nothing on 8/3/2023
+spam_search('from:"Tracy Zettinig"')  # nothing on 8/3/2023
+spam_search('from:"Windstream Enterprise"')  # nothing on 8/3/2023
 spam_search("from:8x8")  # nothing on 8/3/2023
 spam_search("from:webinars@training.businesswatchnetwork.com")
 spam_search("from:expertspeak@email.concordeducations.com")
 
 input("Press ENTER")
-print("Suspicious senders, part 2")
 
+print("Suspicious senders, part 2")
 spam_search("(from:AlertMedia OR from:Amazon OR from:BOXX OR from:Banco)")
 spam_search("(from:BeTechly OR from:Bloomberg OR from:EDIBON OR from:ESET)")
 spam_search("(from:Egnyte OR from:Ginja OR from:Helpdesk OR from:Hitradio)")
 spam_search("(from:McAfee OR from:Norton OR from:Planview OR from:RingCentral)")
 spam_search("from:SeguridadHB")
 spam_search("(from:Avantor OR from:ATC-NY OR from:SimpsonScarborough OR from:VinFuture)")
-spam_search("(from:%22Check Point%22 OR from:%22Staples Technology Solutions%22)")
+spam_search('(from:"Check Point" OR from:"Staples Technology Solutions")')
 spam_search("(from:FB)")
-
 input("Press ENTER")
-print("Suspicious senders, part 3")
 
+print("Suspicious senders, part 3")
 # spam_search("from:bee@BAUER.UH.EDU")  # nothing on 8/3/2023
 spam_search("from:jooble.org")
 spam_search("from:deuscustoms.com")
@@ -195,47 +232,26 @@ spam_search("(from:sci_ed@info.vwr.com OR from:sonicwall OR from:uCertify OR fro
 spam_search("(from:CashApp OR from:temu OR from:howida)")
 spam_search("from:email")
 spam_search("(from:bytesize OR from:nfina)")
-
-
 # These do not include "from:" in the search
-spam_search("(%22golf+wire%22 OR Speechelo OR Syxsense OR labelbox OR techwatch)")
+spam_search('("golf+wire" OR Speechelo OR Syxsense OR labelbox OR techwatch)')
 spam_search("bara@kolliers.com")
-
-
 input("Press ENTER")
+
 print("Suspicious senders, part 4")
-
 spam_search("from:eyebuydirect.com")
-
 spam_search("from:journal")
 spam_search("from:team")
-
 spam_search("from:trump")
-
 input("Press ENTER")
-print("Likely false positive")
 
+print("Possible false positive")
 spam_search("subject:invitation")
-
 input("Press ENTER")
-print("Mail forged to be from me")
 
-spam_search("(from:michaelernst OR from:michael.ernst OR from:mernst)")
-
+print("To unused email address")
+spam_search("to:mernst@cs.rice.edu")
 input("Press ENTER")
-print("My username in the subject line")
 
-# also catches "Michael Ernst"
-spam_search("(subject:michaelernst OR subject:michael.ernst OR subject:mernst)")
-
-input("Press ENTER")
-print('"Michael" in the subject line or "Hi Michael"')
-
-spam_search("subject:Michael")
-spam_search("%22Hi Michael%22")
-spam_search("subject:cs.washington.edu")
-
-input("Press ENTER")
 print("Frequent topics 1")
 
 ## These are not so useful
@@ -252,25 +268,23 @@ print("Frequent topics 1")
 # spam_search("pussy")
 # spam_search("temperature")
 
-spam_search("%22sam's club%22")
+spam_search('"sam%27s club"')
 
-spam_search("%22nick+hellen%22")
-spam_search("%22michael+duwayne%22")
-spam_search("%22tractor+supply%22")
+spam_search('"nick hellen"')
+spam_search('"michael duwayne"')
+spam_search('"tractor supply"')
 
 spam_search("diabetes")
-spam_search("Scopus")
+spam_search("Scopus OR subject:journal")
 spam_search("subject:donation")
 spam_search("subject:investment")
-spam_search("subject:journal")
 spam_search("subject:quota")
 spam_search("subject:urgent")
 spam_search("subject:spam")
 spam_search("subject:strategies")
-
 input("Press ENTER")
-print("Frequent topics 2")
 
+print("Frequent topics 2")
 spam_search("subject:confirmation")
 spam_search("subject:conference")
 spam_search("Casino")
@@ -282,11 +296,10 @@ spam_search("(keto OR ketosis)")  # nothing on 8/3/2022
 spam_search("docusign")
 spam_search("elongation")
 spam_search("trump")
-
 # spam_search("Kamala Harris")
+input("Press ENTER")
 
-
-input("Now the rest (read these in Emacs, probably at CSE); press ENTER")
+input("Now the rest (read these in Emacs)")
 print("1. Sort by from, look for frequent senders with non-uniform subject lines.")
 print("2. Sort by subject, scan for non-spam.")
 print("3. Delete all spam from Gmail.")
