@@ -644,20 +644,47 @@
       (cons '("subject" "ml")
 	    mew-sort-key-alist))
 
+;; Ignore leading quote marks
+(with-eval-after-load "mew-sort"
+  (defun mew-sort-string (x y)
+    "Like original, but strips leading double quote and puts emoji strings at end."
+    (let* ((xstring (mew-normalize-string-for-sorting (mew-sort-key x)))
+	   (ystring (mew-normalize-string-for-sorting (mew-sort-key y))))
+      (or (string= xstring ystring)
+	  (string< xstring ystring)))))
+
+(defun mew-normalize-string-for-sorting (s)
+  (strip-leading-double-quote
+   (if (or (string-contains-emoji-p s)
+           (string-contains-chinese-p s))
+       (concat (char-to-string 255) s)
+     s)))
+
 (defun strip-leading-double-quote (s)
-  "Return s, without any leading double quote"
+  "Return s, without any leading double quote."
   (if (string-prefix-p "\"" s)
       (substring s 1)
     s))
 
-;; Ignore leading quote marks
-(with-eval-after-load "mew-sort"
-  (defun mew-sort-string (x y)
-    "Like original, but strips leading double quote."
-    (let* ((xstring (strip-leading-double-quote (mew-sort-key x)))
-	   (ystring (strip-leading-double-quote (mew-sort-key y))))
-      (or (string= xstring ystring)
-	  (string< xstring ystring)))))
+(defun string-contains-emoji-p (s)
+  "Return non-nil if string S contains any character likely to be an emoji."
+  (let ((contains-emoji nil))
+    (dolist (c (string-to-list s))
+      ;; Check a common range for emojis (U+1F000 to U+1FAFF)
+      ;; This is not exhaustive as emoji definitions change and involve sequences
+      (when (and (>= c #x1F000) (<= c #x1FAFF))
+        (setq contains-emoji t)
+        (return)))
+    contains-emoji))
+
+(defun string-contains-chinese-p (s)
+  (string-search "【" s))
+
+;; Tests:
+(when nil
+  (cl-assert (not (string-contains-emoji-p "Hello world")))
+  (cl-assert (string-contains-emoji-p "Hello 😀 world"))
+  (cl-assert (string-contains-emoji-p "Testing 👍 emojis")))
 
 
 ;; Surprisingly, setting mew-reply-regex does not seem to affet sorting nor
@@ -1057,7 +1084,8 @@
 (add-hook 'mew-draft-mode-newdraft-hook 'do-not-auto-fill-message-headers)
 
 (defun fixup-cse-support-autoreply ()
-  "Remove \"Autoreply\" from subject line, lest mail to CSE support be silently discarded."
+  "Remove \"Autoreply\" from subject line.
+This prevents silently discarding mail to CSE support."
   (save-excursion
     (goto-char (point-min))
     (if (re-search-forward "\\(\nSubject: Re: [wreq #[0-9]*]\\) Support Online Autoreply\n" nil t)
@@ -1247,7 +1275,7 @@
       (looking-at ">"))))
 
 (defun attachment-text ()
-  "Return text around 'attach{ed,ment}', or nil if none."
+  "Return text around \"attach{ed,ment}\", or nil if none."
   (save-excursion
     (goto-char (point-min))
     (let (result)
@@ -1346,7 +1374,7 @@ is inserted before the cursor, the short name is expanded to its address."
 
 (defun mew-draft-header-comp-no-tab-maybe ()
   "Call mew-draft-header-comp-no-tab, if in an appropriate location."
-  (let ((bol-point) (save-excursion (beginning-of-line) (point)))
+  (let ((bol-point (save-excursion (beginning-of-line) (point))))
     (if (and (looking-at "[ \n]")
 	     (not (looking-back "^" bol-point))	; at beginning of line, don't complete
 	     (not (looking-back ": *" bol-point)) ; if no text in field, don't complete
@@ -1479,12 +1507,12 @@ is inserted before the cursor, the short name is expanded to its address."
 
 
 (defun mew-summary-reply-to-sender ()
-  "Like 'mew-summary-reply', but only reply to sender."
+  "Like `mew-summary-reply', but only reply to sender."
   (interactive)
   (mew-summary-reply t))
 
 (defun mew-message-reply-to-sender ()
-  "Like 'mew-message-reply', but only reply to sender."
+  "Like `mew-message-reply', but only reply to sender."
   (interactive)
   (mew-message-goto-summary)
   (call-interactively 'mew-summary-reply-to-sender))
@@ -1505,7 +1533,7 @@ is inserted before the cursor, the short name is expanded to its address."
 ;; This should only do any work if the buffer was formatted using w3m or eww.
 ;; Does the extra work cause any problems?
 (defun mew-cite-refill-message-wide ()
-  "From a Mew reply buffer, reformat the corresponding Mew message with a wide fill-column."
+  "From a Mew reply buffer, reformat the Mew message with a wide fill-column."
   (save-window-excursion
     (save-restriction
       (with-current-buffer (mew-buffer-message)
