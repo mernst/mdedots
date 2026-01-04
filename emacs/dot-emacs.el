@@ -453,8 +453,9 @@
   (set-frame-parameter (selected-frame) 'width 121)
   (set-frame-parameter (selected-frame) 'fullscreen 'fullheight))
 
-(setq initial-frame-alist
-      '((top . 1) (left . 1) (width . 101) (fullscreen . fullheightheight)))
+;; This seems to make Emacs resize to this configuration at random times.
+;; (setq initial-frame-alist
+;;       '((top . 1) (left . 1) (width . 101) (fullscreen . fullheightheight)))
 (if (eq system-site 'laptop)
     (101-column-frame))
 (if (string-equal (system-name) "sl7")
