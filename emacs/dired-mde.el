@@ -167,6 +167,8 @@
     (progn
       (delete "papers * &" (assoc "\\.pdf$" my-dired-shell-guesses))
       (delete "papers * &" (assoc "\\.PDF$" my-dired-shell-guesses))
+      (delete "okular * &" (assoc "\\.pdf$" my-dired-shell-guesses))
+      (delete "okular * &" (assoc "\\.PDF$" my-dired-shell-guesses))
       ))
 
 (if (equal 'darwin system-type)
