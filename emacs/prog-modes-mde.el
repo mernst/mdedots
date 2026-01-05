@@ -685,7 +685,9 @@ This is disabled on lines with a comment containing the string \"interned\"."
 	    (not (string-match-p "\\.jpp$" filename))
 	    (not (string-match-p "nonnull-interned-demo" filename))
             (not (string-match-p "/tests/daikon-tests/" filename))
-            (not (string-match-p "/tests/sources/" filename)))
+            (not (string-match-p "/tests/sources/" filename))
+            (not (string-match-p "/java/jtb/" filename))
+            )
 
        ;; Toradocu
        (and (string-match-p "/toradocu" filename)
@@ -749,7 +751,7 @@ This is disabled on lines with a comment containing the string \"interned\"."
           (string-match-p "/rust_verification" filename)
           (and (string-match-p "/grt-testing" filename)
                (or (starts-with "grt-testing" dir-simple-name)
-                   (equals "subject-programs" dir-simple-name)))
+                   (equal "subject-programs" dir-simple-name)))
           
           )
       t)
@@ -1840,7 +1842,7 @@ How does this differ from whatever is built in?"
       (let* ((filename (file-truename buffer-file-name))
              (dirname (file-name-directory filename)))
         (if (file-exists-p (concat dirname "Makefile"))
-            (add-hook 'after-save-hook '(lambda () (run-command nil "make")) nil 'local)))))
+            (add-hook 'after-save-hook #'(lambda () (run-command nil "make")) nil 'local)))))
 (add-hook 'm4-mode-hook 'mde-m4-mode-hook)
 
 
