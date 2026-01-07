@@ -258,6 +258,8 @@ update_fork benedikt-schesch AST-Merging-Evaluation /scratch/mernst/clones/versi
 
 update_fork vikramnitin9 rust_verification ~/research/harvest
 update_fork vikramnitin9 rust_verification /scratch/mernst/clones/harvest
+update_fork vikramnitin9 parsec ~/research/harvest
+update_fork vikramnitin9 parsec /scratch/mernst/clones/harvest
 
 update_fork uwplse uwplse.github.io.git ~/research uwplse-webpage
 

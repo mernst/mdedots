@@ -27,6 +27,7 @@
   (require 'groovy-mode nil 'noerror)
   (require 'util-mde)                   ; for `save-buffer-if-modified', `replace-string-noninteractive', etc.
   (require 'mode-hooks-mde)
+  (require 'javadoc-lookup)
   (require 'dtrt-indent nil 'noerror)
   (require 'string-inflection)
   (require 'xscheme)
