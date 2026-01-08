@@ -619,108 +619,123 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 
 
 ;; Completely empty diff.
-(defvar empty-diff-regex
-  (concat
-   "<<<<<<< HEAD\n"
-   "||||||| [0-9a-f]\\{11\\}\n"
-   "=======\n"
-   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+(defvar empty-diff-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    "||||||| [0-9a-f]\\{11\\}\n"
+    "=======\n"
+    ">>>>>>> [0-9a-f]\\{40\\}\n")
+   ""))
 
 ;; Diffs where one of the ancestors is empty.
 ;; TODO: Why is the "~" character excluded?  Just to be able to match the newline character?
-(defvar left-base-empty-regex
-  (concat
-   "<<<<<<< HEAD\n"
-   "||||||| [0-9a-f]\\{11\\}\n"
-   "=======\n"
-   "\\([^~]*?\\)\n"
-   ">>>>>>> [0-9a-f]\\{40\\}\n"))
-(defvar base-right-empty-regex
-  (concat
-   "<<<<<<< HEAD\n"
-   "\\([^~]*?\\)\n"
-   "||||||| [0-9a-f]\\{11\\}\n"
-   "=======\n"
-   ">>>>>>> [0-9a-f]\\{40\\}\n"))
-(defvar left-right-empty-regex
-  (concat
-   "<<<<<<< HEAD\n"
-   "||||||| [0-9a-f]\\{11\\}\n"
-   "\\([^~]*?\\)\n"
-   "=======\n"
-   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+(defvar left-base-empty-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    "||||||| [0-9a-f]\\{11\\}\n"
+    "=======\n"
+    "\\([^~]*?\\)\n"
+    ">>>>>>> [0-9a-f]\\{40\\}\n")
+   "\\1"))
+(defvar base-right-empty-regexes
+  (list  (concat
+          "<<<<<<< HEAD\n"
+          "\\([^~]*?\\)\n"
+          "||||||| [0-9a-f]\\{11\\}\n"
+          "=======\n"
+          ">>>>>>> [0-9a-f]\\{40\\}\n")
+         "\\1"))
+(defvar left-right-empty-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    "||||||| [0-9a-f]\\{11\\}\n"
+    "\\([^~]*?\\)\n"
+    "=======\n"
+    ">>>>>>> [0-9a-f]\\{40\\}\n")
+   ""))
 
 (defun tags-resolve-empty-diffs ()
   (interactive)
-  (tags-query-replace
-   empty-diff-regex
-   "")
-  (tags-query-replace-noerror
-   left-base-empty-regex
-   "\\1")
-  (tags-query-replace-noerror
-   base-right-empty-regex
-   "\\1")
-  (tags-query-replace-noerror
-   left-right-empty-regex
-   "")
+  (apply #'tags-query-replace-noerror empty-diff-regex)
+  (apply #'tags-query-replace-noerror left-base-empty-regexes)
+  (apply #'tags-query-replace-noerror base-right-empty-regexes)
+  (apply #'tags-query-replace-noerror left-right-empty-regexes)
   )
 
-
-
-
+(defun resolve-empty-diffs ()
+  (interactive)
+  (save-excursion
+    (goto-point (point-min))
+    (apply #'query-replace-noerror empty-diff-regex)
+    (goto-point (point-min))
+    (apply #'query-replace-noerror left-base-empty-regexes)
+    (goto-point (point-min))
+    (apply #'query-replace-noerror base-right-empty-regexes)
+    (goto-point (point-min))
+    (apply #'query-replace-noerror left-right-empty-regexes)
+    ))
 
 (defvar up-to-5-lines
   "\\(?:[^\n]*\n\\(?:[^\n]*\n\\(?:[^\n]*\n\\(?:[^\n]*\n\\(?:[^\n]*\n\\)??\\)??\\)??\\)??\\)")
 
-(defvar same-left-and-base-regex
-  (concat
-   "<<<<<<< HEAD\n"
-   (concat "\\(" up-to-5-lines "\\|" "\\(?:[^|]*?\\|[^=]*?\\)\n" "\\)")
-   "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
-   "\\1"
-   "=======\n"
-   (concat "\\(" up-to-5-lines "\\|" "[^>]*\n" "\\)")
-   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+(defvar same-left-and-base-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    (concat "\\(" up-to-5-lines "\\|" "\\(?:[^|]*?\\|[^=]*?\\)\n" "\\)")
+    "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
+    "\\1"
+    "=======\n"
+    (concat "\\(" up-to-5-lines "\\|" "[^>]*\n" "\\)")
+    ">>>>>>> [0-9a-f]\\{40\\}\n")
+   "\\2"))
 
-(defvar same-base-and-right-regex
-  (concat
-   "<<<<<<< HEAD\n"
-   (concat "\\(" up-to-5-lines "\\|" "[^|]*\n" "\\)")
-   "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
-   (concat "\\(" up-to-5-lines "\\|" "\\(?:[^=]*?\\|[^>]*?\\)\n" "\\)")
-   "=======\n"
-   "\\2"
-   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+(defvar same-base-and-right-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    (concat "\\(" up-to-5-lines "\\|" "[^|]*\n" "\\)")
+    "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
+    (concat "\\(" up-to-5-lines "\\|" "\\(?:[^=]*?\\|[^>]*?\\)\n" "\\)")
+    "=======\n"
+    "\\2"
+    ">>>>>>> [0-9a-f]\\{40\\}\n")
+   "\\1"))
 
-(defvar same-left-and-right-regex
-  (concat
-   "<<<<<<< HEAD\n"
-   (concat "\\(" up-to-5-lines "\\|" "\\(?:[^|]*?\\|[^>]*?\\)\n" "\\)")
-   "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
-   (concat "\\(" up-to-5-lines "\\|" "[^=]*\n" "\\)")
-   "=======\n"
-   "\\1"
-   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+(defvar same-left-and-right-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    (concat "\\(" up-to-5-lines "\\|" "\\(?:[^|]*?\\|[^>]*?\\)\n" "\\)")
+    "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
+    (concat "\\(" up-to-5-lines "\\|" "[^=]*\n" "\\)")
+    "=======\n"
+    "\\1"
+    ">>>>>>> [0-9a-f]\\{40\\}\n")
+   "\\1"))
 
 (defun tags-resolve-diffs-with-two-same ()
   "Resolve diffs in which two of the versions of the text are the same."
   (interactive)
+  (apply #'tags-query-replace-noerror same-left-and-base-regexes)
+  (apply #'tags-query-replace-noerror same-base-and-right-regexes)
+  (apply #'tags-query-replace-noerror same-left-and-right-regexes)
+  )
 
-  ;; Same left and base
-  (tags-query-replace-noerror
-   same-left-and-base-regex
-   "\\2")
-
-  ;; Same base and right
-  (tags-query-replace-noerror
-   same-base-and-right-regex
-   "\\1")
-
-  ;; Same left and right
-  (tags-query-replace-noerror
-   same-left-and-right-regex
-   "\\1"))
+(defun resolve-diffs-with-two-same ()
+  "Resolve diffs in which two of the versions of the text are the same."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (apply #'query-replace-noerror same-left-and-base-regexes)
+    (goto-char (point-min))
+    (apply #'query-replace-noerror same-base-and-right-regexes)
+    (goto-char (point-min))
+    (apply #'query-replace-noerror same-left-and-right-regexes)
+    ))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
