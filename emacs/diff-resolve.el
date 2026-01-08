@@ -556,7 +556,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Resolve version control conflicts
+;;; Resolve version control conflicts in method signatures
 ;;;
 
 
@@ -598,37 +598,129 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
    "\\5\\1\\3\\4")
   )
 
-(defun resolve-empty-diffs ()
 
-  ;; Resolve completely empty diffs.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Resolve version control conflicts (general case)
+;;;
+
+
+(defun tags-resolve-diffs ()
+  "Resolve diffs in the current tags table."
+  (interactive)
+  (tags-resolve-empty-diffs)
+  (tags-resolve-diffs-with-two-same))
+
+
+(defun resolve-diffs ()
+  "Resolve diffs in the current buffer."
+  (interactive)
+  (resolve-empty-diffs)
+  (resolve-diffs-with-two-same))
+
+
+;; Completely empty diff.
+(defvar empty-diff-regex
+  (concat
+   "<<<<<<< HEAD\n"
+   "||||||| [0-9a-f]\\{11\\}\n"
+   "=======\n"
+   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+
+;; Diffs where one of the ancestors is empty.
+;; TODO: Why is the "~" character excluded?  Just to be able to match the newline character?
+(defvar left-base-empty-regex
+  (concat
+   "<<<<<<< HEAD\n"
+   "||||||| [0-9a-f]\\{11\\}\n"
+   "=======\n"
+   "\\([^~]*?\\)\n"
+   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+(defvar base-right-empty-regex
+  (concat
+   "<<<<<<< HEAD\n"
+   "\\([^~]*?\\)\n"
+   "||||||| [0-9a-f]\\{11\\}\n"
+   "=======\n"
+   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+(defvar left-right-empty-regex
+  (concat
+   "<<<<<<< HEAD\n"
+   "||||||| [0-9a-f]\\{11\\}\n"
+   "\\([^~]*?\\)\n"
+   "=======\n"
+   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+
+(defun tags-resolve-empty-diffs ()
+  (interactive)
   (tags-query-replace
-   (concat
-    "<<<<<<< HEAD\n"
-    "||||||| [0-9a-f]\\{11\\}\n"
-    "=======\n"
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
+   empty-diff-regex
    "")
-
-  ;; Resolve diffs where one of the ancestors is empty.
-  (tags-query-replace
-   (concat
-    "<<<<<<< HEAD\n"
-    "||||||| [0-9a-f]\\{11\\}\n"
-    "=======\n"
-    "\\([^~]*?\\)\n"
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
+  (tags-query-replace-noerror
+   left-base-empty-regex
    "\\1")
-  (tags-query-replace
-   (concat
-    "<<<<<<< HEAD\n"
-    "\\([^~]*?\n\\)"
-    "||||||| [0-9a-f]\\{11\\}\n"
-    "\\1"
-    "=======\n"
-    "\\([^~]*?\\)"
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
-   "\\2")
+  (tags-query-replace-noerror
+   base-right-empty-regex
+   "\\1")
+  (tags-query-replace-noerror
+   left-right-empty-regex
+   "")
   )
+
+
+
+
+
+(defvar up-to-5-lines
+  "\\(?:[^\n]*\n\\(?:[^\n]*\n\\(?:[^\n]*\n\\(?:[^\n]*\n\\(?:[^\n]*\n\\)??\\)??\\)??\\)??\\)")
+
+(defvar same-left-and-base-regex
+  (concat
+   "<<<<<<< HEAD\n"
+   (concat "\\(" up-to-5-lines "\\|" "\\(?:[^|]*?\\|[^=]*?\\)\n" "\\)")
+   "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
+   "\\1"
+   "=======\n"
+   (concat "\\(" up-to-5-lines "\\|" "[^>]*\n" "\\)")
+   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+
+(defvar same-base-and-right-regex
+  (concat
+   "<<<<<<< HEAD\n"
+   (concat "\\(" up-to-5-lines "\\|" "[^|]*\n" "\\)")
+   "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
+   (concat "\\(" up-to-5-lines "\\|" "\\(?:[^=]*?\\|[^>]*?\\)\n" "\\)")
+   "=======\n"
+   "\\2"
+   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+
+(defvar same-left-and-right-regex
+  (concat
+   "<<<<<<< HEAD\n"
+   (concat "\\(" up-to-5-lines "\\|" "\\(?:[^|]*?\\|[^>]*?\\)\n" "\\)")
+   "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
+   (concat "\\(" up-to-5-lines "\\|" "[^=]*\n" "\\)")
+   "=======\n"
+   "\\1"
+   ">>>>>>> [0-9a-f]\\{40\\}\n"))
+
+(defun tags-resolve-diffs-with-two-same ()
+  "Resolve diffs in which two of the versions of the text are the same."
+  (interactive)
+
+  ;; Same left and base
+  (tags-query-replace-noerror
+   same-left-and-base-regex
+   "\\2")
+
+  ;; Same base and right
+  (tags-query-replace-noerror
+   same-base-and-right-regex
+   "\\1")
+
+  ;; Same left and right
+  (tags-query-replace-noerror
+   same-left-and-right-regex
+   "\\1"))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
