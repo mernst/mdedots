@@ -276,15 +276,18 @@ if ! [ "$dot_environment_file_read" ]; then # avoid sourcing .environment twice
 fi
 if [ "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
 
-# Site-specific environment varibales (such as PRINTER) are in .bashrc.
+# Site-specific environment variables (such as PRINTER) are in .bashrc.
 
 ###########################################################################
 ### Processes
 ###
 
-if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' > /dev/null 2>&1); then
-  # syncthing is not running
-  nohup syncthing > "$HOME"/tmp/syncthing.log 2>&1 &
+# At UW CSE, only run syncthing on bam.cs.
+if [ ! -d /homes/gws/mernst ] || [ "$(hostname)" = "bam.cs.washington.edu" ]; then
+  if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' > /dev/null 2>&1); then
+    # syncthing is not running
+    nohup syncthing > "$HOME"/tmp/syncthing.log 2>&1 &
+  fi
 fi
 
 # For Rust
