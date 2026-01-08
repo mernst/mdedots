@@ -251,7 +251,7 @@ export sen="$sebase"/notes
 # gse stands for "graduate software engineering"
 export gsebase="$HOME"/class/503
 # Customize just the next line; also update `ffap-semi-env-vars' in ~/emacs/dot-emacs.el
-export gseq=25wi
+export gseq=26wi
 export gse="$gsebase/$gseq"
 export gsen="$gsebase"/notes
 export pab="$HOME"/class/503/program-analysis-book
@@ -278,9 +278,9 @@ export htpy=2025
 export htp="$htpbase/$htpy"
 
 # My current quarter teaching (must come after $sdi or $se or $gse is defined).
-export s="$sdi"
+# export s="$sdi"
 # export s="$se"
-# export s="$gse"
+export s="$gse"
 
 export sbook="$gsebase"/program-analysis-book
 

@@ -267,8 +267,8 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 # 59 22 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/403.txt 2
 # 00 22 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse490e1/17wi/ > /scratch/mernst/checklink-output/490e1.txt-`date +\%Y\%m\%d` 2>&1
 # 59 22 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/490e1.txt 2
-# 00 23 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse503/25wi/ > /scratch/mernst/checklink-output/503.txt-`date +\%Y\%m\%d` 2>&1
-# 59 23 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/503.txt 2
+00 23 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse503/25wi/ > /scratch/mernst/checklink-output/503.txt-`date +\%Y\%m\%d` 2>&1
+59 23 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/503.txt 2
 # 00 23 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/csep504/24sp/ > /scratch/mernst/checklink-output/504p.txt-`date +\%Y\%m\%d` 2>&1
 # 59 23 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/504p.txt 2
 ## Weekly
