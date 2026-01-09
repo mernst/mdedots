@@ -277,7 +277,7 @@ update_fork typetools commons-bcel ~/research/types/libraries
 ## Weird: using `--tags` causes the pull to fail.
 # update_fork JetBrains kotlin ~/java
 ## So do it directly:
-if [ -d "~java/kotlin-fork-mernst" ]; then
+if [ -d ~java/kotlin-fork-mernst ]; then
   (cd ~/java/kotlin-fork-mernst \
     && git pull -q --ff-only \
     && git pull -q --ff-only "git@github.com:JetBrains/kotlin" \
@@ -303,6 +303,13 @@ if [ -d "$t"/libraries/asm-fork-typetools ]; then
   (cd "$t"/libraries/asm-fork-typetools \
     && git pull -q --ff-only \
     && git pull -q --ff-only https://gitlab.ow2.org/asm/asm.git --tags \
+    && git push -q \
+    && git remote prune origin)
+fi
+if [ -d ~/class/simple-courseweb-template-fork-mernst ]; then
+  (cd ~/class/simple-courseweb-template-fork-mernst \
+    && git pull -q --ff-only \
+    && git pull -q --ff-only git@gitlab.cs.washington.edu:lab/simple-courseweb-template.git --tags \
     && git push -q \
     && git remote prune origin)
 fi
