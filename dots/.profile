@@ -92,11 +92,13 @@ fi
 # uses perl.  Only set the locale if it is available.  (If it isn't available,
 # how do I avoid the perl warnings?)
 if command -v locale > /dev/null 2>&1; then
+  # LC_ALL controls, among other things, sort order for file names.
+  # "export LC_ALL=en_US.utf8" results in dotfiles being sorted by their first letter,
+  # not all before non-dotfiles.  "LC_ALL=C" prevents that problem.
+  export LC_ALL=C
+  # GNU gettext gives priority to LANGUAGE over LC_ALL.
   if locale -a | grep -q en_US.utf8 > /dev/null; then
-    # export LANGUAGE=en_US.UTF-8
-    # export LC_ALL=en_US.UTF-8
     export LANGUAGE=en_US.utf8
-    export LC_ALL=en_US.utf8
   fi
 fi
 
