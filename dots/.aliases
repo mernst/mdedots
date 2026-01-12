@@ -85,7 +85,7 @@ usenocf() { (cd "$t" && rm -f checker-framework stubparser libraries/jdk librari
 
 # Temporary; later there will be a program of this name.
 alias mvc='java -ea -cp ${HOME}/java/plume-lib/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl'
-alias mvcstatis='mvc status --search-prefix'
+alias mvcstatus='mvc status --search-prefix'
 
 alias mroe='more'
 # nman <man-file> # Process the unformatted man page <man-file>
