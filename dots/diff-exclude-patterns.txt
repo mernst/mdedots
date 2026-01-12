@@ -28,11 +28,12 @@ target
 type-search-index.js
 
 # downloaded/cloned directories
+.do-like-javac
 .git-scripts
 .html-tools
 .plume-scripts
 .run-google-java-format
-.do-like-javac
+.utils
 plume-bib
 
 # Eclipse
