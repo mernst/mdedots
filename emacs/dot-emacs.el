@@ -1268,14 +1268,16 @@ After running this, run from the shell:  print-mail bulk." t)
 
 ;; To permit quotes as word characters requires a change to the .aff file.
 ;; This dictionary's .aff file differs only in its WORCHARS entry.
-(with-eval-after-load "ispell"
-  (setq ispell-dictionary "en_US_apostrophe")
-  (push `("en_US_apostrophe" ,(substitute-in-file-name "$HOME/dots/en_US_apostrophe.aff"))
-	ispell-hunspell-dict-paths-alist)
-  (setq ispell-local-dictionary-alist
-	`(("en_US_apostrophe" "[[:alpha:]]" "[^[:alpha:]]" "[0-9'’]" t ("-d" ,(substitute-in-file-name "$HOME/dots/en_US_apostrophe")) nil utf-8)))
-  (setq ispell-local-dictionary-alist
-        '((nil "[[:alpha:]]" "[^[:alpha:]]" "['\x2019\x201C\x201D\x2018\x201E]" nil ("-B") nil utf-8)))
+(when nil
+  (with-eval-after-load "ispell"
+    (setq ispell-dictionary "en_US_apostrophe")
+    (push `("en_US_apostrophe" ,(substitute-in-file-name "$HOME/dots/en_US_apostrophe.aff"))
+	  ispell-hunspell-dict-paths-alist)
+    (setq ispell-local-dictionary-alist
+	  `(("en_US_apostrophe" "[[:alpha:]]" "[^[:alpha:]]" "[0-9'’]" t ("-d" ,(substitute-in-file-name "$HOME/dots/en_US_apostrophe")) nil utf-8)))
+    (setq ispell-local-dictionary-alist
+          '((nil "[[:alpha:]]" "[^[:alpha:]]" "['\x2019\x201C\x201D\x2018\x201E]" nil ("-B") nil utf-8)))
+    )
   )
 
 (with-eval-after-load "ispell"

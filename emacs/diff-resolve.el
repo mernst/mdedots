@@ -11,6 +11,10 @@
 ;; ;; TODO: What is the purpose of this?
 ;; ;; (read-conflict-files-from-tags-table)
 ;; Now run as many of the following as desired.
+;; (resolve-diffs)
+;; (tags-resolve-diffs)
+
+
 ;; (resolve-annotation-lines)
 ;; (resolve-annotatedfor-conflicts)
 ;; (move-cf-imports-to-beginning)
@@ -32,6 +36,16 @@
 
 (eval-when-compile
   (require 'etags))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Variables
+;;;
+
+(defvar vertical-bar-separator
+  "|||||||\\(?: [0-9a-f]\\{11\\}\\| [0-9a-f]\\{7\\}\\| merged common ancestors\\)?\n")
+(defvar greater-than-hunk-end
+  ">>>>>>>\\(?: [0-9a-f]\\{40\\}\\)?\n")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -287,11 +301,13 @@ The mode-hook might blow away the match-data, in which case first run
   (interactive)
   ;; (read-conflict-files-from-tags-table)
   (tags-search
-   "<<<<<<< HEAD
-\\(?:@AnnotatedFor(\\(.*\\))\n\\)?||||||| merged common ancestors
-\\(?:@AnnotatedFor(\\(.*\\))\n\\)?=======
-\\(?:@AnnotatedFor(\\(.*\\))\n\\)?>>>>>>> [0-9a-f]\\{40\\}
-")
+   (concat "<<<<<<< HEAD
+\\(?:@AnnotatedFor(\\(.*\\))\n\\)?"
+           vertical-bar-separator
+           "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?=======
+\\(?:@AnnotatedFor(\\(.*\\))\n\\)?"
+           greater-than-hunk-end)
+   )
   (while t
     ;; (message "#1 %s" (match-string 1))
     ;; (message "#2 %s" (match-string 1))
@@ -328,11 +344,13 @@ The mode-hook might blow away the match-data, in which case first run
   (interactive)
   ;; (read-conflict-files-from-tags-table)
   (tags-search
-   "<<<<<<< HEAD
-\\(?:@AnnotatedFor(\\(.*\\))\n\\)?\\(.*\\)class \\(.*\\)\n||||||| merged common ancestors
-\\(?:@AnnotatedFor(\\(.*\\))\n\\)?\\2class \\3\n=======
-\\(?:@AnnotatedFor(\\(.*\\))\n\\)?\\(\\2\\(?:@UsesObjectEquals \\|@Interned \\)*class \\3\n\\)>>>>>>> [0-9a-f]\\{40\\}
-")
+   (concat "<<<<<<< HEAD
+\\(?:@AnnotatedFor(\\(.*\\))\n\\)?\\(.*\\)class \\(.*\\)\n"
+           vertical-bar-separator
+           "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?\\2class \\3\n=======
+\\(?:@AnnotatedFor(\\(.*\\))\n\\)?\\(\\2\\(?:@UsesObjectEquals \\|@Interned \\)*class \\3\n\\)"
+           greater-than-hunk-end
+           ))
   (while t
     ;; (message "#1 %s" (match-string 1))
     ;; (message "#2 %s" (match-string 1))
@@ -361,16 +379,17 @@ The mode-hook might blow away the match-data, in which case first run
 
 (defun resolve-one-annotatedfor-conflict (annotatedfor-arg-1 annotatedfor-arg-2 annotatedfor-arg-combined)
   (tags-query-replace
-   (format "<<<<<<< HEAD
+   (format (concat "<<<<<<< HEAD
 @AnnotatedFor({?%s}?)
 public\\(.*\\) @UsesObjectEquals class \\(.*\\)
-||||||| merged common ancestors
-public\\1 class \\2
+"
+                   vertical-bar-separator
+                   "public\\1 class \\2
 =======
 @AnnotatedFor({?%s}?)
 public\\1 class \\2
 >>>>>>> e7e1e93d462edbc8326a066d532bae9848222596
-" annotatedfor-arg-1 annotatedfor-arg-2)
+") annotatedfor-arg-1 annotatedfor-arg-2)
    (format
     "@AnnotatedFor({%s})
 public\\1 @UsesObjectEquals class \\2
@@ -401,11 +420,13 @@ Two caveats:
   (interactive)
   ;; (read-conflict-files-from-tags-table)
   (tags-search
-   "<<<<<<< HEAD
-\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)||||||| merged common ancestors
-\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)=======
-\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)>>>>>>> [0-9a-f]\\{40\\}
-")
+   (concat "<<<<<<< HEAD
+\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)"
+           vertical-bar-separator
+           "\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)=======
+\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)"
+           greater-than-hunk-end)
+   )
   (while t
     ;; (message "#1 %s" (match-string 1))
     ;; (message "#3 %s" (match-string 3))
@@ -488,7 +509,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
     (concat "\\("
             "[^|]*"
-            "||||||| .*\n" "\\)")
+            vertical-bar-separator "\\)")
     (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
     (concat "\\("
             "[^=]*"
@@ -496,7 +517,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     "\\2" ;; (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
     (concat "\\("
             "[^>]*"
-            ">>>>>>> .*\n" "\\)")
+            greater-than-hunk-end "\\)")
     )
    "\\2\\1\\3\\5\\6")
 
@@ -507,7 +528,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
     (concat "\\("
             "[^|]*"
-            "||||||| .*\n" "\\)")
+            vertical-bar-separator "\\)")
     "\\2" ;; (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
     (concat "\\("
             "[^=]*"
@@ -515,7 +536,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
     (concat "\\("
             "[^>]*"
-            ">>>>>>> .*\n" "\\)")
+            greater-than-hunk-end "\\)")
     )
    "\\5\\1\\3\\4\\6")
   
@@ -526,7 +547,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
     (concat "\\("
             "[^|]*"
-            "||||||| .*\n" "\\)")
+            vertical-bar-separator "\\)")
     (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
     (concat "\\("
             "[^=]*"
@@ -534,7 +555,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     "\\4" ;; (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
     (concat "\\("
             "[^>]*"
-            ">>>>>>> .*\n" "\\)")
+            greater-than-hunk-end "\\)")
     )
    "\\4\\1\\3\\5\\6")
   )
@@ -551,7 +572,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
   "Move annotations only on the OTHER method before the hunk.
   This assumes there is no corresponding annotation in base or HEAD."
   (tags-query-replace
-   (concat "^\\(<<<<<<< HEAD\n[^|]*\n|||||||.*\n[^=]*=======\n\\)\\(\\(?:" annotation-line-regex "\n\\)+\\)")
+   (concat "^\\(<<<<<<< HEAD\n[^|]*\n" "|||||||.*\n" "[^=]*=======\n\\)" "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
    "\\2\\1")
   )
 
@@ -623,9 +644,9 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
   (list
    (concat
     "<<<<<<< HEAD\n"
-    "||||||| [0-9a-f]\\{11\\}\n"
+    vertical-bar-separator
     "=======\n"
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
+    greater-than-hunk-end)
    ""))
 
 ;; Diffs where one of the ancestors is empty.
@@ -634,27 +655,27 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
   (list
    (concat
     "<<<<<<< HEAD\n"
-    "||||||| [0-9a-f]\\{11\\}\n"
+    vertical-bar-separator
     "=======\n"
     "\\([^~]*?\\)\n"
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
+    greater-than-hunk-end)
    "\\1"))
 (defvar base-right-empty-regexes
   (list  (concat
           "<<<<<<< HEAD\n"
           "\\([^~]*?\\)\n"
-          "||||||| [0-9a-f]\\{11\\}\n"
+          vertical-bar-separator
           "=======\n"
-          ">>>>>>> [0-9a-f]\\{40\\}\n")
+          greater-than-hunk-end)
          "\\1"))
 (defvar left-right-empty-regexes
   (list
    (concat
     "<<<<<<< HEAD\n"
-    "||||||| [0-9a-f]\\{11\\}\n"
+    vertical-bar-separator
     "\\([^~]*?\\)\n"
     "=======\n"
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
+    greater-than-hunk-end)
    ""))
 
 (defun tags-resolve-empty-diffs ()
@@ -686,11 +707,11 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
    (concat
     "<<<<<<< HEAD\n"
     (concat "\\(" up-to-5-lines "\\|" "\\(?:[^|]*?\\|[^=]*?\\)\n" "\\)")
-    "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
+    vertical-bar-separator
     "\\1"
     "=======\n"
     (concat "\\(" up-to-5-lines "\\|" "[^>]*\n" "\\)")
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
+    greater-than-hunk-end)
    "\\2"))
 
 (defvar same-base-and-right-regexes
@@ -698,11 +719,11 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
    (concat
     "<<<<<<< HEAD\n"
     (concat "\\(" up-to-5-lines "\\|" "[^|]*\n" "\\)")
-    "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
+    vertical-bar-separator
     (concat "\\(" up-to-5-lines "\\|" "\\(?:[^=]*?\\|[^>]*?\\)\n" "\\)")
     "=======\n"
     "\\2"
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
+    greater-than-hunk-end)
    "\\1"))
 
 (defvar same-left-and-right-regexes
@@ -710,11 +731,11 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
    (concat
     "<<<<<<< HEAD\n"
     (concat "\\(" up-to-5-lines "\\|" "\\(?:[^|]*?\\|[^>]*?\\)\n" "\\)")
-    "||||||| \\(?:[0-9a-f]\\{11\\}\\|[0-9a-f]\\{7\\}\\)\n"
+    vertical-bar-separator
     (concat "\\(" up-to-5-lines "\\|" "[^=]*\n" "\\)")
     "=======\n"
     "\\1"
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
+    greater-than-hunk-end)
    "\\1"))
 
 (defun tags-resolve-diffs-with-two-same ()
@@ -735,6 +756,92 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     (apply #'query-replace-regexp same-base-and-right-regexes)
     (goto-char (point-min))
     (apply #'query-replace-regexp same-left-and-right-regexes)
+    ))
+
+(defvar left-or-right-regexp 
+  (concat "\\(?:" up-to-5-lines "\\|" "\\(?:[^|]*?\\|[^>]*?\\)\n" "\\)")
+  "A regexp for text that can appear in the left or right region.")
+
+
+(defvar left-prefix-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    (concat "\\(" left-or-right-regexp "\\)")
+    vertical-bar-separator
+    ;; For now, permit no ancestor text, but do capture group #2.
+    ;; (concat "\\(" up-to-5-lines "\\|" "[^=]*\n" "\\)")
+    (concat "\\(\\)")
+    "=======\n"
+    (concat "\\(" "\\1" left-or-right-regexp "\\1" "\\)")
+    greater-than-hunk-end)
+   "\\3"))
+
+(defvar left-suffix-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    (concat "\\(" left-or-right-regexp "\\)")
+    vertical-bar-separator
+    ;; For now, permit no ancestor text, but do capture group #2.
+    ;; (concat "\\(" up-to-5-lines "\\|" "[^=]*\n" "\\)")
+    (concat "\\(\\)")
+    "=======\n"
+    (concat "\\(" left-or-right-regexp "\\1" "\\1" "\\)")
+    greater-than-hunk-end)
+   "\\3"))
+
+;; This may be very inefficient.
+(defvar right-prefix-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    (concat "\\(" "\\(" left-or-right-regexp "\\)" "\\(" left-or-right-regexp "\\)" "\\)")
+    vertical-bar-separator
+    ;; For now, permit no ancestor text, but do capture group #2.
+    ;; (concat "\\(" up-to-5-lines "\\|" "[^=]*\n" "\\)")
+    (concat "\\(\\)")
+    "=======\n"
+    (concat "\\(" "\\2" "\\)")
+    greater-than-hunk-end)
+   "\\1"))
+
+;; This may be very inefficient.
+(defvar right-suffix-regexes
+  (list
+   (concat
+    "<<<<<<< HEAD\n"
+    (concat "\\(" "\\(" left-or-right-regexp "\\)" "\\(" left-or-right-regexp "\\)" "\\)")
+    vertical-bar-separator
+    ;; For now, permit no ancestor text, but do capture group #2.
+    ;; (concat "\\(" up-to-5-lines "\\|" "[^=]*\n" "\\)")
+    (concat "\\(\\)")
+    "=======\n"
+    (concat "\\(" "\\3" "\\)")
+    greater-than-hunk-end)
+   "\\1"))
+
+
+(defun resolve-diffs-left-subsequence ()
+  "Resolve diffs when left is a subsequence of right."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (apply #'query-replace-regexp left-prefix-regexes)
+    (goto-char (point-min))
+    (apply #'query-replace-regexp left-suffix-regexes)
+    ))
+
+
+
+(defun resolve-diffs-right-subsequence ()
+  "Resolve diffs when right is a subsequence of left."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (apply #'query-replace-regexp right-prefix-regexes)
+    (goto-char (point-min))
+    (apply #'query-replace-regexp right-suffix-regexes)
     ))
 
 
@@ -832,11 +939,11 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
    (concat
     "<<<<<<< HEAD\n"
     "    public boolean equals(Object obj) {\n"
-    "||||||| [0-9a-f]\\{11\\}\n"
+    vertical-bar-separator
     "    public boolean equals(Object obj) {\n"
     "=======\n"
     "    public boolean equals(@Nullable Object obj) {\n"
-    ">>>>>>> [0-9a-f]\\{40\\}\n")
+    greater-than-hunk-end)
    "    public boolean equals(@Nullable Object obj) {\n")
   )
 
