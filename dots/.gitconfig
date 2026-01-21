@@ -15,6 +15,11 @@
 # Speed up commit operations on NFS.
 	preloadindex = true
 
+# Speed up "git status".
+[core]
+        untrackedCache=true
+        fsmonitor=true
+
 [core]
 	whitespace = trailing-space,space-before-tab
 	attributesfile = ~/.gitattributes
