@@ -820,6 +820,17 @@ After running this, run from the shell:  print-mail bulk." t)
 (global-set-key "\C-c\C-w" 'whisper-run)
 
 
+(use-package atomic-chrome
+  :demand t
+  :straight (atomic-chrome
+             :repo "KarimAziev/atomic-chrome"
+             :type git
+             :flavor nil
+             :host github)
+  :commands (atomic-chrome-start-server)
+  :config (atomic-chrome-start-server))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Key bindings
