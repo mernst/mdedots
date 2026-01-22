@@ -35,7 +35,10 @@
 
 
 (eval-when-compile
-  (require 'etags))
+  (require 'etags)
+  (require 'util-mde))
+
+(autoload 'replace-all-occurrrences-iteratively "util-mde")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -955,21 +958,16 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 (defun tags-reduce-diffs ()
   "Reduce diffs in the current tags table."
   (interactive)
-  (tags-reduce-diffs-same-prefix)
-  (tags-reduce-diffs-with-two-same))
-
+  (tags-reduce-diffs-same-prefix))
 
 (defun reduce-diffs ()
   "Reduce diffs in the current buffer."
   (interactive)
-  (reduce-diffs-same-prefix)
-  (reduce-diffs-with-two-same))
+  (reduce-diffs-same-prefix))
 
-(defun reduce-diffs-same-prefix ()
-  "Reduce diffs that have the same prefix"
-  (interactive)
-  ;; handles 
-  (query-replace-regexp
+;; TODO: Diffs with the same suffix
+(defvar same-prefix-regexes
+  (list
    (concat
     "^\\(<<<<<<< HEAD\n\\)"
     "\\(\\(?:.*\n\\)+\\)"
@@ -977,50 +975,21 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     "\\2"
     "\\([^=]*\n" "=======\n\\)"
     "\\2")
-   "\\2\\1\\3\\4")
+   "\\2\\1\\3\\4"))
+
+(defun tags-reduce-diffs-same-prefix ()
+  "Reduce diffs that have the same prefix."
+  (interactive)
+  (apply #'tags-query-replace-noerror same-prefix-regexes)
   )
 
-(re-search-forward
- (concat
-  "^\\(<<<<<<< HEAD\n\\)"
-  "\\(.*\n\\)"
-  "\\([^|]*\n" "|||||||.*\n\\)"
-  "\\2"
-  "\\([^=]*\n" "=======\n\\)"
-  "\\2"
-  ))
-
-
-(defun resolve-method-signature ()
-
-  ;; Resolve the first line of a diff, when HEAD has been edited.
-  ;; This version requires "public" at start of \2 and \4.
-  (tags-query-replace
-   (concat
-    "^\\(<<<<<<< HEAD\n\\)"
-    "\\( *public .*\n\\)"
-    (concat "\\(\\(?:\\(?:[^|\n][^\n]*\\)?\n\\)*" vertical-bar-separator "\\)"
-            "\\( *public .*\n\\)"
-            "\\(\\(?:\\(?:[^=\n][^\n]*\\)?\n\\)*=======\n\\)"
-            "\\4")
-    "\\2\\1\\3\\5")
-   ;; The more general version, which I don't seem to need.
-   (if nil
-       )
-
-   ;; Resolve the first line of a diff, when OTHER has been edited.
-   ;; This version requires "public" at start of \2 and \4.
-   (tags-query-replace
-    (concat
-     "^\\(<<<<<<< HEAD\n\\)"
-     "\\( *public .*\n\\)"
-     "\\(\\(?:\\(?:[^|\n][^\n]*\\)?\n\\)*|||||||.*\n\\)"
-     "\\2"
-     "\\(\\(?:\\(?:[^=\n][^\n]*\\)?\n\\)*=======\n\\)"
-     "\\( *public .*\n\\)")
-    "\\5\\1\\3\\4")
-   )
-  )
+(defun reduce-diffs-same-prefix ()
+  "Reduce diffs that have the same prefix."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (apply #'query-replace-regexp same-prefix-regexes)
+    ))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

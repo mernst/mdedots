@@ -1365,6 +1365,11 @@ If optional arg COUNT is specified, return the COUNTth occurrance from the end."
       (setq index (1- index)))
     result))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Replacement
+;;;
+
 ;;; Replace-regexp
 
 ;;; Are these still necessary?  That does, do replace-string and replace-regexp still modify mark and the mark ring?  I can use
@@ -1424,6 +1429,16 @@ screen column."
     (erase-buffer)
     (insert string)
     (unused-char-in-buffer)))
+
+(defun replace-all-occurrrences-iteratively (regex replacement)
+  "Replace all occurrences of REGEX by REPLACEMENT, iterating until
+no more occurrences of REGEX appear in the buffer."
+  (save-excursion
+    (while (progn
+             (goto-char (point-min))
+             (re-search-forward regex nil t))
+      (goto-char (match-beginning 0))
+      (replace-regexp-noninteractive regex replacement))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

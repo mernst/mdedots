@@ -1689,17 +1689,6 @@ This can make comparisons easier."
     (replace-regexp-noninteractive "^\\([^ :]+:\\)[0-9]+" "\\1")))
 
 
-(defun replace-all-occurrrences-iteratively (regex replacement)
-  "Replace all occurrences of REGEX by REPLACEMENT, iterating until
-no more occurrences of REGEX appear in the buffer."
-  (save-excursion
-    (while (progn
-             (goto-char (point-min))
-             (re-search-forward regex nil t))
-      (goto-char (match-beginning 0))
-      (replace-regexp-noninteractive regex replacement))))
-
-
 ;; Dramatically improve performance in Emacs 24
 (setq-default bidi-display-reordering nil)
 
