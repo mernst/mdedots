@@ -55,10 +55,11 @@
               tree-sitter-langs tree-sitter-langs tree-sitter-langs
               tree-sitter-langs treesit-auto treesit-auto treesit-auto
               treesit-auto verilog-mode verilog-mode verilog-mode
-              verilog-mode which-key which-key which-key which-key
-              whisper window-tool-bar window-tool-bar window-tool-bar
-              window-tool-bar yaml-mode yaml-mode yaml-mode yaml-mode
-              yasnippet yasnippet yasnippet yasnippet))
+              verilog-mode websocket which-key which-key which-key
+              which-key whisper window-tool-bar window-tool-bar
+              window-tool-bar window-tool-bar yaml-mode yaml-mode
+              yaml-mode yaml-mode yasnippet yasnippet yasnippet
+              yasnippet))
  '(package-vc-selected-packages
    '((whisper :url "https://github.com/natrys/whisper.el" :branch
               "master")
