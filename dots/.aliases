@@ -113,7 +113,7 @@ remake() {
 }
 alias gw='./gradlew -q'
 # shellcheck disable=SC2154
-alias cfassemble='(cd $cf && cronic --duplicate-stderr ./gradlew assembleForJavac && true)'
+alias cfassemble='(cd $cf && cronic git pull && cronic --duplicate-stderr ./gradlew assembleForJavac && true)'
 alias cfpublish='(cd $cf && cronic --duplicate-stderr ./gradlew publishToMavenLocal && true)'
 # "rmjunk" alias is too dangerous.
 # alias rmjunk='junk -c \rm'
