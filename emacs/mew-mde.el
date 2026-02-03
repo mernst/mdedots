@@ -669,12 +669,12 @@
 (defun string-contains-emoji-p (s)
   "Return non-nil if string S contains any character likely to be an emoji."
   (let ((contains-emoji nil))
-    (dolist (c (string-to-list s))
+    (cl-dolist (c (string-to-list s))
       ;; Check a common range for emojis (U+1F000 to U+1FAFF)
       ;; This is not exhaustive as emoji definitions change and involve sequences
       (when (and (>= c #x1F000) (<= c #x1FAFF))
         (setq contains-emoji t)
-        (return)))
+        (cl-return t)))
     contains-emoji))
 
 (defun string-contains-chinese-p (s)

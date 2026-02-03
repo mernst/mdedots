@@ -4,21 +4,16 @@
 ;;; Michael Ernst <mernst@csail.mit.edu>
 
 ;;; Implementations of
-;;;  * Common Lisp functions not in cl.el
+;;;  * Common Lisp functions not in cl-lib.el
 ;;;  * Functions that use those
-;;;  * A few basic cl.el functions, to forego loading the entire package
+;;;  * A few basic cl-lib.el functions, to forego loading the entire package
 
 ;; This file is intended to be lean, not to provide full Common Lisp
 ;; compatibility; efforts have been made to exclude the extraneous.
-;; This file is self-contained; it does not require that you load cl.el
+;; This file is self-contained; it does not require that you load cl-lib.el
 ;; also.  An effort has been made, however, to make it compatible with
-;; cl.el, so that either can be loaded after the other.
-;; The following cl.el functions are identically redefined here, but made
-;; inlineable:
-;;   first second third fourth
-;;   caar cadr cdar cddr
-;;   plusp minusp oddp evenp abs
-;; The following cl.el functions are compatibly redefined here:
+;; cl-lib.el, so that either can be loaded after the other.
+;; The following cl-lib.el functions are compatibly redefined here:
 ;;   [none]
 ;; The following Emacs built-in functions are compatibly redefined here:
 ;;   sort
@@ -27,15 +22,16 @@
 (provide 'util-clmde)
 (provide 'util-cl-mde)
 
-(eval-when-compile (require 'cl))
+(eval-when-compile (require 'cl-lib))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Bug fixes
 ;;;
 
-;; cl.el uses copy-vector but doesn't define it.
-(defun copy-vector (vector)
-  (copy-sequence vector))
+;; Commented out, 2026-02-03.
+;; ;; cl-lib.el uses copy-vector but doesn't define it.
+;; (defun copy-vector (vector)
+;;   (copy-sequence vector))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 12. Numbers
@@ -67,7 +63,7 @@
 
 ;;; 2. Concatenating, mapping, and reducing sequences
 
-;; This seems to trounce the cl.el definition; I assume that's intentional.
+;; This seems to trounce the cl-lib.el definition; I assume that's intentional.
 
 ;; Which is more efficient:  calling this with first argument nil or
 ;; calling mapcar and throwing away the result?
@@ -108,7 +104,7 @@ which case nil is returned."
 
 ;;; 3. Modifying sequences
 
-;;; Incompatible with cl.el's version, which accepts optional arguments.
+;;; Incompatible with cl-lib.el's version, which accepts optional arguments.
 ;; ;; I should generalize this.
 ;; (defun substitute (newitem olditem sequence)
 ;;   "Substitute NEWITEM for OLDITEM in SEQUENCE.  Only works on strings for now."
@@ -120,8 +116,8 @@ which case nil is returned."
   "Substitute NEWCHAR for instances of OLDCHAR in STRING.
 NEWCHAR and OLDCHAR are characters."
   `(string-substitute-opt ,newchar
-                            (regexp-quote (char-to-string ,oldchar))
-                            ,string))
+                          (regexp-quote (char-to-string ,oldchar))
+                          ,string))
 
 ;; Optimized version.  oldchar-regexp should only match one-character strings.
 (defun string-substitute-opt (newchar oldchar-regexp string)
@@ -133,8 +129,8 @@ NEWCHAR and OLDCHAR are characters."
 
 ;;; 4.  Searching sequences for items
 
-;;; Incompatible with cl.el's version, which accepts optional arguments.
-;; ;; Actually could use cl.el's member-if for this.
+;;; Incompatible with cl-lib.el's version, which accepts optional arguments.
+;; ;; Actually could use cl-lib.el's member-if for this.
 ;; (defun find-if (test sequence)
 ;;   "Return the first element satisfying TEST in SEQUENCE, or nil if none do."
 ;;   (let ((limit (length sequence))
@@ -159,7 +155,7 @@ NEWCHAR and OLDCHAR are characters."
         (setq index (1+ index))))
     result))
 
-;;; Incompatible with cl.el's version, which accepts optional arguments.
+;;; Incompatible with cl-lib.el's version, which accepts optional arguments.
 ;; (defun count (item sequence)
 ;;   "Return the number of times that ITEM appears in SEQUENCE; test with `equal'."
 ;;   (let ((limit (length sequence))
@@ -240,7 +236,7 @@ N defaults to 1.  If LIST has fewer than N elements, NIL is returned."
 
 ;; Originally lifted from gnus.
 
-;;; Incompatible with cl.el's version, which accepts optional arguments.
+;;; Incompatible with cl-lib.el's version, which accepts optional arguments.
 ;; (defun set-difference (list1 list2)
 ;;   "Return an in-order list of elements of LIST1 that do not appear in LIST2."
 ;;   (let ((result (copy-sequence list1)))
@@ -250,7 +246,7 @@ N defaults to 1.  If LIST has fewer than N elements, NIL is returned."
 ;;     result
 ;;     ))
 
-;;; Incompatible with cl.el's version, which accepts optional arguments.
+;;; Incompatible with cl-lib.el's version, which accepts optional arguments.
 ;; (defun intersection (list1 list2)
 ;;   "Return a list of elements that appear in both LIST1 and LIST2."
 ;;   (let (result)
@@ -371,7 +367,7 @@ beginning and end, of STRING."
 ;;; Structures
 ;;;
 
-;; This works with the cl.el structures
+;; This works with the cl-lib.el structures
 
 ;; Return an index that can be used by aset and aref.  SLOTNAME is a
 ;; string or a symbol, with or without a leading colon.
@@ -487,9 +483,9 @@ function instead of the defaults listed above."
                                        (concat "T if OBJECT is a "
                                                (symbol-name name) ".")
                                        (list 'and
-                                        '(vectorp object)
-                                        (list '= '(length object) (1+ L))
-                                        (list 'eq '(aref object 0)
-                                              (list 'quote name)))))))
+                                             '(vectorp object)
+                                             (list '= '(length object) (1+ L))
+                                             (list 'eq '(aref object 0)
+                                                   (list 'quote name)))))))
     (cons 'progn body)))
 (put 'def-mdecl-struct 'edebug-form-spec '(&rest form))
