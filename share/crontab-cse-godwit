@@ -59,7 +59,7 @@ EMAILMICAT="micat4611@gmail.com"
 # PERLLIB=/homes/gws/mernst/bin/src/plume-scripts
 # Default path: /usr/bin:/bin
 # `uname`-`uname -m` does not work, so hardcode Linux-x86_64
-PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws/mernst/bin/install/jtreg/bin:/homes/gws/mernst/bin/install/texlive/2023/bin/x86_64-linux:/homes/gws/mernst/.local/bin/:/homes/gws/mernst/bin/src/plume-scripts:${INV}/daikon/scripts:/homes/gws/mernst/java/jdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/lib/java/apache-ant-1.10.14/bin
+PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws/mernst/bin/install/jtreg/bin:/homes/gws/mernst/bin/install/texlive/2023/bin/x86_64-linux:/homes/gws/mernst/.local/bin/:/homes/gws/mernst/bin/src/plume-scripts:${INV}/daikon/scripts:/homes/gws/mernst/java/jdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/lib/java/apache-ant-1.10.15/bin:/homes/gws/mernst/.sdkman/candidates/ant/current/bin/ant
 ###
 ### Testing (every minute)
 ###
