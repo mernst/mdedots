@@ -220,6 +220,9 @@ spam_search("from:SeguridadHB")
 spam_search("(from:Avantor OR from:ATC-NY OR from:SimpsonScarborough OR from:VinFuture)")
 spam_search('(from:"Check Point" OR from:"Staples Technology Solutions")')
 spam_search("(from:FB)")
+spam_search('(from:"Amalia Meyer" OR from:"Anna Müller")')
+spam_search('(from:"AAA" OR from:"topgolf" OR from:"Open Access Government")')
+
 input("Press ENTER")
 
 print("Suspicious senders, part 3")
