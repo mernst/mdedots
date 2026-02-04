@@ -294,7 +294,7 @@ export sbook="$gsebase"/program-analysis-book
 if [ -d /scratch/mernst/clones ]; then
   export harvest=/scratch/mernst/clones/harvest
   export inv=/scratch/mernst/clones/invariants
-  export pl=/scratch/mernst/clones/plume-lib
+  export pl=/scratch/mernst/clones/java/plume-lib
   export repair=/scratch/mernst/clones/repair
   export t=/scratch/mernst/clones/types
   export testing=/scratch/mernst/clones/testing
