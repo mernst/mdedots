@@ -487,7 +487,9 @@
 
 
 (with-eval-after-load "compile"
-  (darken-face-foreground 'compilation-warning))
+  (darken-face-foreground 'compilation-warning)
+  (setq compilation-max-output-line-length 4000) ; default 400
+  )
 
 ;; This doesn't work because all of these are inherited, not directly defined.
 (with-eval-after-load "dired"

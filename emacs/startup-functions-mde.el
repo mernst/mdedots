@@ -712,7 +712,7 @@ Not guaranteed to work in all cases."
 ;;            (< (length (ad-get-arg 1)) 1000))
 ;;       ;; not string=
 ;;       (progn
-;;         (eval-when-compile (require 'cl))
+;;         (eval-when-compile (require 'cl-lib))
 ;;         (ad-set-arg 1 (cl-remove-duplicates (ad-get-arg 1) ':test (function equal))))))
 
 

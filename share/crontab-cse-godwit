@@ -59,21 +59,21 @@ EMAILMICAT="micat4611@gmail.com"
 # PERLLIB=/homes/gws/mernst/bin/src/plume-scripts
 # Default path: /usr/bin:/bin
 # `uname`-`uname -m` does not work, so hardcode Linux-x86_64
-PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws/mernst/bin/install/jtreg/bin:/homes/gws/mernst/bin/install/texlive/2023/bin/x86_64-linux:/homes/gws/mernst/.local/bin/:/homes/gws/mernst/bin/src/plume-scripts:$INV/daikon/scripts:/homes/gws/mernst/java/jdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/lib/java/apache-ant-1.10.14/bin
+PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws/mernst/bin/install/jtreg/bin:/homes/gws/mernst/bin/install/texlive/2023/bin/x86_64-linux:/homes/gws/mernst/.local/bin/:/homes/gws/mernst/bin/src/plume-scripts:${INV}/daikon/scripts:/homes/gws/mernst/java/jdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/lib/java/apache-ant-1.10.15/bin:/homes/gws/mernst/.sdkman/candidates/ant/current/bin/ant
 ###
 ### Testing (every minute)
 ###
-# * * * * *	$AFS touch $HOME/.mail/.time-to-read-hourly
-# * * * * *	$AFS echo -e " " | $MAILCOMMAND -s "Cronmail" $EMAIL
-# * * * * *	$AFS echo "$PATH"
-# * * * * *	$AFS $HOME/bin/share/mail-checkdates
+# * * * * *	touch $HOME/.mail/.time-to-read-hourly
+# * * * * *	echo -e " " | $MAILCOMMAND -s "Cronmail" $EMAIL
+# * * * * *	echo "$PATH"
+# * * * * *	$HOME/bin/share/mail-checkdates
 ###
 ### Testing (once; can happen daily)
 ###
-# 16 7 * * *	$AFS $CRONIC make -C $HOME/class/331/18au validate
-# 17 7 * * *	cd $HOME/class/331/18au; $AFS $CRONIC git pull
-# 18 7 * * *	cd $HOME/class/331/18au/handouts; $AFS make public compareall
-# 22 7 * * *	$AFS $CRONIC make -C $HOME/class/140/13wi validate
+# 16 7 * * *	$CRONIC make -C $HOME/class/331/18au validate
+# 17 7 * * *	cd $HOME/class/331/18au; $CRONIC git pull
+# 18 7 * * *	cd $HOME/class/331/18au/handouts; make public compareall
+# 22 7 * * *	$CRONIC make -C $HOME/class/140/13wi validate
 ###
 ### Once ever
 ###
@@ -81,7 +81,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 ###
 ### Minutely
 ###
-# * * * * *	$AFS COMMAND
+# * * * * *	COMMAND
 ###
 ### Hourly
 ###
@@ -89,57 +89,57 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 ###
 ### Daily -- update crontab
 ###
-01 0 * * *	$AFS $CRONIC crontab $HOME/bin/share/crontab-cse-godwit
+01 0 * * *	$CRONIC crontab $HOME/bin/share/crontab-cse-godwit
 ###
 ### Daily
 ###
-03 0 * * *	$AFS echo -n "Clear out inbox from yesterday" | $MAILCOMMAND -s "Clear inbox from yesterday" $EMAIL
-# 04 0 * * *	$AFS echo -e "Local file ~/prof/grants/google/gsoc/2017-students.txt .\nAuto-browse to https://summerofcode.withgoogle.com/dashboard/proposals/shared/?sp-order=-last_update_created_at&sp-organization=4906659840262144" | $MAILCOMMAND -s "Check GSoC applications" $EMAIL
+03 0 * * *	echo -n "Clear out inbox from yesterday" | $MAILCOMMAND -s "Clear inbox from yesterday" $EMAIL
+# 04 0 * * *	echo -e "Local file ~/prof/grants/google/gsoc/2017-students.txt .\nAuto-browse to https://summerofcode.withgoogle.com/dashboard/proposals/shared/?sp-order=-last_update_created_at&sp-organization=4906659840262144" | $MAILCOMMAND -s "Check GSoC applications" $EMAIL
 # Not  /bin/rm `/usr/bin/find $HOME -name core -type f`  because rm might get no args
-# 19 1 * * *	$AFS /usr/bin/find $HOME -path $HOME/.snapshot -prune -o -name core -type f | xargs -r rm
-# 20 1 * * *	$AFS echo -n "Auto-browse to https://catalysttools.washington.edu/gopost/board/tws8/15964/" | $MAILCOMMAND -s "Read 331 forum" $EMAIL
+# 19 1 * * *	/usr/bin/find $HOME -path $HOME/.snapshot -prune -o -name core -type f | xargs -r rm
+# 20 1 * * *	echo -n "Auto-browse to https://catalysttools.washington.edu/gopost/board/tws8/15964/" | $MAILCOMMAND -s "Read 331 forum" $EMAIL
 # Switched to weekly
-# 21 1 * * *	$AFS $HOME/bin/share/mail-checkdates
+# 21 1 * * *	$HOME/bin/share/mail-checkdates
 # Testing:  see whether this solves the problem with $HOME/calendar not being found
-21 1 * * *	$AFS $CRONIC cat $HOME/calendar > /dev/null
+21 1 * * *	$CRONIC cat $HOME/calendar > /dev/null
 # Do both of the following work?  Why am I not seeing two errors instead of one?
-22 1 * * *	$AFS $HOME/bin/share/mail-calendar
-23 1 * * *	$AFS $CRONIC $HOME/bin/Linux-x86_64/calendar -f $HOME/calendar
-24 1 * * *	$AFS $CRONIC make -C $HOME/bib test
-30 2 * * *	$AFS $HOME/bin/share/make-mail-aliases
+22 1 * * *	$HOME/bin/share/mail-calendar
+23 1 * * *	$CRONIC $HOME/bin/Linux-x86_64/calendar -f $HOME/calendar
+24 1 * * *	$CRONIC make -C $HOME/bib test
+30 2 * * *	$HOME/bin/share/make-mail-aliases
 # Ignore stderr to ignore "No such file or directory" errors.
-31 2 * * *	$AFS $CRONIC find $HOME -name SKIP-REQUIRE-JAVADOC 2>/dev/null
-31 2 * * *	$AFS $CRONIC find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name SKIP-REQUIRE-JAVADOC -print0 \) 2>/dev/null
-# 24 1 * * *	$AFS $HOME/bin/share/make-procmailrc-all
-# Comment out at CSE for now:  31 1 * * *	$AFS $DAIKONDIR/scripts/buildtest-check
-# 31 1 * * *	$AFS $HOME/bin/share/check-for-misdelivered-mail 2>&1 | grep -v "^No remote authentication"
-# 32 1 * * *	$AFS chgrp invariants `find /g4/projects/invariants/.CVS -type d -print` > /dev/null
+31 2 * * *	$CRONIC find $HOME -name SKIP-REQUIRE-JAVADOC 2>/dev/null
+31 2 * * *	$CRONIC find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name SKIP-REQUIRE-JAVADOC -print0 \) 2>/dev/null
+# 24 1 * * *	$HOME/bin/share/make-procmailrc-all
+# Comment out at CSE for now:  31 1 * * *	$DAIKONDIR/scripts/buildtest-check
+# 31 1 * * *	$HOME/bin/share/check-for-misdelivered-mail 2>&1 | grep -v "^No remote authentication"
+# 32 1 * * *	chgrp invariants `find /g4/projects/invariants/.CVS -type d -print` > /dev/null
 # I can't get this to work in Gnus 5.4.65
-# 30 1 * * *	$AFS emacs -l $HOME/.emacs -l gnus -l gnus-kill -f debug-on-error -f gnus-batch-score "uw.announce"
+# 30 1 * * *	emacs -l $HOME/.emacs -l gnus -l gnus-kill -f debug-on-error -f gnus-batch-score "uw.announce"
 # This is separated in time from the other jobs, because if it runs while they are running, it may see their temporary files.
-# 00 4 * * *	$AFS ${JAVA} org.plumelib.multiversioncontrol.MultiVersionControl --quiet status --search=true --cvs-executable=/usr/bin/cvs --ignore-dir=$HOME/bin/install-older/gc-7.1/libatomic_ops-1.2 --ignore-dir=$HOME/bin/install-old/gc-7.1/libatomic_ops-1.2 --ignore-dir=$HOME/bin/install/gc-7.1/libatomic_ops-1.2 --ignore-dir=$HOME/public_html/crystal-repositories --ignore-dir=$TYPES/cf-eval1/interning/lucene --ignore-dir=$TYPES/interning/xerces-j --ignore-dir=$HOME/Dropbox/Synoptic --ignore-dir=$HOME/Dropbox/crystal --ignore-dir=$HOME/prof/grants/2010-02-nsf-dams/csa --ignore-dir=$HOME/research/generics --ignore-dir=$HOME/research/fcut --ignore-dir=$HOME/java/javaparser-read-only
+# 00 4 * * *	${JAVA} org.plumelib.multiversioncontrol.MultiVersionControl --quiet status --search=true --cvs-executable=/usr/bin/cvs --ignore-dir=$HOME/bin/install-older/gc-7.1/libatomic_ops-1.2 --ignore-dir=$HOME/bin/install-old/gc-7.1/libatomic_ops-1.2 --ignore-dir=$HOME/bin/install/gc-7.1/libatomic_ops-1.2 --ignore-dir=$HOME/public_html/crystal-repositories --ignore-dir=$TYPES/cf-eval1/interning/lucene --ignore-dir=$TYPES/interning/xerces-j --ignore-dir=$HOME/Dropbox/Synoptic --ignore-dir=$HOME/Dropbox/crystal --ignore-dir=$HOME/prof/grants/2010-02-nsf-dams/csa --ignore-dir=$HOME/research/generics --ignore-dir=$HOME/research/fcut --ignore-dir=$HOME/java/javaparser-read-only
 ## Removed from the above:
 # --ignore-dir=$HOME/Dropbox/cse331-11wi-repos --ignore-dir=$HOME/Dropbox/cse403-11sp-repos
 # Removed from the below: \nAuto-browse to https://uwcsephdadmits2023.slack.com/
-30 5 * * 1-5    $AFS echo -e "Auto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
-30 12 * * 1-5   $AFS echo -e "Auto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
-11 6 * * *	$AFS $CRONIC make -C $HOME/public_html style-check
+30 5 * * 1-5    echo -e "Auto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
+30 12 * * 1-5   echo -e "Auto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
+11 6 * * *	$CRONIC make -C $HOME/public_html style-check
 ###
 ### Daily -- verify that Checker Framework tests pass; also use for timing information
 ###
 # Why is this "nopull"?  Only to prevent problems with GitHub authentication?
-02 0 * * *	$AFS $CRONIC make -C ${TYPES}/notes all-nostubparser-nopull-fileoutput
-35 0 * * *	cd $HOME/java/plume-lib/bcel-util; $AFS $CRONIC ./gradlew build
-40 0 * * *	cd $HOME/java/plume-lib/lookup; $AFS $CRONIC ./gradlew build
-45 0 * * *	JAVA_VER=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1 | sed 's/-ea//') && [ "$JAVA_VER" != "8" ] && (cd $HOME/java/plume-lib/options; $AFS $CRONIC ./gradlew build javadoc)
-00 2 * * *	(uptime && export CHECKERFRAMEWORK=${CHECKERFRAMEWORK} && cd ${CHECKERFRAMEWORK} && uptime && $AFS $CRONIC time ${CHECKERFRAMEWORK}/checker/bin-devel/test-daikon.sh && uptime) > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORK")-$(date +\%Y-\%m-\%d).txt
-# 00 2 * * *	export CHECKERFRAMEWORK=${CHECKERFRAMEWORKTIMINGONE} && cd ${CHECKERFRAMEWORKTIMINGONE} && $AFS time ${CHECKERFRAMEWORKTIMINGONE}/checker/bin-devel/test-daikon.sh > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORKTIMINGONE")-$(date +\%Y-\%m-\%d).txt
-# 00 3 * * *	export CHECKERFRAMEWORK=${CHECKERFRAMEWORKTIMINGTWO} && cd ${CHECKERFRAMEWORKTIMINGTWO} && $AFS time ${CHECKERFRAMEWORKTIMINGTWO}/checker/bin-devel/test-daikon.sh > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORKTIMINGTWO")-$(date +\%Y-\%m-\%d).txt
+02 0 * * *	$CRONIC make -C ${TYPES}/notes all-nostubparser-nopull-fileoutput
+35 0 * * *	cd $HOME/java/plume-lib/bcel-util; $CRONIC ./gradlew build
+40 0 * * *	cd $HOME/java/plume-lib/lookup; $CRONIC ./gradlew build
+45 0 * * *	JAVA_VER=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1 | sed 's/-ea//') && [ "$JAVA_VER" != "8" ] && (cd $HOME/java/plume-lib/options; $CRONIC ./gradlew build javadoc)
+00 2 * * *	(uptime && export CHECKERFRAMEWORK=${CHECKERFRAMEWORK} && cd ${CHECKERFRAMEWORK} && uptime && $CRONIC time ${CHECKERFRAMEWORK}/checker/bin-devel/test-daikon.sh && uptime) > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORK")-$(date +\%Y-\%m-\%d).txt
+# 00 2 * * *	export CHECKERFRAMEWORK=${CHECKERFRAMEWORKTIMINGONE} && cd ${CHECKERFRAMEWORKTIMINGONE} && time ${CHECKERFRAMEWORKTIMINGONE}/checker/bin-devel/test-daikon.sh > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORKTIMINGONE")-$(date +\%Y-\%m-\%d).txt
+# 00 3 * * *	export CHECKERFRAMEWORK=${CHECKERFRAMEWORKTIMINGTWO} && cd ${CHECKERFRAMEWORKTIMINGTWO} && time ${CHECKERFRAMEWORKTIMINGTWO}/checker/bin-devel/test-daikon.sh > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORKTIMINGTWO")-$(date +\%Y-\%m-\%d).txt
 ###
 ### Daily -- Checker Framework case studies, so I can observe progress over time
 ###
-# 00 4 * * *	cd $INV/daikon-branch-check-index/java && make check-index > check-index-output-`date +\%Y-\%m-\%d`.txt 2>&1
-# 01 4 * * *	cd $INV/daikon-branch-check-index/java && rm -f check-index-output.txt && ln -s check-index-output-`date +\%Y-\%m-\%d`.txt check-index-output.txt
+# 00 4 * * *	cd ${INV}/daikon-branch-check-index/java && make check-index > check-index-output-`date +\%Y-\%m-\%d`.txt 2>&1
+# 01 4 * * *	cd ${INV}/daikon-branch-check-index/java && rm -f check-index-output.txt && ln -s check-index-output-`date +\%Y-\%m-\%d`.txt check-index-output.txt
 # 15 4 * * *	cd ${TYPES}/cf-case-studies/joda-time-fork-mernst-branch-check-index && mvn clean compile > check-index-output-`date +\%Y-\%m-\%d`.txt 2>&1
 # 16 4 * * * 	cd ${TYPES}/cf-case-studies/joda-time-fork-mernst-branch-check-index && rm -f check-index-output.txt && ln -s check-index-output-`date +\%Y-\%m-\%d`.txt check-index-output.txt
 # 30 4 * * *	cd ${TYPES}/cf-case-studies/bc-java-casestudy && gradle build > check-signedness-output-`date +\%Y-\%m-\%d`.txt 2>&1
@@ -156,53 +156,53 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 # As of 8/98, LCD-datafile hadn't been updated since 3/97.
 # 3 5 * * Sun       $HOME/bin/share/update-lcd-datafile
 # Better to use etags in $HOME/bin/linux/; can't build for Solaris.
-11 4 * * Sun	$AFS $HOME/bin/share/mail-checkdates
-12 4 * * Sun	cd $HOME/emacs; $AFS /usr/bin/etags *.el
-10 5 * * *	$AFS $HOME/bin/share/mail-stackoverflow
-58 23 * * Tue	$AFS echo "Auto-browse to https://my.ooma.com/phone/voicemail ; auto-browse to https://voice.google.com/u/0/voicemail" | $MAILCOMMAND -s "Listen to voicemail" $EMAIL
-58 23 * * Fri	$AFS echo "Auto-browse to https://my.ooma.com/phone/voicemail ; auto-browse to https://voice.google.com/u/0/voicemail" | $MAILCOMMAND -s "Listen to voicemail" $EMAIL
+11 4 * * Sun	$HOME/bin/share/mail-checkdates
+12 4 * * Sun	cd $HOME/emacs; /usr/bin/etags *.el
+10 5 * * *	$HOME/bin/share/mail-stackoverflow
+58 23 * * Tue	echo "Auto-browse to https://my.ooma.com/phone/voicemail ; auto-browse to https://voice.google.com/u/0/voicemail" | $MAILCOMMAND -s "Listen to voicemail" $EMAIL
+58 23 * * Fri	echo "Auto-browse to https://my.ooma.com/phone/voicemail ; auto-browse to https://voice.google.com/u/0/voicemail" | $MAILCOMMAND -s "Listen to voicemail" $EMAIL
 ###
 ### Weekly email reminders
 ###
 # A reason not to just put these in my calendar file is that in my calendar
 # file, I will get multiple reminders (starting the business day before) whereas
 # this approach provides just one reminder.
-06 18 * * Sun	$AFS echo -e "Ping or close unreproducible issues:\nauto-browse to https://github.com/typetools/checker-framework/issues?q=is\%3Aissue+is\%3Aopen+label\%3AUnreproducible\n\nauto-browse to https://github.com/randoop/randoop/issues?q=is\%3Aissue+is\%3Aopen+label\%3AUnreproducible\n\nSince the original poster has not submitted a reproducible test case, I am closing this issue.\nWe can re-open it if someone shows how to reproduce the problem." | $MAILCOMMAND -s "Ping or close unreproducible issues" $EMAIL
-07 18 * * Sun	$AFS echo "Organize to-do list, with concrete actions" | $MAILCOMMAND -s "Organize to-do list" $EMAIL
-05 08 * * Mon	$AFS echo -e " " | $MAILCOMMAND -s "Tally up timelog, send progress report; include weekly goals" $EMAIL
-09 18 * * Sun	$AFS echo -e "Run:\nmdevc && mvc status --search-prefix" | $MAILCOMMAND -s "Version control maintenance" $EMAIL
-# 07 1 * * Mon	$AFS echo -e "See file ~/private/to-do-lunch" | $MAILCOMMAND -s "Set up lunch with a faculty member" $EMAIL
-10 1 * * Tue	$AFS echo -e "auto-browse to https://github.com/pulls/assigned \nauto-browse to https://github.com/issues/assigned \nauto-browse to https://github.com/pulls \nauto-browse to https://github.com/typetools/jdk/pulls \nauto-browse to https://github.com/notifications " | $MAILCOMMAND -s "GitHub pull requests and issues" $EMAIL
-08 1 * * Tue	$AFS echo -e " " | $MAILCOMMAND -s "Write home (including Dave)" $EMAILPERSONAL
-# 09 1 * * Tue	$AFS echo -e "Look for UW regalia: auto-browse to https://seattle.craigslist.org/search/sss?query=uw+regalia&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=uw+robe&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+regalia&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+robe&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=uw+gown&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+gown&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=uw+doctoral&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+doctoral&sort=rel" | $MAILCOMMAND -s "Look for UW regalia" $EMAILPERSONAL
-54 4 * * Sat	$AFS echo -e "Read daily and weekly email, run: mail-review-weekly" | $MAILCOMMAND -s "Read daily and weekly email, run: mail-review-weekly" $EMAIL
+06 18 * * Sun	echo -e "Ping or close unreproducible issues:\nauto-browse to https://github.com/typetools/checker-framework/issues?q=is\%3Aissue+is\%3Aopen+label\%3AUnreproducible\n\nauto-browse to https://github.com/randoop/randoop/issues?q=is\%3Aissue+is\%3Aopen+label\%3AUnreproducible\n\nSince the original poster has not submitted a reproducible test case, I am closing this issue.\nWe can re-open it if someone shows how to reproduce the problem." | $MAILCOMMAND -s "Ping or close unreproducible issues" $EMAIL
+07 18 * * Sun	echo "Organize to-do list, with concrete actions" | $MAILCOMMAND -s "Organize to-do list" $EMAIL
+05 08 * * Mon	echo -e " " | $MAILCOMMAND -s "Tally up timelog, send progress report; include weekly goals" $EMAIL
+09 18 * * Sun	echo -e "Run:\nmdevc && mvc status --search-prefix" | $MAILCOMMAND -s "Version control maintenance" $EMAIL
+# 07 1 * * Mon	echo -e "See file ~/private/to-do-lunch" | $MAILCOMMAND -s "Set up lunch with a faculty member" $EMAIL
+10 1 * * Tue	echo -e "auto-browse to https://github.com/pulls/assigned \nauto-browse to https://github.com/issues/assigned \nauto-browse to https://github.com/pulls \nauto-browse to https://github.com/typetools/jdk/pulls \nauto-browse to https://github.com/notifications " | $MAILCOMMAND -s "GitHub pull requests and issues" $EMAIL
+08 1 * * Tue	echo -e " " | $MAILCOMMAND -s "Write home (including Dave)" $EMAILPERSONAL
+# 09 1 * * Tue	echo -e "Look for UW regalia: auto-browse to https://seattle.craigslist.org/search/sss?query=uw+regalia&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=uw+robe&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+regalia&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+robe&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=uw+gown&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+gown&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=uw+doctoral&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+doctoral&sort=rel" | $MAILCOMMAND -s "Look for UW regalia" $EMAILPERSONAL
+54 4 * * Sat	echo -e "Read daily and weekly email, run: mail-review-weekly" | $MAILCOMMAND -s "Read daily and weekly email, run: mail-review-weekly" $EMAIL
 ###
 ### Monthly email reminders
 ###
 # Delete spam once per month
-10 4 3 * *	$AFS echo -e "Delete spam, run: mail-review-spam" | $MAILCOMMAND -s "Delete spam, run: mail-review-spam" $EMAIL
-# 09 4 3 * *	$AFS echo -e "On home computer, clean up docker images" | $MAILCOMMAND -s "On home computer, run: \n docker image prune && docker images | grep none | awk '{ print $3; }' | xargs --no-run-if-empty docker rmi --force && docker stop \$(docker ps -a -q) && docker rm \$(docker ps -a -q)" $EMAIL
-30 4 * * Sun	$AFS echo -e "Clear out inbox from previous week" | $MAILCOMMAND -s "Clear inbox from previous week" $EMAIL
-# 21 4 * * Sun     $AFS echo -e "Auto-browse to https://uwhires.admin.washington.edu/eng/hm/order_profile.cfm?szOrderID=84832&szStageOrder=OrderCandidates.StatusDate&szStageDir=DESC#Candidates" | $MAILCOMMAND -s "Review resumes in UW Hires" $EMAIL
-# 21 4 * * Sun     $AFS echo -e "Auto-browse to https://uwhires.admin.washington.edu/eng/hm/Order_Profile.cfm?szOrderID=84832" | $MAILCOMMAND -s "Review resumes in UW Hires" $EMAIL
-# 20 4 * * Sun	$AFS echo -e "Remind TAs about reading assignments for the next week" | $MAILCOMMAND -s "Reading assignments" $EMAIL
-# 10 8 * * *     $AFS echo -e "Auto-browse to https://my.ooma.com/inbox" | $MAILCOMMAND -s "Check Ooma voicemail" $EMAIL
-# 10 8 * * Mon,Wed,Fri     $AFS echo -e "Auto-browse to https://my.ooma.com/inbox" | $MAILCOMMAND -s "Check Ooma voicemail" $EMAIL
+10 4 3 * *	echo -e "Delete spam, run: mail-review-spam" | $MAILCOMMAND -s "Delete spam, run: mail-review-spam" $EMAIL
+# 09 4 3 * *	echo -e "On home computer, clean up docker images" | $MAILCOMMAND -s "On home computer, run: \n docker image prune && docker images | grep none | awk '{ print $3; }' | xargs --no-run-if-empty docker rmi --force && docker stop \$(docker ps -a -q) && docker rm \$(docker ps -a -q)" $EMAIL
+30 4 * * Sun	echo -e "Clear out inbox from previous week" | $MAILCOMMAND -s "Clear inbox from previous week" $EMAIL
+# 21 4 * * Sun     echo -e "Auto-browse to https://uwhires.admin.washington.edu/eng/hm/order_profile.cfm?szOrderID=84832&szStageOrder=OrderCandidates.StatusDate&szStageDir=DESC#Candidates" | $MAILCOMMAND -s "Review resumes in UW Hires" $EMAIL
+# 21 4 * * Sun     echo -e "Auto-browse to https://uwhires.admin.washington.edu/eng/hm/Order_Profile.cfm?szOrderID=84832" | $MAILCOMMAND -s "Review resumes in UW Hires" $EMAIL
+# 20 4 * * Sun	echo -e "Remind TAs about reading assignments for the next week" | $MAILCOMMAND -s "Reading assignments" $EMAIL
+# 10 8 * * *     echo -e "Auto-browse to https://my.ooma.com/inbox" | $MAILCOMMAND -s "Check Ooma voicemail" $EMAIL
+# 10 8 * * Mon,Wed,Fri     echo -e "Auto-browse to https://my.ooma.com/inbox" | $MAILCOMMAND -s "Check Ooma voicemail" $EMAIL
 # Logging in is required per http://meta.stackoverflow.com/questions/275311/multiple-tags-with-java-not-working but I usually stay logged in, so avaid this message which usually isn't necessary
-# 09 1 * * *	$AFS echo -e "Auto-browse to http://stackoverflow.com/" | $MAILCOMMAND -s "Log into Stack Overflow using personal Google ID" $EMAIL
-# 21 4 * * Tue,Fri	$AFS echo -e "Auto-browse to https://uwhires.admin.washington.edu/eng/hm/Order_Profile.cfm?szOrderID=125016" | $MAILCOMMAND -s "Check UW Hires" $EMAIL
+# 09 1 * * *	echo -e "Auto-browse to http://stackoverflow.com/" | $MAILCOMMAND -s "Log into Stack Overflow using personal Google ID" $EMAIL
+# 21 4 * * Tue,Fri	echo -e "Auto-browse to https://uwhires.admin.washington.edu/eng/hm/Order_Profile.cfm?szOrderID=125016" | $MAILCOMMAND -s "Check UW Hires" $EMAIL
 ###
 ### Weekly for seminars/classes; disable during the summer
 ###
-# 10 23 * * Thu	$AFS ${JAVA} -ea -cp /homes/gws/mernst/bin/src/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl --checkouts=${HOME}/class/403/19we/staff/github-urls.txt update
-# 10 17 * * Wed	$AFS ${JAVA} -ea -cp /homes/gws/mernst/bin/src/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl --checkouts=${HOME}/class/403/19wi/staff/github-urls.txt update
-# 17 5 * * Mon     $AFS echo -e "Auto-browse to http://uwplse.org/meet/lunch/\n\nSubject: PLSE lunch meeting announcement\n\nCould you send an announcement, with title and abstract, of the PLSE lunch on Tuesday?" | $MAILCOMMAND -s "PLSE lunch announcement; and get slides for next week" $EMAIL
-# 17 5 * * Tue     $AFS echo -e "Auto-browse to http://uwplse.org/meet/gm/\n\nSubject: PLSE meeting announcement\n\nCould you send an announcement, with title and abstract, of the PLSE meeting on Wednesday?" | $MAILCOMMAND -s "PLSE announcement; and get slides for next week" $EMAIL
-# 18 5 * * Fri     $AFS echo -e "Auto-browse to http://uwplse.org/meet/serg/\n\nTo: cse590n@cs.washington.edu\nSubject: 590n/SERG next week\nOn Monday, we will discuss\n\n  \n\nwhich is available from http://uwplse.org/meet/serg/ .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need 590n announcement 24 hours in advance" $EMAIL
-# 20 5 * * Mon     $AFS echo -e "Auto-browse to http://uwplse.org/meet/lunch/\n\nTo: plse@cs.washington.edu\nSubject: PLSE lunch this week\nOn Tuesday, we will hear\n\n  .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need PLSE lunch announcement 24 hours in advance" $EMAIL
-# 21 5 * * Tue     $AFS echo -e "Auto-browse to http://uwplse.org/meet/plrg/\n\nTo: cse590p@cs.washington.edu\nSubject: 590p this week\nOn Friday, we will discuss\n\n  \n\nwhich is available from http://uwplse.org/meet/plrg/ .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need 590p announcement 24 hours in advance" $EMAIL
+# 10 23 * * Thu	${JAVA} -ea -cp /homes/gws/mernst/bin/src/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl --checkouts=${HOME}/class/403/19we/staff/github-urls.txt update
+# 10 17 * * Wed	${JAVA} -ea -cp /homes/gws/mernst/bin/src/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl --checkouts=${HOME}/class/403/19wi/staff/github-urls.txt update
+# 17 5 * * Mon     echo -e "Auto-browse to http://uwplse.org/meet/lunch/\n\nSubject: PLSE lunch meeting announcement\n\nCould you send an announcement, with title and abstract, of the PLSE lunch on Tuesday?" | $MAILCOMMAND -s "PLSE lunch announcement; and get slides for next week" $EMAIL
+# 17 5 * * Tue     echo -e "Auto-browse to http://uwplse.org/meet/gm/\n\nSubject: PLSE meeting announcement\n\nCould you send an announcement, with title and abstract, of the PLSE meeting on Wednesday?" | $MAILCOMMAND -s "PLSE announcement; and get slides for next week" $EMAIL
+# 18 5 * * Fri     echo -e "Auto-browse to http://uwplse.org/meet/serg/\n\nTo: cse590n@cs.washington.edu\nSubject: 590n/SERG next week\nOn Monday, we will discuss\n\n  \n\nwhich is available from http://uwplse.org/meet/serg/ .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need 590n announcement 24 hours in advance" $EMAIL
+# 20 5 * * Mon     echo -e "Auto-browse to http://uwplse.org/meet/lunch/\n\nTo: plse@cs.washington.edu\nSubject: PLSE lunch this week\nOn Tuesday, we will hear\n\n  .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need PLSE lunch announcement 24 hours in advance" $EMAIL
+# 21 5 * * Tue     echo -e "Auto-browse to http://uwplse.org/meet/plrg/\n\nTo: cse590p@cs.washington.edu\nSubject: 590p this week\nOn Friday, we will discuss\n\n  \n\nwhich is available from http://uwplse.org/meet/plrg/ .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need 590p announcement 24 hours in advance" $EMAIL
 # Weekly if I am assigned to this.
-# 15 4 * * Fri	$AFS echo -e "Get title and background reading for 1.5 weeks hence.\nGet slides from this week's presenter.\nAuto-browse to http://courses.cs.washington.edu/courses/cse190b/15au/calendar/calendar.html\nSee file ~/class/da-seminar/faculty-presenters.txt" | $MAILCOMMAND -s "DA Seminar work" $EMAIL
+# 15 4 * * Fri	echo -e "Get title and background reading for 1.5 weeks hence.\nGet slides from this week's presenter.\nAuto-browse to http://courses.cs.washington.edu/courses/cse190b/15au/calendar/calendar.html\nSee file ~/class/da-seminar/faculty-presenters.txt" | $MAILCOMMAND -s "DA Seminar work" $EMAIL
 ###
 ### Monthly
 ###
@@ -211,102 +211,102 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 ##  * That approach is not good for "auto-browse" messages.
 ##  * That leads to at least two messages: on the day before and the day of.
 ## Publications (do mine first, to iron out problems; then the group's)
-# 01 1 1 * *	$AFS $CRONIC cp -p $HOME/private/travel-calendar $HOME/public_html/travel/travel-calendar
+# 01 1 1 * *	$CRONIC cp -p $HOME/private/travel-calendar $HOME/public_html/travel/travel-calendar
 ## No longer necessary because under version control.
 # The server version occasionally gets lost
-# 01 1 2 * *	$AFS $CRONIC cp -p $HOME/public_html/travel/travel-calendar $HOME/public_html/travel/travel-calendar-`date +\%Y\%m\%d`
-09 5 2 * *	$AFS PATH=${PATH}:${HOME}/bin/src/git-tools $CRONIC make -C $HOME/public_html/advice/
-10 5 3 * *	$AFS $CRONIC make -C $HOME/public_html/pubs
-#CSAIL#(copy to UW eventually) 10 5 10 * *	$AFS make -C /afs/csail/group/pag/www/pubs
-# 11 5 12 * *	$AFS uvx html5validator -emacs `/usr/bin/find $HOME/public_html -name '*.html' -a \( ! -name 'research-index*-headfoot.html' \) -a \( ! -name 'pubs-bytopic*-headfoot.html' \) -a \( ! -wholename '*public_html/grant/index.html' \) -a \( ! -name agre-networking-on-the-network-20050814.html \)`
-# AFS validation problems with this line; maybe fixed with $AFS in backtick
+# 01 1 2 * *	$CRONIC cp -p $HOME/public_html/travel/travel-calendar $HOME/public_html/travel/travel-calendar-`date +\%Y\%m\%d`
+09 5 2 * *	PATH=${PATH}:${HOME}/bin/src/git-tools $CRONIC make -C $HOME/public_html/advice/
+10 5 3 * *	$CRONIC make -C $HOME/public_html/pubs
+#CSAIL#(copy to UW eventually) 10 5 10 * *	make -C /afs/csail/group/pag/www/pubs
+# 11 5 12 * *	uvx html5validator -emacs `/usr/bin/find $HOME/public_html -name '*.html' -a \( ! -name 'research-index*-headfoot.html' \) -a \( ! -name 'pubs-bytopic*-headfoot.html' \) -a \( ! -wholename '*public_html/grant/index.html' \) -a \( ! -name agre-networking-on-the-network-20050814.html \)`
+# AFS validation problems with this line; maybe fixed with in backtick
 # But, now I get "/afs/csail.mit.edu/u/m/mernst/bin/share/afs-cron-wrapper: Argument list too long"
-# 12 5 12 * *	$AFS uvx html5validator -emacs `$AFS find /afs/csail/group/pag/www/ \( -name '*_manual_html' -o -wholename /afs/csail/group/pag/www/daikon/download/doc/developer.html -o -wholename /afs/csail/group/pag/www/daikon/download/doc/daikon.html -o -name index-tree.html -o -name people-tree.html -o -name jdoc -o -name staging-daikon -o -name '*-old' -o -name application_communities -o -name application_communities_cvs -o -name old-projects.html -o -name continuoustesting-beta -o -name ct-eclipse -o -wholename /afs/csail/group/pag/www/darpa  -o -wholename /afs/csail/group/pag/www/darpa_ac -o -wholename /afs/csail/group/pag/www/jsr308/readonly-repo -o -wholename /afs/csail/group/pag/www/jsr308/releases -o -name java-annotation-design*.html -o -name gnu_lgpl.html -o -name javac_lifecycle \) -prune -o \( -name '*.html' \) -print | $PLUMESCRIPTS/bin/sort-directory-order`
+# 12 5 12 * *	uvx html5validator -emacs `find /afs/csail/group/pag/www/ \( -name '*_manual_html' -o -wholename /afs/csail/group/pag/www/daikon/download/doc/developer.html -o -wholename /afs/csail/group/pag/www/daikon/download/doc/daikon.html -o -name index-tree.html -o -name people-tree.html -o -name jdoc -o -name staging-daikon -o -name '*-old' -o -name application_communities -o -name application_communities_cvs -o -name old-projects.html -o -name continuoustesting-beta -o -name ct-eclipse -o -wholename /afs/csail/group/pag/www/darpa  -o -wholename /afs/csail/group/pag/www/darpa_ac -o -wholename /afs/csail/group/pag/www/jsr308/readonly-repo -o -wholename /afs/csail/group/pag/www/jsr308/releases -o -name java-annotation-design*.html -o -name gnu_lgpl.html -o -name javac_lifecycle \) -prune -o \( -name '*.html' \) -print | $PLUMESCRIPTS/bin/sort-directory-order`
 ## Daikon (at the end of the month, before the beginning-of-month release)
 ## Because of February, end-of-month really should happen by the 28th.
-# 11 5 26 * *	$AFS make -C $DAIKONDIR/java USER=mernst-cron PATH=$HOME/java/jdk/bin:$PATH findbugs
+# 11 5 26 * *	make -C $DAIKONDIR/java USER=mernst-cron PATH=$HOME/java/jdk/bin:$PATH findbugs
 ## Make Javadoc for anything that might fail in `CreateJavadocIndex` .
-00 6 27 * *	cd $HOME/java/plume-lib/bcel-util && $AFS $CRONIC ./gradlew javadoc
-# 01 6 27 * *	cd $TYPES/cf-case-studies/joda-time-fork-mernst-branch-check-index && $AFS mvn -B javadoc:javadoc
-02 6 27 * *	cd $TYPES/checker-framework-branch-master && $AFS $CRONIC ./gradlew javadoc
+00 6 27 * *	cd $HOME/java/plume-lib/bcel-util && $CRONIC ./gradlew javadoc
+# 01 6 27 * *	cd $TYPES/cf-case-studies/joda-time-fork-mernst-branch-check-index && mvn -B javadoc:javadoc
+02 6 27 * *	cd $TYPES/checker-framework-branch-master && $CRONIC ./gradlew javadoc
 30 6 27 * *	$AFS
-# This won't work because $AFS applies to the first comand but not the redirection.
-# 31 6 27 * *	$AFS sh -c "java -cp $HOME/java/plume-lib/javadoc-lookup/build/libs/javadoc-lookup-all.jar org.plumelib.javadoclookup.CreateJavadocIndex > ~/.javadoc-index.el-NEW && mv ~/.javadoc-index.el ~/.javadoc-index.el-OLD && mv ~/.javadoc-index.el-NEW ~/.javadoc-index.el"
-01 02 03 * *     $AFS echo -e "Auto-browse to http://egauge6444.egaug.es/ \n If trouble, see https://artisanelectricinc.com/troubleshoot-monitoring-system/" | $MAILCOMMAND -s "Is solar working?" $EMAILPERSONAL
-02 02 03 * *     $AFS echo -e "Merge contacts; instructions in ~/private/contacts/google-contacts/google-contacts-notes.txt" | $MAILCOMMAND -s "Merge contacts" $EMAILPERSONAL
-#CSAIL 10 5 28 * *	$AFS make -C /afs/csail/group/pag/www/daikon pubs
+# This won't work because applies to the first comand but not the redirection.
+# 31 6 27 * *	sh -c "java -cp $HOME/java/plume-lib/javadoc-lookup/build/libs/javadoc-lookup-all.jar org.plumelib.javadoclookup.CreateJavadocIndex > ~/.javadoc-index.el-NEW && mv ~/.javadoc-index.el ~/.javadoc-index.el-OLD && mv ~/.javadoc-index.el-NEW ~/.javadoc-index.el"
+01 02 03 * *     echo -e "Auto-browse to http://egauge6444.egaug.es/ \n If trouble, see https://artisanelectricinc.com/troubleshoot-monitoring-system/" | $MAILCOMMAND -s "Is solar working?" $EMAILPERSONAL
+02 02 03 * *     echo -e "Merge contacts; instructions in ~/private/contacts/google-contacts/google-contacts-notes.txt" | $MAILCOMMAND -s "Merge contacts" $EMAILPERSONAL
+#CSAIL 10 5 28 * *	make -C /afs/csail/group/pag/www/daikon pubs
 ## TODO: reinstate after this is moved to UW, but too many old links are broken on the MIT website
 ###
 ### Quarterly
 ###
-17 5 3 1 *	$AFS echo -e 'See wisdom files for instructions' | $MAILCOMMAND -s 'Back up Bitwarden data' $EMAIL
-17 5 3 4 *	$AFS echo -e 'See wisdom files for instructions' | $MAILCOMMAND -s 'Back up Bitwarden data' $EMAIL
-17 5 3 7 *	$AFS echo -e 'See wisdom files for instructions' | $MAILCOMMAND -s 'Back up Bitwarden data' $EMAIL
-17 5 3 10 *	$AFS echo -e 'See wisdom files for instructions' | $MAILCOMMAND -s 'Back up Bitwarden data' $EMAIL
+17 5 3 1 *	echo -e 'See wisdom files for instructions' | $MAILCOMMAND -s 'Back up Bitwarden data' $EMAIL
+17 5 3 4 *	echo -e 'See wisdom files for instructions' | $MAILCOMMAND -s 'Back up Bitwarden data' $EMAIL
+17 5 3 7 *	echo -e 'See wisdom files for instructions' | $MAILCOMMAND -s 'Back up Bitwarden data' $EMAIL
+17 5 3 10 *	echo -e 'See wisdom files for instructions' | $MAILCOMMAND -s 'Back up Bitwarden data' $EMAIL
 ###
 ### Yearly
 ###
-01 6 1 9 *	$AFS echo -e "Wash outside windows" | $MAILCOMMAND -s "Wash outside windows" $EMAILFAMILY
-01 6 15 7 *	$AFS echo -e "Clean hair from vacuum cleaner beater roller" | $MAILCOMMAND -s "Clean hair from vacuum cleaner beater roller" $EMAILFAMILY
-01 5 15 7 *	$AFS echo -e "Buy America the Beautiful pass (adjust month if necessary)" | $MAILCOMMAND -s "Buy America the Beautiful pass" $EMAILFAMILY
-01 6 12 3 *	$AFS echo -e "Reseed lawn in mid-March and mid-October" | $MAILCOMMAND -s "Reseed lawn in mid-March and mid-October" $EMAILFAMILY
-01 6 12 10 *	$AFS echo -e "Reseed lawn in mid-March and mid-October" | $MAILCOMMAND -s "Reseed lawn in mid-March and mid-October" $EMAILFAMILY
+01 6 1 9 *	echo -e "Wash outside windows" | $MAILCOMMAND -s "Wash outside windows" $EMAILFAMILY
+01 6 15 7 *	echo -e "Clean hair from vacuum cleaner beater roller" | $MAILCOMMAND -s "Clean hair from vacuum cleaner beater roller" $EMAILFAMILY
+01 5 15 7 *	echo -e "Buy America the Beautiful pass (adjust month if necessary)" | $MAILCOMMAND -s "Buy America the Beautiful pass" $EMAILFAMILY
+01 6 12 3 *	echo -e "Reseed lawn in mid-March and mid-October" | $MAILCOMMAND -s "Reseed lawn in mid-March and mid-October" $EMAILFAMILY
+01 6 12 10 *	echo -e "Reseed lawn in mid-March and mid-October" | $MAILCOMMAND -s "Reseed lawn in mid-March and mid-October" $EMAILFAMILY
 ###
 ### Checklink
 ###
 # Spread out the checklink calls to avoid being banned.
 # Even local URLs are a problem because they check remote ones.
 ## Daily: classes I am currently teaching.  (Once I'm not teaching them, don't check their links at all.)
-# 00 19 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse140/13wi/ > /scratch/mernst/checklink-output/140.txt-`date +\%Y\%m\%d` 2>&1
-# 59 19 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/140.txt 2
-# 00 20 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse190b/15au/ > /scratch/mernst/checklink-output/190b.txt-`date +\%Y\%m\%d` 2>&1
-# 59 20 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/190b.txt 2
-# 00 21 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse331/18au/ > /scratch/mernst/checklink-output/331.txt-`date +\%Y\%m\%d` 2>&1
-# 59 21 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/331.txt 2
-# 00 22 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse403/24wi/ > /scratch/mernst/checklink-output/403.txt-`date +\%Y\%m\%d` 2>&1
-# 59 22 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/403.txt 2
-# 00 22 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse490e1/17wi/ > /scratch/mernst/checklink-output/490e1.txt-`date +\%Y\%m\%d` 2>&1
-# 59 22 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/490e1.txt 2
-00 23 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse503/25wi/ > /scratch/mernst/checklink-output/503.txt-`date +\%Y\%m\%d` 2>&1
-59 23 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/503.txt 2
-# 00 23 * * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/csep504/24sp/ > /scratch/mernst/checklink-output/504p.txt-`date +\%Y\%m\%d` 2>&1
-# 59 23 * * *	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/504p.txt 2
+# 00 19 * * *	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse140/13wi/ > /scratch/mernst/checklink-output/140.txt-`date +\%Y\%m\%d` 2>&1
+# 59 19 * * *	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/140.txt 2
+# 00 20 * * *	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse190b/15au/ > /scratch/mernst/checklink-output/190b.txt-`date +\%Y\%m\%d` 2>&1
+# 59 20 * * *	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/190b.txt 2
+# 00 21 * * *	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse331/18au/ > /scratch/mernst/checklink-output/331.txt-`date +\%Y\%m\%d` 2>&1
+# 59 21 * * *	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/331.txt 2
+# 00 22 * * *	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse403/24wi/ > /scratch/mernst/checklink-output/403.txt-`date +\%Y\%m\%d` 2>&1
+# 59 22 * * *	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/403.txt 2
+# 00 22 * * *	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse490e1/17wi/ > /scratch/mernst/checklink-output/490e1.txt-`date +\%Y\%m\%d` 2>&1
+# 59 22 * * *	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/490e1.txt 2
+00 23 * * *	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/cse503/25wi/ > /scratch/mernst/checklink-output/503.txt-`date +\%Y\%m\%d` 2>&1
+59 23 * * *	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/503.txt 2
+# 00 23 * * *	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://www.cs.washington.edu/education/courses/csep504/24sp/ > /scratch/mernst/checklink-output/504p.txt-`date +\%Y\%m\%d` 2>&1
+# 59 23 * * *	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/504p.txt 2
 ## Weekly
-10 0 * * Mon	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://homes.cs.washington.edu/~mernst/ > /scratch/mernst/checklink-output/mernst.txt-`date +\%Y\%m\%d` 2>&1
-59 0 * * Mon	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/mernst.txt 2
-10 0 * * Tue	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://homes.cs.washington.edu/~mernst/links2.html > /scratch/mernst/checklink-output/links2.txt-`date +\%Y\%m\%d` 2>&1
-59 0 * * Tue	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/links2.txt 2
-10 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plse.cs.washington.edu/daikon > /scratch/mernst/checklink-output/daikon.txt-`date +\%Y\%m\%d` 2>&1
-50 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/daikon.txt 2
-11 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/bcel-util/api/ > /scratch/mernst/checklink-output/bcel-util.txt-`date +\%Y\%m\%d` 2>&1
-51 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/bcel-util.txt 2
-12 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/lookup/api/ > /scratch/mernst/checklink-output/lookup.txt-`date +\%Y\%m\%d` 2>&1
-52 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/lookup.txt 2
-13 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/multi-version-control/api/ > /scratch/mernst/checklink-output/multi-version-control.txt-`date +\%Y\%m\%d` 2>&1
-53 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/multi-version-control.txt 2
-14 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/options/api/ > /scratch/mernst/checklink-output/options.txt-`date +\%Y\%m\%d` 2>&1
-53 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/options.txt 2
-15 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/plume-util/api/ > /scratch/mernst/checklink-output/plume-util.txt-`date +\%Y\%m\%d` 2>&1
-55 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/plume-util.txt 2
-16 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/reflection-util/api/ > /scratch/mernst/checklink-output/reflection-util.txt-`date +\%Y\%m\%d` 2>&1
-56 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/reflection-util.txt 2
-17 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/require-javadoc/api/ > /scratch/mernst/checklink-output/require-javadoc.txt-`date +\%Y\%m\%d` 2>&1
-57 0 * * Wed	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/require-javadoc.txt 2
-10 0 * * Thu	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://types.cs.washington.edu/ > /scratch/mernst/checklink-output/types.txt-`date +\%Y\%m\%d` 2>&1
-59 0 * * Thu	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/types.txt 2
-10 0 * * Fri	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://checkerframework.org/ > /scratch/mernst/checklink-output/checkerframework.txt-`date +\%Y\%m\%d` 2>&1
-59 0 * * Fri	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/checkerframework.txt 2
-10 0 * * Sat	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://homes.cs.washington.edu/~mernst/teaching/data-programming/ > /scratch/mernst/checklink-output/data-programming.txt-`date +\%Y\%m\%d` 2>&1
-59 0 * * Sat	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/data-programming.txt 2
-10 0 * * Sun	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://randoop.github.io/randoop/ > /scratch/mernst/checklink-output/randoop.txt-`date +\%Y\%m\%d` 2>&1
-59 0 * * Sun	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/randoop.txt 2
-# 10 1 * * Mon	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` `grep -v '^#' $HOME/bin/src/checklink/checklink-args-uwcsedrupal.txt` http://www.cs.washington.edu/research/plse/ > /scratch/mernst/checklink-output/plse.txt-`date +\%Y\%m\%d` 2>&1
-# 59 1 * * Mon	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/plse.txt 2
-#TODO 10 1 * * Tue	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` `grep -v '^#' $HOME/bin/src/checklink/checklink-args-uwcsedrupal.txt` http://www.cs.washington.edu/research/plse/projects > /scratch/mernst/checklink-output/plse-projects.txt-`date +\%Y\%m\%d` 2>&1
-# 59 1 * * Tue	$AFS $HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/plse-projects.txt 2
+10 0 * * Mon	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://homes.cs.washington.edu/~mernst/ > /scratch/mernst/checklink-output/mernst.txt-`date +\%Y\%m\%d` 2>&1
+59 0 * * Mon	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/mernst.txt 2
+10 0 * * Tue	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://homes.cs.washington.edu/~mernst/links2.html > /scratch/mernst/checklink-output/links2.txt-`date +\%Y\%m\%d` 2>&1
+59 0 * * Tue	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/links2.txt 2
+10 0 * * Wed	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plse.cs.washington.edu/daikon > /scratch/mernst/checklink-output/daikon.txt-`date +\%Y\%m\%d` 2>&1
+50 0 * * Wed	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/daikon.txt 2
+11 0 * * Wed	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/bcel-util/api/ > /scratch/mernst/checklink-output/bcel-util.txt-`date +\%Y\%m\%d` 2>&1
+51 0 * * Wed	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/bcel-util.txt 2
+12 0 * * Wed	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/lookup/api/ > /scratch/mernst/checklink-output/lookup.txt-`date +\%Y\%m\%d` 2>&1
+52 0 * * Wed	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/lookup.txt 2
+13 0 * * Wed	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/multi-version-control/api/ > /scratch/mernst/checklink-output/multi-version-control.txt-`date +\%Y\%m\%d` 2>&1
+53 0 * * Wed	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/multi-version-control.txt 2
+14 0 * * Wed	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/options/api/ > /scratch/mernst/checklink-output/options.txt-`date +\%Y\%m\%d` 2>&1
+53 0 * * Wed	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/options.txt 2
+15 0 * * Wed	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/plume-util/api/ > /scratch/mernst/checklink-output/plume-util.txt-`date +\%Y\%m\%d` 2>&1
+55 0 * * Wed	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/plume-util.txt 2
+16 0 * * Wed	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/reflection-util/api/ > /scratch/mernst/checklink-output/reflection-util.txt-`date +\%Y\%m\%d` 2>&1
+56 0 * * Wed	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/reflection-util.txt 2
+17 0 * * Wed	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://plumelib.org/require-javadoc/api/ > /scratch/mernst/checklink-output/require-javadoc.txt-`date +\%Y\%m\%d` 2>&1
+57 0 * * Wed	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/require-javadoc.txt 2
+10 0 * * Thu	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://types.cs.washington.edu/ > /scratch/mernst/checklink-output/types.txt-`date +\%Y\%m\%d` 2>&1
+59 0 * * Thu	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/types.txt 2
+10 0 * * Fri	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://checkerframework.org/ > /scratch/mernst/checklink-output/checkerframework.txt-`date +\%Y\%m\%d` 2>&1
+59 0 * * Fri	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/checkerframework.txt 2
+10 0 * * Sat	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://homes.cs.washington.edu/~mernst/teaching/data-programming/ > /scratch/mernst/checklink-output/data-programming.txt-`date +\%Y\%m\%d` 2>&1
+59 0 * * Sat	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/data-programming.txt 2
+10 0 * * Sun	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` http://randoop.github.io/randoop/ > /scratch/mernst/checklink-output/randoop.txt-`date +\%Y\%m\%d` 2>&1
+59 0 * * Sun	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/randoop.txt 2
+# 10 1 * * Mon	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` `grep -v '^#' $HOME/bin/src/checklink/checklink-args-uwcsedrupal.txt` http://www.cs.washington.edu/research/plse/ > /scratch/mernst/checklink-output/plse.txt-`date +\%Y\%m\%d` 2>&1
+# 59 1 * * Mon	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/plse.txt 2
+#TODO 10 1 * * Tue	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` `grep -v '^#' $HOME/bin/src/checklink/checklink-args-uwcsedrupal.txt` http://www.cs.washington.edu/research/plse/projects > /scratch/mernst/checklink-output/plse-projects.txt-`date +\%Y\%m\%d` 2>&1
+# 59 1 * * Tue	$HOME/bin/src/checklink/checklink-persistent-errors /scratch/mernst/checklink-output/plse-projects.txt 2
 # I'm not sure what the point of these next two would be, compared to those above.
-# 11 5 4 * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` $WWWLOCAL/ > /scratch/mernst/checklink-output/local.txt-`date +\%Y\%m\%d` 2>&1
-# 11 5 5 * *	$AFS $HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` $WWWLOCAL/links2.html > /scratch/mernst/checklink-output/local-links2.txt-`date +\%Y\%m\%d` 2>&1
+# 11 5 4 * *	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` $WWWLOCAL/ > /scratch/mernst/checklink-output/local.txt-`date +\%Y\%m\%d` 2>&1
+# 11 5 5 * *	$HOME/bin/src/checklink/checklink -q -r `grep -v '^#' $HOME/bin/src/checklink/checklink-args.txt` $WWWLOCAL/links2.html > /scratch/mernst/checklink-output/local-links2.txt-`date +\%Y\%m\%d` 2>&1
 ###
 ### End
 ###
