@@ -11,6 +11,10 @@ else
   export dot_environment_file_read=1
 fi
 
+if [ -d /homes/gws/mernst ]; then
+  export DOCKER_HOST=unix:///run/user/11924/docker.sock
+fi
+
 ###########################################################################
 ### Non-site-specific
 ###
