@@ -1,4 +1,7 @@
-# Createcal (mainly to avoid having pt search it)
+# Claude
+.claude/settings.local.json
+
+# Createcal (mainly to avoid having `pt` search it)
 .inputFilesBackup
 
 # Eclipse
