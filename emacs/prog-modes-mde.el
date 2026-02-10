@@ -1918,19 +1918,16 @@ or null if it does not exist."
 ;; (file-in-super-directory "foobarbazunlikely")
 ;; (file-in-super-directory "build.xml" nil)
 
-;; TODO: should return false if `compile-command' is already set.
 (defun should-set-compile-command ()
-  "Return non-nil if the default \"make\" compilation command is inappropriate."
-  (and
+  "Return non-nil if the default \"make\" compilation command may be inappropriate."
+  (or
    ;; editing a file or directory
-   (or buffer-file-name
-       (memq major-mode
-	     '(compilation-mode cvs-mode dired-mode grep-mode magit-status-mode
-				rg-mode shell-mode svn-status-mode)))
-   ;; Makefile doesn't exist, so we need a different command
-   (not (or (file-exists-p (expand-file-name "Makefile"))
-            (file-exists-p (expand-file-name "makefile"))
-            (file-exists-p (expand-file-name "GNUmakefile"))))))
+   buffer-file-name
+   ;; other major modes
+   (memq major-mode
+	 '(compilation-mode cvs-mode dired-mode grep-mode magit-status-mode
+			    rg-mode shell-mode svn-status-mode)))
+  )
 
 ;; I would like this to work for shell mode, but I would need to make it run
 ;; as part of M-x compile instead of when the mode is set.
