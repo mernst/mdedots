@@ -1266,7 +1266,7 @@ After running this, run from the shell:  print-mail bulk." t)
 
 (defun dont-indent-after-signature (inserted-char)
   (if (and (= ?\n inserted-char)
-           (looking-back "\n                    -Mike\n"
+           (looking-back "\n *-?Mike\n"
                          (1- (save-excursion (beginning-of-line) (point)))))
       'no-indent))
 (add-hook 'electric-indent-functions 'dont-indent-after-signature)

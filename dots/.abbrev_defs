@@ -696,28 +696,28 @@ Michael Ernst
 Professor, U. of Washington Computer Science & Engineering
 mernst@cs.washington.edu   http://homes.cs.washington.edu/~mernst/"
       nil 0)
-     ("msigx" "                    -Mike" nil 0)
-     ("msx" "                    -Mike" nil 0)
-     ("cmsx" "                     Cheers,
+     ("msigx"    Mike" nil 0)
+     ("msx"    Mike" nil 0)
+     ("cmsx" "   Cheers,
 
-                    -Mike" nil 0)
-     ("tmsx" "                     Thanks,
+   -Mike" nil 0)
+     ("tmsx" "   Thanks,
 
-                    -Mike" nil 0)
-     ("tmxs" "                     Thanks,
+   -Mike" nil 0)
+     ("tmxs" "   Thanks,
 
-                    -Mike" nil 0)
-     ("lmsx" "                     Love,
+   -Mike" nil 0)
+     ("lmsx" "   Love,
 
-                    -Mike" nil 0)
-     ("csx" "                    -Crusher" nil 0)
-     ("ccsx" "                     Cheers,
+   -Mike" nil 0)
+     ("csx" "   -Crusher" nil 0)
+     ("ccsx" "   Cheers,
 
-                    -Crusher" nil 0)
-     ("tcsx" "                     Thanks,
+   -Crusher" nil 0)
+     ("tcsx" "   Thanks,
 
-                    -Crusher" nil 0)
-     ("chx" "                     Cheers," nil 0)
+   -Crusher" nil 0)
+     ("chx" "   Cheers," nil 0)
 
 
      ;;     ;; FAIR propaganda
