@@ -696,8 +696,8 @@ Michael Ernst
 Professor, U. of Washington Computer Science & Engineering
 mernst@cs.washington.edu   http://homes.cs.washington.edu/~mernst/"
       nil 0)
-     ("msigx"    Mike" nil 0)
-     ("msx"    Mike" nil 0)
+     ("msigx" "   -Mike" nil 0)
+     ("msx" "   -Mike" nil 0)
      ("cmsx" "   Cheers,
 
    -Mike" nil 0)

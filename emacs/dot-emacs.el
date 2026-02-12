@@ -1441,7 +1441,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (setq ediff-window-setup-function 'ediff-setup-windows-plain) ; no multiframe
 (setq-default ediff-ignore-similar-regions t)   ; ignore whitespace differences
 (setq ediff-auto-refine-limit 100000)    ; default 14000
-(setq ediff-diff-options "-w")
+(setq ediff-diff-options "-w")           ; ignore all whitespace
 
 ;; TODO: Make a function that toggles this.
 ;; (setq-default ediff-forward-word-function 'forward-char) ; show character-level differences
@@ -1741,7 +1741,8 @@ This can make comparisons easier."
 
 
 (setq rg-group-result nil)
-(setq rg-command-line-flags '("--hidden" "--sort" "path"))
+(setq rg-command-line-flags '("--hidden" "--search-zip" "--sort" "path"))
+(setq rg-show-columns t)
 ;;; Not needed any more, I think, as of 2025-04-06.
 ;; (setq rg-default-alias-fallback "everything")
 ;; (defadvice rg-default-alias (after everything-in-dired-mode activate)

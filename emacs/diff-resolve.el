@@ -133,31 +133,32 @@ editing a diff buffer to remove uninteresting changes."
 
       ;; TODO: Remove "Binary files XXX and YYY differ" lines
 
-      (let ((case-fold-search nil))
+      (if nil
+          (let ((case-fold-search nil))
 
-	;; Remove identical hunks.
-	(goto-char (point-min))
-	(while (re-search-forward "^-" nil t)
-	  (let ((hunk-beginning (1- (point))))
-            (re-search-forward "^[^-]")
-            (backward-char 1)
-            (let* ((hunk-text-negative (buffer-substring-no-properties hunk-beginning (point)))
-		   (hunk-text-length (length hunk-text-negative))
-		   (hunk-end (+ (point) hunk-text-length))
-		   (hunk-text-positive (replace-regexp-in-string "^-" "+" hunk-text-negative)))
-              (if (and (<= hunk-end (point-max))
-                       (equal hunk-text-positive (buffer-substring-no-properties (point) hunk-end)))
-		  (progn
-		    ;; This uses interactive editing commands (eg, kill-region rather
-		    ;; than delete-region) so that diff-mode updates the hunk headers.
-		    (kill-region hunk-beginning hunk-end)
-		    (insert (replace-regexp-in-string "^-" " " hunk-text-negative)))))))
+	    ;; Remove identical hunks.
+	    (goto-char (point-min))
+	    (while (re-search-forward "^-" nil t)
+	      (let ((hunk-beginning (1- (point))))
+                (re-search-forward "^[^-]")
+                (backward-char 1)
+                (let* ((hunk-text-negative (buffer-substring-no-properties hunk-beginning (point)))
+		       (hunk-text-length (length hunk-text-negative))
+		       (hunk-end (+ (point) hunk-text-length))
+		       (hunk-text-positive (replace-regexp-in-string "^-" "+" hunk-text-negative)))
+                  (if (and (<= hunk-end (point-max))
+                           (equal hunk-text-positive (buffer-substring-no-properties (point) hunk-end)))
+		      (progn
+		        ;; This uses interactive editing commands (eg, kill-region rather
+		        ;; than delete-region) so that diff-mode updates the hunk headers.
+		        (kill-region hunk-beginning hunk-end)
+		        (insert (replace-regexp-in-string "^-" " " hunk-text-negative)))))))
 
-        (diff-clean-prefix-suffix)
+            (diff-clean-prefix-suffix)
 
-        (diff-clean-empty-parts)
-	)
-
+            (diff-clean-empty-parts)
+	    )
+        )
       )))
 
 (defun diff-clean-prefix-suffix ()
