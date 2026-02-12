@@ -1,5 +1,6 @@
-## NOTE: The Emacs `rg` package always passes "--no-config", which means that
-## it ignores the settings in this file.
+## NOTE: The Emacs `rg` package always passes "--no-config", which means that it
+## ignores the settings in this file.  Set Emacs variable
+## `rg-command-line-flags`.
 
 ## I don't like this setting.
 # # Don't let ripgrep vomit really long lines to my terminal.

@@ -1443,6 +1443,24 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (setq ediff-auto-refine-limit 100000)    ; default 14000
 (setq ediff-diff-options "-w")           ; ignore all whitespace
 
+(defun diff-hunk-kill--refine-hunk ()
+  "Refine the next hunk after killing a hunk."
+  (diff-refine-hunk))
+(advice-add 'diff-hunk-kill :before #'diff-hunk-kill--refine-hunk)
+
+(defun diff-no-select--synchronous (orig-fun old new &optional switches no-async buf)
+  (funcall orig-fun old new switches t buf))
+(advice-add 'diff-no-select :around #'diff-no-select--synchronous)
+
+----
+(defun projectile-project-root--not-nil (orig-fn &optional dir)
+  "Avoid returning nil from `projectile-project-root'. Can still sometimes do so."
+  (let ((result (funcall orig-fn dir)))
+    (or result dir default-directory)))
+(advice-add 'projectile-project-root :around #'projectile-project-root--not-nil)
+----
+
+
 ;; TODO: Make a function that toggles this.
 ;; (setq-default ediff-forward-word-function 'forward-char) ; show character-level differences
 
