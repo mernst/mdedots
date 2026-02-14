@@ -481,7 +481,8 @@ xsc() {
   fi
   command xterm -T "$1" -e ssh -X mernst@"$1".csail.mit.edu &
 }
-xsw() {
+# Do not use use a jump host.  This is for machines accessible outside cs.washington.edu.
+xswnoj() {
   if [ "$#" -ne 1 ]; then
     echo "xsw: pass one argument; received $*"
     return 1
@@ -494,8 +495,13 @@ xswj() {
     echo "xswj: pass one argument; received $*"
     return 1
   fi
-  command xterm -T "$1" -e ssh -J bicycle.cs.washington.edu -X mernst@"$1".cs.washington.edu &
+  if [ "$(hostname -d)" = cs.washington.edu ]; then
+    command xterm -T "$1" -e ssh -X mernst@"$1".cs.washington.edu &
+  else
+    command xterm -T "$1" -e ssh -J bicycle.cs.washington.edu -X mernst@"$1".cs.washington.edu &
+  fi
 }
+alias xsw=xswj
 # "ssh -Y" does trusted X11 forwarding
 xswy() {
   if [ "$#" -ne 1 ]; then
@@ -547,9 +553,9 @@ alias csail='xsc login'
 alias laptop='(xterm -T laptop -e ssh -X -p 58512 mernst2.no-ip.org &)'
 
 # Godwit can only be logged into from a CSE machine, not from outside the CSE network.
-alias godwit='xsw godwit'
-alias gitlab06='xsw gitlab06'
-alias attu='xsw attu'
+alias godwit='xswj godwit'
+alias gitlab06='xswj gitlab06'
+alias attu='xswj attu'
 alias honu='xswj honu'
 alias singular='xswj singular'
 alias tern='xsw tern'
