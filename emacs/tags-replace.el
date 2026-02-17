@@ -23,7 +23,7 @@ type \\[help-command] at that time.
 For non-interactive use, this is superseded by `fileloop-initialize-replace'."
   (declare (advertised-calling-convention (from to &optional delimited) "27.1"))
   (interactive (query-replace-read-args "Tags query replace (regexp)" t t))
-  (fileloop-initialize-replace-noquery
+  (fileloop-initialize-replace-noquery ;; CHANGED
    from to
    (tags--compat-files (or files t))
    (if (equal from (downcase from)) nil 'default)
@@ -57,7 +57,7 @@ DELIMITED if non-nil means replace only word-delimited matches."
            (puthash (current-buffer) (match-beginning 0) mstart))))
      (lambda ()
        (let ((case-fold-search (fileloop--case-fold from case-fold)))
-         (perform-replace from to t t delimited nil multi-query-replace-map
+         (perform-replace from to nil t delimited nil multi-query-replace-map ;; CHANGED
                           (gethash (current-buffer) mstart (point-min))
                           (point-max)))))))
 
