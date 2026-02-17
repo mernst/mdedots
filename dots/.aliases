@@ -43,8 +43,8 @@ alias ls='ls -bCFv'
 
 # alias java='java -ea'
 alias javac='javac -g'
-alias javatags="find . -type f -name '*.java' -print0 | xargs -0 etags"
-alias rusttags="find . -type f -name '*.rs' -print0 | xargs -0 etags"
+alias javatags="rm -f TAGS; find . -type f -name '*.java' -print0 | xargs -0 etags -a"
+alias rusttags="rm -f TAGS; find . -type f -name '*.rs' -print0 | xargs -0 etags -a"
 
 alias usejdk8='(cd ~/java && rm -f jdk && ln -s jdk8 jdk)'
 alias usejdk11='(cd ~/java && rm -f jdk && ln -s jdk11 jdk)'
