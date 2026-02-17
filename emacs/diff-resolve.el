@@ -11,23 +11,23 @@
 ;; ;; TODO: What is the purpose of this?
 ;; ;; (read-conflict-files-from-tags-table)
 ;; Now run as many of the following as desired.
-;; (resolve-diffs)
-;; (tags-resolve-diffs)
+;; (diff-resolve)
+;; (tags-diff-resolve)
 
 
-;; (resolve-annotation-lines)
+;; (tags-diff-resolve-annotation-lines)
 ;; (resolve-annotatedfor-conflicts)
 ;; (move-cf-imports-to-beginning)
 ;; (resolve-import-conflicts)
 ;; (resolve-method-signature)
-;; (resolve-empty-diffs)
+;; (diff-resolve-empty)
 ;; (resolve-equals-method-conflict)
 
 
 ;; Most useful for pulling remote into annotated code, such as the
 ;; Checker Framework annotated JDK:
-;; (resolve-annotation-lines-in-head)
-;; (resolve-annotation-lines-in-other ()
+;; (tags-diff-resolve-annotation-lines-in-head)
+;; (tags-diff-resolve-annotation-lines-in-other ()
 
 
 ;; Run vc-resolve-conflicts for each file:
@@ -415,14 +415,18 @@ public\\1 @UsesObjectEquals class \\2
 
 
 ;; This is superseded by merge-java-imports-driver.sh .
-(defun resolve-import-conflicts ()
-  "Resolve conflicts that invove only import lines.
+(defun tags-diff-resolve-import-conflicts ()
+  "Resolve conflicts that invove only import lines, by accepting all the lines.
 Two caveats:
 1. You may have to adjust whitespace at the beginning and end manually.
 2. The mode-hook might blow away the match-data, in which case first run
    `M-x read-conflict-files-from-tags-table`."
   (interactive)
-  ;; (read-conflict-files-from-tags-table)
+  ;; This is necessary because the mode-hook might blow away the match-data,
+  ;; causing the value of (e.g.) `(match-string 1)` to be incorrect.
+  ;; Pre-reading the conflict files ensures that their mode-hook has already run
+  ;; before this function runs.
+  (read-conflict-files-from-tags-table)
   (tags-search
    (concat "<<<<<<< HEAD
 \\(\\(?:\\(?:import .*;\\)?\n\\)*\\)"
@@ -502,7 +506,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 
 
 
-(defun resolve-annotation-lines ()
+(defun tags-diff-resolve-annotation-lines ()
   "When two annotation groups are the same, resolve those lines."
   (interactive)
 
@@ -564,17 +568,19 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
    "\\4\\1\\3\\5\\6")
   )
 
-(defun resolve-annotation-lines-in-head ()
+(defun tags-diff-resolve-annotation-lines-in-head ()
   "Move annotations only on the HEAD method before the hunk.
   This assumes there is no corresponding annotation in base or OTHER."
+  (interactive)
   (tags-query-replace
    (concat "^\\(<<<<<<< HEAD\n\\)\\(\\(" annotation-line-regex "\n\\)+\\)")
    "\\2\\1")
   )
 
-(defun resolve-annotation-lines-in-other ()
+(defun tags-diff-resolve-annotation-lines-in-other ()
   "Move annotations only on the OTHER method before the hunk.
   This assumes there is no corresponding annotation in base or HEAD."
+  (interactive)
   (tags-query-replace
    (concat "^\\(<<<<<<< HEAD\n[^|]*\n" "|||||||.*\n" "[^=]*=======\n\\)" "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
    "\\2\\1")
@@ -629,18 +635,18 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 ;;;
 
 
-(defun tags-resolve-diffs ()
+(defun tags-diff-resolve ()
   "Resolve diffs in the current tags table."
   (interactive)
-  (tags-resolve-empty-diffs)
-  (tags-resolve-diffs-with-two-same))
+  (tags-diff-resolve-empty)
+  (tags-diff-resolve-with-two-same))
 
 
-(defun resolve-diffs ()
+(defun diff-resolve ()
   "Resolve diffs in the current buffer."
   (interactive)
-  (resolve-empty-diffs)
-  (resolve-diffs-with-two-same))
+  (diff-resolve-empty)
+  (diff-resolve-with-two-same))
 
 
 ;; Completely empty diff.
@@ -682,7 +688,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     greater-than-hunk-end)
    ""))
 
-(defun tags-resolve-empty-diffs ()
+(defun tags-diff-resolve-empty ()
   (interactive)
   (apply #'tags-query-replace-noerror empty-diff-regexes)
   (apply #'tags-query-replace-noerror left-base-empty-regexes)
@@ -690,7 +696,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
   (apply #'tags-query-replace-noerror left-right-empty-regexes)
   )
 
-(defun resolve-empty-diffs ()
+(defun diff-resolve-empty ()
   (interactive)
   (save-excursion
     (goto-char (point-min))
@@ -742,7 +748,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     greater-than-hunk-end)
    "\\1"))
 
-(defun tags-resolve-diffs-with-two-same ()
+(defun tags-diff-resolve-with-two-same ()
   "Resolve diffs in which two of the versions of the text are the same."
   (interactive)
   (apply #'tags-query-replace-noerror same-left-and-base-regexes)
@@ -750,7 +756,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
   (apply #'tags-query-replace-noerror same-left-and-right-regexes)
   )
 
-(defun resolve-diffs-with-two-same ()
+(defun diff-resolve-with-two-same ()
   "Resolve diffs in which two of the versions of the text are the same."
   (interactive)
   (save-excursion
@@ -826,7 +832,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
    "\\1"))
 
 
-(defun resolve-diffs-left-subsequence ()
+(defun diff-resolve-left-subsequence ()
   "Resolve diffs when left is a subsequence of right."
   (interactive)
   (save-excursion
@@ -838,7 +844,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 
 
 
-(defun resolve-diffs-right-subsequence ()
+(defun diff-resolve-right-subsequence ()
   "Resolve diffs when right is a subsequence of left."
   (interactive)
   (save-excursion
@@ -1006,12 +1012,13 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 (defun sorted-non-duplicate-lines (lines1 lines2)
   "Return a string consisting of the unique lines in the two input strings.
 In the result, the lines are sorted."
-  (with-temp-buffer "*sorted-non-duplicate-lines*"
-    (insert lines1)
-    (insert lines2)
-    (delete-duplicate-lines (point-min) (point-max))
-    (sort-lines nil (point-min) (point-max))
-    (buffer-string)))
+  (save-match-data
+    (with-temp-buffer "*sorted-non-duplicate-lines*"
+      (insert lines1)
+      (insert lines2)
+      (delete-duplicate-lines (point-min) (point-max))
+      (sort-lines nil (point-min) (point-max))
+      (buffer-string))))
 ;; (sorted-non-duplicate-lines "a\nc\nd\n" "d\ne\nb\nd\n")
 
 
