@@ -377,6 +377,10 @@ export kindle=/media/mernst/Kindle/documents/Downloads/Items01
 
 ## Temporary
 
+# This is needed because, on godwit, etc/profile.d/apache-ant.sh sets
+# CLASSPATH, and likewise for maven.
+unset CLASSPATH
+
 ###########################################################################
 ### End of file
 ###
