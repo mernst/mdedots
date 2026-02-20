@@ -472,14 +472,14 @@ xs() {
     echo "xs: pass one argument; received $*"
     return 1
   fi
-  command xterm -T "$1" -e ssh -X mernst@"$1" &
+  nohup command xterm -T "$1" -e ssh -X mernst@"$1" &
 }
 xsc() {
   if [ "$#" -ne 1 ]; then
     echo "xsc: pass one argument; received $*"
     return 1
   fi
-  command xterm -T "$1" -e ssh -X mernst@"$1".csail.mit.edu &
+  nohup command xterm -T "$1" -e ssh -X mernst@"$1".csail.mit.edu &
 }
 # Do not use use a jump host.  This is for machines accessible outside cs.washington.edu.
 xswnoj() {
@@ -487,7 +487,7 @@ xswnoj() {
     echo "xsw: pass one argument; received $*"
     return 1
   fi
-  command xterm -T "$1" -e ssh -X mernst@"$1".cs.washington.edu &
+  nohup command xterm -T "$1" -e ssh -X mernst@"$1".cs.washington.edu &
 }
 # "-J" means use a jump host, for machines that are not accessible outside cs.washington.edu.
 xswj() {
@@ -496,9 +496,9 @@ xswj() {
     return 1
   fi
   if [ "$(hostname -d)" = cs.washington.edu ]; then
-    command xterm -T "$1" -e ssh -X mernst@"$1".cs.washington.edu &
+    nohup command xterm -T "$1" -e ssh -X mernst@"$1".cs.washington.edu &
   else
-    command xterm -T "$1" -e ssh -J bicycle.cs.washington.edu -X mernst@"$1".cs.washington.edu &
+    nohup command xterm -T "$1" -e ssh -J bicycle.cs.washington.edu -X mernst@"$1".cs.washington.edu &
   fi
 }
 alias xsw=xswj
@@ -508,7 +508,7 @@ xswy() {
     echo "xswy: pass one argument; received $*"
     return 1
   fi
-  command xterm -T "$1" -e ssh -Y mernst@"$1".cs.washington.edu &
+  nohup command xterm -T "$1" -e ssh -Y mernst@"$1".cs.washington.edu &
 }
 # Emacs via X, remotely
 xe() {
@@ -516,14 +516,14 @@ xe() {
     echo "xe: pass one argument; received $*"
     return 1
   fi
-  command ssh -X -f mernst@"$1" emacs
+  nohup command ssh -X -f mernst@"$1" emacs
 }
 xej() {
   if [ "$#" -ne 1 ]; then
     echo "xe: pass one argument; received $*"
     return 1
   fi
-  command ssh -J bicycle.cs.washington.edu -X -f mernst@"$1" emacs
+  nohup command ssh -J bicycle.cs.washington.edu -X -f mernst@"$1" emacs
 }
 xec() {
   if [ "$#" -ne 1 ]; then

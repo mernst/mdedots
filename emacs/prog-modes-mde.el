@@ -599,6 +599,7 @@ This is disabled on lines with a comment containing the string \"interned\"."
                  (throw 'error error-message)))))
         (if (let ((bol-point (save-excursion (beginning-of-line) (point))))
 	      (not (or (looking-at ".*//.*interned")
+                       (looking-at ".*//.*NOPMD: UseEqualsToCompareStrings")
 		       ;; line ends with string ending with "=="
 		       (and (looking-back "=?= *\"" bol-point)
 			    (looking-at ";\n"))
