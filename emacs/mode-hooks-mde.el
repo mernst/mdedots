@@ -122,6 +122,8 @@ This prevents assumption of iso-2022-jp charset."
   (save-excursion
     (replace-string-noninteractive "–" "-"))
   (save-excursion
+    (replace-regexp-noninteractive " ?— ?" " -- "))
+  (save-excursion
     (replace-string-noninteractive "…" "..."))
   )
 
@@ -139,7 +141,7 @@ This prevents assumption of iso-2022-jp charset."
   (save-excursion
     (replace-string-noninteractive "—" "---"))
   (save-excursion
-    (replace-string-noninteractive "…" "\ldots"))
+    (replace-string-noninteractive "…" "\\ldots"))
   )
 
 
