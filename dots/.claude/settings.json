@@ -11,9 +11,9 @@
       "Bash(javap:*)",
       "Bash(ls)",
       "Bash(timeout 300 ./gradlew:*)",
-      "Edit",
+      "Edit(./**)",
       "Bash(./x.py check:*)",
-      "Read(//scratch/mernst/**)"
+      "Read(//scratch/**)"
     ],
     "deny": [],
     "ask": []
