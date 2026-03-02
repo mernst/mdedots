@@ -196,12 +196,7 @@ editing a diff buffer to remove uninteresting changes."
 
 
 (defun diff-clean-imports ()
-  "Cleans up a diff to remove changes in import statements.
-Removes some files entirely (see `diff-clean-removed-files').
-Removes trivial diffs, such as hunks or files with empty/no differences.
-Reduces size of diffs with common prefix or suffix.
-The latter two changes are semantics-preserving and are useful after
-editing a diff buffer to remove uninteresting changes."
+  "Cleans up a diff to remove changes in import statements."
   (interactive)
   (let ((inhibit-read-only t))
     (save-excursion
@@ -210,15 +205,15 @@ editing a diff buffer to remove uninteresting changes."
       (while (re-search-forward "^[-+]\\(import.*;\\|from .* import .*\\)$" nil t)
 	(goto-char (match-beginning 0))
 	(kill-line))))
-  (diff-clean))
+  (diff-clean-empty-parts))
 
-(defun diff-clean-more (regex)
+(defun diff-clean-filenames-also (regex)
   "Like `diff-clean', but ignores additional files as well.
 The regex matches the whole filename. It must not start with ^ nor end with $."
   (let ((diff-clean-removed-files (cons regex diff-clean-removed-files)))
     (diff-clean)))
 
-(defun diff-clean-only (regex)
+(defun diff-clean-filenames-only (regex)
   "Like `diff-clean', but only does the specified files.
 The regex matches the whole filename. It must not start with ^ nor end with $."
   (interactive "sRegex for whole filename (no ^$): ")
@@ -229,28 +224,28 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
 (defun diff-clean-target ()
   "Like `diff-clean', but also ignores generated files."
   (interactive)
-  (diff-clean-more ".*/target/.*"))
+  (diff-clean-filenames-also ".*/target/.*"))
 
 ;; This name may need to be changed, so that completing "diff-clean" is easier to do.
 (defun diff-clean-build ()
   "Like `diff-clean', but also removes generated files."
   (interactive)
-  (diff-clean-more ".*/build/.*"))
+  (diff-clean-filenames-also ".*/build/.*"))
 
 (defun diff-clean-backup ()
   "Remove backup files from a diff."
   (interactive)
-  (diff-clean-more ".*~"))
+  (diff-clean-filenames-also ".*~"))
 
 (defun diff-clean-javadoc ()
   "Like `diff-clean', but also removes Javadoc files."
   (interactive)
-  (diff-clean-more ".*/docs/api/.*"))
+  (diff-clean-filenames-also ".*/docs/api/.*"))
 
 (defun diff-clean-json ()
   "Like `diff-clean', but also removes JSON files."
   (interactive)
-  (diff-clean-more ".*\\.json"))
+  (diff-clean-filenames-also ".*\\.json"))
 
 (defun delete-non-matching-hunks (regexp)
   "Delete hunks that do not contain a match for the given regexp."
