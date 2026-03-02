@@ -38,7 +38,8 @@
   (require 'smerge-mode)
   (require 'rg-result nil t)
   (require 'file-comparison)
-  (require 'diff-resolve)
+  (require 'diff-clean)
+  (require 'conflict-resolve)
   (require 'dbus))
 
 ;; To use the ELPA package manager, call  M-x list-packages
@@ -1561,15 +1562,15 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 ;;;
 
 (with-eval-after-load "ediff"
-  (require 'diff-resolve)
+  (require 'diff-clean)
   )
-(autoload 'diff-clean "diff-resolve"
+(autoload 'diff-clean "diff-clean"
   "Cleans up a diff to remove uninteresting changes." t)
-(autoload 'diff-clean-imports "diff-resolve"
+(autoload 'diff-clean-imports "diff-clean"
   "Cleans up a diff to remove uninteresting changes, including import statements." t)
-(autoload 'diff-clean-javadoc "diff-resolve"
+(autoload 'diff-clean-javadoc "diff-clean"
   "Cleans up a diff to remove uninteresting changes, including API documentation." t)
-(autoload 'diff-clean-json "diff-resolve"
+(autoload 'diff-clean-json "diff-clean"
   "Cleans up a diff to remove uninteresting changes, including .json files." t)
 ;; This is for pathnames.
 ;; For basenames (simple file names), use file ~/bin/src/mdedots/dots/diff-exclude-patterns.txt,

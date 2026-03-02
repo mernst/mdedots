@@ -92,6 +92,13 @@ update_fork_with_hosting_and_userid() {
   fi
 }
 
+submodule_update() {
+  dir="$1"
+  if [ -d "$dir" ]; then
+    (cd "$dir" && git submodule update --init --recursive)
+  fi
+}
+
 update_fork_from_rjust_bitbucket coverage ~/class/se-activities
 update_fork_from_rjust_bitbucket debugging ~/class/se-activities
 update_fork_from_rjust_bitbucket delta-debugging ~/class/se-activities
@@ -257,7 +264,9 @@ update_fork benedikt-schesch AST-Merging-Evaluation ~/research/version-control
 update_fork benedikt-schesch AST-Merging-Evaluation /scratch/mernst/clones/version-control
 
 update_fork vikramnitin9 rust_verification ~/research/harvest
+submodule_update ~/research/harvest/rust_verification
 update_fork vikramnitin9 rust_verification /scratch/mernst/clones/harvest
+submodule_update /scratch/mernst/clones/harvest/rust_verification
 update_fork vikramnitin9 parsec ~/research/harvest
 update_fork vikramnitin9 parsec /scratch/mernst/clones/harvest
 
