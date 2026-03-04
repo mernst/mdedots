@@ -1821,8 +1821,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer 
-      (list (apply 'call-process program nil (current-buffer) nil args)
-            (buffer-string))))
+    (list (apply 'call-process program nil (current-buffer) nil args)
+          (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
@@ -2266,6 +2266,12 @@ Use as a hook, like so:
   (setq compilation-error-regexp-alist
 	(append
 	 (list
+          ;; Javac output under gradle is indented.  Require leading "/" for absolute path.
+          '("^  \\(/[^ :\n]*\\):\\([0-9]+\\): " 1 2)
+
+          ;; Markdownlint omits the last colon (:).
+          '("^\\([^\n:]*+\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?\\( error\\)? MD" 1 2)
+
           ;; Markdownlint omits the last colon (:).
           '("^\\([^\n:]*+\\):\\([0-9]+\\)\\(?::\\([0-9]+\\)\\)?\\( error\\)? MD" 1 2)
 
