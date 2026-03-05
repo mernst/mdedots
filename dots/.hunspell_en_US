@@ -52,6 +52,7 @@ Arduino
 Arianna
 ArrayList
 Artzi
+Arun
 Arvind
 AspectJ
 AssumeAssertion
@@ -274,6 +275,7 @@ ISP
 ISPs
 ISSTA
 IWMF
+Ianchenko
 IgM
 IllegalArgumentException
 ImplicitFor
@@ -290,6 +292,7 @@ InterningAnnotatedTypeFactory
 InvariMint
 IoLab
 Iterable
+Iyengar
 JBoss
 JCP
 JCrasher
@@ -402,6 +405,7 @@ Maeve
 Maeve's
 Magda
 Mahmood
+Malakar
 Mankoff
 Manu
 Manu's
@@ -462,6 +466,7 @@ OSDI
 Obama
 Obama's
 Odegaard
+Oleg
 OpenAI
 OpenAI's
 OpenCL
@@ -535,6 +540,7 @@ Reviewer's
 Rinard
 Roesner
 RuntimeException
+Rushil
 Rustan
 SCCA
 SDKs
@@ -556,8 +562,11 @@ Sadowski
 Sai
 SameLen
 Samsung
+Sanjay
 Santander
+Sarkar
 Schaef
+Schesch
 Schweizer
 Seungyeop
 Sevilla
@@ -658,6 +667,7 @@ VMware
 Vakilian's
 Valgrind
 Validator
+Varun
 VeriWeb
 Verigames
 VetData
@@ -665,6 +675,7 @@ VetData's
 Victor
 Vijay
 Virtualization
+Vivek
 VizAssert
 Vlastimil
 VoidALPHA
@@ -690,12 +701,15 @@ Wikipedia's
 Wilcoxon
 WordNet
 WordPress
+Wuihee
 XSS
 Y2K
 Yagmar
 Yingyi
+Yoo
 Yoshi
 YouTube
+Yuki
 Yunyi
 Yuriy
 Yuriy's
@@ -1371,5 +1385,6 @@ workflow
 workflows
 worklist
 workspace
+writeups
 x86
 xml
