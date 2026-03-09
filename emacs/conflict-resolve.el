@@ -1,4 +1,5 @@
-        ;;; -*- lexical-binding: t -*-
+;;; -*- lexical-binding: t -*-
+(defconst left-or-right-regexp "")
 
 ;; This file contains functions that resolve merge conflicts.
 ;; Also see file diff-clean.el, which is for diffs (not conflicts).
