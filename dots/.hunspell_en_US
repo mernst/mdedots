@@ -124,6 +124,7 @@ Clousot's
 CodeQL
 CodeRabbit
 CodeSonar
+CollectionFieldDestructor
 Comcast
 ConfDiagDetector
 Coq
@@ -283,6 +284,7 @@ IndexOrHigh
 IndexOutOfBoundsException
 InheritableMustCall
 Inozemtseva
+InputStream
 IntRange
 IntelliJ
 IntelliJ's
@@ -391,6 +393,7 @@ Lombok
 Lombok's
 Loncaric
 Loncaric's
+Lucene
 Lyft
 Lymphoplasmacytic
 Lyubomirsky
@@ -448,6 +451,7 @@ NonEmpty
 NonNegative
 NonNull
 NotOwning
+NotOwningCollection
 Notkin
 Notkin's
 Notkinfest
@@ -475,6 +479,8 @@ OpenJML
 Optimizations
 OsTrusted
 OutOfMemoryError
+OwningCollection
+OwningCollectionWithoutObligation
 P1
 PASCALI
 PDF
@@ -536,6 +542,7 @@ Ren
 Rene
 Rene's
 Rensselaer
+ResourceAlias
 Reviewer's
 Rinard
 Roesner
@@ -590,6 +597,7 @@ SmartCommit
 SmartCommit's
 Smeg
 Snoqualmie
+SocketChannel
 SourceDepot
 SourceForge
 Spishak
@@ -827,6 +835,7 @@ conformant
 containsKey
 contextualization
 contract's
+contravariance
 copular
 covariance
 covariant

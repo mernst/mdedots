@@ -322,7 +322,20 @@
 (autoload 'list-unsaved-buffers "bdiff" "List modified buffers." t)
 (autoload 'Buffer-menu-bdiff "bdiff" "Diff buffer under point with file contents." t)
 (autoload 'Buffer-menu-revert "bdiff" "Revert buffer under point from file, then select it." t)
-(autoload 'Buffer-menu-revert-select "bdiff" "Doc" t)
+(autoload 'Buffer-menu-revert-select "bdiff" "Select this line's buffer, after replacing its text with disk file contents." t)
+
+;; TODO: add the documentation strings
+(autoload 'conflict-resolve "conflict-resolve" nil t)
+(autoload 'tags-conflict-resolve "conflict-resolve" nil t)
+(autoload 'conflict-resolve-annotation-lines "conflict-resolve" nil t)
+(autoload 'tags-conflict-resolve-annotation-lines "conflict-resolve" nil t)
+(autoload 'resolve-annotatedfor-conflicts "conflict-resolve" nil t)
+(autoload 'move-cf-imports-to-beginning "conflict-resolve" nil t)
+(autoload 'resolve-import-conflicts "conflict-resolve" nil t)
+(autoload 'resolve-method-signature "conflict-resolve" nil t)
+(autoload 'conflict-resolve-empty "conflict-resolve" nil t)
+(autoload 'resolve-equals-method-conflict "conflict-resolve" nil t)
+
 
 ;;;
 ;;; World Wide Web
@@ -419,6 +432,9 @@
     (autoload 'deadgrep "deadgrep" "Start a ripgrep search for SEARCH-TERM."))
 
 (autoload 'ical-available (substitute-in-file-name "$HOME/java/plume-lib/icalavailable/src/main/elisp/ical-available.el") "Insert a summary of my available times." t)
+
+;; Timelog
+(autoload 'timelog "timelog" "Edit the timelog." t)
 
 ;; Testing only:
 (autoload 'mw-test-setup "miniwindow" nil t)

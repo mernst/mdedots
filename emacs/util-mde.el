@@ -1431,8 +1431,8 @@ screen column."
     (unused-char-in-buffer)))
 
 (defun replace-all-occurrrences-iteratively (regex replacement)
-  "Replace all occurrences of REGEX by REPLACEMENT, iterating until
-no more occurrences of REGEX appear in the buffer."
+  "Replace all occurrences of REGEX in the buffer by REPLACEMENT,
+iterating until no more occurrences of REGEX appear in the buffer."
   (save-excursion
     (while (progn
              (goto-char (point-min))

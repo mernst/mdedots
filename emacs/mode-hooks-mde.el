@@ -645,11 +645,31 @@ proposal")
     (delete-matching-paragraphs "^LaTeX Warning: \\(Citation\\|Reference\\)" nil nil t)
     ))
 
-(defun use-brocket-tt ()
+(defun convert-tt-to-brocket ()
   "Change uses of \\texttt{...} to \\<...>."
+  (interactive)
   (tags-query-replace "\\\\texttt{\\([^{}<>]+\\)}" "\\\\<\\1>")
   (tags-query-replace "\\\\texttt{\\([^{}]+\\)}" "\\\\codeid{\\1}")
   )
+
+(defun use-cref ()
+  "Change uses of \\ref to \\cref."
+  (interactive)
+  (tags-query-replace "\\(?:Figure\\|Section\\|Table\\)[~ \t\n]*\\\\ref{\\(.*?\\)}" "\\\\Cref{\\1}")
+  (tags-query-replace "\\(?:figure\\|section\\|table\\)[~ \t\n]*\\\\ref{\\(.*?\\)}" "\\\\cref{\\1}")
+  (tags-query-replace "\\(?:Figure\\|Section\\|Table\\)s[~ \t\n]*\\\\ref{\\(.*?\\)}\\(?:--\\|[~ \t\n]+and[~ \t\n]+\\)\\\\ref{\\(.*?\\)}" "\\\\Cref{\\1,\\2}")
+  (tags-query-replace "\\(?:figure\\|section\\|table\\)s[~ \t\n]*\\\\ref{\\(.*?\\)}\\(?:--\\|[~ \t\n]+and[~ \t\n]+\\)\\\\ref{\\(.*?\\)}" "\\\\cref{\\1,\\2}")
+  )
+
+
+(defun cref-fix-capitalization ()
+  "Fix capitalization of uses \\cref."
+  (interactive)
+  (tags-query-replace "\\([a-z][(){}[:blank:]]+\\)\\\\Cref" "\\1\\\\cref")
+  (tags-query-replace "\\(^[%.!?[:blank:]]][(){}[:blank:]]+\\)\\\\Cref" "\\1\\\\cref")
+
+  )
+
 
 
 ;;;

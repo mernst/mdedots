@@ -520,8 +520,10 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Files that are always loaded or autoloaded
+;;; Files that are always loaded
 ;;;
+
+;; Autoloads appear in file autoloads-mde.el .
 
 ;; Inserting these files' contents would make this file really big.
 
@@ -532,10 +534,6 @@
 (load "prog-modes-mde" nil t)           ; programming language mode hooks
 
 (load "startup-functions-mde" nil t)
-
-
-
-(autoload 'timelog "timelog" "Edit the timelog." t)
 
 (defun mew-messages ()
   "Return the number of Mew messages."

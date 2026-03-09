@@ -178,28 +178,29 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
   "Simplify a diff when a hunk has identical prefix or suffix for - and +."
   (interactive)
 
-  ;; First two lines are identical (one -, one +).
-  (goto-char (point-min))
-  (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\+\\1\\.?\n" " \\1\n")
-  ;; First - line is identical to first + line
-  (goto-char (point-min))
-  (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\(\\(-.*\n\\)+\\)\\+\\1\\.?\n" " \\1\n\\2")
-  ;; Last - line is identical to last + line
-  (goto-char (point-min))
-  (replace-regexp-noninteractive "^-\\(.*\\)\n\\(\\(\\+.*\n\\)+\\)\\+\\1\\.?\n" "\\2 \\1\n")
-  ;; Last - line is identical to first + line
-  (goto-char (point-min))
-  (replace-regexp-noninteractive "^-\\(.*\\)\n-\\(.*\n\\)\\+\\1\\.?\n" " \\1\n-\\2")
-  ;; Needs to be tested before uncommenting
-  ;; (goto-char (point-min))
-  ;; (query-replace-regexp "^-\\(.*\\)\n\\+\\(.*\n\\)\\+\\1\\.?\n" " \\2+\\1\n")
+  (save-excursion
+    ;; First two lines are identical (one -, one +).
+    (goto-char (point-min))
+    (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\+\\1\\.?\n" " \\1\n")
+    ;; First - line is identical to first + line
+    (goto-char (point-min))
+    (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\(\\(-.*\n\\)+\\)\\+\\1\\.?\n" " \\1\n\\2")
+    ;; Last - line is identical to last + line
+    (goto-char (point-min))
+    (replace-regexp-noninteractive "^-\\(.*\\)\n\\(\\(\\+.*\n\\)+\\)\\+\\1\\.?\n" "\\2 \\1\n")
+    ;; Last - line is identical to first + line
+    (goto-char (point-min))
+    (replace-regexp-noninteractive "^-\\(.*\\)\n-\\(.*\n\\)\\+\\1\\.?\n" " \\1\n-\\2")
+    ;; Needs to be tested before uncommenting
+    ;; (goto-char (point-min))
+    ;; (query-replace-regexp "^-\\(.*\\)\n\\+\\(.*\n\\)\\+\\1\\.?\n" " \\2+\\1\n")
 
-  ;; ;; Remove identical lines with one different one between them.
-  ;; (goto-char (point-min))
-  ;; (replace-regexp-noninteractive "^-\\(.*\\)\n\\([-+].*\n\\)\\+\\1\\.?\n" "\\2 \\1\n")
+    ;; ;; Remove identical lines with one different one between them.
+    ;; (goto-char (point-min))
+    ;; (replace-regexp-noninteractive "^-\\(.*\\)\n\\([-+].*\n\\)\\+\\1\\.?\n" "\\2 \\1\n")
 
-  ;; Should do the same as the above, with any number of different lines between them.
-  )
+    ;; Should do the same as the above, with any number of different lines between them.
+    ))
 
 (defun diff-clean-empty-parts ()
   "Remove empty parts of the file: empty hunks and empty file sections."
