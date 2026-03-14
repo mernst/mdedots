@@ -313,6 +313,11 @@
 ;;; Java
 ;;;
 
+;; To find declarations that declare more than one variable, search for:
+;; ;; This variable is in standard regex syntax, not Emacs regex syntax!
+;; "^ *(public )?(boolean|byte|double|float|int|long|short|String|VarInfo) [^(]*,.*;"
+
+
 (defun ensure-in-same-file (regex1 regex2)
   "Ensure that if regex1 is in any file, then regex2 is in that file too."
   (tags-search regex1)
