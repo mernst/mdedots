@@ -1326,6 +1326,8 @@ transformative
 transpilation
 transpilers
 triaged
+triages
+triaging
 tryLock
 tuple
 tuples
@@ -1342,6 +1344,7 @@ unassignable
 unclosed
 uncompilable
 uncomputability
+uncomputable
 undecidability
 underapproximation
 underconstrained

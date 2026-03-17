@@ -667,7 +667,6 @@ proposal")
   (interactive)
   (tags-query-replace "\\([a-z][(){}[:blank:]]+\\)\\\\Cref" "\\1\\\\cref")
   (tags-query-replace "\\(^[%.!?[:blank:]]][(){}[:blank:]]+\\)\\\\Cref" "\\1\\\\cref")
-
   )
 
 
