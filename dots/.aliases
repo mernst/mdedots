@@ -52,6 +52,7 @@ alias usejdk17='(cd ~/java && rm -f jdk && ln -s jdk17 jdk)'
 alias usejdk21='(cd ~/java && rm -f jdk && ln -s jdk21 jdk)'
 alias usejdk24='(cd ~/java && rm -f jdk && ln -s jdk24 jdk)'
 alias usejdk25='(cd ~/java && rm -f jdk && ln -s jdk25 jdk)'
+alias usejdk26='(cd ~/java && rm -f jdk && ln -s jdk26 jdk)'
 TMP=$(mktemp -t .aliases-trap.XXXXXX)
 trap 'rm $TMP* 2>/dev/null' EXIT
 # Argument is a directory suffix like "fork-mernst-branch-scene-to-stub-writer-debug-3",
