@@ -629,7 +629,7 @@
 
      ;; both URLs work as of fall 2007
      ("mwebx" "http://homes.cs.washington.edu/~mernst/")
-     ("mwebcx" "My calendar is in Google Apps as mernst@cs.washington.edu or at http://homes.cs.washington.edu/~mernst/calendar.html .")
+     ("mwebcx" "My calendar is in Google Apps as mernst@cs.washington.edu or at http://homes.cs.washington.edu/~mernst/calendar.html .\nCan you suggest a few times that are good for you?")
      ("mwebdx" "http://homes.cs.washington.edu/~mernst/directions.html")
      ("catwebx" "http://cathowell.blogspot.com/")
      ("catblogx" "http://cathowell.blogspot.com/")
