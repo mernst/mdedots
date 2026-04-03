@@ -139,6 +139,9 @@ spam_search(
     )
     + ")"
 )
+spam_search(
+    "(Ihr Konto) OR (ich bin) OR (ich habe) OR (Nachricht) OR (kurze Frage) OR (anfrage zu)"
+)
 # Portuguese
 spam_search(
     '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR '
@@ -222,6 +225,7 @@ spam_search('(from:"Check Point" OR from:"Staples Technology Solutions")')
 spam_search("(from:FB)")
 spam_search('(from:"Amalia Meyer" OR from:"Anna Müller")')
 spam_search('(from:"AAA" OR from:"topgolf" OR from:"Open Access Government")')
+spam_search('(from:"Horst Thomas")')
 
 input("Press ENTER")
 
@@ -241,8 +245,15 @@ spam_search("bara@kolliers.com")
 input("Press ENTER")
 
 print("Suspicious senders, part 4")
+spam_search("from:cognella.com")
 spam_search("from:eyebuydirect.com")
+spam_search("from:matscience-summit.com")
+spam_search("from:medtechmvp")
+spam_search("from:medlinepapersoa.online")
+spam_search("from:editor")
 spam_search("from:journal")
+spam_search("keynote")
+spam_search("anyworkanywhere")
 spam_search("from:team")
 spam_search("from:trump")
 input("Press ENTER")
@@ -277,15 +288,18 @@ spam_search('"sam%27s club"')
 spam_search('"nick hellen"')
 spam_search('"michael duwayne"')
 spam_search('"tractor supply"')
-
+spam_search('"Sky Devialet Soundbox"')
 spam_search("diabetes")
+spam_search("tinnitus")
 spam_search("CFP AND (Scopus OR subject:journal)")
+
 spam_search("subject:donation")
 spam_search("subject:investment")
 spam_search("subject:quota")
 spam_search("subject:urgent")
 spam_search("subject:spam")
 spam_search("subject:strategies")
+
 input("Press ENTER")
 
 print("Frequent topics 2")
@@ -304,7 +318,7 @@ spam_search("trump")
 # spam_search("Kamala Harris")
 input("Press ENTER")
 
-input("Now the rest (read these in Emacs)")
+input("Now the rest (read these in Emacs, on the same machine running a browser).")
 print("1. Sort by from, look for frequent senders with non-uniform subject lines.")
 print("2. Sort by subject, scan for non-spam.")
 print("3. Delete all spam from Gmail.")
