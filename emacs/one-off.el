@@ -476,10 +476,15 @@ Transfer them to source that appears later in the file."
     (replace-regexp-noninteractive "^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]\\+[0-9][0-9][0-9][0-9] " "")
     (goto-char (point-min))
     (query-replace-regexp "at \\(Sun\\|Mon\\|Tue\\|Wed\\|Thu\\|Fri\\|Sat\\) \\(Jan\\|Feb\\|Mar\\|Apr\\|May\\|Jun\\|Jul\\|Aug\\|Sep\\|Oct\\|Nov\\|Dec\\) [0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9] PM" "at DATE")
+
+    ;; Directory names
     (goto-char (point-min))
     (replace-regexp-noninteractive "^/__w/1/s/" "")
     (goto-char (point-min))
     (replace-regexp-noninteractive "^/root/project/" "")
+    (goto-char (point-min))
+    (replace-regexp-noninteractive "^/home/runner/work/\\(.+\\)/\\1/" "")
+
     (goto-char (point-min))
     (replace-regexp-noninteractive ", Time elapsed: [0-9.]+ sec" "")
     (goto-char (point-min))
