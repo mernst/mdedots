@@ -1589,7 +1589,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
         ".*/checker-framework[^/]*/checker/tests/nullness-extra/[^/]*/Out.txt"
         ".*/checker-framework[^/]*/checker/tests/whole-program-inference/annotated/.*" ;; obsolescent
         ".*/checker-framework[^/]*/checker/tests/\\(ainfer\\|wpi\\)-.*/\\(annotated\\|inference-output\\)/.*"
-        ".*/checker-framework[^/]*/dataflow/manual/dataflow.\\(html\\|log\\|out\\)"
+        ".*/checker-framework[^/]*/dataflow/manual/\\(dataflow\\|checker-framework-dataflow-manual\\).\\(html\\|log\\|out\\)"
         ".*/checker-framework[^/]*/docs/examples/MavenExample/Out.txt"
         ".*/checker-framework[^/]*/docs/manual/.*\\.svg"
         ".*/checker-framework[^/]*/docs/manual/bib/.*"
