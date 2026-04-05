@@ -1784,6 +1784,15 @@ How does this differ from whatever is built in?"
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; JSON
+;;;
+
+(add-hook 'json-mode-hook
+          (lambda ()
+            (add-hook 'before-save-hook #'json-pretty-print-buffer nil t)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; m4 and conf
 ;;;
 
