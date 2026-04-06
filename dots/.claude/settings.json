@@ -1,7 +1,4 @@
 {
-  "enabledPlugins": {
-    "rust-analyzer-lsp@claude-plugins-official": true
-  },
   "permissions": {
     "allow": [
       "Bash(./gradlew:*)",
@@ -28,5 +25,8 @@
     "deny": [],
     "ask": []
   },
-  "skipDangerousModePermissionPrompt": false
+  "enabledPlugins": {
+    "rust-analyzer-lsp@claude-plugins-official": true
+  },
+  "skipDangerousModePermissionPrompt": true
 }

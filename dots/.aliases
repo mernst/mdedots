@@ -138,6 +138,7 @@ alias aoeu='if [ $DISPLAY ]; then setxkbmap us; else loadkeys us; fi'
 alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 
 alias clauded='claude --dangerously-skip-permissions'
+alias claudea='claude --enable-auto-mode'
 
 ###########################################################################
 ### Printing

@@ -1787,9 +1787,15 @@ How does this differ from whatever is built in?"
 ;;; JSON
 ;;;
 
-(add-hook 'json-mode-hook
-          (lambda ()
-            (add-hook 'before-save-hook #'json-pretty-print-buffer nil t)))
+(defun mde-json-mode-hook ()
+  (message "here I am")
+  (apheleia-mode +1)
+  (setq tab-width 2)
+  (setq js-indent-level 2)
+  )
+
+(add-hook 'json-mode-hook 'mde-json-mode-hook)
+(add-hook 'js-json-mode-hook 'mde-json-mode-hook)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
