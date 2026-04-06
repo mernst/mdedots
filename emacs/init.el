@@ -45,13 +45,12 @@
               hydra hydra hydra idlwave idlwave idlwave idlwave
               jsonrpc lsp-java lsp-java lsp-java lsp-java lsp-ui
               lsp-ui lsp-ui lsp-ui magit magit magit magit org org org
-              org pfuture pfuture pfuture python python python python
-              python-mode python-mode python-mode python-mode
+              org peg pfuture pfuture pfuture python python python
+              python python-mode python-mode python-mode python-mode
               recompile-on-save recompile-on-save recompile-on-save
-              recompile-on-save rg rg rg rg rustic rustic rustic
-              rustic shell-maker track-changes track-changes
-              track-changes track-changes tramp tramp tramp tramp
-              transient transient transient transient
+              recompile-on-save rg rg rg rg shell-maker track-changes
+              track-changes track-changes track-changes tramp tramp
+              tramp tramp transient transient transient transient
               tree-sitter-langs tree-sitter-langs tree-sitter-langs
               tree-sitter-langs treesit-auto treesit-auto treesit-auto
               treesit-auto verilog-mode verilog-mode verilog-mode
