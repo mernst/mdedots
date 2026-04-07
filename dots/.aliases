@@ -85,7 +85,7 @@ uue() {
     echo "uue: pass one directory argument; received $*"
     return 1
   fi
-  command uuencode "$1" "$1" > "$".UUE
+  command uuencode "$1" "$1" > "$1".UUE
 }
 alias whihc='which'
 
@@ -325,16 +325,16 @@ alias ens2h='ens2 -h'
 
 paps1f() {
   file="$1"
-  paps --font="Monospace 10" --paper letter "$@" > "$1".ps
-  ps2pdf "$1".ps "$1".pdf
-  rm -f "$1".ps
+  paps --font="Monospace 10" --paper letter "$@" > "$file".ps
+  ps2pdf "$file".ps "$file".pdf
+  rm -f "$file".ps
 }
 paps1() { paps1f "$@"; }
 paps2f() {
   file="$1"
-  paps --cpi 18 --header --landscape --columns=2 --paper letter "$@" > "$1".ps
-  ps2pdf "$1".ps "$1".pdf
-  rm -f "$1".ps
+  paps --cpi 18 --header --landscape --columns=2 --paper letter "$@" > "$file".ps
+  ps2pdf "$file".ps "$file".pdf
+  rm -f "$file".ps
 }
 paps2() { paps2f "$@"; }
 
@@ -345,36 +345,38 @@ cedhead() {
   file="$1"
   shift
   date=$(ls -l "$file" | cut -d " " -f 6-7)
-  cedilla -p Letter -w -h "$file,$date,%p" "$1" "$file" "$file.ps"
+  cedilla -p Letter -w -h "$file,$date,%p" "$file" "$file" "$file.ps"
 }
 # These take the file name FIRST, and any other parameters afterward.
 ced1f() {
   file="$1"
   cedhead "$@"
-  ps2pdf "$1".ps "$1".pdf
-  rm -f "$1".ps
+  ps2pdf "$file".ps "$file".pdf
+  rm -f "$file".ps
 }
 ced1() { ced1f "$@"; }
 ced() { ced1f "$@"; }
 ced2f() {
   file="$1"
   ced1 "$@"
-  psnup -2 -d "$1".ps "$1"-2up.ps
-  pdfjam --nup 2x1 --landscape --suffix nup "$1".pdf
+  psnup -2 -d "$file".ps "$file"-2up.ps
+  pdfjam --nup 2x1 --landscape --suffix nup "$file".pdf
 }
 ced2() { ced2f "$@"; }
 # Smaller font.
 ceds() {
+  file="$1"
   cedhead "$@" -s 8
-  ps2pdf "$1".ps "$1".pdf
-  rm -f "$1".ps
+  ps2pdf "$file".ps "$file".pdf
+  rm -f "$file".ps
 }
 
 # This usually turns an unprintable PDF file into a printable one
 pdfclean() {
-  pdftops "$1" "$1".ps
-  ps2pdf "$1".ps
-  rm -f "$1".ps
+  file="$1"
+  pdftops "$file" "$file".ps
+  ps2pdf "$file".ps
+  rm -f "$file".ps
 }
 
 # Convert a markdown file into a HTML file.
@@ -487,7 +489,7 @@ xsc() {
 # Do not use use a jump host.  This is for machines accessible outside cs.washington.edu.
 xswnoj() {
   if [ "$#" -ne 1 ]; then
-    echo "xsw: pass one argument; received $*"
+    echo "xswnoj: pass one argument; received $*"
     return 1
   fi
   nohup xterm -T "$1" -e ssh -X mernst@"$1".cs.washington.edu &
