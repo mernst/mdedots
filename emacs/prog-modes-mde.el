@@ -278,8 +278,6 @@ if point is not in a function."
 ;; (require 'lsp-java nil 'noerror)
 ;; (add-hook 'java-mode-hook #'lsp)
 
-(require 'use-package)
-
 (condition-case nil
     (require 'use-package)
   (file-error
