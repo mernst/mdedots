@@ -1784,6 +1784,21 @@ How does this differ from whatever is built in?"
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; JSON
+;;;
+
+(defun mde-json-mode-hook ()
+  (message "here I am")
+  (apheleia-mode +1)
+  (setq tab-width 2)
+  (setq js-indent-level 2)
+  )
+
+(add-hook 'json-mode-hook 'mde-json-mode-hook)
+(add-hook 'js-json-mode-hook 'mde-json-mode-hook)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; m4 and conf
 ;;;
 
