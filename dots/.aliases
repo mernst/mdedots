@@ -139,6 +139,7 @@ alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 
 alias clauded='claude --dangerously-skip-permissions'
 alias claudea='claude --enable-auto-mode'
+alias claudemax='clauded --model opus --effort max'
 
 ###########################################################################
 ### Printing
