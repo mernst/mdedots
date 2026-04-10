@@ -38,6 +38,7 @@
   (require 'util-mde))
 
 (autoload 'replace-all-occurrrences-iteratively "util-mde")
+(autoload 'tags-query-replace-noerror "etags-mde")
 
 
 

@@ -23,7 +23,8 @@
 ;;   eventually position point on the (defstruct mystruct ...) form which
 ;;   defined that function.
 
-;; * Add tags-replace, like tags-query-replace.
+;; * Add tags-replace-regexp, like tags-query-replace.
+;;   NOTE: This is defined in separate file "tags-replace.el".
 
 ;; * Add tags-query-replace-noerror, which throws no error.
 
@@ -36,6 +37,12 @@
 
 ;; Probably a bad idea, since loading etags.el loads etags-mde.el
 ;; (eval-when-compile (require 'etags))
+
+(autoload 'tags-replace-regexp "tags-replace"
+  "Do replacement in all files in the TAGS table, without querying or erring." t)
+(autoload 'fileloop-initialize-replace-noquery "tags-replace"
+  "Initialize a new round of replace on several files." t)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Defaults for tags-search
@@ -285,38 +292,38 @@ of tag regexps to try if that search fails.")
              (concat "(define-structure (?" structure-name-re tag-end-re))))
          ;; For MSR
          (zaphod-node-names
-           (append
-            (if prefix
-                (cond ((string= prefix "vdg")
-                       (list
-                        (concat "(define-vdg-\\(call-\\|lambda-\\)?node (?"
-                                fullname-re tag-end-re)
-                        (concat "(define-vdg:primop-accessors "
-                                structure-name-re tag-end-re)))
-                      ((string= prefix "pdg")
-                       (list
-                        (concat "(define-pdg-structure (?" fullname-re tag-end-re)))
-                      ((string= prefix "cfg")
-                       (list
-                        (concat "(define-cfg-structure (?" fullname-re tag-end-re)))
-                      ((string= prefix "vtype")
-                       (list
-                        (concat "(define-vtype (?" fullname-re tag-end-re)))
-                      ((string= prefix "source")
-                       (list
-                        (concat "(define-source-node (?" fullname-re tag-end-re)
-                        (concat "(define-vdg:primop-accessors "
-                                structure-name-re tag-end-re)))
-                      ;; ((or (string= prefix "etext")
-                      ;;      (string= prefix "source")
-                      ;;      (string= prefix "portinst"))
-                      ;;  (list
-                      ;;   (concat "(define-etext-accessors " structure-name-re)))
-                      (t
-                       '()))
-              '())
-            (list
-             (concat "(define-disjoint-type (?" structure-name-re)))))
+          (append
+           (if prefix
+               (cond ((string= prefix "vdg")
+                      (list
+                       (concat "(define-vdg-\\(call-\\|lambda-\\)?node (?"
+                               fullname-re tag-end-re)
+                       (concat "(define-vdg:primop-accessors "
+                               structure-name-re tag-end-re)))
+                     ((string= prefix "pdg")
+                      (list
+                       (concat "(define-pdg-structure (?" fullname-re tag-end-re)))
+                     ((string= prefix "cfg")
+                      (list
+                       (concat "(define-cfg-structure (?" fullname-re tag-end-re)))
+                     ((string= prefix "vtype")
+                      (list
+                       (concat "(define-vtype (?" fullname-re tag-end-re)))
+                     ((string= prefix "source")
+                      (list
+                       (concat "(define-source-node (?" fullname-re tag-end-re)
+                       (concat "(define-vdg:primop-accessors "
+                               structure-name-re tag-end-re)))
+                     ;; ((or (string= prefix "etext")
+                     ;;      (string= prefix "source")
+                     ;;      (string= prefix "portinst"))
+                     ;;  (list
+                     ;;   (concat "(define-etext-accessors " structure-name-re)))
+                     (t
+                      '()))
+             '())
+           (list
+            (concat "(define-disjoint-type (?" structure-name-re)))))
     ;; Put zaphod-node-names first as they're more specific
     (nconc zaphod-node-names structure-names)))
 
@@ -374,6 +381,36 @@ If the latter returns non-nil, we exit; otherwise we scan the next file."
     (progn
       (setq this-command 'tags-loop-continue)
       (tags-loop-continue first-time))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; get-all-tags-files
+;;;
+
+
+(defun tags-replace-regexp (from to &optional case-fold)
+  "Do replacement in all files in the TAGS table, without querying or erring."
+  (fileloop-initialize-replace-noquery regexp replacement (get-all-tags-files) case-fold)
+  (fileloop-continue))
+
+
+
+
+(defun get-all-tags-files ()
+  "Return a list of all fully qualified file names in the current tags table."
+  (let (res)
+    (save-excursion
+      (let ((first-time t))
+        (while (visit-tags-table-buffer (not first-time))
+          (setq first-time nil)
+          (setq res (append res (mapcar 'expand-file-name (tags-table-files)))))))
+    res))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; End.
+;;;
+
+
 
 
 (provide 'etags-mde)

@@ -6,32 +6,16 @@
 ;; The code in this file is `tags-query-replace' and `fileloop-initialize-replace'
 ;; from Emacs 30.1, slightly modified to not query the user.
 
-;; Your .emacs file must autoload `tags-replace':
-;; 
+;; Your .emacs file must include these autoloads:
+;; (autoload 'tags-replace-regexp "tags-replace"
+;;   "Do replacement in all files in the TAGS table, without querying or erring." t)
+;; (autoload 'fileloop-initialize-replace-noquery "tags-replace"
+;;   "Initialize a new round of replace on several files." t)
 
-(defun tags-replace (from to &optional delimited files)
-  "Do `replace-regexp' of FROM with TO on all files listed in tags table, without query.
-Third arg DELIMITED (prefix arg) means replace only word-delimited matches.
-If you exit (\\[keyboard-quit], RET or q), you can resume the query replace
-with the command \\[fileloop-continue].
 
-As each match is found, the user must type a character saying
-what to do with it.  Type SPC or `y' to replace the match,
-DEL or `n' to skip and go to the next match.  For more directions,
-type \\[help-command] at that time.
-
-For non-interactive use, this is superseded by `fileloop-initialize-replace'."
-  (declare (advertised-calling-convention (from to &optional delimited) "27.1"))
-  (interactive (query-replace-read-args "Tags query replace (regexp)" t t))
-  (fileloop-initialize-replace-noquery ;; CHANGED
-   from to
-   (tags--compat-files (or files t))
-   (if (equal from (downcase from)) nil 'default)
-   delimited)
-  (fileloop-continue))
-
+;; Copied from fileloop-initialize-replace.
 (defun fileloop-initialize-replace-noquery (from to files case-fold &optional delimited)
-  "Initialize a new round of query&replace on several files.
+  "Initialize a new round of replace on several files.
 FROM is a regexp and TO is the replacement to use.
 FILES describes the files, as in `fileloop-initialize'.
 CASE-FOLD can be t, nil, or `default':
@@ -60,6 +44,55 @@ DELIMITED if non-nil means replace only word-delimited matches."
          (perform-replace from to nil t delimited nil multi-query-replace-map ;; CHANGED
                           (gethash (current-buffer) mstart (point-min))
                           (point-max)))))))
+
+(defun tags-replace-regexp (from to &optional case-fold)
+  "Do replacement in all files in the TAGS table, without querying or erring."
+  (interactive
+   (let ((common
+	  (query-replace-read-args
+	   (concat "Query replace"
+		   (if current-prefix-arg
+		       (if (eq current-prefix-arg '-) " backward" " word")
+		     "")
+		   " regexp"
+		   (if (use-region-p) " in region" ""))
+	   t)))
+     (list (nth 0 common) (nth 1 common) (nth 2 common)
+	   ;; These are done separately here
+	   ;; so that command-history will record these expressions
+	   ;; rather than the values they had this time.
+	   (use-region-beginning) (use-region-end)
+	   (nth 3 common)
+	   (use-region-noncontiguous-p))))
+  (fileloop-initialize-replace-noquery from to (get-all-tags-files) case-fold)
+  (condition-case nil
+      (fileloop-continue)
+    (user-error nil))
+  )
+
+
+;; OLDER.
+(defun tags-replace (from to &optional delimited files)
+  "Do `replace-regexp' of FROM with TO on files in tags table, without query.
+Third arg DELIMITED (prefix arg) means replace only word-delimited matches.
+If you exit (\\[keyboard-quit], RET or q), you can resume the query replace
+with the command \\[fileloop-continue].
+
+As each match is found, the user must type a character saying
+what to do with it.  Type SPC or `y' to replace the match,
+DEL or `n' to skip and go to the next match.  For more directions,
+type \\[help-command] at that time.
+
+For non-interactive use, this is superseded by `fileloop-initialize-replace'."
+  (declare (advertised-calling-convention (from to &optional delimited) "27.1"))
+  (interactive (query-replace-read-args "Tags query replace (regexp)" t t))
+  (fileloop-initialize-replace-noquery ;; CHANGED
+   from to
+   (tags--compat-files (or files t))
+   (if (equal from (downcase from)) nil 'default)
+   delimited)
+  (fileloop-continue))
+
 
 
 (provide 'tags-replace)

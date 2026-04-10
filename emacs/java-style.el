@@ -10,6 +10,11 @@
 (require 'etags)
 ;; (require 'etags-mde)
 
+(autoload 'tags-replace "tags-replace")
+(autoload 'tags-replace-regexp "tags-replace")
+(autoload 'tags-table-files "etags")
+(autoload 'get-all-tags-files "etags-mde")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Java style
@@ -28,21 +33,21 @@ http://docs.oracle.com/javase/tutorial/essential/io/legacy.html
 These Emacs commands automate some of them."
   (interactive)
   ;; Todo: these first few should not trigger on `new File("string")
-  (tags-query-replace-noerror "new File(\\([^,)]*\\), \\([^,)]*\\))" "\\1.resolve(\\2)")
-  (tags-query-replace-noerror "new File(\\([^,)]*\\))" "Paths.get(\\1)")
-  (tags-query-replace-noerror "\\(\\(^\\|,\\|(\\|/\\*@\\(NonNull\\|Nullable\\)\\*/\\) *\\)File\\b" "\\1Path")
-  (tags-query-replace-noerror "<File>" "<Path>")
-  ;; too many other "getName()" methods: (tags-query-replace-noerror "\\.getName()" ".toString()")
-  (tags-query-replace-noerror "\\(file\\|path\\)\\.getName()" "\\1.getFileName().toString()")
-  (tags-query-replace-noerror "\\.getParent()" ".getParent().toString()")
-  (tags-query-replace-noerror "\\.getParentFile()" ".getParent()")
-  (tags-query-replace-noerror "\\.getAbsolute\\(File\\|Path\\)()" ".toAbsolutePath().toString()")
-  (tags-query-replace-noerror "\\b\\([A-Za-z0-9_]+\\)\\b\\.exists()" "Files.exists(\\1)")
-  (tags-query-replace-noerror "\\b\\([A-Za-z0-9_]+\\)\\b\\.canRead()" "Files.isReadable(\\1)")
-  (tags-query-replace-noerror "\\b\\([A-Za-z0-9_]+\\)\\b\\.canWrite()" "Files.isWritable(\\1)")
-  (tags-query-replace-noerror "\\b\\([A-Za-z0-9_]+\\)\\b\\.canExecute()" "Files.isExecutable(\\1)")
-  (tags-query-replace-noerror "\\b\\([A-Za-z0-9_]+\\)\\b\\.isDirectory()" "Files.isDirectory(\\1)")
-  (tags-query-replace-noerror "\\b\\([A-Za-z0-9_]+\\)\\b\\.mkdirs()" "Files.createDirectory(\\1)")
+  (tags-replace-regexp "new File(\\([^,)]*\\), \\([^,)]*\\))" "\\1.resolve(\\2)")
+  (tags-replace-regexp "new File(\\([^,)]*\\))" "Paths.get(\\1)")
+  (tags-replace-regexp "\\(\\(^\\|,\\|(\\|/\\*@\\(NonNull\\|Nullable\\)\\*/\\) *\\)File\\b" "\\1Path")
+  (tags-replace-regexp "<File>" "<Path>")
+  ;; too many other "getName()" methods: (tags-replace-regexp "\\.getName()" ".toString()")
+  (tags-replace-regexp "\\(file\\|path\\)\\.getName()" "\\1.getFileName().toString()")
+  (tags-replace-regexp "\\.getParent()" ".getParent().toString()")
+  (tags-replace-regexp "\\.getParentFile()" ".getParent()")
+  (tags-replace-regexp "\\.getAbsolute\\(File\\|Path\\)()" ".toAbsolutePath().toString()")
+  (tags-replace-regexp "\\b\\([A-Za-z0-9_]+\\)\\b\\.exists()" "Files.exists(\\1)")
+  (tags-replace-regexp "\\b\\([A-Za-z0-9_]+\\)\\b\\.canRead()" "Files.isReadable(\\1)")
+  (tags-replace-regexp "\\b\\([A-Za-z0-9_]+\\)\\b\\.canWrite()" "Files.isWritable(\\1)")
+  (tags-replace-regexp "\\b\\([A-Za-z0-9_]+\\)\\b\\.canExecute()" "Files.isExecutable(\\1)")
+  (tags-replace-regexp "\\b\\([A-Za-z0-9_]+\\)\\b\\.isDirectory()" "Files.isDirectory(\\1)")
+  (tags-replace-regexp "\\b\\([A-Za-z0-9_]+\\)\\b\\.mkdirs()" "Files.createDirectory(\\1)")
   ;;
   (tags-search "deleteOnExit")
   )
@@ -50,10 +55,10 @@ These Emacs commands automate some of them."
 
 (defun remove-redundant-null-test ()
   (interactive)
-  (tags-query-replace-noerror "((\\([A-Za-z0-9_]+\\) != null) && \\((\\1 instanceof [A-Za-z0-9_]+)\\))" "\\2")
-  (tags-query-replace-noerror "(\\([A-Za-z0-9_]+\\) != null && \\(\\1 instanceof [A-Za-z0-9_]+\\))" "(\\2)")
-  (tags-query-replace-noerror "((\\([A-Za-z0-9_]+\\) == null) || \\(!(\\1 instanceof [A-Za-z0-9_]+)\\))" "(\\2)")
-  (tags-query-replace-noerror "(\\([A-Za-z0-9_]+\\) != null || \\(!(\\1 instanceof [A-Za-z0-9_]+)\\))" "(\\2)")
+  (tags-replace-regexp "((\\([A-Za-z0-9_]+\\) != null) && \\((\\1 instanceof [A-Za-z0-9_]+)\\))" "\\2")
+  (tags-replace-regexp "(\\([A-Za-z0-9_]+\\) != null && \\(\\1 instanceof [A-Za-z0-9_]+\\))" "(\\2)")
+  (tags-replace-regexp "((\\([A-Za-z0-9_]+\\) == null) || \\(!(\\1 instanceof [A-Za-z0-9_]+)\\))" "(\\2)")
+  (tags-replace-regexp "(\\([A-Za-z0-9_]+\\) != null || \\(!(\\1 instanceof [A-Za-z0-9_]+)\\))" "(\\2)")
 
   )
 
@@ -69,7 +74,7 @@ These Emacs commands automate some of them."
   (tags-replace "return (\\(-?[][A-Za-z0-9_.]+\\));$" "return \\1;")
   (tags-replace "return (\\(\\\"[^\\\"]*\\\"\\));$" "return \\1;")
   ;; This isn't fruitful; the two tags-replace forms above handle all cases.
-  ;; (tags-query-replace-noerror "return (\\([^()\n]*\\));$" "return \\1;")
+  ;; (tags-replace-regexp "return (\\([^()\n]*\\));$" "return \\1;")
   )
 
 
@@ -89,7 +94,7 @@ statement.  Does replacement in any file in a currently-visited tags table."
   ;; is broken across lines.
 
   ;; avoid matching "else if"; should search for it separately.
-  (tags-query-replace-noerror "} else \\([^\ni][^\n{]*;\\)$" "} else { \\1 }")
+  (tags-replace-regexp "} else \\([^\ni][^\n{]*;\\)$" "} else { \\1 }")
 
   ;; Find if/for statements that end with a close paren, which suggests the
   ;; body is on the next line.  Also else statements that end a line.
@@ -100,7 +105,7 @@ statement.  Does replacement in any file in a currently-visited tags table."
         (message "match-data after tags-search: %s" (match-data)))
     (while t
       ;; The call to looking-back has an important side effect:  it sets (match-data).
-      (if (not (looking-back tags-regex nil))
+      (if (not (looking-back tags-regexp nil))
 	  (error "This can't happen: not looking-back from %d: %s"
 		 (point) (buffer-substring (max 0 (- (point) 45)) (point))))
       (if java-style-debug
@@ -201,14 +206,14 @@ Works over the currently-visited tags table."
   ;; Clean up formatting of curly braces.
   ;; For example, don't put curly braces before if or else on their own line.
   ;; This might all be obviated by use of a formatter such as google-java-format.
-  (tags-query-replace-noerror "^\\( *\\)}\n *else" "\\1} else")
-  (tags-query-replace-noerror "\\([{;]\\) *}\n\\( *\\)else" "\\1\n\\2} else")
-  (tags-query-replace-noerror "}\n *else" "} else")
-  (tags-query-replace-noerror " else\n *{" " else {")
-  (tags-query-replace-noerror "\\( *\\)\\(.*) \\|else \\)\\(continue;\\|return\\b[^;\n]*;\\)$" "\\1\\2{\n\\1  \\3\n\\1}")
-  (tags-query-replace-noerror "\\(\\(else \\)?if (.*\\|else\\)\n *{" "\\1 {")
+  (tags-replace-regexp "^\\( *\\)}\n *else" "\\1} else")
+  (tags-replace-regexp "\\([{;]\\) *}\n\\( *\\)else" "\\1\n\\2} else")
+  (tags-replace-regexp "}\n *else" "} else")
+  (tags-replace-regexp " else\n *{" " else {")
+  (tags-replace-regexp "\\( *\\)\\(.*) \\|else \\)\\(continue;\\|return\\b[^;\n]*;\\)$" "\\1\\2{\n\\1  \\3\n\\1}")
+  (tags-replace-regexp "\\(\\(else \\)?if (.*\\|else\\)\n *{" "\\1 {")
 
-  (tags-query-replace-noerror
+  (tags-replace-regexp
    (concat "^\\( *\\)"
 	   (concat
 	    "\\b\\(\\(?:if\\|for\\) "
@@ -239,8 +244,8 @@ Works over the currently-visited tags table."
 
 (defun improve-java-comment-style ()
   "Add periods at end of sentences.  Requires examination of each match."
-  (tags-query-replace-noerror "^\\( *// [A-Z].*[^.!?,;:]\\)$" "\\1.")
-  (tags-query-replace-noerror "\\(^ *// [^\n]*[^.!?,;:\n]\\)\\(\n *[^/ \n]\\)" "\\1.\\2")
+  (tags-replace-regexp "^\\( *// [A-Z].*[^.!?,;:]\\)$" "\\1.")
+  (tags-replace-regexp "\\(^ *// [^\n]*[^.!?,;:\n]\\)\\(\n *[^/ \n]\\)" "\\1.\\2")
   )
 
 
@@ -256,16 +261,15 @@ Works over the currently-visited tags table."
   ;; Need to run javadoc-fix-code-tags until it has no effect.
   (javadoc-fix-code-tags)
   (javadoc-fix-code-tags)
-  (condition-case nil
-      (improve-javadoc-code-style)
-    (error nil))
+  (improve-javadoc-code-style)
 
   ;; Text in Javadoc.
   (improve-javadoc-description-style)
   (improve-javadoc-tag-style)
   (javadoc-whether-to-true-if)
   (improve-javadoc-initial-verb)
-  (javadoc-add-summary))
+  (javadoc-add-summary)
+  (message "Completed improve-javadoc-style."))
 
 
 ;; TODO: More Javadoc fixup, for /** and */ not on their own line when they should be:
@@ -279,22 +283,22 @@ Works over the currently-visited tags table."
 ;; After running, search for "<code>" and "<tt>" to clean up stragglers by hand.
 (defun javadoc-fix-code-tags ()
   (interactive)
-  (tags-query-replace-noerror (concat "^\\( *\\(?:/\\*\\)?\\*.*\\)"
-                                      "<\\(?:code\\|tt\\)> *\\(?:\n *\\* *\\)?"
-                                      "\\([^<>@&{}]+?\\)\\(?:\n *\\* *\\)?"
-                                      " *</\\(?:code\\|tt\\)>")
-                              "\\1{@code \\2}")
+  (tags-replace-regexp (concat "^\\( *\\(?:/\\*\\)?\\*.*\\)"
+                               "<\\(?:code\\|tt\\)> *\\(?:\n *\\* *\\)?"
+                               "\\([^<>@&{}]+?\\)\\(?:\n *\\* *\\)?"
+                               " *</\\(?:code\\|tt\\)>")
+                       "\\1{@code \\2}")
   ;; Wouldn't this be caught by the above?
-  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\(false\\|null\\|true\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
-  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\([A-Za-z_0-9\\.()\\[\\]]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
-  (tags-query-replace-noerror "<\\(?:code\\|tt\\)>\\([^<>{}]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
+  (tags-replace-regexp "<\\(?:code\\|tt\\)>\\(false\\|null\\|true\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
+  (tags-replace-regexp "<\\(?:code\\|tt\\)>\\([A-Za-z_0-9\\.()\\[\\]]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
+  (tags-replace-regexp "<\\(?:code\\|tt\\)>\\([^<>{}]+\\)</\\(?:code\\|tt\\)>" "{@code \\1}")
   )
 ;; Same thing, but permitting @ in the body:
-;;  (tags-query-replace-noerror "^\\( *\\(?:/\\*\\)?\\*.*\\)<\\(?:code\\|tt\\)>\\(?:\n *\\* *\\)?\\([^<>&]+?\\)\\(?:\n *\\* *\\)?</\\(?:code\\|tt\\)>" "\\1{@code \\2}")
+;;  (tags-replace-regexp "^\\( *\\(?:/\\*\\)?\\*.*\\)<\\(?:code\\|tt\\)>\\(?:\n *\\* *\\)?\\([^<>&]+?\\)\\(?:\n *\\* *\\)?</\\(?:code\\|tt\\)>" "\\1{@code \\2}")
 ;; Also:
-;;   (tags-query-replace-noerror "<code>\n" "{@code\n")
-;;   (tags-query-replace-noerror "<code>" "{@code ")
-;;   (tags-query-replace-noerror "</code>" "}")
+;;   (tags-replace-regexp "<code>\n" "{@code\n")
+;;   (tags-replace-regexp "<code>" "{@code ")
+;;   (tags-replace-regexp "</code>" "}")
 
 
 (defun improve-javadoc-code-style ()
@@ -304,19 +308,19 @@ for files in the current TAGS table."
 
   ;; TODO: These should not occur within <code>...</code>
 
-  (tags-query-replace-noerror "&lt;--?&gt;" "&harr;")
-  (tags-query-replace-noerror "&lt;--?" "&larr;")
-  (tags-query-replace-noerror "--?&gt;" "&rarr;")
-  (tags-query-replace-noerror "&lt;==?&gt;" "&hArr;")
-  (tags-query-replace-noerror "&lt;==" "&hArr;")
-  (tags-query-replace-noerror "==?&gt;" "&rArr;")
+  (tags-replace-regexp "&lt;--?&gt;" "&harr;")
+  (tags-replace-regexp "&lt;--?" "&larr;")
+  (tags-replace-regexp "--?&gt;" "&rarr;")
+  (tags-replace-regexp "&lt;==?&gt;" "&hArr;")
+  (tags-replace-regexp "&lt;==" "&hArr;")
+  (tags-replace-regexp "==?&gt;" "&rArr;")
 
-  (tags-query-replace-noerror "\\({@code[^}]?*\\)&lt;" "\\1<")
-  (tags-query-replace-noerror "\\({@code[^}]?*\\)&gt;" "\\1>")
+  (tags-replace-regexp "\\({@code[^}]?*\\)&lt;" "\\1<")
+  (tags-replace-regexp "\\({@code[^}]?*\\)&gt;" "\\1>")
 
   ;; Too many false positives, though good to do in general.
-  ;; (tags-query-replace-noerror "&lt;" "<")
-  ;; (tags-query-replace-noerror "&gt;" ">")
+  ;; (tags-replace-regexp "&lt;" "<")
+  ;; (tags-replace-regexp "&gt;" ">")
   )
 
 
@@ -353,20 +357,14 @@ for files in the current TAGS tables."
 			"\\(\n *\\*/\\|\n *\\* *@\\)"))
 	(replacement "\\1\\2"))
     ;; Do it twice because matches may overlap.
-    (condition-case nil
-	(tags-replace regexp replacement)
-      (error nil))
-    (condition-case nil
-	(tags-replace regexp replacement)
-      (error nil))
+    (tags-replace-regexp regexp replacement)
+    (tags-replace-regexp regexp replacement)
     )
   
-  (condition-case nil
-      (tags-replace "\\(@\\(?:param[ \t\n*]+[A-Za-z0-9_]+\\|return\\)\\) +- +" "\\1 ")
-    (error nil))
+  (tags-replace-regexp "\\(@\\(?:param[ \t\n*]+[A-Za-z0-9_]+\\|return\\)\\) +- +" "\\1 ")
 
   ;; PROBLEM: Execution does not get to here.
-  (message "Execution got to here.")
+  (message "In improve-javadoc-tag-style, execution got to here.")
 
   ;; Start descriptive text with lowercase letter.
   (condition-case nil
@@ -391,26 +389,17 @@ for files in the current TAGS tables."
   ;; (Run until it finds no more issues; would twice be enough?)
   (let ((regexp "\\(^ *\\* @\\(?:param\\|return\\|throws\\|exception\\)[^@./]*\\)\\.\\([ \n]*\\([* \n]* @\\|[* \n]*\\*/\\)\\)")
 	(replacement "\\1\\2"))
-    (condition-case nil
-	(tags-replace regexp replacement)
-      (error nil))
-    (condition-case nil
-	(tags-replace regexp replacement)
-      (error nil))
-    (condition-case nil
-	(tags-replace regexp replacement)
-      (error nil))
+    (tags-replace-regexp regexp replacement)
+    (tags-replace-regexp regexp replacement)
+    (tags-replace-regexp regexp replacement)
     )
 
-  (condition-case nil
-      (tags-replace " \\*\\*/" " */")
-    (error nil))
+  (tags-replace-regexp " \\*\\*/" " */")
 
   ;; Missing period at the end of the main part of the Javadoc:
-  (condition-case nil
-      (tags-replace "\\(/\\*\\*[^@./]*\\(?:\\(?:{@\\(?:link\\|code\\) [^}]*}\\|[.!?][)]? \\)[^@./]*\\)+[^.!? \n]\\)\\([ \n]*\\*/\\)"
-		    "\\1.\\2")
-    (error nil))
+  (tags-replace-regexp
+   "\\(/\\*\\*[^@./]*\\(?:\\(?:{@\\(?:link\\|code\\) [^}]*}\\|[.!?][)]? \\)[^@./]*\\)+[^.!? \n]\\)\\([ \n]*\\*/\\)"
+   "\\1.\\2")
 
   ;; Non-capitalized first letter in the main part of the Javadoc:
   (let ((case-fold-search nil))
@@ -427,7 +416,7 @@ The description is everything but the block tags (such as @param and @return)."
   (interactive)
 
   ;; End the first phrase with a period.
-  (tags-query-replace-noerror
+  (tags-replace-regexp
    (concat "\\(^ */\\*\\*\\(?: *\n *\\*\\)? *[A-Z][^.\n]*\\(?: *\n *\\* *[^.\n]*\\)?\\(?:[a-z0-9]\\)\\)"
 	   "\\( *\\(\\*/$\\|\n *\\* *\n\\)\\)")
    "\\1.\\2")
@@ -435,17 +424,17 @@ The description is everything but the block tags (such as @param and @return)."
 
 (defun javadoc-whether-to-true-if ()
   "Replace \"whether\" by \"true if\" in Javadoc."
-  (tags-query-replace-noerror "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether to \\(.*\\) or not$" "\\1 if true, \\2")
-  (tags-query-replace-noerror "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether\\(?: or not\\)? to " "\\1 if true, ")
-  (tags-query-replace-noerror "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether \\(.*\\) or not$" "\\1 true if \\2")
-  (tags-query-replace-noerror "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether\\(?: or not\\)? " "\\1 true if ")
-  (tags-query-replace-noerror "\\* \\(?:Return\\|Check\\|Determine\\|Get\\|Indicate\\|Test\\)s?\\(?: to see\\)? whether \\(.*\\) or not\\.$" "* Returns true if \\1.")
-  (tags-query-replace-noerror "\\* \\(?:Return\\|Check\\|Determine\\|Get\\|Indicate\\|Test\\)s?\\(?: to see\\)? whether\\(?: or not\\)? " "* Returns true if ")
-  (tags-query-replace-noerror "\\* Whether\\( or not\\)? to " "* If true, ")
-  (tags-query-replace-noerror "\\* Whether or not " "* True if ")
-  (tags-query-replace-noerror "\\* Whether \\(.*\\) or not\\.$" "* True if \\1.")
-  (tags-query-replace-noerror "\\* Whether to \\(.*\\) or not\\.$" "* If true, \\1.")
-  (tags-query-replace-noerror "\\* Whether " "* True if ")
+  (tags-replace-regexp "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether to \\(.*\\) or not$" "\\1 if true, \\2")
+  (tags-replace-regexp "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether\\(?: or not\\)? to " "\\1 if true, ")
+  (tags-replace-regexp "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether \\(.*\\) or not$" "\\1 true if \\2")
+  (tags-replace-regexp "\\(@return\\|@param [a-zA-Z0-9_]+\\)\\(?: indicates\\)? [wW]hether\\(?: or not\\)? " "\\1 true if ")
+  (tags-replace-regexp "\\* \\(?:Return\\|Check\\|Determine\\|Get\\|Indicate\\|Test\\)s?\\(?: to see\\)? whether \\(.*\\) or not\\.$" "* Returns true if \\1.")
+  (tags-replace-regexp "\\* \\(?:Return\\|Check\\|Determine\\|Get\\|Indicate\\|Test\\)s?\\(?: to see\\)? whether\\(?: or not\\)? " "* Returns true if ")
+  (tags-replace-regexp "\\* Whether\\( or not\\)? to " "* If true, ")
+  (tags-replace-regexp "\\* Whether or not " "* True if ")
+  (tags-replace-regexp "\\* Whether \\(.*\\) or not\\.$" "* True if \\1.")
+  (tags-replace-regexp "\\* Whether to \\(.*\\) or not\\.$" "* If true, \\1.")
+  (tags-replace-regexp "\\* Whether " "* True if ")
   )
 
 
@@ -457,14 +446,10 @@ The description is everything but the block tags (such as @param and @return)."
   ;; only if more text follows it.
   (let ((regexp "\\(/\\*\\*\n *\\* \\)\\(Get\\) ")
 	(replacement "\\1Returns "))
-    (condition-case nil
-	(tags-replace regexp replacement)
-      (error nil)))
+    (tags-replace-regexp regexp replacement))
   (let ((regexp "\\(/\\*\\*\n *\\* \\)\\(Return\\|Increment\\) ")
 	(replacement "\\1\\2s "))
-    (condition-case nil
-	(tags-replace regexp replacement)
-      (error nil)))
+    (tags-replace-regexp regexp replacement))
   )
 
 
@@ -473,11 +458,11 @@ The description is everything but the block tags (such as @param and @return)."
 
 (defun javadoc-add-summary ()
   (interactive)
-  (tags-query-replace-noerror (concat "/\\*\\*\\(?:\n *\\*\\)? \\(\\(?:@param\\(?:[^@\n]+\n\\)* *\\* \\)*\\)"
-			              "@return \\(.*\\(?:\n *\\* [^@\n].+\\)\\{0,1\\}[^\n. ]\\)\\.?"
-			              "\\(\n? *\\*/\\|\n *\\* @\\)")
-		              "/** Returns \\2.\n\\1@return \\2 \\3")
-  (tags-query-replace-noerror "/\\*\\* @see \\(.*\\) \\*/" "/**\n   * See {@link \\1}.\n   * @see \\1\n   */")
+  (tags-replace-regexp (concat "/\\*\\*\\(?:\n *\\*\\)? \\(\\(?:@param\\(?:[^@\n]+\n\\)* *\\* \\)*\\)"
+			       "@return \\(.*\\(?:\n *\\* [^@\n].+\\)\\{0,1\\}[^\n. ]\\)\\.?"
+			       "\\(\n? *\\*/\\|\n *\\* @\\)")
+		       "/** Returns \\2.\n\\1@return \\2 \\3")
+  (tags-replace-regexp "/\\*\\* @see \\(.*\\) \\*/" "/**\n   * See {@link \\1}.\n   * @see \\1\n   */")
   )
 
 
@@ -505,12 +490,12 @@ The description is everything but the block tags (such as @param and @return)."
 (defun use-java-diamond-operator ()
   "Change code to use Java's diamond operator."
   (interactive)
-  (tags-query-replace-noerror "\\(\\(?:List\\|Queue\\)<\\([^>]*\\)> [A-Za-z0-9_]+ = new \\(Array\\|Linked\\)?List\\)<\\2>" "\\1<>")
-  (tags-query-replace-noerror "\\(\\(?:Hash\\)?Map<\\(.*\\)> [A-Za-z0-9_]+ = new \\(\\(Linked\\)?Hash\\|Tree\\)Map\\)<\\2>" "\\1<>")
-  (tags-query-replace-noerror "\\(Set<\\([^>]*\\)> [A-Za-z0-9_]+ = new \\(\\(Linked\\)?Hash\\|Tree\\)Set\\)<\\2>" "\\1<>")
-  (tags-query-replace-noerror "\\(Vector<\\([^>]*\\)> [A-Za-z0-9_]+ = new Vector\\)<\\2>" "\\1<>")
-  (tags-query-replace-noerror "\\b\\(\\([A-Za-z0-9_, ]+\\)\\(<.*>\\) [A-Za-z0-9_]+ = new \\2\\)\\3" "\\1<>")
-  (tags-query-replace-noerror "\\b\\(new [A-Za-s0-9_, ]+\\)<.+>(" "\\1<>(")
+  (tags-replace-regexp "\\(\\(?:List\\|Queue\\)<\\([^>]*\\)> [A-Za-z0-9_]+ = new \\(Array\\|Linked\\)?List\\)<\\2>" "\\1<>")
+  (tags-replace-regexp "\\(\\(?:Hash\\)?Map<\\(.*\\)> [A-Za-z0-9_]+ = new \\(\\(Linked\\)?Hash\\|Tree\\)Map\\)<\\2>" "\\1<>")
+  (tags-replace-regexp "\\(Set<\\([^>]*\\)> [A-Za-z0-9_]+ = new \\(\\(Linked\\)?Hash\\|Tree\\)Set\\)<\\2>" "\\1<>")
+  (tags-replace-regexp "\\(Vector<\\([^>]*\\)> [A-Za-z0-9_]+ = new Vector\\)<\\2>" "\\1<>")
+  (tags-replace-regexp "\\b\\(\\([A-Za-z0-9_, ]+\\)\\(<.*>\\) [A-Za-z0-9_]+ = new \\2\\)\\3" "\\1<>")
+  (tags-replace-regexp "\\b\\(new [A-Za-s0-9_, ]+\\)<.+>(" "\\1<>(")
   )
 
 
@@ -711,7 +696,7 @@ The description is everything but the block tags (such as @param and @return)."
   (interactive)
 
   (defvar modifers-plus-space-regex)
-  (setq modifers-plus-space-regex "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)")
+  (setq modifers-plus-space-regexp "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)")
 
   ;; This handles @Nullable on its own line
   (tags-query-replace
@@ -840,24 +825,24 @@ The description is everything but the block tags (such as @param and @return)."
 It is irrelevant if using a code formatter such as google-java-format."
   (interactive)
   ;; avoid matching urls (http://...) and strings ("//")
-  (tags-query-replace-noerror "\\(\\(?:\\`\\|[^:\"/]\\)//\\)\\([^ /\n\t]\\)" "\\1 \\2")
+  (tags-replace-regexp "\\(\\(?:\\`\\|[^:\"/]\\)//\\)\\([^ /\n\t]\\)" "\\1 \\2")
   ;; omit "switch" from this regexp
-  (tags-query-replace-noerror "\\([^_]\\)\\b\\(catch\\|for\\|if\\|while\\|return\\)(" "\\1\\2 (")
-  (tags-query-replace-noerror "){" ") {")
-  (tags-query-replace-noerror "\\(}\\)\\(catch\\|else\\|finally\\)\\b" "\\1 \\2")
-  (tags-query-replace-noerror "\\()\\)\\({[^0-9]\\)" "\\1 \\2")
-  (tags-query-replace-noerror "\\b\\(else\\|finally\\|try\\)\\({\\)" "\\1 \\2")
+  (tags-replace-regexp "\\([^_]\\)\\b\\(catch\\|for\\|if\\|while\\|return\\)(" "\\1\\2 (")
+  (tags-replace-regexp "){" ") {")
+  (tags-replace-regexp "\\(}\\)\\(catch\\|else\\|finally\\)\\b" "\\1 \\2")
+  (tags-replace-regexp "\\()\\)\\({[^0-9]\\)" "\\1 \\2")
+  (tags-replace-regexp "\\b\\(else\\|finally\\|try\\)\\({\\)" "\\1 \\2")
   ;; TODO: This should not be run on lines that contain "{@code".  For now, don't replace in Javadoc.
   ;; TODO: This should not be run on lines that contain "\code{" (ie, not on LaTeX files).
-  (tags-query-replace-noerror "^\\([ \t]*[^* \t].*\\);}" "\\1; }")
+  (tags-replace-regexp "^\\([ \t]*[^* \t].*\\);}" "\\1; }")
   ;;; These are subsumed by the above.
-  ;; (tags-query-replace-noerror "}else{" "} else {")
-  ;; (tags-query-replace-noerror "}else" "} else")
-  ;; (tags-query-replace-noerror "else{" "else {")
+  ;; (tags-replace-regexp "}else{" "} else {")
+  ;; (tags-replace-regexp "}else" "} else")
+  ;; (tags-replace-regexp "else{" "else {")
 
-  (tags-query-replace-noerror "\\b\\(for (.*;\\)\\([^[:space:]\n].*;\\)\\([^[:space:]\n]\\)" "\\1 \\2 \\3")
-  (tags-query-replace-noerror "\\b\\(for (.*[^;];\\)\\([^ \t\n;]\\)" "\\1 \\2")
-  (tags-query-replace-noerror "\\b\\(throws.*[a-z]\\){" "\\1 {")
+  (tags-replace-regexp "\\b\\(for (.*;\\)\\([^[:space:]\n].*;\\)\\([^[:space:]\n]\\)" "\\1 \\2 \\3")
+  (tags-replace-regexp "\\b\\(for (.*[^;];\\)\\([^ \t\n;]\\)" "\\1 \\2")
+  (tags-replace-regexp "\\b\\(throws.*[a-z]\\){" "\\1 {")
   )
 
 ;; Not needed any more -- just run google-java-format.
@@ -866,7 +851,7 @@ It is irrelevant if using a code formatter such as google-java-format."
 for files in the current TAGS tables.
 This is not necessary when using script `run-google-java-format'."
   (interactive)
-  (tags-query-replace-noerror "^\\( *\\)/\\*\\(@SideEffectFree\\|@Pure\\|@Deterministic\\)\\*/ \\(public\\|private\\|protected\\|boolean\\|int\\|static\\)" "\\1/*\\2*/\n\\1\\3")
+  (tags-replace-regexp "^\\( *\\)/\\*\\(@SideEffectFree\\|@Pure\\|@Deterministic\\)\\*/ \\(public\\|private\\|protected\\|boolean\\|int\\|static\\)" "\\1/*\\2*/\n\\1\\3")
   )
 
 
