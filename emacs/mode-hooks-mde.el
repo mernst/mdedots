@@ -1163,6 +1163,29 @@ proposal")
 
 (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
 
+;; This removes the text after it is inserted into the buffer.  I
+;; would prefer that the text is never inserted.
+(defun remove-no-password-data-error ()
+  (save-excursion
+    (if (re-search-backward
+         (concat
+          "^No password data for encrypted resource=.*\n"
+          "javax.security.auth.login.FailedLoginException.*\n"
+	  "\\(?:\tat .*\n\\)+"
+          "\\([^\t]\\)")
+         nil t)
+        (let ((buffer-read-only nil))
+          (replace-match "\\1")))))
+(add-hook 'compilation-filter-hook 'remove-no-password-data-error)
+
+(defun remove-classpath-empty-warning ()
+  (save-excursion
+    (if (re-search-backward "^.*:0: warning: Classpath is empty. Private-Package, -privatepackage, and Export-Package can only expand from the classpath when there is one$" compilation-filter-start t)
+        (let ((buffer-read-only nil))
+          (replace-match "")))))
+(add-hook 'compilation-filter-hook 'remove-classpath-empty-warning)
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

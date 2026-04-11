@@ -242,10 +242,11 @@ Works over the currently-visited tags table."
 ;;; Comments
 ;;;
 
+;; This is for regular Java "//" line comments, not Javadoc.
 (defun improve-java-comment-style ()
   "Add periods at end of sentences.  Requires examination of each match."
   (tags-replace-regexp "^\\( *// [A-Z].*[^.!?,;:]\\)$" "\\1.")
-  (tags-replace-regexp "\\(^ *// [^\n]*[^.!?,;:\n]\\)\\(\n *[^/ \n]\\)" "\\1.\\2")
+  (tags-replace-regexp "^\\( *// [^\n]*[^.!?,;:\n]\\)\\(\n *[^/ \n]\\)" "\\1.\\2")
   )
 
 
@@ -397,8 +398,11 @@ for files in the current TAGS tables."
   (tags-replace-regexp " \\*\\*/" " */")
 
   ;; Missing period at the end of the main part of the Javadoc:
+  ;; TODO
   (tags-replace-regexp
-   "\\(/\\*\\*[^@./]*\\(?:\\(?:{@\\(?:link\\|code\\) [^}]*}\\|[.!?][)]? \\)[^@./]*\\)+[^.!? \n]\\)\\([ \n]*\\*/\\)"
+   (concat
+    "\\(/\\*\\*[^@.?!/]*\\(?:\\(?:{@\\(?:link\\|code\\) [^}]*}\\|[.!?][)]? \\)[^@./]*\\)+[^.!? \n]\\)"
+    "\\([ \n]*\\*/\\)")
    "\\1.\\2")
 
   ;; Non-capitalized first letter in the main part of the Javadoc:
@@ -442,7 +446,7 @@ The description is everything but the block tags (such as @param and @return)."
   "Make the initial verb in a Javadoc comment be present tense, not a command."
   (interactive)
 
-  ;; Remove trailing period.  That is, end the phrase with a period
+  ;; Remove trailing period.  That is, end the phrase with a period.
   ;; only if more text follows it.
   (let ((regexp "\\(/\\*\\*\n *\\* \\)\\(Get\\) ")
 	(replacement "\\1Returns "))
@@ -919,7 +923,7 @@ Write the result to a file named ...Test2.java."
                      ".java" "Test2.java"
                      (buffer-file-name)))))
       (make-directory (file-name-directory outfile) t)
-      (condition-case err
+      (condition-case nil
           (write-file outfile)
         (t nil)))))
 
