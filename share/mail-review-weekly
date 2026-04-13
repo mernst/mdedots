@@ -8,25 +8,23 @@
 import time
 import webbrowser
 
+# This stopped working in April 2026.
+# usernames = ["mernst@cs.washington.edu", "michael.ernst"]
+usernames = ["0", "1"]
+
 
 def mail_search(search_term: str) -> None:
     """Search for a term in both of my inboxes."""
-    webbrowser.open(
-        "https://mail.google.com/mail/u/" + "mernst@cs.washington.edu" + "/#search/" + search_term
-    )
-    time.sleep(0.3)
-    webbrowser.open("https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/" + search_term)
-    time.sleep(0.3)
+    for username in usernames:
+        webbrowser.open("https://mail.google.com/mail/u/" + username + "/#search/" + search_term)
+        time.sleep(0.3)
 
 
 def mail_label(search_term: str) -> None:
     """Search for a label in both of my inboxes."""
-    webbrowser.open(
-        "https://mail.google.com/mail/u/" + "mernst@cs.washington.edu" + "/#label/" + search_term
-    )
-    time.sleep(0.3)
-    webbrowser.open("https://mail.google.com/mail/u/" + "michael.ernst" + "/#label/" + search_term)
-    time.sleep(0.3)
+    for username in usernames:
+        webbrowser.open("https://mail.google.com/mail/u/" + username + "/#label/" + search_term)
+        time.sleep(0.3)
 
 
 print("Part 1")
@@ -53,20 +51,14 @@ print("Part 2")
 ## TODO: Change these to mail_search
 # The regular mail_label() does not work with additional keywords.
 # These come early so that the delay-weekly label might update before I get to it.
-webbrowser.open(
-    "https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/label%3Adelay-weekly+seworld"
-)
-webbrowser.open(
-    "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/label%3Adelay-weekly+seworld"
-)
-webbrowser.open(
-    "https://mail.google.com/mail/u/"
-    "mernst@cs.washington.edu"
-    "/#search/label%3Adelay-weekly+ecoop-info"
-)
-webbrowser.open(
-    "https://mail.google.com/mail/u/" + "michael.ernst" + "/#search/label%3Adelay-weekly+ecoop-info"
-)
+for username in usernames:
+    webbrowser.open(
+        "https://mail.google.com/mail/u/" + username + "/#search/label%3Adelay-weekly+seworld"
+    )
+for username in usernames:
+    webbrowser.open(
+        "https://mail.google.com/mail/u/" + username + "/#search/label%3Adelay-weekly+ecoop-info"
+    )
 mail_search("label%3Adelay-junk+%22micheal%22")
 mail_search("to:it-fmeurope-events")
 
