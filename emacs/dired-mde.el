@@ -28,14 +28,18 @@
 ;; problem with autoload:  dired-readin-hook called before dired-mode-hook.
 ;; (autoload 'dired-extra-startup "dired-extra")
 
-;; (setq dired-listing-switches "-alF")	; F for trailing /, @, and *.
-;; "-v" option avoids bizarre sort order in GNU ls 4.1; only add if supported.
-(if (= 0
-       ;; Setting default-directory prevents this from failing when that
-       ;; is set to a non-existent directory
-       (let ((default-directory "/"))
-	 (call-process "ls" nil nil nil "-v" (getenv "HOME"))))
-    (setq dired-listing-switches (concat dired-listing-switches "v")))
+;; "-v" means "Natural sort of (version) numbers in the filenames."
+;; It is good in general but has a bizarre behavior:  that dotfiles with any of
+;; "-_." are sorted after non-dotfiles, but dotfiles without those characters
+;; are sorted before non-dotfiles.  So, unfortunately I won't use it.
+;; ;; (setq dired-listing-switches "-alF")	; F for trailing /, @, and *.
+;; ;; "-v" option avoids bizarre sort order in GNU ls 4.1; only add if supported.
+;; (if (= 0
+;;        ;; Setting default-directory prevents this from failing when that
+;;        ;; is set to a non-existent directory
+;;        (let ((default-directory "/"))
+;; 	 (call-process "ls" nil nil nil "-v" (getenv "HOME"))))
+;;     (setq dired-listing-switches (concat dired-listing-switches "v")))
 (setq dired-find-subdir t)
 
 ;; Don't create new marks on hard and soft links or on copies.

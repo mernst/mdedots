@@ -48,18 +48,17 @@
               org peg pfuture pfuture pfuture project python python
               python python python-mode python-mode python-mode
               python-mode recompile-on-save recompile-on-save
-              recompile-on-save recompile-on-save rg rg rg rg shell-maker
-              track-changes track-changes track-changes track-changes
-              tramp tramp tramp tramp transient transient transient
-              transient
+              recompile-on-save recompile-on-save rg rg rg rg
+              shell-maker track-changes track-changes track-changes
+              track-changes tramp tramp tramp tramp transient
+              transient transient transient tree-sitter-langs
               tree-sitter-langs tree-sitter-langs tree-sitter-langs
-              tree-sitter-langs treesit-auto treesit-auto treesit-auto
-              treesit-auto verilog-mode verilog-mode verilog-mode
-              verilog-mode websocket which-key which-key which-key
-              which-key whisper window-tool-bar window-tool-bar
-              window-tool-bar window-tool-bar yaml-mode yaml-mode
-              yaml-mode yaml-mode yasnippet yasnippet yasnippet
-              yasnippet))
+              treesit-auto treesit-auto treesit-auto treesit-auto
+              verilog-mode verilog-mode verilog-mode verilog-mode
+              websocket which-key which-key which-key which-key
+              whisper window-tool-bar window-tool-bar window-tool-bar
+              window-tool-bar yaml-mode yaml-mode yaml-mode yaml-mode
+              yasnippet yasnippet yasnippet yasnippet))
  '(package-vc-selected-packages
    '((whisper :url "https://github.com/natrys/whisper.el" :branch
               "master")
