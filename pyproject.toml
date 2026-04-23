@@ -1,7 +1,7 @@
 [project]
 name = "mdedots"
 version = "0.1.0"
-description = "Add your description here"
+description = "Personal dotfiles and scripts for Michael Ernst"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
