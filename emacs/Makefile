@@ -36,5 +36,3 @@ bytecompile:
 TAGS: tags
 tags:
 	etags *.el
-
-.PHONY: javadoc-index

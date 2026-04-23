@@ -286,7 +286,7 @@ update_fork typetools commons-bcel ~/research/types/libraries
 ## Weird: using `--tags` causes the pull to fail.
 # update_fork JetBrains kotlin ~/java
 ## So do it directly:
-if [ -d ~java/kotlin-fork-mernst ]; then
+if [ -d ~/java/kotlin-fork-mernst ]; then
   (cd ~/java/kotlin-fork-mernst \
     && git pull -q --ff-only \
     && git pull -q --ff-only "git@github.com:JetBrains/kotlin" \
