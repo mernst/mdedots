@@ -2,7 +2,7 @@
 
 """Review weekly mail in Gmail.
 
-# Usage: mail-review-weekly
+Usage: mail-review-weekly
 """
 
 import time

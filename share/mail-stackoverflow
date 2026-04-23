@@ -122,7 +122,9 @@ def echoautobrowsemaybe(*args: str) -> None:
     if nottagged == []:
         apinottagged = ""
     else:
-        apinottagged = "&tagged=" + urllib.parse.quote(";".join([tag[2:-1] for tag in nottagged]))
+        apinottagged = "&nottagged=" + urllib.parse.quote(
+            ";".join([tag[2:-1] for tag in nottagged])
+        )
 
     if terms == []:
         apiquery = ""
@@ -154,12 +156,6 @@ def echoautobrowsemaybe(*args: str) -> None:
 
     if debug:
         print("pinged " + api_url, file=MAILBODY)
-    # wget -q "$api_url" -O - | gunzip > "${WGETRESULT}"
-    response = urllib.request.urlopen(api_url)
-    # contentgzipped = response.read()
-    # f = gzip.GzipFile(fileobj=contentgzipped)
-    # content = f.read()
-
     request = urllib.request.Request(api_url)
     request.add_header("Accept-encoding", "gzip")
     response = urllib.request.urlopen(request)
