@@ -241,13 +241,19 @@ export PATH="$HOME/.nix-profile/bin:$PATH"
 # For Ruby gems.
 export PATH="$HOME/bin:$PATH"
 
+export PATH="$HOME/bin/install/infer/infer/bin:$PATH"
+
+. "$HOME/.cargo/env"
+
+###########################################################################
+### Library path
+###
+
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/gc-7.1-install/lib
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/old-lib
 # # Isn't this needed for F15?
 # # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/lib64
 export LD_LIBRARY_PATH=${HOME}/.local/lib/:${LD_LIBRARY_PATH}
-
-. "$HOME/.cargo/env"
 
 ###########################################################################
 ### Clean up the path

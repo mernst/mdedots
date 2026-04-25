@@ -662,7 +662,7 @@ scptth() { command scp "$1" mernst@theory.lcs.mit.edu:; }
 ### Version control
 ###
 
-# alias myxapps='kcsail; emacs & firefox & sunbird & kcse; godwit & unisonb &'
+# alias myxapps='kcsail; emacs & firefox & sunbird & kcse; godwit &'
 alias mdeapps='mdevccommit; emacs & mvc update &'
 
 ### Put these in the non-interactive part of .aliases so that
@@ -717,11 +717,6 @@ case "$-" in
     return
     ;;
 esac
-
-## If `unison` is aliased in a non-login shell, it screws up an attempt
-# to run "unison -server".
-alias unison='(cd ~; \unison -ui text -auto $UNISONSITE)'
-alias unisonb='(cd ~; \unison -ui text -auto -batch $UNISONSITE)'
 
 ## Don't do this, because even "cp -f" doesn't work then; you need "\cp -f".
 # # Safer versions of shell commands.
