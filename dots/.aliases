@@ -708,9 +708,15 @@ alias jsoncompact=json_compact
 # Some aliases cause trouble if invoked by a program.
 
 # If not running interactively, return.
-if [ -z "$PS1" ]; then
-  return
-fi
+case "$-" in
+  *i*)
+    # Interactive shell.
+    :
+    ;;
+  *) # Non-interactive shell.
+    return
+    ;;
+esac
 
 ## If `unison` is aliased in a non-login shell, it screws up an attempt
 # to run "unison -server".
