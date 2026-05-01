@@ -13,6 +13,8 @@
   (require 'util-mde))
 
 (autoload 'replace-all-occurrrences-iteratively "util-mde")
+(autoload 'offer-to-change-if-read-only "replace-paragraphs"
+  "Offer to make the buffer not read-only.")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,6 +54,7 @@ The latter two changes are semantics-preserving and are useful after
 editing a diff buffer to remove uninteresting changes."
   (interactive)
 
+  (offer-to-change-if-read-only)
   (let ((inhibit-read-only t))
 
     (if (not dont-remove-files)
@@ -81,10 +84,10 @@ editing a diff buffer to remove uninteresting changes."
 			      "\\|")
 		   "\\)")))
       (while (re-search-forward
-	      (concat "^diff .*\n\\("
-		      "--- " filename-regexp "\t.*\n\\+\\+\\+ .*$"
+	      (concat "^diff .*\n\\(new file mode .*\nindex .*\n\\)?\\("
+		      "--- " filename-regexp "\\(\t.*\\)?\n\\+\\+\\+ .*$"
 		      "\\|"
-		      "--- .*\n\\+\\+\\+ " filename-regexp "\t.*$"
+		      "--- .*\n\\+\\+\\+ " filename-regexp "\\(\t.*\\)?$"
 		      "\\)")
 	      nil t)
 	(let* ((begin (match-beginning 0)))
