@@ -147,7 +147,7 @@ Good for passing to sort in order to sort strings by length."
   (let ((i 0)
         j
         max-j)
-    (while (setq i (string-match old-regexp string i))
+    (while (setq i (string-match old-regexp string i 'inhibit-modify))
       (setq j 0
             max-j (length new))
       (while (< j max-j)
@@ -1037,7 +1037,7 @@ The key purpose of this function is to prevent the
 This one is likely to have been recently buried."
   (interactive)
   (let ((blist (nreverse (buffer-list))))
-    (while (string-match "\\` " (buffer-name (car blist)))
+    (while (string-match "\\` " (buffer-name (car blist)) nil 'inhibit-modify)
       (setq blist (cdr blist)))
     (if blist
         (switch-to-buffer (car blist)))))
@@ -1326,7 +1326,7 @@ REGEXP should not match the empty string."
   (let ((ss-regexp (regexp-quote substring))
         (count 0)
         (start -1))
-    (while (setq start (string-match ss-regexp target (1+ start)))
+    (while (setq start (string-match ss-regexp target (1+ start) 'inhibit-modify))
       (setq count (1+ count)))
     count))
 (fset 'count-matches-substring-overlapping 'how-many-substring-overlapping)
@@ -1604,7 +1604,7 @@ Uses the current tags table."
       (setq f (intern (buffer-substring fbegin (point))))
       (if (not (fboundp f))
           (error "%s not fboundp." f))
-      (if (looking-at "\)")
+      (if (looking-at "\)" 'inhibit-modify)
           (fileloop-continue)
         (skip-chars-forward " \t\n")))))
 

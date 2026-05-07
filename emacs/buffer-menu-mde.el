@@ -81,10 +81,10 @@ Also sets dired buffer modification flags."
         (if (buffer-modified-p)
             (progn
               (if (and (or (and name-regexp
-                                (string-match name-regexp (buffer-name)))
+                                (string-match name-regexp (buffer-name) nil 'inhibit-modify))
                            (memq major-mode major-modes))
                        (not (or (and exceptions-regexp
-                                     (string-match exceptions-regexp (buffer-name)))
+                                     (string-match exceptions-regexp (buffer-name) nil 'inhibit-modify))
                                 (memq major-mode exceptions-modes))))
                   (set-buffer-modified-p nil))
               ;; This special-casing is sort of cheating.  But hey, it works.
@@ -173,7 +173,7 @@ Here is an example setting:
 ;;     (while replacements
 ;;       (let* ((pattern (concat "^" (car (car replacements))))
 ;;           (replacement (cdr (car replacements))))
-;;      (if (string-match pattern filename)
+;;      (if (string-match pattern filename nil 'inhibit-modify)
 ;;          (setq filename (replace-match replacement nil nil filename))))
 ;;       (setq replacements (cdr replacements))))
 ;;   filename)
@@ -263,10 +263,10 @@ The regular expressions are implicitly anchored at the front.")
 
       ;; Now, fix each line.
       (while (not (eobp))
-        (if (not (looking-at "[C .]"))
+        (if (not (looking-at "[C .]" 'inhibit-modify))
 	    (error "Expected regex %s" "[C .]"))
         (replace-char-and-inherit " ")
-        (if (not (looking-at "[R %]"))
+        (if (not (looking-at "[R %]" 'inhibit-modify))
 	    (error "Expected regex %s" "[R %]"))
         (replace-char-and-inherit " ")
         (forward-line 1)))))

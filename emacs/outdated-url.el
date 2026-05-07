@@ -144,14 +144,14 @@
     (compose-mail)
     (insert email)
     (insert "\nFrom: " from-address)
-    (let ((multiple-urls (string-match "\n" urls)))
+    (let ((multiple-urls (string-match "\n" urls nil 'inhibit-modify)))
       (forward-line 1)
       (end-of-line)
       (if multiple-urls
 	  (insert "Outdated URLs")
 	(insert "Outdated URL at " urls))
       (forward-line 1)
-      (if (looking-at "^BCC:")
+      (if (looking-at "^BCC:" 'inhibit-modify)
 	  (delete-region (point) (progn (forward-line 1) (point))))
       (goto-char (point-max))
       (insert "Dear webmaster,

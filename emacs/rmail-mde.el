@@ -668,9 +668,9 @@ its From: line.")
 	(let ((from-addrs nonstandard-from-address-regexp-alist))
 	  (while from-addrs
 	    (if (or (and to-field
-			 (string-match (car (cl-first from-addrs)) to-field))
+			 (string-match (car (cl-first from-addrs)) to-field nil 'inhibit-modify))
 		    (and cc-field
-			 (string-match (car (cl-first from-addrs)) cc-field)))
+			 (string-match (car (cl-first from-addrs)) cc-field nil 'inhibit-modify)))
 		(setq result (cdr (cl-first from-addrs))
 		      from-addrs nil)
 	      (setq from-addrs (cdr from-addrs))))))
@@ -709,7 +709,7 @@ its From: line.")
 		       ;; OK if reply-to is a substring of from-field
 		       ;;   From: Adam Kiezun <akiezun@csail.mit.edu>
 		       ;;   Reply-To:  akiezun@csail.mit.edu
-		       (string-match (regexp-quote reply-to-field) from-field)
+		       (string-match (regexp-quote reply-to-field) from-field nil 'inhibit-modify)
 		       ;; OK if reply-to is a pseudo-substring of from-field
 		       ;;   From: Adam Kiezun <akiezun@csail.mit.edu>
 		       ;;   Reply-To:  akiezun@mit.edu
@@ -717,7 +717,7 @@ its From: line.")
 		         (string-match (concat (regexp-quote (cl-first reply-parts))
 					       "@[^ ]*"
 					       (regexp-quote (cl-second reply-parts)))
-				       from-field))
+				       from-field nil 'inhibit-modify))
 		       ))
 	         (not (y-or-n-p "Reply to other than from/sender? ")))
 	    (error "Avoid redirected reply.")))))

@@ -80,7 +80,7 @@
     (goto-char (point-min))
     (replace-regexp-noninteractive "\r$" "")
     (goto-char (1- (point-max)))
-    (if (looking-at "\C-z")
+    (if (looking-at "\C-z" 'inhibit-modify)
         (delete-char 1))))
 
 (defun make-interactive (symbol &optional interactive-spec)
@@ -259,13 +259,13 @@ Find WHAT in any file in or under DIR."
       (error "Empty string passed as argument to sgrep"))
   (let ((default-directory (file-name-as-directory dir)))
     ;;not necessary any more? (require 'compile)
-    (let* ((quoted-what (if (string-match "^'.*'$" what)
+    (let* ((quoted-what (if (string-match "^'.*'$" what nil 'inhibit-modify)
                             what
-                          (if (string-match "'" what)
+                          (if (string-match "'" what nil 'inhibit-modify)
                               (concat "\"" what "\"")
                             (concat "'" what "'"))))
            (command (concat "search -i -n "
-                            (if (string-match "^-" what) "-e " "")
+                            (if (string-match "^-" what nil 'inhibit-modify) "-e " "")
                             quoted-what)))
       ;; Old version
       ;; (compile-internal command
@@ -718,8 +718,8 @@ Not guaranteed to work in all cases."
 
 (defun emacs-source-file-p (filename)
   "Return t if FILENAME is an Emacs source file."
-  (or (string-match "/emacs/x?lisp/" filename)
-      (string-match "emacs[-/][0-9]+\.[0-9]+\\(\.[0-9]+\\)?/\\(lisp\\|src\\)/" filename)
+  (or (string-match "/emacs/x?lisp/" filename nil 'inhibit-modify)
+      (string-match "emacs[-/][0-9]+\.[0-9]+\\(\.[0-9]+\\)?/\\(lisp\\|src\\)/" filename nil 'inhibit-modify)
       ;; (string-match "local/src/emacs-19" (buffer-file-name))
       ;; (string-match "lib/emacs/local-lisp/w3" (buffer-file-name)))
       ))
@@ -993,14 +993,14 @@ Not guaranteed to work in all cases."
 
 ;;
 (defun quote-word-for-shell-command (string)
-  (cond ((and (string-match "'" string)
-              (not (string-match "\"" string)))
+  (cond ((and (string-match "'" string nil 'inhibit-modify)
+              (not (string-match "\"" string nil 'inhibit-modify)))
          (setq string (concat "\"" string "\"")))
-        ((and (string-match "\"" string)
-              (not (string-match "\'" string)))
+        ((and (string-match "\"" string nil 'inhibit-modify)
+              (not (string-match "\'" string nil 'inhibit-modify)))
          (setq string (concat "'" string "'")))
-        ((and (string-match "\"" string)
-              (not (string-match "\'" string)))
+        ((and (string-match "\"" string nil 'inhibit-modify)
+              (not (string-match "\'" string nil 'inhibit-modify)))
          (error (concat "cannot quote argument for shell command because string contains both single and double quotes: " string)))
         (t
          string)))

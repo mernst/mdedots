@@ -413,7 +413,7 @@ With prefix arg, goes to end of class; otherwise to end of method."
     (add-hook 'before-save-hook 'change-returns-to-return)
     (add-hook 'before-save-hook 'sort-checkerframework-code)
     (if (string-match "/\\(checker-framework\\|plume-lib\\|randoop\\)/"
-		      (directory-file-name default-directory))
+		      (directory-file-name default-directory) nil 'inhibit-modify)
 	(progn
 	  (add-hook 'before-save-hook 'delete-trailing-whitespace)
 	  ))
@@ -430,13 +430,13 @@ With prefix arg, goes to end of class; otherwise to end of method."
       (if file-name
 	  (progn
 	    (if (and
-		 (not (string-match "\\.jpp$" file-name))
-		 (not (string-match "/AnnotatedTypeFactory.java$" file-name)))
+		 (not (string-match "\\.jpp$" file-name nil 'inhibit-modify))
+		 (not (string-match "/AnnotatedTypeFactory.java$" file-name nil 'inhibit-modify)))
 		;; TODO: This is not necessary for projects that use spotless or run-google-java-format.py
 		(add-hook 'write-contents-functions 'check-parens-ignore-on-retry))
-	    (if (not (string-match "share/classes" file-name))
+	    (if (not (string-match "share/classes" file-name nil 'inhibit-modify))
 		(add-hook 'write-contents-functions 'check-for-string-equality))
-	    (if (string-match "/checker-framework\\|/daikon\\|/plume-lib\\|/randoop\\|/mernst/bin/src/" file-name)
+	    (if (string-match "/checker-framework\\|/daikon\\|/plume-lib\\|/randoop\\|/mernst/bin/src/" file-name nil 'inhibit-modify)
 		(progn
 		  ;; Google Java style sets fill column to 100
 		  (setq fill-column 100)
@@ -467,7 +467,7 @@ With prefix arg, goes to end of class; otherwise to end of method."
 	      (previous-line "dummy")
 	      (unsorted nil))
 	  (goto-char begin)
-	  (while (looking-at "import org.checkerframework")
+	  (while (looking-at "import org.checkerframework" 'inhibit-modify)
 	    (let ((current-line (buffer-substring-no-properties
 				 (line-beginning-position)
 				 (line-end-position))))
@@ -596,11 +596,11 @@ This is disabled on lines with a comment containing the string \"interned\"."
                    nil
                  (throw 'error error-message)))))
         (if (let ((bol-point (save-excursion (beginning-of-line) (point))))
-	      (not (or (looking-at ".*//.*interned")
-                       (looking-at ".*//.*NOPMD: UseEqualsToCompareStrings")
+	      (not (or (looking-at ".*//.*interned" 'inhibit-modify)
+                       (looking-at ".*//.*NOPMD: UseEqualsToCompareStrings" 'inhibit-modify)
 		       ;; line ends with string ending with "=="
 		       (and (looking-back "=?= *\"" bol-point)
-			    (looking-at ";\n"))
+			    (looking-at ";\n" 'inhibit-modify))
 		       ;; if already in comment, suppress warning
 		       (looking-back "/[/*].*" bol-point)
 		       (looking-back "^[ \t]*\\*.*" bol-point) ; Javadoc comment
@@ -1002,7 +1002,7 @@ ARGS are args to pass it.  Buffer file name is provided as last arg."
   (setq perl-brace-offset -2)
   (make-local-variable 'compile-command)
   (if buffer-file-name
-      (if (looking-at ".* -[^ ]T")
+      (if (looking-at ".* -[^ ]T" 'inhibit-modify)
           ;; If shebang line has -T, command line must also
           (setq compile-command (concat "perl -cT " buffer-file-name))
         (setq compile-command (concat "perl -c " buffer-file-name))))
@@ -1058,7 +1058,7 @@ ARGS are args to pass it.  Buffer file name is provided as last arg."
   "Check that Perl in-place editing isn't done without a backup."
   (save-excursion
     (goto-char (point-min))
-    (if (looking-at ".*perl.*-[^ \n]*i[^.]")
+    (if (looking-at ".*perl.*-[^ \n]*i[^.]" 'inhibit-modify)
         (if (not (y-or-n-p "Perl script does in-place editing with no backup file; save anyway? "))
             (error "Perl script does in-place editing with no backup file")))))
 
@@ -1096,7 +1096,7 @@ otherwise, raise an error after the first problem is encountered."
                                (save-match-data
                                  ;; The re-search-forward forms can fail if
                                  ;; there is a partial statement near file end.
-                                 (or (if (looking-at "\\s-*\(")
+                                 (or (if (looking-at "\\s-*\(" 'inhibit-modify)
                                          (re-search-forward "\)" nil t)
                                        (re-search-forward "[;=(]" nil t))
                                      (error "Partial statement"))
@@ -1181,7 +1181,7 @@ otherwise, raise an error after the first problem is encountered."
                                   ;; section of  foreach my $var (...)
                                   (not (string-match (concat "^my\\s-*[$@%][^;=]*\([^;=()]*"
                                                              this-var-regexp)
-                                                     (match-string 0)))))
+                                                     (match-string 0) nil 'inhibit-modify))))
                            (format "Redefinition of variable %s at lines %d and %d"
                                    this-var
                                    (count-lines (point-min) decl-end)
@@ -1257,7 +1257,7 @@ otherwise, raise an error after the first problem is encountered."
 (defun python-override-kill-buffer-and-window ()
   "Avoid accidental killing of Python shell buffers."
   (interactive)
-  (if (string-match "python" (buffer-name))
+  (if (string-match "python" (buffer-name) nil 'inhibit-modify)
       (error "You probably meant to hit \"C-c -\", not \"C-x -\"")
     (kill-buffer-and-window)))
 (defun shell-override-kill-buffer-and-window ()
@@ -1289,7 +1289,7 @@ otherwise, raise an error after the first problem is encountered."
 
 (defun python-comment-indent ()
   "Choose comment column for Python comments.  Lifted from `lisp-comment-indent'."
-  (if (looking-at "\\s<\\s<\\s<")
+  (if (looking-at "\\s<\\s<\\s<" 'inhibit-modify)
       (current-column)
     (progn
       (skip-chars-backward " \t")
@@ -1390,7 +1390,7 @@ Returns t if any change was made, nil otherwise."
   (add-hook 'write-contents-functions 'check-parens-ignore-on-retry)
 
   (if (string-match "/plume-lib/"
-		    (directory-file-name default-directory))
+		    (directory-file-name default-directory) nil 'inhibit-modify)
       (add-hook 'before-save-hook 'delete-trailing-whitespace))
   (if (eq major-mode 'lisp-mode)
       ;; Not emacs-lisp-mode, fi::*-mode, etc.
@@ -1437,7 +1437,7 @@ If the value is neither nil nor t, then the user is queried first.")
 (defun maybe-checkdoc-current-buffer ()
   "Check documentation/style for current buffer, if not in distribution directory."
   (if (and (or (not (buffer-file-name))
-               (not (string-match "/emacs[-0-9./]*/lisp" (buffer-file-name))))
+               (not (string-match "/emacs[-0-9./]*/lisp" (buffer-file-name) nil 'inhibit-modify)))
            (or (eq t maybe-checkdoc-flag)
                (and maybe-checkdoc-flag
                     (y-or-n-p "Check style of buffer? "))))
@@ -1497,7 +1497,7 @@ If the value is neither nil nor t, then the user is queried first.")
              (files all-files))
         (while files
           (let ((file (car files)))
-            (if (string-match "\\.elc$" file)
+            (if (string-match "\\.elc$" file nil 'inhibit-modify)
                 (if (not (member (substring file 0 -1) all-files))
                     (setq result (cons (concat (car dirs) "/" file) result)))))
           (setq files (cdr files))))
@@ -1631,9 +1631,9 @@ Output that matches this is swallowed by the filter.")
   (while (string-match mde-fi::subprocess-redefinition-regexp string)
     (setq string (concat (substring string 0 (match-end 1))
                          (substring string (match-end 0)))))
-  (if (string-match "\\(^\\|\n\\)Warning: .* was defined in" string)
+  (if (string-match "\\(^\\|\n\\)Warning: .* was defined in" string nil 'inhibit-modify)
       (message "Why didn't fi::... match?\n<<<%s>>>" string))
-  (if (string-match "was defined in" string)
+  (if (string-match "was defined in" string nil 'inhibit-modify)
       (message "WHY didn't fi::... match?\n<<<%s>>>" string))
   (while (string-match "\\(^\\|\n\\);  Note: doing tail merge\n" string)
     (setq string (concat (substring string 0 (match-end 1))
@@ -1713,16 +1713,16 @@ Nil means use `comment-column'.")
 (defun lisp-comment-indent ()
   "Indent appropriately for Lisp mode.
 How does this differ from whatever is built in?"
-  (if (looking-at "\\s<\\s<\\s<")
+  (if (looking-at "\\s<\\s<\\s<" 'inhibit-modify)
       (current-column)
-    (if (looking-at "\\s<\\s<")
+    (if (looking-at "\\s<\\s<" 'inhibit-modify)
         (let ((tem (calculate-lisp-indent)))
           (if (listp tem) (car tem) tem))
       (skip-chars-backward " \t")
       (max (if (bolp) 0 (1+ (current-column)))
            (save-excursion
              (beginning-of-defun)
-             (if (looking-at "(defstruct")
+             (if (looking-at "(defstruct" 'inhibit-modify)
                  defstruct-comment-column
                comment-column))))))
 
@@ -1805,8 +1805,8 @@ How does this differ from whatever is built in?"
   ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
   (let ((filename (and buffer-file-name (file-truename buffer-file-name))))
     (if (and filename
-             (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename)
-             (not (string-match "/503/17sp/" filename)))
+             (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename nil 'inhibit-modify)
+             (not (string-match "/503/17sp/" filename nil 'inhibit-modify)))
         (add-hook 'after-save-hook 'run-createcal nil 'local))))
 ;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
 (add-hook 'conf-mode-hook 'mde-conf-mode-hook)
@@ -2042,7 +2042,7 @@ in this directory or some superdirectory."
 (defun gradle-task-for-buffer ()
   "Returns the gradle task to run for the given file.  Usually \"assemble\"."
   (let ((file-name (or buffer-file-name default-directory)))
-    (cond ((and file-name (string-match "/plume-lib" file-name))
+    (cond ((and file-name (string-match "/plume-lib" file-name nil 'inhibit-modify))
 	   "spotlessApply build")	; "build" also runs "shadowJar"
 	  (t
 	   "assemble"))))
@@ -2093,7 +2093,7 @@ Use as a hook, like so:
 ;; To do: abstract this out to use a variable
 (defun special-case-set-compile-command ()
   "Override default, to set `compile-command' properly for specific projects."
-  (cond ((string-match "/eclat/" default-directory)
+  (cond ((string-match "/eclat/" default-directory nil 'inhibit-modify)
          (make-local-variable 'compile-command)
          (setq compile-command "ant -e -find build.xml compile-no-eclipse"))
 
@@ -2109,29 +2109,29 @@ Use as a hook, like so:
 	;; 	       default-directory)
 	;;  (make-local-variable 'compile-command)
 	;;  (setq compile-command "cd $anno/demos/nonnull-interned-demo/junit/; ant -e"))
-        ((and buffer-file-name (string-match "demos/nonnull-interned-demo/IGJChecker/src/checkers/types/AnnotationLocation.java" buffer-file-name))
+        ((and buffer-file-name (string-match "demos/nonnull-interned-demo/IGJChecker/src/checkers/types/AnnotationLocation.java" buffer-file-name nil 'inhibit-modify))
          (make-local-variable 'compile-command)
          (setq compile-command "ant -e -find build.xml location"))
-        ((and buffer-file-name (string-match "demos/nonnull-interned-demo/IGJChecker/src/checkers/types/AnnotatedTypeFactory.java" buffer-file-name))
+        ((and buffer-file-name (string-match "demos/nonnull-interned-demo/IGJChecker/src/checkers/types/AnnotatedTypeFactory.java" buffer-file-name nil 'inhibit-modify))
          (make-local-variable 'compile-command)
          (setq compile-command "ant -e -find build.xml factory-old"))
-        ((and buffer-file-name (string-match "demos/nonnull-interned-demo/IGJChecker/src/org/checkerframework/framework/type/AnnotatedTypeFactory.java" buffer-file-name))
+        ((and buffer-file-name (string-match "demos/nonnull-interned-demo/IGJChecker/src/org/checkerframework/framework/type/AnnotatedTypeFactory.java" buffer-file-name nil 'inhibit-modify))
          (make-local-variable 'compile-command)
          (setq compile-command "ant -e -find build.xml factory"))
-        ((and buffer-file-name (string-match "demos/nonnull-interned-demo/junit/tests/JUnitTests.java" buffer-file-name))
+        ((and buffer-file-name (string-match "demos/nonnull-interned-demo/junit/tests/JUnitTests.java" buffer-file-name nil 'inhibit-modify))
          (make-local-variable 'compile-command)
          (setq compile-command "ant -e -find build.xml test-assert"))
         ;; This only works if you delete the buffer and re-visit the file,
         ;; because compile-command is set when the file is first visited.
         ((and buffer-file-name
-              (string-match "/personalblog-demo/src/net/eyde/personalblog/" buffer-file-name)
+              (string-match "/personalblog-demo/src/net/eyde/personalblog/" buffer-file-name nil 'inhibit-modify)
               (save-excursion
                 (goto-char (point-min))
                 (not (search-forward "executeQuery(constructQuery" nil t))))
          (make-local-variable 'compile-command)
          (setq compile-command "ant -e -find build.xml check-tainting"))
         ((and buffer-file-name
-              (string-match "plume-lib-for-demo/java/src/plume/ICalAvailable.java" buffer-file-name))
+              (string-match "plume-lib-for-demo/java/src/plume/ICalAvailable.java" buffer-file-name nil 'inhibit-modify))
          (make-local-variable 'compile-command)
          (setq compile-command "make typecheck-only"))
 
@@ -2139,13 +2139,13 @@ Use as a hook, like so:
 	((and buffer-file-name
 	      (string-match
 	       "checker-framework-optional-demo/checker/src/main/java/org/checkerframework/checker/optional/"
-	       (file-truename buffer-file-name)))
+	       (file-truename buffer-file-name) nil 'inhibit-modify))
          (make-local-variable 'compile-command)
          (setq compile-command "$cf/gradlew -p $cf compileJava"))
 	((and buffer-file-name
 	      (string-match
 	       "checker-framework-optional-demo/checker/tests/optional/SubtypeCheck.java"
-	       (file-truename buffer-file-name)))
+	       (file-truename buffer-file-name) nil 'inhibit-modify))
          (make-local-variable 'compile-command)
          (setq compile-command "$ch/bin/javac \\
   -processor org.checkerframework.common.subtyping.SubtypingChecker \\
@@ -2157,19 +2157,19 @@ Use as a hook, like so:
 	((and buffer-file-name
 	      (string-match
 	       "checker-framework-optional-demo/checker/tests/optional/JdkCheck.java"
-	       (file-truename buffer-file-name)))
+	       (file-truename buffer-file-name) nil 'inhibit-modify))
          (setq compile-command "$ch/bin/javac -processor optional JdkCheck.java"))
 	((and buffer-file-name
 	      (string-match
 	       "checker-framework-optional-demo/checker/tests/optional/"
-	       (file-truename buffer-file-name)))
+	       (file-truename buffer-file-name) nil 'inhibit-modify))
          (make-local-variable 'compile-command)
          (setq compile-command
 	       (concat "$ch/bin/javac -processor optional "
 		       (file-name-nondirectory buffer-file-name))))
 	;; Is this necessary?
 	((and buffer-file-name
-              (string-match "/checker/tests/optional/" buffer-file-name))
+              (string-match "/checker/tests/optional/" buffer-file-name nil 'inhibit-modify))
          (make-local-variable 'compile-command)
          (setq compile-command (concat "javacheck -processor optional "
 				       (file-name-nondirectory buffer-file-name))))
@@ -2204,10 +2204,10 @@ Use as a hook, like so:
 	   (setq compile-command (concat cf-dir "/gradlew -p " cf-dir " " "jtregTests"))))
 
 	;; Checker Framework manual
-	((string-match "\\(^.*/checker-framework\\(?:-fork.[^/]*\\|-branch[^/]*\\)?\\)/docs/manual/" default-directory)
+	((string-match "\\(^.*/checker-framework\\(?:-fork.[^/]*\\|-branch[^/]*\\)?\\)/docs/manual/" default-directory nil 'inhibit-modify)
          (make-local-variable 'compile-command)
 	 (setq compile-command "make"))
-	((string-match "\\(^.*/checker-framework\\(?:-fork.[^/]*\\|-branch[^/]*\\)?\\)/dataflow/manual/" default-directory)
+	((string-match "\\(^.*/checker-framework\\(?:-fork.[^/]*\\|-branch[^/]*\\)?\\)/dataflow/manual/" default-directory nil 'inhibit-modify)
          (make-local-variable 'compile-command)
 	 (setq compile-command "make"))
 
@@ -2220,7 +2220,7 @@ Use as a hook, like so:
 		 (let ((cf-dir (file-relative-name (match-string 1 default-directory) default-directory)))
 		   (concat cf-dir "/gradlew -p " cf-dir " " "assembleForJavac")))))
 
-        ((string-match "/bzr/.*/doc/en/user-guide/" default-directory)
+        ((string-match "/bzr/.*/doc/en/user-guide/" default-directory nil 'inhibit-modify)
          (make-local-variable 'compile-command)
          (setq compile-command "make -C ../../.. doc/en/user-guide/index.html"))
         ((equal (substitute-in-file-name "$HOME/java/plume/") default-directory)
@@ -2229,7 +2229,7 @@ Use as a hook, like so:
 	((string-match "^\\(.*/commons-io-fork-nikshinde1996[^/]*/\\)" default-directory)
          (make-local-variable 'compile-command)
          (setq compile-command (concat "cd " (match-string 1 default-directory) " && mvn -e -B install")))
-	((string-match "^\\(.*/jdime[^/]*/\\)" default-directory)
+	((string-match "^\\(.*/jdime[^/]*/\\)" default-directory nil 'inhibit-modify)
          (make-local-variable 'compile-command)
          (setq compile-command (concat "./gradlew installDist")))
         ))
@@ -2446,7 +2446,7 @@ A call to this should be put in `after-save-buffer-hooks'."
   "Ask the user whether to byte compile the current buffer,
 if its name ends in `.el' and the `.elc' file also exists."
   (let ((name (buffer-file-name)))
-    (and name (string-match "\\.el$" name)
+    (and name (string-match "\\.el$" name nil 'inhibit-modify)
          (file-exists-p (concat name "c"))
          (if (y-or-n-p (format "Byte-compile %s? " name))
              (byte-compile-file name)

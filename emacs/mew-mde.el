@@ -1270,9 +1270,8 @@ This prevents silently discarding mail to CSE support."
 
 (defun on-quoted-line ()
   (save-excursion
-    (save-match-data
-      (beginning-of-line)
-      (looking-at ">"))))
+    (beginning-of-line)
+    (looking-at ">" 'inhibit-modify)))
 
 (defun attachment-text ()
   "Return text around \"attach{ed,ment}\", or nil if none."
@@ -1348,7 +1347,7 @@ is inserted before the cursor, the short name is expanded to its address."
 	     word mew-addrbook-alist "alias" nil nil nil
 	     'mew-addrbook-alias-get
 	     'mew-addrbook-alias-hit)
-	  (if (string-match "@." word)
+	  (if (string-match "@." word nil 'inhibit-modify)
 	      (insert (or (mew-addrbook-alias-next word mew-addrbook-alist) word))
 	    (mew-complete
 	     word mew-addrbook-alist "alias" ?@ nil nil
@@ -1375,7 +1374,7 @@ is inserted before the cursor, the short name is expanded to its address."
 (defun mew-draft-header-comp-no-tab-maybe ()
   "Call mew-draft-header-comp-no-tab, if in an appropriate location."
   (let ((bol-point (save-excursion (beginning-of-line) (point))))
-    (if (and (looking-at "[ \n]")
+    (if (and (looking-at "[ \n]" 'inhibit-modify)
 	     (not (looking-back "^" bol-point))	; at beginning of line, don't complete
 	     (not (looking-back ": *" bol-point)) ; if no text in field, don't complete
 	     (not (looking-back "> *" bol-point)) ; if already completed, don't complete, which would give an alternate, less desirable email address for the same person

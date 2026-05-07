@@ -202,7 +202,7 @@ of tag regexps to try if that search fails.")
 
 (defun perl-tags-find-related-names (tagname)
   "Find `@TAGNAME' or `%TAGNAME' definition based on a `$TAGNAME' use."
-  (if (string-match "^\\$" tagname)
+  (if (string-match "^\\$" tagname nil 'inhibit-modify)
       (list (substring tagname 1))))
 
 (defun lisp-tags-find-related-names (tagname)

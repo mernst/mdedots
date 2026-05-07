@@ -47,7 +47,7 @@ instead of prepend."
   (let ((result nil)
         (regexps load-path-prune-regexps))
     (while regexps
-      (if (string-match (car regexps) path)
+      (if (string-match (car regexps) path nil 'inhibit-modify)
           (setq result t
                 regexps nil)
         (setq regexps (cdr regexps))))
@@ -86,11 +86,11 @@ Also omits directories for which `load-path-prune' returns non-nil."
           (while contents
             (let ((candidate (car contents)))
               (unless (member candidate '("." ".." "RCS" "CVS"))
-                (when (and (string-match "\\`[a-zA-Z0-9]" candidate)
+                (when (and (string-match "\\`[a-zA-Z0-9]" candidate nil 'inhibit-modify)
                            ;; Avoid doing a `stat' when it isn't necessary
                            ;; because that can cause trouble when an NFS server
                            ;; is down.
-                           (not (string-match "\\.elc?\\'" candidate))
+                           (not (string-match "\\.elc?\\'" candidate nil 'inhibit-modify))
                            ;; First, call on unexpanded dirname (may be cheaper).
                            (not (load-path-prune candidate))
                            (file-directory-p candidate))
@@ -133,7 +133,7 @@ Also omits directories for which `load-path-prune' returns non-nil."
   "Return a copy of LIST with strings matching REGEXP removed."
   (delq nil
         (mapcar (function (lambda (elt)
-                    (if (string-match regexp elt)
+                    (if (string-match regexp elt nil 'inhibit-modify)
                         nil
                       elt)))
                 list)))

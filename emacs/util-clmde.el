@@ -123,7 +123,7 @@ NEWCHAR and OLDCHAR are characters."
 (defun string-substitute-opt (newchar oldchar-regexp string)
   (let ((i -1)
         (case-fold-search nil))
-    (while (setq i (string-match oldchar-regexp string (1+ i)))
+    (while (setq i (string-match oldchar-regexp string (1+ i) 'inhibit-modify))
       (aset string i newchar))))
 
 
@@ -355,7 +355,7 @@ beginning and end, of STRING."
 
 (defsubst blank-string-p (string)
   "Return non-nil if STRING contains any non-whitespace characters."
-  (string-match "^[ \t\n]*$" string))
+  (string-match "^[ \t\n]*$" string nil 'inhibit-modify))
 
 (defsubst blank-string-or-nil-p (string-or-nil)
   "Return non-nil if STRING is nil or contains any non-whitespace characters."

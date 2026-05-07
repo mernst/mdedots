@@ -106,7 +106,7 @@
 (add-hook 'dired-mode-hook 'show-poundfiles-in-mail-dir)
 (defun show-poundfiles-in-mail-dir ()
   "Resets `dired-omit-files'."
-  (if (string-match "/Mail/" dired-directory)
+  (if (string-match "/Mail/" dired-directory nil 'inhibit-modify)
       (progn
 	(make-local-variable 'dired-omit-files)
 	(setq dired-omit-files

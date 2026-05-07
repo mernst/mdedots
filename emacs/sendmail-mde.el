@@ -181,14 +181,14 @@ Optional argument PRIMARY-ONLY means use only To: field, not also Cc: field."
 Optional argument PRIMARY-ONLY means only check To: field, not also Cc: field."
   (let ((recipients (mail-recipients primary-only)))
     (and recipients
-	 (string-match recipient recipients))))
+	 (string-match recipient recipients nil 'inhibit-modify))))
 
 (defun empty-draft-body-p ()
   "Return whether the draft in the current buffer has an empty body."
   (save-excursion
     (goto-char (point-min))
     (and (search-forward mail-header-separator nil t)
-	 (looking-at "\n*\\'"))))
+	 (looking-at "\n*\\'" 'inhibit-modify))))
 
 (defun query-if-empty-draft-body ()
   (if (and (empty-draft-body-p)
@@ -347,7 +347,7 @@ or if the patch is not in context diff format."
 	(require 'rmail)		; for rmail-reply-regexp
 	(if (and subject
 		 (string-match (concat "^\\(" rmail-reply-regexp "\\)?$")
-			       subject)
+			       subject nil 'inhibit-modify)
 		 (not (y-or-n-p "Send mail with empty subject line? ")))
 	    (error "Message has empty subject line")))))
 
@@ -359,7 +359,7 @@ or if the patch is not in context diff format."
 	     (string-match (concat "^\\(" rmail-reply-regexp "\\)"
 				   ;; ends with a four-digit year
 				   "CVS \\(checkin\\|update\\|commit\\)")
-			   subject)
+			   subject nil 'inhibit-modify)
 	     (not (y-or-n-p "Send mail with \"Re: CVS checkin\" subject line? ")))
 	(error "Message has \"Re: CVS checkin\" Subject line"))))
 
@@ -429,7 +429,7 @@ This advice is disabled if variable `disable-warn-when-kill-mail' is non-nil."
 			(save-excursion
 			  (goto-char (point-min))
 			  (and (search-forward mail-header-separator nil t)
-			       (looking-at "\n\\'"))))
+			       (looking-at "\n\\'" 'inhibit-modify))))
 		       (not (y-or-n-p (format "Mail buffer %s modified; really kill? "
 					      (current-buffer)))))
 		  (error "Tried to kill modified mail buffer %s" (current-buffer))))))))

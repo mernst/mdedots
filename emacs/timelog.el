@@ -105,7 +105,7 @@
         (z-lines nil))
     (while (< (point) end)
       (cond
-       ((looking-at "$")
+       ((looking-at "$" 'inhibit-modify)
         nil)
        ((looking-at "\\([01]?[0-9]/[0-3]?[0-9]\\):?$")
         (if (not first-day)
@@ -156,7 +156,7 @@
                  (push detail z-lines))
                 (t
                  (error "Bad category for time: %s" category)))))
-       ((looking-at "\\([012][0-9]\\)\\([0-5][05]\\)-\\([012][0-9]\\)\\([0-5][05]\\) \\(.\\)[^ ]")
+       ((looking-at "\\([012][0-9]\\)\\([0-5][05]\\)-\\([012][0-9]\\)\\([0-5][05]\\) \\(.\\)[^ ]" 'inhibit-modify)
         (error "No category (or no space after category) on line %d: %s"
                (1+ (count-lines 1 (point)))
                (buffer-substring (line-beginning-position) (line-end-position))))

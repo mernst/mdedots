@@ -89,10 +89,10 @@
              (equal "localhost.localdomain" (system-name))
              (equal "x1-6-00-d0-59-b7-4e-5f" (system-name))
              (equal "UWCSE-TP0IB0O91" (system-name))
-             (string-match "24-6-[0-9]+" (system-name))
+             (string-match "24-6-[0-9]+" (system-name) nil 'inhibit-modify)
              (equal "Vigor31" (system-name))
              (equal "JHR" (system-name))
-             (string-match "\\.dagstuhl\\.de$" (system-name))
+             (string-match "\\.dagstuhl\\.de$" (system-name) nil 'inhibit-modify)
              (equal "ubuntu" (system-name))
              (equal "yoga-ubuntu" (system-name))
              (equal "mdet1700" (system-name))
@@ -109,7 +109,7 @@
              )
          ;; might also be my home machine; in any event, not a CSE-supported machine
          'laptop)
-        ((string-match "\\(\\.\\|^\\)cs\\.washington\\.edu$" (system-name))
+        ((string-match "\\(\\.\\|^\\)cs\\.washington\\.edu$" (system-name) nil 'inhibit-modify)
          'cse)
         ((equal "uwplse.org" (system-name))
          'uwplse)
@@ -122,9 +122,9 @@
          'mac)
         ((equal "software.imdea.org" (system-name))
          'imdea)
-        ((string-match "^dhcp-.*\\.imdea$" (system-name))
+        ((string-match "^dhcp-.*\\.imdea$" (system-name) nil 'inhibit-modify)
          'mac)
-        ((string-match "\\.\\(csail\\|lcs\\)\\.mit\\.edu$" (system-name))
+        ((string-match "\\.\\(csail\\|lcs\\)\\.mit\\.edu$" (system-name) nil 'inhibit-modify)
          'csail)
         )
   "Symbol representing the site at which Emacs is running.")
@@ -228,8 +228,8 @@
   ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
   (let ((filename (and buffer-file-name (file-truename buffer-file-name))))
     (if (and filename
-             (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename)
-             (not (string-match "/503/17sp/" filename)))
+             (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename nil 'inhibit-modify)
+             (not (string-match "/503/17sp/" filename nil 'inhibit-modify)))
         (add-hook 'after-save-hook 'run-createcal nil 'local))))
 ;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
 (add-hook 'conf-mode-hook 'update-conf-mode-hook)
@@ -1706,7 +1706,7 @@ This can make comparisons easier."
 
 
 (if (string-match "Linux.*Microsoft.*Linux"
-                  (shell-command-to-string "uname -a"))
+                  (shell-command-to-string "uname -a") nil 'inhibit-modify)
     (progn
       ;; (setq system-type-specific 'wsl/linux) ;; for later use.
       (setq
@@ -1767,7 +1767,7 @@ This can make comparisons easier."
 ;;      (define-key rg-mode-map "\M-p" 'rg-prev-file)  ; was unbound
 ;;      )
 
-(when (string-match "-[Mm]icrosoft" (shell-command-to-string "uname -a"))
+(when (string-match "-[Mm]icrosoft" (shell-command-to-string "uname -a") nil 'inhibit-modify)
   ;; WSL: WSL1 has "-Microsoft", WSL2 has "-microsoft-standard"
   (add-to-list 'browse-url-filename-alist
                (cons "^file:///"

@@ -36,10 +36,10 @@
   "Convert TeX comments into \\begin{texcommented} ... \\end{texcommented}."
   (interactive)
   (beginning-of-line)
-  (if (not (looking-at "%"))
+  (if (not (looking-at "%" 'inhibit-modify))
       (progn
 	(forward-line)
-	(if (not (looking-at "%"))
+	(if (not (looking-at "%" 'inhibit-modify))
 	    (error "Where's the TeX comment?"))))
   (insert "\\begin{texcommented}\n")
   (while (looking-at "%+ ?")
@@ -62,7 +62,7 @@
 (defun remove-matching-tags (tag1 tag2 &optional replacement)
   (goto-char (point-min))
   (let ((tag1-completed
-	 (if (string-match ">$" tag1)
+	 (if (string-match ">$" tag1 nil 'inhibit-modify)
 	     tag1
 	   (concat tag1 ".*?>"))))
     (while (re-search-forward
@@ -82,7 +82,7 @@
   (replace-string-noninteractive "</P>" "")
   (goto-char (point-min))
   (while (re-search-forward "<FONT" nil t)
-    (if (not (looking-at ".*</FONT>"))
+    (if (not (looking-at ".*</FONT>" 'inhibit-modify))
 	(progn
 	  (end-of-line)
 	  (insert " ")
@@ -271,7 +271,7 @@
   (interactive)
   (while (re-search-forward "\n\n" nil t)
     (forward-line 1)
-    (if (looking-at "^[0-9]")
+    (if (looking-at "^[0-9]" 'inhibit-modify)
 	(insert ".\n"))))
 
 (defun address-labels-map (tag)

@@ -173,7 +173,7 @@ This prevents assumption of iso-2022-jp charset."
     (if (> (/ (* 1.0 filled-lines) (+ filled-lines non-filled-lines)) .25)
 	(enable-auto-fill)))
   (cond ((or (equal "checklink-args.txt" (buffer-name))
-	     (string-match "\.csv$" (buffer-name)))
+	     (string-match "\.csv$" (buffer-name) nil 'inhibit-modify))
 	 (visual-line-mode 0)
 	 (auto-fill-mode 0)))
 
@@ -184,11 +184,11 @@ This prevents assumption of iso-2022-jp charset."
   ;; Variable settings
   ;; Avoid errors when editing RMAIL files.
   (make-local-variable 'require-final-newline)
-  (if (string-match "^RMAIL$\\|\\.e?mail$" (buffer-name))
+  (if (string-match "^RMAIL$\\|\\.e?mail$" (buffer-name) nil 'inhibit-modify)
       (setq require-final-newline nil))
 
   (if (and (buffer-file-name)
-	   (string-match "\\.adoc$" (buffer-file-name)))
+	   (string-match "\\.adoc$" (buffer-file-name) nil 'inhibit-modify))
       (progn
 	(make-local-variable 'page-delimiter)
 	(setq page-delimiter "\n=")))
@@ -263,8 +263,8 @@ and KILLP is non-nil if prefix arg was specified."
 
 (defun mde-change-log-mode-hook ()
   "Use text mode instead of Changelog Mode for specific files."
-  (if (or (string-match "checker-framework.*/docs/CHANGELOG.md" buffer-file-name)
-	  (string-match "/java/plume-lib/.*/CHANGELOG.md" buffer-file-name))
+  (if (or (string-match "checker-framework.*/docs/CHANGELOG.md" buffer-file-name nil 'inhibit-modify)
+	  (string-match "/java/plume-lib/.*/CHANGELOG.md" buffer-file-name nil 'inhibit-modify))
       (text-mode)))
 
 (add-hook 'change-log-mode-hook 'mde-change-log-mode-hook)
@@ -324,7 +324,10 @@ Intended to run after `visual-line-mode' runs."
   (setq sentence-end-double-space nil))
 
 (defun referee-maybe-set-write-file-functions ()
-  (if (save-match-data (string-match "\\breview_?forms?[-_]?[0-9]*.txt$\\|\\(tse\\|tosem\\).*review.txt$" buffer-file-name))
+  (if (or (string-match "\\breview_?forms?[-_]?[0-9]*.txt$\\|\\(tse\\|tosem\\).*review.txt$" buffer-file-name nil 'inhibit-modify)
+          (save-excursion
+            (goto-char (point-min))
+            (looking-at "==\\+== .* Review Forms" 'inhibit-modify)))
       (progn
 	(add-hook 'write-file-functions 'obfuscate-writing-style nil 'local)
 	;; (setq fill-column 69)		; 70 is too large for Paperdyne
@@ -588,7 +591,7 @@ proposal")
 	(use-local-map local-map)))
 
   ;; Delete trailing whitespace for some files
-  (if (string-match "docs/manual$" (directory-file-name default-directory))
+  (if (string-match "docs/manual$" (directory-file-name default-directory) nil 'inhibit-modify)
       (add-hook 'before-save-hook 'delete-trailing-whitespace))
   )
 (add-hook 'tex-mode-hook 'mde-tex-mode-hook)
@@ -802,8 +805,8 @@ proposal")
 		      nil t)
 		     (not (= (point) (point-min))))
 		 (cl-delete-if
-		  #'(lambda (f) (or (string-match "-abstract\\.html$" f)
-				    (string-match "\\.ps$" f)))
+		  #'(lambda (f) (or (string-match "-abstract\\.html$" f nil 'inhibit-modify)
+				    (string-match "\\.ps$" f nil 'inhibit-modify)))
 		  (directory-files "~/public_html/pubs/" nil basefilename nil))))
 	       (entries
 		(remove nil
@@ -919,7 +922,7 @@ proposal")
     (while (re-search-forward "^\\(<h[1-6]\\)\\([^>]*>\\)\\([^<>\n]+\\)\\(</h[1-6]>\\)[ \t]*" nil t)
       (let ((hextra (match-string 2))
             (hname (match-string 3)))
-        (if (not (save-match-data (string-match " id=" hextra)))
+        (if (not (string-match " id=" hextra nil 'inhibit-modify))
             (let ((anchor-name
                    (save-match-data (replace-regexp-in-string " " "_"
                                                               (replace-regexp-in-string "'" "" hname)))))
@@ -1116,9 +1119,9 @@ proposal")
 	(with-current-buffer buffer
 	  (save-excursion
 	    (goto-char (point-min))
-	    (cond ((looking-at "diff ")
+	    (cond ((looking-at "diff " 'inhibit-modify)
 		   (diff-mode))
-		  ((and (looking-at "commit ")
+		  ((and (looking-at "commit " 'inhibit-modify)
 			(save-excursion
 			  (re-search-forward "\n\ndiff --git a/" nil t)))
 		   (diff-mode))
