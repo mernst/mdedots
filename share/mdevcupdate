@@ -92,6 +92,18 @@ update_fork_with_hosting_and_userid() {
   fi
 }
 
+update_from() {
+  upstream=$1
+  dir=$2
+  if [ -d "$dir" ]; then
+    (cd "$dir" \
+      && git pull -q --ff-only \
+      && git pull -q --ff-only "$upstream" --tags \
+      && git push -q \
+      && git remote prune origin) || (echo "$dir" && false)
+  fi
+}
+
 submodule_update() {
   dir="$1"
   if [ -d "$dir" ]; then
@@ -246,11 +258,13 @@ update_fork jhipster prettier-java ~/java
 update_fork uber nullaway ~/java
 
 update_fork google error-prone ~/java
-if [ -d ~/java/error-prone-branch-gh-pages ]; then
-  git -C ~/java/error-prone-branch-gh-pages pull -q --ff-only
-  if [ -d ~/java/error-prone-fork-mernst-branch-gh-pages ]; then
-    (cd ~/java/error-prone-fork-mernst-branch-gh-pages && git pull -q --ff-only ~/java/error-prone-branch-gh-pages && git push)
-  fi
+dir=~/java/error-prone-branch-gh-pages
+if [ -d $dir ]; then
+  git -C $dir pull -q --ff-only || (pwd && false)
+fi
+dir=~/java/error-prone-fork-mernst-branch-gh-pages
+if [ -d $dir ]; then
+  (git -C $dir pull -q --ff-only $dir && git push) || (echo $dir && false)
 fi
 
 update_fork michel-kraemer gradle-download-task ~/bin/src
@@ -286,39 +300,21 @@ update_fork typetools commons-bcel ~/research/types/libraries
 ## Weird: using `--tags` causes the pull to fail.
 # update_fork JetBrains kotlin ~/java
 ## So do it directly:
-if [ -d ~/java/kotlin-fork-mernst ]; then
-  (cd ~/java/kotlin-fork-mernst \
+dir=~/java/kotlin-fork-mernst
+if [ -d $dir ]; then
+  (cd $dir \
     && git pull -q --ff-only \
     && git pull -q --ff-only "git@github.com:JetBrains/kotlin" \
     && git push -q \
-    && git remote prune origin)
+    && git remote prune origin) || (echo "$dir" && false)
 fi
 
 ### Update from a non-GitHub upstream
 
-## Using `update_fork does not work because the repository is at gitlab.ow2.org, not github,
+## Using `update_fork` does not work because the repository is at gitlab.ow2.org, not github,
 ## and it uses a https: rather than a git: URL.
-# update_fork asm asm ~/java
-## So do it directly:
-if [ -d ~/java/asm-fork-mernst ]; then
-  (cd ~/java/asm-fork-mernst \
-    && git pull -q --ff-only \
-    && git pull -q --ff-only https://gitlab.ow2.org/asm/asm.git --tags \
-    && git push -q \
-    && git remote prune origin)
-fi
+
+update_from https://gitlab.ow2.org/asm/asm.git ~/java/asm-fork-mernst
 # shellcheck disable=SC2154 # $t should be defined.
-if [ -d "$t"/libraries/asm-fork-typetools ]; then
-  (cd "$t"/libraries/asm-fork-typetools \
-    && git pull -q --ff-only \
-    && git pull -q --ff-only https://gitlab.ow2.org/asm/asm.git --tags \
-    && git push -q \
-    && git remote prune origin)
-fi
-if [ -d ~/class/simple-courseweb-template-fork-mernst ]; then
-  (cd ~/class/simple-courseweb-template-fork-mernst \
-    && git pull -q --ff-only \
-    && git pull -q --ff-only git@gitlab.cs.washington.edu:lab/simple-courseweb-template.git --tags \
-    && git push -q \
-    && git remote prune origin)
-fi
+update_from https://gitlab.ow2.org/asm/asm.git "$t"/libraries/asm-fork-typetools
+update-from git@gitlab.cs.washington.edu:lab/simple-courseweb-template.git ~/class/simple-courseweb-template-fork-mernst
