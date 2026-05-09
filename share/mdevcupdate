@@ -317,4 +317,4 @@ fi
 update_from https://gitlab.ow2.org/asm/asm.git ~/java/asm-fork-mernst
 # shellcheck disable=SC2154 # $t should be defined.
 update_from https://gitlab.ow2.org/asm/asm.git "$t"/libraries/asm-fork-typetools
-update-from git@gitlab.cs.washington.edu:lab/simple-courseweb-template.git ~/class/simple-courseweb-template-fork-mernst
+update_from git@gitlab.cs.washington.edu:lab/simple-courseweb-template.git ~/class/simple-courseweb-template-fork-mernst
