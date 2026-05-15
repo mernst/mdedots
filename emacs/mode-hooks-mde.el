@@ -317,7 +317,20 @@ Intended to run after `visual-line-mode' runs."
     ;; Change possessives of words ending in s (this introduces a typo).
     (goto-char (point-min))
     (replace-regexp-noninteractive "\\(\\ws'\\)s\\b" "\\1")
-    ))
+    ;; Move punctuation within quote marks (this introduces a typo).
+    (goto-char (point-min))
+    (replace-regexp-noninteractive "\\([\"\)]\\)\\([,.]\\)" "\\2\\1")
+    ;; Remove double spaces after punctuation.
+    (goto-char (point-min))
+    (replace-regexp-noninteractive "\\([,.]\\)\\([\"\)]\\)?  +" "\\1\\2 ")
+    ;; Capitalize "section".
+    (goto-char (point-min))
+    ;; Cannot use "\\,(capitalize \\1)" in argument to replace-regexp, only in an interactive call.
+    (while (re-search-forward "\\b\\(figure\\|section\\) \\([0-9]\\)" nil t)
+      (replace-match (concat (capitalize (match-string 1)) " " (match-string 2))))
+    )
+  ;; Must return nil or else the file is considered already written.
+  nil)
 
 (defun sentence-end-single-space ()
   (make-local-variable 'sentence-end-double-space)
@@ -330,7 +343,7 @@ Intended to run after `visual-line-mode' runs."
             (looking-at "==\\+== .* Review Forms" 'inhibit-modify)))
       (progn
 	(add-hook 'write-file-functions 'obfuscate-writing-style nil 'local)
-	;; (setq fill-column 69)		; 70 is too large for Paperdyne
+	(setq fill-column 99999)
 	(sentence-end-single-space)
 	(make-local-variable 'colon-double-space)
 	(setq colon-double-space nil))))
