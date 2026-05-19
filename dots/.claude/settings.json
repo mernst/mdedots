@@ -22,8 +22,8 @@
       "Bash(gh pr list:*)",
       "Bash(gh pr view:*)",
       "Bash(gh repo view:*)",
-      "Bash(git -C /home/mernst/research/types/checker-framework-fork-mernst-branch-override-order diff master..override-order --stat)",
-      "Bash(git -C /home/mernst/research/types/checker-framework-fork-mernst-branch-override-order log master..override-order --oneline)",
+      "Bash(git -C * diff:*)",
+      "Bash(git -C * log:*)",
       "Bash(git add:*)",
       "Bash(git branch:*)",
       "Bash(git checkout:*)",
@@ -64,7 +64,6 @@
       "Bash(sort:*)",
       "Bash(stat:*)",
       "Bash(tail:*)",
-      "Bash(timeout 300 ./gradlew:*)",
       "Bash(uniq:*)",
       "Bash(wc:*)",
       "Bash(which:*)",
@@ -92,5 +91,9 @@
     "rust-analyzer-lsp@claude-plugins-official": true,
     "code-review@claude-plugins-official": true
   },
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "spinnerVerbs": {
+    "mode": "replace",
+    "verbs": ["Thinking", "Processing", "Working"]
+  }
 }
