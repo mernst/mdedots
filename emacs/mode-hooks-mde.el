@@ -30,6 +30,8 @@
 (autoload 'browse-url-if-matched "browse-url-once")
 (autoload 'browse-url-once-if-matched "browse-url-once")
 (autoload 'browse-url-once-via-text-properties "browse-url-once")
+(autoload 'paragraph-buffer-p "startup-functions-mde"
+  "Return true if the current buffer is paragraph-oriented." nil)
 
 
 
