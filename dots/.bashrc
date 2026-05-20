@@ -155,12 +155,6 @@ fi
 # source $HOME/bin/install/gradle-completion/gradle-completion.bash
 # source /usr/local/lib/bazel/bin/bazel-complete.bash
 
-# For Rust
-if [ -f "$HOME/.cargo/env" ]; then
-  # shellcheck disable=SC1091  # file does not exist on some file systems
-  . "$HOME/.cargo/env"
-fi
-
 # added by travis gem
 # shellcheck disable=SC1091  # file does not exist on some file systems
 [ -f "$HOME/.travis/travis.sh" ] && source "$HOME/.travis/travis.sh"
@@ -209,6 +203,12 @@ if [ -f '/home/mernst/bin/install/google-cloud-sdk/completion.bash.inc' ]; then 
 # Generated for envman. Do not edit.
 # shellcheck disable=SC1091 # files might not exist
 [ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
+
+# For Rust; last in order to prepend to path.
+if [ -f "$HOME/.cargo/env" ]; then
+  # shellcheck disable=SC1091  # file does not exist on some file systems
+  . "$HOME/.cargo/env"
+fi
 
 if [ -n "$DEBUGLOGIN" ]; then
   echo "Exiting .bashrc"
