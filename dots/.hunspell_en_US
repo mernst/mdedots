@@ -371,6 +371,7 @@ LLM's
 LLMs
 LLVM
 LLVM's
+LOC
 LPL
 LTEqLength
 LTEqLengthOf
@@ -833,6 +834,7 @@ compositionality
 compositionally
 computability
 computable
+computeIfAbsent
 concolic
 concolically
 concretization
@@ -1077,6 +1079,7 @@ misconfigurations
 misconfigured
 modalities
 modality
+modifiability
 modularity
 modularize
 modularized

@@ -297,8 +297,8 @@ if [ "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
 ### Processes
 ###
 
-# At UW CSE, only run syncthing on bam.cs.
-if [ ! -d /homes/gws/mernst ] || [ "$(hostname)" = "bam.cs.washington.edu" ]; then
+# At UW CSE (that is, when directory /homes/gws/mernst exists), only run syncthing on tricycle.cs.
+if [ ! -d /homes/gws/mernst ] || [ "$(hostname)" = "tricycle.cs.washington.edu" ]; then
   if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' > /dev/null 2>&1); then
     # syncthing is not running
     nohup syncthing > "$HOME"/tmp/syncthing.log 2>&1 &
