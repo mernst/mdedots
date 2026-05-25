@@ -586,8 +586,8 @@
                        ;; not: (count-matches to-do-priority-regex)
                        ;; Count all paragraphs, because even paragraphs
                        ;; without priority numbers are important in
-                       ;; dtermining how well I am keeping up with my work.
-                       (count-matches "\n\n")
+                       ;; determining how well I am keeping up with my work.
+                       (count-matches "\n\n+")
                        ))))
          (to-dos-summary (concat (int-to-string to-dos)
                                  " to-do items (previously "
@@ -884,7 +884,7 @@ After running this, run from the shell:  print-mail bulk." t)
     (save-restriction
       (widen)
       (goto-char (point-min))
-      (replace-string-noninteractive "\n\n\n" "\n\n")
+      (replace-regexp-noninteractive "\n\n\n+" "\n\n")
       (goto-char (point-min))
       (let ((num-matches (count-matches to-do-priority-regex)))
         (let ((match-num 0))
