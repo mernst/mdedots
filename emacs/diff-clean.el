@@ -54,7 +54,7 @@ The latter two changes are semantics-preserving and are useful after
 editing a diff buffer to remove uninteresting changes."
   (interactive)
 
-  (offer-to-change-if-read-only)
+  (setq buffer-read-only nil)
   (let ((inhibit-read-only t))
 
     (if (not dont-remove-files)

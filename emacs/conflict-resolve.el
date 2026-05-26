@@ -4,17 +4,19 @@
 ;; This file contains functions that resolve merge conflicts.
 ;; Also see file diff-clean.el, which is for diffs (not conflicts).
 
-;; Typical workflow for resolving conflicts:
-;; Run at the top level: etags $(rg --files-with-matches '<<<<<<')
+;; Typical workflow for resolving conflicts, using a tags table:
+;; Run at the top level: etags $(rg --files-with-matches '^<<<<<<')
 ;; Visit that tags table.
 ;; (require 'conflict-resolve)
 ;; ;; TODO: What is the purpose of this?
 ;; ;; (read-conflict-files-from-tags-table)
 ;; Now run as many of the following as desired.
-;; (conflict-resolve)
 ;; (tags-conflict-resolve)
-;; (conflict-resolve-annotation-lines)
 ;; (tags-conflict-resolve-annotation-lines)
+
+;; When not using a tags table:
+;; (conflict-resolve)
+;; (conflict-resolve-annotation-lines)
 ;; (resolve-annotatedfor-conflicts)
 ;; (move-cf-imports-to-beginning)
 ;; (resolve-import-conflicts)
@@ -26,7 +28,7 @@
 ;; Most useful for pulling remote into annotated code, such as the
 ;; Checker Framework annotated JDK:
 ;; (tags-conflict-resolve-annotation-lines-in-head)
-;; (tags-conflict-resolve-annotation-lines-in-other ()
+;; (tags-conflict-resolve-annotation-lines-in-other)
 
 
 ;; Run vc-resolve-conflicts for each file that this matches.
