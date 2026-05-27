@@ -29,6 +29,7 @@
 ;; Checker Framework annotated JDK:
 ;; (tags-conflict-resolve-annotation-lines-in-head)
 ;; (tags-conflict-resolve-annotation-lines-in-other)
+;; (tags-conflict-resolve-import-conflicts)
 
 
 ;; Run vc-resolve-conflicts for each file that this matches.
@@ -220,19 +221,19 @@ Two caveats:
   (read-conflict-files-from-tags-table)
   (tags-search
    (concat less-than-hunk-start-re
-           "\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)"
+           "\\(\\(?:\\(?:\\(?:// \\)?import .*;\\)?\n\\)*\\)"
            vertical-bar-separator-re
-           "\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)"
+           "\\(\\(?:\\(?:\\(?:// \\)?import .*;\\)?\n\\)*\\)"
            equal-sign-separator-re
-           "\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)"
+           "\\(\\(?:\\(?:\\(?:// \\)?import .*;\\)?\n\\)*\\)"
            greater-than-hunk-end-re)
    )
-  (while t
-    ;; (message "#1 %s" (match-string 1))
-    ;; (message "#3 %s" (match-string 3))
-    (replace-match (sorted-non-duplicate-lines (match-string 1) (match-string 3)))
-    (fileloop-continue))
-  ;; TODO: does not get run because previous loop throws an exception
+  (ignore-errors
+    (while t
+      (message "#1 %s" (match-string 1))
+      (message "#3 %s" (match-string 3))
+      (replace-match (sorted-non-duplicate-lines (match-string 1) (match-string 3)))
+      (fileloop-continue)))
   )
 
 
@@ -525,7 +526,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     vertical-bar-separator-re
     base-lines-grouped-re
     equal-sign-separator-re
-    "\\1"
+    "\\2"
     greater-than-hunk-end-re)
    "\\1"))
 
@@ -829,11 +830,12 @@ In the result, the lines are sorted."
 ;;;
 
 (defun read-conflict-files-from-tags-table ()
-  "Reald all the files in the tags table into their own buffers."
+  "Reald all the conflicting files in the tags table into their own buffers."
   (interactive)
   (tags-search less-than-hunk-start-re)
-  (while t
-    (fileloop-continue)))
+  (ignore-errors
+    (while t
+      (fileloop-continue))))
 
 
 ;;; TODO: What is the purpose of this?  That is, why would I want to run it?
@@ -842,8 +844,9 @@ In the result, the lines are sorted."
 This takes up a ridiculous amount of Emacs memory, for large TAGS tables."
   (interactive)
   (tags-search "\\`[^z]")
-  (while t
-    (fileloop-continue)))
+  (ignore-errors
+    (while t
+      (fileloop-continue))))
 
 
 
