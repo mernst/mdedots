@@ -1576,6 +1576,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (setq diff-clean-removed-files
       '(
         ".*/annotation-file-utilities/bib/.*"
+        ".*/annotation-file-utilities/tests/converted/.*"
         ;; Is this pattern desirable?  If so, should it include .*.output?
         ".*/annotation-file-utilities/tests/.*.log"
         ".*/beepbeep-3[^/]*/CoreTest/bin/.*"

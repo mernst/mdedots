@@ -66,7 +66,7 @@
 
 (defun lines-without-at-start-re (char)
   "Matches a sequence of lines that do not start with the given character."
-  (concat "\\(:?\n\\|[^" char "].*\n\\)*"))
+  (concat "\\(?:\n\\|[^" char "].*\n\\)*"))
 
 (defconst left-lines-re
   (lines-without-at-start-re "|"))
@@ -514,7 +514,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     vertical-bar-separator-re
     "\\1"
     equal-sign-separator-re
-    right-lines-re
+    right-lines-grouped-re
     greater-than-hunk-end-re)
    "\\2"))
 
@@ -522,7 +522,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
   (list
    (concat
     less-than-hunk-start-re
-    left-lines-re
+    left-lines-grouped-re
     vertical-bar-separator-re
     base-lines-grouped-re
     equal-sign-separator-re
@@ -536,7 +536,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     less-than-hunk-start-re
     left-lines-grouped-re
     vertical-bar-separator-re
-    base-lines-re
+    base-lines-grouped-re
     equal-sign-separator-re
     "\\1"
     greater-than-hunk-end-re)
