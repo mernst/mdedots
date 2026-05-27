@@ -4,6 +4,12 @@ while [ $# -gt 0 ]; do
   case $1 in
     --debug)
       DEBUG=--debug
+      VERBOSE=true
+      shift # past argument
+      ;;
+    --verbose)
+      # shellcheck disable=SC2034 # VERBOSE is not used yet
+      VERBOSE=true
       shift # past argument
       ;;
     -*)
@@ -47,7 +53,7 @@ update_fork_kelloggm() {
 
 # Pull from $org/$repo into $parentdir/$repo-fork-mernst
 update_fork_from_rjust_bitbucket() {
-  if [ -n "$DEBUG" ]; then
+  if [ -n "$VERBOSE" ]; then
     echo "update_fork_from_rjust_bitbucket 1=$1 2=$2"
   fi
   update_fork_with_hosting_and_userid "rjust" "$1" "$2" "" bitbucket.org michaelernst
@@ -64,7 +70,7 @@ update_fork_with_hosting_and_userid() {
   if [ -z "$localname" ]; then
     localname="$repo"
   fi
-  if [ -n "$DEBUG" ]; then
+  if [ -n "$VERBOSE" ]; then
     echo "update_fork_with_hosting_and_userid org=$org repo=$repo parentdir=$parentdir localname=$localname hosting=$hosting userid=$userid"
   fi
   if [ -z "$parentdir" ] || [ -z "$userid" ]; then
@@ -80,7 +86,7 @@ update_fork_with_hosting_and_userid() {
   cp -pf ~/private/.git-credentials-SAVE ~/private/.git-credentials
   if [ -d "$parentdir/$localname-fork-$userid" ]; then
     git_pull_command="git pull -q --ff-only git@${hosting}:$org/$repo --tags"
-    if [ -n "$DEBUG" ]; then
+    if [ -n "$VERBOSE" ]; then
       echo "cd $parentdir/$localname-fork-$userid && $git_pull_command"
     fi
     # Doesn't use `git -C` because multiple git commands will be run in the directory.

@@ -3,7 +3,11 @@
 while [ $# -gt 0 ]; do
   case $1 in
     --debug)
-      DEBUG=--debug
+      DEBUG="${DEBUG} --debug"
+      shift # past argument
+      ;;
+    --verbose)
+      DEBUG="${DEBUG} --verbose"
       shift # past argument
       ;;
     -*)

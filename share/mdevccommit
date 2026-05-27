@@ -13,7 +13,13 @@
 while [ $# -gt 0 ]; do
   case $1 in
     --debug)
+      # shellcheck disable=SC2034 # DEBUG is not used yet
       DEBUG=--debug
+      VERBOSE=true
+      shift # past argument
+      ;;
+    --verbose)
+      VERBOSE=true
       shift # past argument
       ;;
     -*)
@@ -27,13 +33,13 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if [ -n "$DEBUG" ]; then
+if [ -n "$VERBOSE" ]; then
   echo "Debugging is on"
   # Display commands and their arguments as they are executed; same as `set -o xtrace`.
   set -x
 fi
 
-if [ -n "$DEBUG" ]; then
+if [ -n "$VERBOSE" ]; then
   echo "Skipping compilation"
 else
   cronic make -C "$HOME"/bib test push
@@ -48,11 +54,11 @@ for dir in ~/bib ~/bin/src/mdedots ~/research/notes ~/wisdom; do
     echo ${dir}:
     grep -q '^\[remote' $dir/.git/config
     RETVAL=$?
-    if [ -n "$DEBUG" ]; then echo "RETVAL = $RETVAL"; fi
+    if [ -n "$VERBOSE" ]; then echo "RETVAL = $RETVAL"; fi
     if [ $RETVAL -eq 0 ]; then
       # The repository has a remote/parent (is not root).
 
-      if [ -n "$DEBUG" ]; then echo "[remote ...] found in $dir/.git/config"; fi
+      if [ -n "$VERBOSE" ]; then echo "[remote ...] found in $dir/.git/config"; fi
 
       # (cd $dir; git commit -q -a --allow-empty-message -m " "; git pull -q; git push -q) &
       ## WEIRD: without "git status > /dev/null", sometimes the commit does not happen.  I don't understand this.
@@ -69,7 +75,7 @@ for dir in ~/bib ~/bin/src/mdedots ~/research/notes ~/wisdom; do
 
     else
       # Current directory is the root (no remote/parent).  This should never happen with Git.
-      if [ -n "$DEBUG" ]; then echo "[remote ...] not found in $dir/.git/config"; fi
+      if [ -n "$VERBOSE" ]; then echo "[remote ...] not found in $dir/.git/config"; fi
 
       # Why is second commit needed/useful?
       # Need to do merge too?
