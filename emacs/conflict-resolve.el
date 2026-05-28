@@ -540,7 +540,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     equal-sign-separator-re
     "\\1"
     greater-than-hunk-end-re)
-   "\\2"))
+   "\\1"))
 
 (defun tags-conflict-resolve-with-two-same ()
   "Resolve diffs in which two of the versions of the text are the same."

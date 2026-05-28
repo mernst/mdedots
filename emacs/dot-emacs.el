@@ -1577,6 +1577,8 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
       '(
         ".*/annotation-file-utilities/bib/.*"
         ".*/annotation-file-utilities/tests/converted/.*"
+        ".*/annotation-file-utilities/tests/ad-hoc/bridge/C.jaif"
+        ".*/annotation-file-utilities/tests/system-test/out[25].jaif"
         ;; Is this pattern desirable?  If so, should it include .*.output?
         ".*/annotation-file-utilities/tests/.*.log"
         ".*/beepbeep-3[^/]*/CoreTest/bin/.*"
