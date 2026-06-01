@@ -70,8 +70,8 @@ if ! [ "$dot_environment_file_read" ]; then # avoid sourcing .environment twice
 fi
 if [ -n "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
 
-html2ps() { command htmldoc -f "$(basename "$@" .ps)" --webpage "$@"; }
-html2pdf() { command htmldoc -f "$(basename "$@" .pdf)" --webpage "$@"; }
+# html2ps() { command htmldoc -f "$(basename "$@" .ps)" --webpage "$@"; }
+# html2pdf() { command htmldoc -f "$(basename "$@" .pdf)" --webpage "$@"; }
 
 # added by travis gem
 # shellcheck disable=SC1091  # file does not exist on some file systems

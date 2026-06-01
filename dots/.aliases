@@ -164,6 +164,14 @@ lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m
 # html2ps () { command htmldoc -f `basename "$@" .ps` --webpage "$@" ; }
 # html2pdf () { command htmldoc -f `basename "$@" .pdf` --webpage "$@" ; }
 
+html2pdf() {
+  for f in "$@"; do
+    command google-chrome --headless --disable-gpu \
+      --print-to-pdf="$(basename "$f" .html).pdf" \
+      "$f"
+  done
+}
+
 # Enscript/genscript (ens uses -pOUTFILE; gens uses -oOUTFILE to output to file)
 # -h: no burst/header page; -B: no page headings; -b 'header'; -G: gaudy page
 # headings; -R: portrait
