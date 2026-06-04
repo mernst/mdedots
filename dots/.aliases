@@ -137,8 +137,8 @@ alias bigscreen='xrandr -s 1920x1200'
 alias aoeu='if [ $DISPLAY ]; then setxkbmap us; else loadkeys us; fi'
 alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 
-alias clauded='claude --dangerously-skip-permissions'
-alias claudea='claude --enable-auto-mode'
+alias clauded='claude --model opus --dangerously-skip-permissions'
+alias claudea='claude --model opus --enable-auto-mode'
 alias claudemax='clauded --model opus --effort max'
 
 ###########################################################################
@@ -163,6 +163,14 @@ lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m
 # # But, htmldoc is not installed at CSE, whereas html2ps is.
 # html2ps () { command htmldoc -f `basename "$@" .ps` --webpage "$@" ; }
 # html2pdf () { command htmldoc -f `basename "$@" .pdf` --webpage "$@" ; }
+
+html2pdf() {
+  for f in "$@"; do
+    command google-chrome --headless --disable-gpu \
+      --print-to-pdf="$(basename "$f" .html).pdf" \
+      "$f"
+  done
+}
 
 # Enscript/genscript (ens uses -pOUTFILE; gens uses -oOUTFILE to output to file)
 # -h: no burst/header page; -B: no page headings; -b 'header'; -G: gaudy page
