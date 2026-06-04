@@ -67,7 +67,6 @@
       "Bash(uniq:*)",
       "Bash(wc:*)",
       "Bash(which:*)",
-      "Edit(*)",
       "Edit(./**)",
       "Glob(*)",
       "Grep(*)",
