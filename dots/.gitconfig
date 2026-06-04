@@ -126,7 +126,7 @@
 #	helper = cache --timeout=360000
 ## Store keeps passwords forever and is OK for low-security passwords
 ## (which are most; I use ssh for high-security projects).
-	helper = manager
+	helper = store
 
 [rerere]
 	enabled = true
