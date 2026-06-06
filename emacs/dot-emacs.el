@@ -850,9 +850,14 @@ After running this, run from the shell:  print-mail bulk." t)
   (add-to-list 'eglot-server-programs
                '(python-base-mode . ("ruff" "server"))))
 (add-hook 'python-base-mode-hook
-          (lambda ()
-            (eglot-ensure)
-            (add-hook 'after-save-hook 'eglot-format nil t)))
+          #'(lambda ()
+              (eglot-ensure)
+              (add-hook 'after-save-hook 'eglot-format nil t)))
+
+(require 'eglot)
+(add-to-list 'eglot-server-programs '((c++-mode c-mode) "clangd"))
+(add-hook 'c-mode-hook 'eglot-ensure)
+(add-hook 'c++-mode-hook 'eglot-ensure)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

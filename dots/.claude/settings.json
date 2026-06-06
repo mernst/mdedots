@@ -88,11 +88,18 @@
   },
   "enabledPlugins": {
     "rust-analyzer-lsp@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true
+    "code-review@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "jdtls-lsp@claude-plugins-official": true,
+    "clangd-lsp@claude-plugins-official": true
   },
-  "skipDangerousModePermissionPrompt": true,
   "spinnerVerbs": {
     "mode": "replace",
-    "verbs": ["Thinking", "Processing", "Working"]
-  }
+    "verbs": [
+      "Thinking",
+      "Processing",
+      "Working"
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true
 }
