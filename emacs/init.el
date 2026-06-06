@@ -26,39 +26,17 @@
  '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
  '(large-file-warning-threshold nil)
  '(package-selected-packages
-   '(0blayout 0blayout 0blayout adaptive-wrap adaptive-wrap adaptive-wrap
-              adaptive-wrap adaptive-wrap aidermacs aidermacs
-              aidermacs apheleia apheleia apheleia apheleia apheleia
-              auto-compile auto-compile auto-compile auto-compile
-              auto-compile cargo cargo cargo cargo cargo cfrs cfrs
-              cfrs cfrs claude-code claude-code claude-code
-              claude-code claude-code claude-shell company dtrt-indent
-              dtrt-indent dtrt-indent dtrt-indent dtrt-indent eat eat
-              eat eat eat editorconfig editorconfig editorconfig
-              editorconfig editorconfig eglot eglot eglot eglot eglot
-              eldoc eldoc eldoc erc faceup faceup faceup faceup faceup
-              flycheck flycheck flycheck flycheck flymake flymake
-              flymake flymake ggtags ggtags ggtags ggtags
-              gnu-elpa-keyring-update gnu-elpa-keyring-update
-              gnu-elpa-keyring-update gnu-elpa-keyring-update gptel
-              gptel groovy-mode groovy-mode groovy-mode groovy-mode
-              hydra hydra hydra idlwave idlwave idlwave idlwave
-              jsonrpc lsp-java lsp-java lsp-java lsp-java lsp-ui
-              lsp-ui lsp-ui lsp-ui peg pfuture pfuture pfuture project
-              python python python python python-mode python-mode
-              python-mode python-mode recompile-on-save
-              recompile-on-save recompile-on-save recompile-on-save rg
-              rg rg rg shell-maker track-changes track-changes
-              track-changes track-changes tree-sitter-langs
-              tree-sitter-langs tree-sitter-langs tree-sitter-langs
-              treesit-auto treesit-auto treesit-auto treesit-auto
-              verilog-mode verilog-mode verilog-mode verilog-mode
-              websocket which-key which-key which-key which-key
-              whisper window-tool-bar window-tool-bar window-tool-bar
-              window-tool-bar yaml-mode yaml-mode yaml-mode yaml-mode
-              yasnippet yasnippet yasnippet yasnippet))
+   '(0blayout adaptive-wrap aidermacs apheleia auto-compile cargo cfrs
+              claude-code claude-shell company dtrt-indent eat editorconfig eglot-booster
+              eldoc erc faceup flycheck flymake ggtags gnu-elpa-keyring-update gptel
+              groovy-mode hydra idlwave jsonrpc lsp-java lsp-ui peg pfuture project
+              python-mode recompile-on-save rg shell-maker track-changes tree-sitter-langs
+              treesit-auto verilog-mode websocket which-key whisper window-tool-bar
+              yaml-mode yasnippet))
  '(package-vc-selected-packages
-   '((whisper :url "https://github.com/natrys/whisper.el" :branch
+   '((eglot-booster :vc-backend Git :url
+                    "https://github.com/jdtsmith/eglot-booster")
+     (whisper :url "https://github.com/natrys/whisper.el" :branch
               "master")
      (claude-code :url
                   "https://github.com/stevemolitor/claude-code.el")))

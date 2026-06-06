@@ -74,7 +74,9 @@ This is good for modes like Perl, where the parser can get confused."
 (setq apheleia-log-debug-info t)
 (with-eval-after-load "apheleia"
   (setf (alist-get 'python-mode apheleia-mode-alist)
-        'ruff)
+        '(ruff-isort ruff))
+  (setf (alist-get 'python-ts-mode apheleia-mode-alist)
+        '(ruff-isort ruff))
   ;; out of the box, apheleia uses the script name "google-java-format" which doesn't exist
   (setf (alist-get 'google-java-format apheleia-formatters)
         '("run-google-java-format.py" inplace))
@@ -1834,8 +1836,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer 
-    (list (apply 'call-process program nil (current-buffer) nil args)
-          (buffer-string))))
+      (list (apply 'call-process program nil (current-buffer) nil args)
+            (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."

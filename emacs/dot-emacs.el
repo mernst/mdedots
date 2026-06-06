@@ -834,6 +834,28 @@ After running this, run from the shell:  print-mail bulk." t)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Language Server Protocol
+
+;; Prefer eglot to lsp-mode.
+
+(use-package eglot
+  :ensure t
+  :hook (prog-mode . eglot-ensure))
+
+(use-package eglot-booster
+  :after eglot
+  :config	(eglot-booster-mode))
+
+(with-eval-after-load 'eglot
+  (add-to-list 'eglot-server-programs
+               '(python-base-mode . ("ruff" "server"))))
+(add-hook 'python-base-mode-hook
+          (lambda ()
+            (eglot-ensure)
+            (add-hook 'after-save-hook 'eglot-format nil t)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Key bindings
 
 ;;; Now the default behavior in Emacs 23, I think.
