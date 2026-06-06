@@ -136,6 +136,7 @@ spam_search(
             '"Sehr geehrter"',
             '"und mit"',
             '"nur vom"',
+            '""haben Sie"',
             '"wie geht es dir"',
             '"mit der"',
             '"Herzlichen"',
