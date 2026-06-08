@@ -844,7 +844,7 @@ After running this, run from the shell:  print-mail bulk." t)
 
 (use-package eglot-booster
   :after eglot
-  :config	(eglot-booster-mode))
+  :config (eglot-booster-mode))
 
 (with-eval-after-load 'eglot
   (add-to-list 'eglot-server-programs

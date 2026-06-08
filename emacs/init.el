@@ -26,20 +26,17 @@
  '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
  '(large-file-warning-threshold nil)
  '(package-selected-packages
-   '(0blayout adaptive-wrap aidermacs apheleia auto-compile cargo cfrs
-              claude-code claude-shell company dtrt-indent eat editorconfig eglot-booster
-              eldoc erc faceup flycheck flymake ggtags gnu-elpa-keyring-update gptel
-              groovy-mode hydra idlwave jsonrpc lsp-java lsp-ui peg pfuture project
-              python-mode recompile-on-save rg shell-maker track-changes tree-sitter-langs
-              treesit-auto verilog-mode websocket which-key whisper window-tool-bar
-              yaml-mode yasnippet))
+   '(0blayout adaptive-wrap aidermacs apheleia auto-compile cargo
+              claude-code dtrt-indent eat editorconfig eglot erc
+              faceup flycheck ggtags gnu-elpa-keyring-update gptel
+              groovy-mode idlwave lsp-ui magit org peg python
+              python-mode recompile-on-save rg rustic
+              string-inflection track-changes tramp tree-sitter-langs
+              treemacs treesit-auto verilog-mode which-key whisper
+              window-tool-bar yaml-mode yasnippet))
  '(package-vc-selected-packages
-   '((eglot-booster :vc-backend Git :url
-                    "https://github.com/jdtsmith/eglot-booster")
-     (whisper :url "https://github.com/natrys/whisper.el" :branch
-              "master")
-     (claude-code :url
-                  "https://github.com/stevemolitor/claude-code.el")))
+   '((whisper :url "https://github.com/natrys/whisper.el" :branch
+              "master")))
  '(safe-local-variable-values
    '((checkdoc-allow-quoting-nil-and-t . t) (TeX-master . "../main")
      (TeX-master . "main") (auto-fill-mode)
