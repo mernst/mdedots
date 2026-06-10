@@ -841,6 +841,7 @@ After running this, run from the shell:  print-mail bulk." t)
 (use-package eglot
   :ensure t
   :hook (prog-mode . eglot-ensure))
+(setq eglot-max-file-watches nil)       ; no limit
 
 (use-package eglot-booster
   :after eglot
