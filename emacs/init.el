@@ -27,15 +27,17 @@
  '(large-file-warning-threshold nil)
  '(package-selected-packages
    '(0blayout adaptive-wrap aidermacs apheleia auto-compile cargo
-              claude-code dtrt-indent eat editorconfig eglot erc
-              faceup flycheck ggtags gnu-elpa-keyring-update gptel
-              groovy-mode idlwave lsp-ui magit org peg python
-              python-mode recompile-on-save rg rustic
-              string-inflection track-changes tramp tree-sitter-langs
-              treemacs treesit-auto verilog-mode which-key whisper
-              window-tool-bar yaml-mode yasnippet))
+              claude-code dtrt-indent eat editorconfig eglot
+              eglot-booster erc faceup flycheck ggtags
+              gnu-elpa-keyring-update gptel groovy-mode idlwave lsp-ui
+              magit org peg python python-mode recompile-on-save rg
+              rustic string-inflection track-changes tramp
+              tree-sitter-langs treemacs treesit-auto verilog-mode
+              which-key whisper window-tool-bar yaml-mode yasnippet))
  '(package-vc-selected-packages
-   '((whisper :url "https://github.com/natrys/whisper.el" :branch
+   '((eglot-booster :vc-backend Git :url
+                    "https://github.com/jdtsmith/eglot-booster")
+     (whisper :url "https://github.com/natrys/whisper.el" :branch
               "master")))
  '(safe-local-variable-values
    '((checkdoc-allow-quoting-nil-and-t . t) (TeX-master . "../main")
