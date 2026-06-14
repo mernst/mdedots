@@ -72,6 +72,15 @@
 ;; (if (fboundp 'benchmark-init/deactivate)
 ;;     (add-hook 'after-init-hook 'benchmark-init/deactivate))
 
+;; Prefer UTF-8 when detection is ambiguous (avoids raw-text fallbacks)
+(prefer-coding-system 'utf-8)
+;; Set default coding sub-systems to UTF-8
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+;; Treat clipboard selections and transfers as UTF-8
+(set-selection-coding-system 'utf-8)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Site-specific
@@ -853,7 +862,8 @@ After running this, run from the shell:  print-mail bulk." t)
 (add-hook 'python-base-mode-hook
           #'(lambda ()
               (eglot-ensure)
-              (add-hook 'after-save-hook 'eglot-format nil t)))
+              ;; Do not include eglot formatting.
+              ))
 
 (require 'eglot)
 (add-to-list 'eglot-server-programs '((c++-mode c-mode) "clangd"))
@@ -1675,18 +1685,6 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
         ".*/\\.git/.*"
         ))
 
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Emacs compatibility
-;;;
-
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Hacks and bug fixes
-;;;
 
 ;;; Experimentally commented out, 2025-04-06.
 ;; (defadvice thing-at-point-url-at-point (around no-trailing-paren activate)
