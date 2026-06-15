@@ -1007,7 +1007,10 @@ proposal")
     (coterm-mode))
 ;; Optional: bind `coterm-char-mode-cycle' to C-; in comint
 (with-eval-after-load 'comint
-  (define-key comint-mode-map (kbd "C-;") #'coterm-char-mode-cycle))
+  (define-key comint-mode-map (kbd "C-;") #'coterm-char-mode-cycle)
+  (setq comint-password-prompt-regexp
+        (concat comint-password-prompt-regexp "\\|" "\\\[sudo: authenticate\\\] Password:")))
+
 ;; If your process repeats what you have already typed, try customizing
 ;; `comint-process-echoes':
 ;;   (setq-default comint-process-echoes t)

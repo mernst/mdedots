@@ -650,24 +650,24 @@
                                (eq system-site 'csail)))
 		      "                     Cheers,
 
-                    -Michael Ernst
-                     mernst@cs.washington.edu")
+   -Michael Ernst
+    mernst@cs.washington.edu")
 		     (t
 		      "                     Cheers,
 
-                    -Michael Ernst"))
+   -Michael Ernst"))
       nil 0)
      ("tmesx" ,(cond ((and (boundp 'system-site)
                            (or (eq system-site 'wash-cs)
                                (eq system-site 'csail)))
 		      "                     Thanks,
 
-                    -Michael Ernst
-                     mernst@cs.washington.edu")
+   -Michael Ernst
+    mernst@cs.washington.edu")
 		     (t
 		      "                     Thanks,
 
-                    -Michael Ernst"))
+   -Michael Ernst"))
       nil 0)
      ("rmalx" "Reply-To: mernst@alum.mit.edu" nil 0)
      ;; ("fmlcsx" "From: Michael Ernst <mernst@csail.mit.edu>" nil 0)
@@ -683,10 +683,10 @@
      ("mesx" ,(cond ((and (boundp 'system-site)
                           (or (eq system-site 'wash-cs)
                               (eq system-site 'csail)))
-		     "                    -Michael Ernst
-                     mernst@cs.washington.edu")
+		     "   -Michael Ernst
+    mernst@cs.washington.edu")
 		    (t
-		     "                    -Michael Ernst"))
+                     "   -Michael Ernst"))
       nil 0)
      ;; ("mesnx" "                    -Michael Ernst
      ;;                  sn-oversight@geyer.lcs.mit.edu"
