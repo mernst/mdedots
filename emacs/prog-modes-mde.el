@@ -752,7 +752,7 @@ This is disabled on lines with a comment containing the string \"interned\"."
           (string-match-p "/prompt-mutation-experiments" filename)
           (string-match-p "/rust_verification" filename)
           (and (string-match-p "/grt-testing" filename)
-               (or (starts-with "grt-testing" dir-simple-name)
+               (or (string-prefix-p "grt-testing" dir-simple-name)
                    (equal "subject-programs" dir-simple-name)))
           
           )
@@ -1746,23 +1746,26 @@ How does this differ from whatever is built in?"
 ;;; Rust
 ;;;
 
-;; Is this needed?
-;; (require 'rust-mode)
-
 (use-package rust-mode
   :ensure t
   :init
-  (setq rust-mode-treesitter-derive t))
+  (setq rust-mode-treesitter-derive t) ; Optional: Use tree-sitter if available
+  :hook
+  (rust-mode . eglot-ensure))
 
-(use-package rustic
-  :ensure t
-  :after (rust-mode)
-  :config
-  (setq rustic-format-on-save nil)
-  :custom
-  (rustic-cargo-use-last-stored-arguments t))
-
-(setq rustic-cargo-clippy-trigger-fix 'on-compile)
+;;; Stick with the simpler rust-mode for now, rather than the "full IDE" experience of rustic.
+;; (use-package rustic
+;;   :ensure t
+;;   :after (rust-mode)
+;;   :config
+;;   (setq rustic-format-on-save nil)
+;;   ;; Tell rustic to use eglot instead of lsp-mode
+;;   (setq rustic-lsp-client 'eglot)
+;;   :custom
+;;   (rustic-cargo-use-last-stored-arguments t)
+;;   :hook
+;;   (rustic-mode . eglot-ensure))
+;; (setq rustic-cargo-clippy-trigger-fix 'on-compile)
 
 (condition-case nil
     (require 'use-package)
@@ -1836,8 +1839,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer 
-      (list (apply 'call-process program nil (current-buffer) nil args)
-            (buffer-string))))
+    (list (apply 'call-process program nil (current-buffer) nil args)
+          (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."

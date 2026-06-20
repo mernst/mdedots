@@ -131,7 +131,7 @@ Good for passing to sort in order to sort strings by length."
 (defun starts-with (string prefix)
   "Return t if STRING starts with PREFIX."
   (string-prefix-p prefix string))
-(make-obsolete 'starts-with 'string-prefix-p-BUT-WITH-ARGUMENTS-REVERSED "")
+(make-obsolete 'starts-with 'string-prefix-p-BUT-WITH-ARGUMENTS-REVERSED "use built-in, not library")
 
 
 (defun right-justify (string fieldwidth)
