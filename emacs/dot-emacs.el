@@ -1,5 +1,4 @@
 ;;; -*- lexical-binding: t -*-
-
 ;;; dot-emacs.el --- Michael D. Ernst's Emacs customizations (.emacs file)
 
 ;;; Commentary:
@@ -31,6 +30,21 @@
 (auto-compile-on-save-mode)
 
 
+(defmacro static-when (condition &rest body)
+  "A conditional compilation macro.
+Evaluate CONDITION at macro-expansion time.  If it is non-nil,
+expand the macro to evaluate all BODY forms sequentially and return
+the value of the last one, or nil if there are none."
+  (declare (indent 1) (debug t))
+  (if body
+      (if (eval condition lexical-binding)
+          (cons 'progn body)
+        nil)
+    (macroexp-warn-and-return (format-message "`static-when' with empty body")
+                              (list 'progn nil nil) '(empty-body static-when) t)))
+
+(require 'compat)
+
 (eval-when-compile
   (require 'auto-compile)
   (require 'ispell)
@@ -40,7 +54,8 @@
   (require 'file-comparison)
   (require 'diff-clean)
   (require 'conflict-resolve)
-  (require 'dbus))
+  (require 'dbus)
+  (require 'compat))
 
 ;; To use the ELPA package manager, call  M-x list-packages
 ;; To install a package:  M-x package-install RET magit RET , or:
