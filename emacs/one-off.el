@@ -318,6 +318,13 @@
 ;; "^ *(public )?(boolean|byte|double|float|int|long|short|String|VarInfo) [^(]*,.*;"
 
 
+(defun fix-pmd-warnings ()
+  "Fix some PMD warnings."
+  (tags-query-replace "new FileInputStream(\\(.*?\\))" "Files.newInputStream(Paths.get(\\1))")
+  (tags-query-replace "^\\( *\\)\\b\\([a-zA-Z0-9_]+\\)\\.append(\\(.*\\) \\+ \\(.*\\));" "\\1\\2.append(\\3);\n\\1\\2.append(\\4);")
+  (tags-query-replace "\\.append(\"\\([^\\]\\|\\\\.\\)\")" ".append('\\1')")
+  )
+
 (defun ensure-in-same-file (regex1 regex2)
   "Ensure that if regex1 is in any file, then regex2 is in that file too."
   (tags-search regex1)
