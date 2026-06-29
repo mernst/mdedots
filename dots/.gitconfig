@@ -17,8 +17,8 @@
 
 # Speed up "git status".
 [core]
-        untrackedCache=true
-        fsmonitor=true
+        untrackedCache = true
+        fsmonitor = true
 
 [core]
 	whitespace = trailing-space,space-before-tab
