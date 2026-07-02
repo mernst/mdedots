@@ -423,7 +423,7 @@ Intended to run after `visual-line-mode' runs."
 
 
 ;;;
-;;; Page delimitors and separators
+;;; Page delimiters and separators
 ;;;
 
 ;; I'm not sure what I really want for page-delimiter.
@@ -521,7 +521,7 @@ That delimiter follows the section name rather than preceding it."
 ;; Emacs's built-in TeX support is named "tex-*"
 ;; and is loaded by (require 'tex-mode).
 ;; AucTeX functions are generally named "TeX-*"
-;; and are loadod by (require 'tex-site) or (require 'tex) or (require 'latex).
+;; and are loaded by (require 'tex-site) or (require 'tex) or (require 'latex).
 ;; I don't use AucTeX any longer.
 
 
@@ -708,10 +708,10 @@ proposal")
 		  ("underreview" "Set if the paper is under review")
 		  ("basefilename" "File name for bibtex2web")
 		  ("downloads" "List of other downloads (semicolon-separated)")
-		  ("downloadsnonlocal" "List of otehr downloads (if the \"basename\" file is not found)")
+		  ("downloadsnonlocal" "List of other downloads (if the \"basename\" file is not found)")
 		  ("supersededby" "Comma-separated list of keys of articles that supersede this one")
 		  ("category" "Category/topic for this article, in bibtex2web output")
-		  ("summary" "A very brief desciption (3 lines)")))))
+		  ("summary" "A very brief description (3 lines)")))))
 
 (setq bibtex-comment-start "%")
 (setq bibtex-comma-after-last-field t)
@@ -1051,7 +1051,7 @@ proposal")
 	    (regexp-quote hostname))))
     (setq comint-prompt-regexp
 	  (concat
-	   ;; "\r?" because sometimes I get extranous ^M at beginning of line.
+	   ;; "\r?" because sometimes I get extraneous ^M at beginning of line.
 	   ;; (Is that still necessary?)
 	   "^\r?"
 	   ;; for Python virtual environments

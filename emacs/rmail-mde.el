@@ -219,7 +219,7 @@ DROP is \"hourly\", \"daily\", etc."
 	(delete "image" vm-auto-displayed-mime-content-types))
 
      ;;; A problem with putting "text/html" in the exceptions list is that
-     ;;; it causes quoting to yank the HTML instead of the displayed yersion.
+     ;;; it causes quoting to yank the HTML instead of the displayed version.
   ;; ;; Require an affirmative action on HTML messages.  This is somewhat
   ;; ;; annoying, but it prevents info that would otherwise be sent back to
   ;; ;; spammers when I auto-viewing HTML messages (and displaying those
@@ -274,7 +274,7 @@ DROP is \"hourly\", \"daily\", etc."
 ;; So redefine it instead.
 (with-eval-after-load "vm-folder"
   (defun vm-emit-totals-blurb ()
-    "Just output number of new messgaes: not total, unread, or deleted."
+    "Just output number of new messages: not total, unread, or deleted."
     (save-excursion
       (vm-select-folder-buffer)
       (if (not (equal (nth 0 vm-totals) vm-modification-counter))
@@ -312,7 +312,7 @@ DROP is \"hourly\", \"daily\", etc."
 		      ;; UW IMAP: I'm not using it as there's no Sieve support
 		      ;; (uw-imap-spool-file "inbox")
 		      ))
-;; This shoudln't be necessary if path is set correctly (?).
+;; This shouldn't be necessary if path is set correctly (?).
 ;; (cond ((file-exists-p "/usr/sbin/stunnel")
 ;;        (setq vm-stunnel-program "/usr/sbin/stunnel"))
 ;;       ((file-exists-p "/usr/bin/stunnel")
@@ -439,7 +439,7 @@ To unfill, move off the message and then back on, which causes redisplay."
 ;; Spam and bulk mail
 ;;
 
-;; No longer revelant; I don't use VM.
+;; No longer relevant; I don't use VM.
 (defun get-bulk-mail ()
   "Move my bulk mail from IMAP to local file ~/.mail/.maildrop-bulk.
 After running this, run from the shell:  print-mail bulk."
@@ -902,7 +902,7 @@ its From: line.")
 (defvar re-regexp "\\[?\\(re\\|fwd?\\)\\(([0-9]+)\\|\\[[0-9]+\\]\\|\\^[0-9]+\\)?: *")
 
 
-;; Resetting this variable does not have an immediate effect, becaues the
+;; Resetting this variable does not have an immediate effect, because the
 ;; sortable-subject field is cached in the local mbox file.  A hack is to
 ;; temporarily comment out the first "or" clause in
 ;; `vm-so-sortable-subject'; I don't know a better way to reset the cache

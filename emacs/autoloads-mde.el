@@ -283,7 +283,7 @@
 (autoload 'compose-mail-address-buffer-and-bury "bulk-mail" nil t)
 
 ;; I don't like adoc-mode because it changes font sizes too much -- some
-;; text becoomes ridiculously large and other text becomes unreadably small.
+;; text becomes ridiculously large and other text becomes unreadably small.
 ;; (autoload 'adoc-mode "adoc-mode" nil t)
 ;; (add-to-list 'auto-mode-alist (cons "\\.adoc\\'" 'adoc-mode))
 

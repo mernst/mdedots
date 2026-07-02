@@ -89,7 +89,7 @@ uue() {
 }
 alias whihc='which'
 
-# I get a warning mesage from ps about bad syntax, which I don't understand.
+# I get a warning message from ps about bad syntax, which I don't understand.
 psgrep() { command ps auxwwww | grep "$1" | grep -v "grep $1"; }
 
 zw() { command zwrite "$1" -m "$2"*; }
@@ -154,7 +154,7 @@ fi
 
 # psnup can read from standard input, but then it can't take an argument
 # for the output file; thus, use ">" file redirection.
-# These commands Works on .ps files, not on .pdf files
+# These commands work on .ps files, not on .pdf files
 acm2up() { command pstops "0(-125,-110)" "$@" | psnup -2 -W360 -H590 -pletter -m0.5in -b0.05in > "$(basename "$@" .ps)-2up.ps"; }
 # To make the print bigger on the final page, make the -W and -H arguments smaller.  To move the text logically downward toward the bottom of the page, make the last number in "0(-133,-97)" a larger negative number.
 lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m0.45in -b-0.15in > "$(basename "$@" .ps)-2up.ps"; }
@@ -327,7 +327,7 @@ alias ensw='enswide'
 alias ens1h='ens1 -h'
 alias ens2h='ens2 -h'
 
-# Problem: enscript does not properly handly unicode/UTF-8.
+# Problem: enscript does not properly handle unicode/UTF-8.
 # Neither does a2ps as of 9/2014, it seems.
 # Alternative:  paps does, and an Ubuntu package for it exists.
 # Alternative:  cedilla does.

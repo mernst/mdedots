@@ -1,5 +1,5 @@
 #!/bin/bash
-# .profile should be compatible with any /bin/sh, incuding bash, dash, and ksh.
+# .profile should be compatible with any /bin/sh, including bash, dash, and ksh.
 
 # ~/.profile: executed by the command interpreter for login shells.
 # .profile has configuration NOT specifically related to bash,

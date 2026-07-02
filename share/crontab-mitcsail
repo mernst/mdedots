@@ -131,7 +131,7 @@ PATH=.:/afs/csail.mit.edu/u/m/mernst/bin/Linux-i686:/afs/csail.mit.edu/u/m/merns
 # 11 5 26 * *	$AFS make -C $DAIKONDIR/java USER=mernst-cron PATH=$HOME/java/jdk/bin:$DAIKONDIR/scripts:$PATH CLASSPATH=$HOME/java/jdk/lib/tools.jar:$DAIKONDIR/java/lib/java-getopt.jar:$DAIKONDIR/java/lib/junit.jar:$DAIKONDIR/java/lib/bcel.jar:$DAIKONDIR/java/lib/commons-io.jar:$DAIKONDIR/java:$CLASSPATH findbugs
 # This should be after "make doc-javadoc-lookup" finishes; 6 minutes on manioc
 30 5 27 * *	$AFS mv -f $HOME/.javadoc-index.el $HOME/.javadoc-index.el-old
-# This won't work because $AFS applies to the first comand but not the redirection.
+# This won't work because $AFS applies to the first command but not the redirection.
 31 5 27 * *	$AFS sh -c "$PLUMESCRIPTS/javadoc-index-to-alist > $HOME/.javadoc-index.el"
 10 5 28 * *	$AFS make -C /afs/csail/group/pag/www/daikon pubs
 12 5 28 * *	$AFS $CHECKLINKDIR/checklink -q -r `grep -v '^#' $CHECKLINKDIR/checklink-args.txt` http://pag.csail.mit.edu/daikon

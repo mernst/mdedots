@@ -87,7 +87,7 @@
 ;;;
 
 (defun resolve-annotatedfor-conflicts ()
-  "Resolve conflicts that invove only @AnnotatedFor lines.
+  "Resolve conflicts that involve only @AnnotatedFor lines.
 A caveat:
 The mode-hook might blow away the match-data, in which case first run
    `M-x read-conflict-files-from-tags-table`."
@@ -131,7 +131,7 @@ The mode-hook might blow away the match-data, in which case first run
 
 
 (defun resolve-annotatedfor-usesobjectequals-conflicts ()
-  "Resolve conflicts that invove only @AnnotatedFor and @UsesObjectEquals.
+  "Resolve conflicts that involve only @AnnotatedFor and @UsesObjectEquals.
 A caveat:
 The mode-hook might blow away the match-data, in which case first run
    `M-x read-conflict-files-from-tags-table`."
@@ -208,7 +208,7 @@ public\\1 @UsesObjectEquals class \\2
 
 ;; This is superseded by merge-java-imports-driver.sh .
 (defun tags-conflict-resolve-import-conflicts ()
-  "Resolve conflicts that invove only import lines, by accepting all the lines.
+  "Resolve conflicts that involve only import lines, by accepting all the lines.
 Two caveats:
 1. You may have to adjust whitespace at the beginning and end manually.
 2. The mode-hook might blow away the match-data, in which case first run
@@ -249,7 +249,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
        " *@\\(?:"
        (string-join
         '(
-          ;; "SuppressWarnings(.*)" intentionally omitted; it should be be the
+          ;; "SuppressWarnings(.*)" intentionally omitted; it should be the
           ;; last annotation textually and should be resolved by hand.
           "CallerSensitive"
           "Deprecated.*"
@@ -830,7 +830,7 @@ In the result, the lines are sorted."
 ;;;
 
 (defun read-conflict-files-from-tags-table ()
-  "Reald all the conflicting files in the tags table into their own buffers."
+  "Read all the conflicting files in the tags table into their own buffers."
   (interactive)
   (tags-search less-than-hunk-start-re)
   (ignore-errors

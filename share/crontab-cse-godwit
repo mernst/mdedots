@@ -230,7 +230,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 # 01 6 27 * *	cd $TYPES/cf-case-studies/joda-time-fork-mernst-branch-check-index && mvn -B javadoc:javadoc
 02 6 27 * *	cd $TYPES/checker-framework-branch-master && $CRONIC ./gradlew javadoc
 30 6 27 * *	$AFS
-# This won't work because applies to the first comand but not the redirection.
+# This won't work because applies to the first command but not the redirection.
 # 31 6 27 * *	sh -c "java -cp $HOME/java/plume-lib/javadoc-lookup/build/libs/javadoc-lookup-all.jar org.plumelib.javadoclookup.CreateJavadocIndex > ~/.javadoc-index.el-NEW && mv ~/.javadoc-index.el ~/.javadoc-index.el-OLD && mv ~/.javadoc-index.el-NEW ~/.javadoc-index.el"
 01 02 03 * *     echo -e "Auto-browse to http://egauge6444.egaug.es/ \n If trouble, see https://artisanelectricinc.com/troubleshoot-monitoring-system/" | $MAILCOMMAND -s "Is solar working?" $EMAILPERSONAL
 02 02 03 * *     echo -e "Merge contacts; instructions in ~/private/contacts/google-contacts/google-contacts-notes.txt" | $MAILCOMMAND -s "Merge contacts" $EMAILPERSONAL

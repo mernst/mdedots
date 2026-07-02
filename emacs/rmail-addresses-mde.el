@@ -630,7 +630,7 @@
      ("jwyuan@\\(csail\\.\\)?mit.edu" "~/research/invariants/mail/students.mail")
      ("juang@\\(\\(pag.\\)?\\(csail\\).\\)?mit.edu" "~/research/invariants/mail/students.mail")
 
-     ;; Move this above Mahmood; when bothe are copied, its likely about Yoav's work
+     ;; Move this above Mahmood; when both are copied, it's likely about Yoav's work
      ("Alex.Potanin@mcs.vuw.ac.nz" "~/class/advisees/yoav-zibin.mail")
      ("paleyli@hotmail.com" "~/class/advisees/yoav-zibin.mail")
      ("zyoav2000@yahoo.com" "~/class/advisees/yoav-zibin.mail")
@@ -907,7 +907,7 @@
      ("melody@cs.washington.edu" "~/corr/admin.mail")
 
      ;; This is after Maria Rebelo, because he is her supervisor and
-     ;; mesages on which she is copied may not be about sysadmin issues.
+     ;; messages on which she is copied may not be about sysadmin issues.
      ("jackc@\\(csail\\|ai\\).mit.edu" "~/corr/sysadmin.mail")
 
 

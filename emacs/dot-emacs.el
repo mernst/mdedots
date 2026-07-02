@@ -1357,7 +1357,7 @@ After running this, run from the shell:  print-mail bulk." t)
 
   ;; ispell.el permits these letters but ignores LocalWords starting
   ;; with these letters.  Skip over leading such characters so we never
-  ;; even see a word starting whith these.
+  ;; even see a word starting with these.
   (add-to-list 'ispell-skip-region-alist '("\\b['0-9]+"))
 
   ;; Hexadecimal numbers
@@ -1451,7 +1451,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 
 
 
-;; Do this rather than setting INFOPATH environment variable becuase that
+;; Do this rather than setting INFOPATH environment variable because that
 ;; fails to catch the directory in which Emacs put its Info files, I think.
 ;; I should check that this is still the right thing in FSF Emacs 20.
 (setq Info-default-directory-list
@@ -1544,7 +1544,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 
 ;;; Ediff
 
-;;; Expermintally commented out, 2025-04-06.  (Would replace with :filter-args advice.)
+;;; Experimentally commented out, 2025-04-06.  (Would replace with :filter-args advice.)
 ;; (defadvice ediff-merge-files-with-ancestor (before strip-quotes activate)
 ;;   (ad-set-arg 0 (strip-single-quotes (ad-get-arg 0)))
 ;;   (ad-set-arg 1 (strip-single-quotes (ad-get-arg 1)))
