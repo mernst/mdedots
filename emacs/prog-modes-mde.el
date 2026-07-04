@@ -937,7 +937,7 @@ Returns t if any change was made, nil otherwise."
           ))))
 
 (defun buffer-validate (validator &rest args)
-  "Runs a validation validation on the current buffer's file.
+  "Runs a validation on the current buffer's file.
 Use this in an after-save-hook.
 VALIDATOR is a program to run.
 ARGS are args to pass it.  Buffer file name is provided as last arg."
@@ -1204,9 +1204,9 @@ otherwise, raise an error after the first problem is encountered."
 
 ;; There are two modes for editing Python code in Emacs:
 ;;  * python.el is from the Emacs community
-;;    Its varables/routines start with "python-".
+;;    Its variables/routines start with "python-".
 ;;  * python-mode.el is from the Python community
-;;    Its varables/routines start with "py-".
+;;    Its variables/routines start with "py-".
 ;; As of Emacs 23 (and even more so as of Emacs 24), python.el is better:
 ;; it comes with Emacs, has a few extra features, and works out of the box.
 
@@ -2603,7 +2603,7 @@ if its name ends in `.scm' and the `.bin' or `.com' file also exists."
 ;;       (ad-set-arg 0 "cd -")))
 
 ;; This does not work; "(dirs)" is executed before the command is executed,
-;; even if this command sleeps first.  I should create a new funtion and
+;; even if this command sleeps first.  I should create a new function and
 ;; install it on `comint-output-filter-functions' rather than modify
 ;; shell-directory-tracker, which is on comint-input-filter-functions.
 

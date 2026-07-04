@@ -100,7 +100,7 @@ this makes them continuation lines in the email."
        (match-string 1 address)))
 
 (defun mail-names (fn addresses)
-  "Return a string representing the first or names of the addressees,
+  "Return a string representing the first or last names of the addressees,
 depending on the function argument."
   (let* ((names (split-string addresses ">,[ \t\n]+"))
 	 (firstnames (mapcar fn names)))
@@ -301,7 +301,7 @@ Cc: ugrad-advisor@cs.washington.edu")
 (setq my-message
       "\
 I regret to inform you that you were not admitted to the CSE
-aCombined BS/MS program.  The program has a very limited number of
+Combined BS/MS program.  The program has a very limited number of
 spaces, and we received applications from many more strong
 students than we have the capacity to admit.  The process, which
 was based on all aspects of the applications, was extremely
@@ -376,7 +376,7 @@ I'm looking for excellent TAs to help with CSE 331 next quarter.  I think
 you would make a good match for the class.  Would you be interested in
 talking with me about the opportunity?
 
-TAing CSE 331 is attractive for a number or reasons.  You get to teach
+TAing CSE 331 is attractive for a number of reasons.  You get to teach
 sections and have considerable leeway in designing those sections.  The
 class infrastructure is solid, so the staff can work on making improvements
 to the material itself, or can just reuse the existing materials where they
@@ -1257,7 +1257,7 @@ Could you please let me know whether you are potentially interested?
 
 PS: Here are some potential research projects where I am looking for help:
  * Create a GitHub pull request UI that selectively views only a subset of changes that are related to one another.  This lets a developer examine the pull request in parts.
- * Detect errors in mixing signed and unsigned integers.  For example, division or modulus with an unsigned operand yields a meaningless result; likewise for an arithmetic comparison (<, <=, >, >1) when the two arguments have different signedness.
+ * Detect errors in mixing signed and unsigned integers.  For example, division or modulus with an unsigned operand yields a meaningless result; likewise for an arithmetic comparison (<, <=, >, >=) when the two arguments have different signedness.
  * Improve test generation tools that automatically create unit tests for a program.  For example, the improvement can use side effect analysis, measurements of coverage and run time, and constants in the program under test.
  * Create tools to detect security vulnerabilities (SQL injection, cross-site scripting, etc.) by customizing a general taint analysis.
 "

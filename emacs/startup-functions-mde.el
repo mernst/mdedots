@@ -88,7 +88,7 @@
 Optional INTERACTIVE-SPEC defaults to the list (interactive)."
   (let ((fn (symbol-function symbol)))
     (if (not (commandp fn))
-        ;; it isn't already interative
+        ;; it isn't already interactive
         (setcdr (cdr fn)
                 (cons (if interactive-spec
                           (list 'interactive interactive-spec)
@@ -313,7 +313,7 @@ Applies to lines after point, but does not move point."
 ;; Implementation that uses the iCal format
 (defun ical-available (&optional days start-date timezone2)
   "Insert a summary of my available times from ical.
-Optional prefix argument DAYS is days how many days to show (default 8).
+Optional prefix argument DAYS is how many days to show (default 8).
 With just C-u prefix argument, prompt for starting date and days."
   (interactive "P")
   (let* ((ical-args
@@ -461,7 +461,7 @@ The first column is omitted if the optional argument is specified."
 ;; Thus, it may not be worth using.
 ;; (Unfortunately, I don't have revision info for ~/private/addresses.tex.)
 (defun latex-timestamp-paragraph (_beg _end _pre-change-length)
-  "Add/update, after a paragraph, a LaTeX comment containins the current date.
+  "Add/update, after a paragraph, a LaTeX comment containing the current date.
 This is good for indicating when the paragraph was last edited.
 You can add this function to `after-change-hooks'."
   (save-excursion
@@ -512,7 +512,7 @@ Not guaranteed to work in all cases."
 ;; (regexp-remove-alternative "^references:" mail-yank-ignored-headers)
 
 
-;; For documentatino:  C-h I METHOD <RET>
+;; For documentation:  C-h I METHOD <RET>
 ;; "!/" -> "¡"     "?/" -> "¿"
 (defun spanish-postfix-input-method ()
   "Set input method to \"spanish-postfix\"."

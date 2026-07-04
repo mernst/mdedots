@@ -28,7 +28,7 @@ I need to have an abbreviated and unabbreviated version of the crossrefs.bib fil
 
 Write a little English style checker.  (This project could expand
 indefinitely, but a limited version would still be useful.  Someone else
-must have a decent one aready, but I don't like the ones I've found.  I
+must have a decent one already, but I don't like the ones I've found.  I
 should look again.)
   first person
   passive voice
@@ -134,7 +134,7 @@ The key enhancements are:
  * handle multiple input files, and minimize command lines
    (Hmmm, the multidelta program of http://delta.tigris.org/ already does
    this, so we may be done.)
- * automatically determine whether an execution fails, passses, or is unresolved, rather than forcing the user to write code to do so.  ("Unresolved" means that the execution fails in a different way than the original test case did, and so it is not of interest to us since we are looking for a smaller test case that reveals the exact same problem.)
+ * automatically determine whether an execution fails, passes, or is unresolved, rather than forcing the user to write code to do so.  ("Unresolved" means that the execution fails in a different way than the original test case did, and so it is not of interest to us since we are looking for a smaller test case that reveals the exact same problem.)
 
 More specifically, the goal is to create a tool that does the following:
  * It takes as input a command line, such as an invocation of a compiler.
@@ -158,7 +158,7 @@ EasyChair comments:
    webpages a magnifying glass universally means "search".
  * It would be nice if the "details/information" page for a paper was at
    least as functional as the "Reviews of Submissions Assigned to Me"
-   page.  In particular, it should contin a way to access the reviews and
+   page.  In particular, it should contain a way to access the reviews and
    all the other information in the columns of the "Reviews of Submissions
    Assigned to Me" page.
  * At a URL showing reviews and comments, like this one:
@@ -211,7 +211,7 @@ soot.util.JasminOutputStream instead."  The code in examples-0.7.2.zip
 and thus requires Soot 2.1.0, dated December 2003.
 
 [Is this in the documentation or in the program proper?]
-In the "Slicer configuration" window, the tab "Intereference" contains a
+In the "Slicer configuration" window, the tab "Interference" contains a
 typo (an extra 'e").
 
 ===========================================================================
@@ -345,7 +345,7 @@ What happened to the DONT_INCLUDE variable in latex2html.config?
 
 Update html.sty and other files to reflect current LaTeX2HTML
 version number (at least 96.1).
-Also, the html.sty fiels don't appear to support \latexhtml{}{}, which is
+Also, the html.sty files don't appear to support \latexhtml{}{}, which is
 described in the manual.
 
 Fix my/Mark's scheme processing stuff to deal "properly" with formatting
@@ -698,7 +698,7 @@ The "Find all" field did not appear with the rest of the toolbar, even
 though the checkbox in the lower right-hand corner (that should have
 caused it to be displayed) was not checked.
 
-I finally figured out, via the helpful but difficult=to-find article at
+I finally figured out, via the helpful but difficult-to-find article at
 http://faq.quickensoftware.ca/detail.php?qbid=QK848&product=319&buid=QK&cat=General,
 that I need to uncheck "maximize my register view" in the register
 preferences (under "Edit >> Preferences", but this should be made clear to
@@ -709,7 +709,7 @@ documentation, and it is labeled "search".  This discrepancy is confusing.
 
 I was unable to search for "find all" on the quicken support site; it
 refused to include "all" in the search criteria because "all" is a common
-word.  I tried enclosing the phrase ion double quotes, but this did not
+word.  I tried enclosing the phrase in double quotes, but this did not
 work.  Some such functionality should be added to the search feature.
 
 ----------------

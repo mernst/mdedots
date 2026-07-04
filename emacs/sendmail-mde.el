@@ -142,7 +142,7 @@ That is, toggle between indenting or inserting `mail-yank-prefix'
 
 (defun mail-sent-mode-line ()
   "Mail mode line containing string \"sent\"."
-  ;; Really, shoudl jsut add ", sent" without making other changes.
+  ;; Really, should just add ", sent" without making other changes.
   (setq mode-line-format
         "-%1*%1*- %b      %f %[(%m, sent)%]--%3p--%M%-"))
 

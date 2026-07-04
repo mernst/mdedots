@@ -300,7 +300,7 @@
 ;;;
 
 (defun precision-recall-f-measure (tp fp fn)
-  "Arguments are: true positives, true negatives, false negatives."
+  "Arguments are: true positives, false positives, false negatives."
   ;; Uses of "0.0" are to force floating-point computation.
   (let* ((precision (/ tp (+ tp fp 0.0)))
 	 (recall (/ tp (+ tp fn 0.0)))

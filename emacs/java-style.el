@@ -694,7 +694,7 @@ The description is everything but the block tags (such as @param and @return)."
 
 ;; If @Nullable annotations have been written in declaration position,
 ;; this Emacs code moves them to type annotation position.
-;; I have not tried it within the function, enly evaluating each form at the top level.
+;; I have not tried it within the function, only evaluating each form at the top level.
 
 (defun move-nullable-to-type-annotation-position ()
   (interactive)
