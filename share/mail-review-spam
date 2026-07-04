@@ -18,7 +18,7 @@ import time
 import webbrowser
 
 ## Sometimes these names work, sometimes they don't and I have to use the numbers just below.
-# google_acct_a = "mernst@cs.washington.edu"
+# google_acct_a = "mernst" + "@" + "cs.washington.edu"
 # google_acct_b = "michael.ernst"
 google_acct_a = "0"
 google_acct_b = "1"
@@ -41,17 +41,10 @@ def spam_search(search_term: str) -> None:
 print("Stop and re-start Chrome.")
 input("Press ENTER")
 
-print("To unused email address")
-spam_search("to:mernst@cs.rice.edu")
-spam_search("to:mernst@rice.edu")
-input("Press ENTER")
-
-print("My username in the subject line")
+print("My username or name in the subject line")
+spam_search('(subject:"michaelernst" OR subject:"mernst" OR subject:"cs.washington.edu")')
 # also catches "Michael Ernst"
-spam_search(
-    "(subject:michaelernst OR subject:michael.ernst OR "
-    'subject:"Michael D Ernst" OR subject:mernst OR subject:cs.washington.edu)'
-)
+spam_search('(subject:"michael.ernst" OR subject:"Michael D Ernst")')
 input("Press ENTER")
 
 print("Mail forged to be from me")
@@ -108,7 +101,7 @@ spam_search("to:mit1989@mailman-alum.mit.edu")
 spam_search('"Allen School"')
 spam_search("ecoop-info")
 spam_search("lombok")
-spam_search("maeveahowell@gmail.com")
+spam_search("maeveahowell" + "@" + "gmail.com")
 spam_search('"plse"')
 spam_search("uw-security-research")
 input("Press ENTER")
@@ -275,6 +268,7 @@ spam_search("keynote")
 spam_search("anyworkanywhere")
 spam_search("from:team")
 spam_search("from:trump")
+spam_search("from:noreply@reply.kik-textilien.eu")
 input("Press ENTER")
 
 print("Frequent topics 1")
@@ -331,6 +325,11 @@ spam_search("docusign")
 spam_search("elongation")
 spam_search("trump")
 # spam_search("Kamala Harris")
+input("Press ENTER")
+
+print("To unused email address")
+spam_search("to:mernst" + "@" + "cs.rice.edu")
+spam_search("to:mernst" + "@" + "rice.edu")
 input("Press ENTER")
 
 input("Now the rest (read these in Emacs, on the same machine running a browser).")
