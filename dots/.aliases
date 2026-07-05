@@ -137,9 +137,10 @@ alias bigscreen='xrandr -s 1920x1200'
 alias aoeu='if [ $DISPLAY ]; then setxkbmap us; else loadkeys us; fi'
 alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 
-alias clauded='claude --model opus --dangerously-skip-permissions'
-alias claudea='claude --model opus --enable-auto-mode'
-alias claudemax='clauded --model opus --effort max'
+alias claudetrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.claude.json | sponge ~/.claude.json'
+alias clauded='claudetrustdir && claude --model opus --dangerously-skip-permissions'
+alias claudea='claudetrustdir && claude --model opus --enable-auto-mode'
+alias claudemax='claudetrustdir && clauded --model opus --effort max'
 
 ###########################################################################
 ### Printing

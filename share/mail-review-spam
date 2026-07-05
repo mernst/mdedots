@@ -332,6 +332,7 @@ spam_search("to:mernst" + "@" + "cs.rice.edu")
 spam_search("to:mernst" + "@" + "rice.edu")
 input("Press ENTER")
 
+input("Restart web browser")
 input("Now the rest (read these in Emacs, on the same machine running a browser).")
 print("1. Sort by from, look for frequent senders with non-uniform subject lines.")
 print("2. Sort by subject, scan for non-spam.")

@@ -440,7 +440,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
   (tags-conflict-resolve-with-two-same))
 
 
-(defun resolve-conflicts ()
+(defun conflict-resolve ()
   "Resolve diffs in the current buffer."
   (interactive)
   (conflict-resolve-empty)
