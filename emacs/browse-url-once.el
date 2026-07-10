@@ -15,29 +15,34 @@ Maybe this should be enhanced to be once per hour."
 	;; was enough.)
 	(sleep-for 1))))
 
-(defun browse-url-once-if-matched (regex &optional match-group-number)
+(defun browse-url-once-if-matched (url-regex &optional match-group-number)
+  "Visit every URL that matches URL-REGEX."
   (save-excursion
-    (while (re-search-forward regex nil t)
+    (while (re-search-forward url-regex nil t)
       (browse-url-once (match-string (or match-group-number 0))))))
 
-(defun browse-url-if-matched (regex &optional match-group-number)
+(defun browse-url-if-matched (url-regex &optional match-group-number)
+  "Visit every URL that matches URL-REGEX."
   (save-excursion
-    (while (re-search-forward regex nil t)
+    (while (re-search-forward url-regex nil t)
       (browse-url (match-string (or match-group-number 0))))))
 
-(defun browse-url-once-via-text-properties (regex &optional match-group-number)
+(defun browse-url-once-via-text-properties (anchor-regex &optional match-group-number)
+  "Visit every link with anchor text that matches ANCHOR-REGEX."
   (save-excursion
-    (while (re-search-forward regex nil t)
+    (while (re-search-forward anchor-regex nil t)
       (browse-url-once
        (url-via-text-properties match-group-number)))))
 
-(defun browse-url-via-text-properties (regex &optional match-group-number)
+(defun browse-url-via-text-properties (anchor-regex &optional match-group-number)
+  "Visit every link with anchor text that matches ANCHOR-REGEX."
   (save-excursion
-    (while (re-search-forward regex nil t)
+    (while (re-search-forward anchor-regex nil t)
       (browse-url
        (url-via-text-properties match-group-number)))))
 
 (defun url-via-text-properties (&optional match-group-number)
+  "While point is within anchor text, get the linked-to URL."
   (let ((tproperties (text-properties-at (match-beginning (or match-group-number 0)))))
     (or (plist-get tproperties 'w3m-href-anchor)
 	(plist-get tproperties 'shr-url))))
