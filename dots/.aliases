@@ -73,7 +73,7 @@ remake() {
 }
 alias gw='./gradlew -q'
 # shellcheck disable=SC2154
-alias cfassemble='(cd $cf && cronic --permit-stderr git pull && cronic --duplicate-stderr ./gradlew assembleForJavac && true)'
+alias cfassemble='(cd $cf && (test -z "$(git config --get branch.$(git branch --show-current).remote)" ||cronic --permit-stderr git pull) && cronic --duplicate-stderr ./gradlew assembleForJavac && true)'
 alias cfpublish='(cd $cf && cronic --duplicate-stderr ./gradlew publishToMavenLocal && true)'
 # "rmjunk" alias is too dangerous.
 # alias rmjunk='junk -c \rm'
@@ -581,6 +581,8 @@ alias umnak='xsw umnak'
 alias warfa='xsw warfa'
 alias pipsqueak='xsw pipsqueak'
 alias yonder='xsw yonder'
+alias whale='xsw whale'
+alias leviathan=whale
 # "egodwit" is problematic because environment variables like $inv don't
 # get defined.  (Perhaps other commands have this problem too, but I don't
 # recall it as a problem for emangold.)

@@ -1073,6 +1073,15 @@
 ;; TO USE automatically:  (add-hook 'mew-message-hook #'view-it-on-github)
 
 
+(defun view-it-on-github ()
+  "Browse to a link with anchor text \"view it on GitHub\"."
+  (interactive)
+  (mew-summary-msg-or-part
+   (save-excursion
+     (set-buffer (mew-buffer-message))
+     (browse-url-via-text-properties "view it on GitHub"))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Mail sending
 ;;;
