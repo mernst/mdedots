@@ -1065,6 +1065,15 @@
 ;; Unfortunately, mew-summary-mark-regexp reads the regex interactively; it is not passed as an argument.  (After that, I would have run mew-summary-mark-delete.)
 
 
+(defun view-it-on-github ()
+  "Browse to a link with anchor text \"view it on GitHub\"."
+  (interactive)
+  (mew-summary-msg-or-part
+   (save-excursion
+     (set-buffer (mew-buffer-message))
+     (browse-url-via-text-properties "view it on GitHub"))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Mail sending
 ;;;
