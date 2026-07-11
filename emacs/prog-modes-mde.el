@@ -74,7 +74,9 @@ This is good for modes like Perl, where the parser can get confused."
 (setq apheleia-log-debug-info t)
 (with-eval-after-load "apheleia"
   (setf (alist-get 'python-mode apheleia-mode-alist)
-        'ruff)
+        '(ruff-isort ruff))
+  (setf (alist-get 'python-ts-mode apheleia-mode-alist)
+        '(ruff-isort ruff))
   ;; out of the box, apheleia uses the script name "google-java-format" which doesn't exist
   (setf (alist-get 'google-java-format apheleia-formatters)
         '("run-google-java-format.py" inplace))
@@ -750,7 +752,7 @@ This is disabled on lines with a comment containing the string \"interned\"."
           (string-match-p "/prompt-mutation-experiments" filename)
           (string-match-p "/rust_verification" filename)
           (and (string-match-p "/grt-testing" filename)
-               (or (starts-with "grt-testing" dir-simple-name)
+               (or (string-prefix-p "grt-testing" dir-simple-name)
                    (equal "subject-programs" dir-simple-name)))
           
           )
@@ -935,7 +937,7 @@ Returns t if any change was made, nil otherwise."
           ))))
 
 (defun buffer-validate (validator &rest args)
-  "Runs a validation validation on the current buffer's file.
+  "Runs a validation on the current buffer's file.
 Use this in an after-save-hook.
 VALIDATOR is a program to run.
 ARGS are args to pass it.  Buffer file name is provided as last arg."
@@ -1202,9 +1204,9 @@ otherwise, raise an error after the first problem is encountered."
 
 ;; There are two modes for editing Python code in Emacs:
 ;;  * python.el is from the Emacs community
-;;    Its varables/routines start with "python-".
+;;    Its variables/routines start with "python-".
 ;;  * python-mode.el is from the Python community
-;;    Its varables/routines start with "py-".
+;;    Its variables/routines start with "py-".
 ;; As of Emacs 23 (and even more so as of Emacs 24), python.el is better:
 ;; it comes with Emacs, has a few extra features, and works out of the box.
 
@@ -1744,23 +1746,26 @@ How does this differ from whatever is built in?"
 ;;; Rust
 ;;;
 
-;; Is this needed?
-;; (require 'rust-mode)
-
 (use-package rust-mode
   :ensure t
   :init
-  (setq rust-mode-treesitter-derive t))
+  (setq rust-mode-treesitter-derive t) ; Optional: Use tree-sitter if available
+  :hook
+  (rust-mode . eglot-ensure))
 
-(use-package rustic
-  :ensure t
-  :after (rust-mode)
-  :config
-  (setq rustic-format-on-save nil)
-  :custom
-  (rustic-cargo-use-last-stored-arguments t))
-
-(setq rustic-cargo-clippy-trigger-fix 'on-compile)
+;;; Stick with the simpler rust-mode for now, rather than the "full IDE" experience of rustic.
+;; (use-package rustic
+;;   :ensure t
+;;   :after (rust-mode)
+;;   :config
+;;   (setq rustic-format-on-save nil)
+;;   ;; Tell rustic to use eglot instead of lsp-mode
+;;   (setq rustic-lsp-client 'eglot)
+;;   :custom
+;;   (rustic-cargo-use-last-stored-arguments t)
+;;   :hook
+;;   (rustic-mode . eglot-ensure))
+;; (setq rustic-cargo-clippy-trigger-fix 'on-compile)
 
 (condition-case nil
     (require 'use-package)
@@ -2598,7 +2603,7 @@ if its name ends in `.scm' and the `.bin' or `.com' file also exists."
 ;;       (ad-set-arg 0 "cd -")))
 
 ;; This does not work; "(dirs)" is executed before the command is executed,
-;; even if this command sleeps first.  I should create a new funtion and
+;; even if this command sleeps first.  I should create a new function and
 ;; install it on `comint-output-filter-functions' rather than modify
 ;; shell-directory-tracker, which is on comint-input-filter-functions.
 

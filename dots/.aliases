@@ -73,7 +73,7 @@ remake() {
 }
 alias gw='./gradlew -q'
 # shellcheck disable=SC2154
-alias cfassemble='(cd $cf && cronic --permit-stderr git pull && cronic --duplicate-stderr ./gradlew assembleForJavac && true)'
+alias cfassemble='(cd $cf && (test -z "$(git config --get branch.$(git branch --show-current).remote)" ||cronic --permit-stderr git pull) && cronic --duplicate-stderr ./gradlew assembleForJavac && true)'
 alias cfpublish='(cd $cf && cronic --duplicate-stderr ./gradlew publishToMavenLocal && true)'
 # "rmjunk" alias is too dangerous.
 # alias rmjunk='junk -c \rm'
@@ -89,7 +89,7 @@ uue() {
 }
 alias whihc='which'
 
-# I get a warning mesage from ps about bad syntax, which I don't understand.
+# I get a warning message from ps about bad syntax, which I don't understand.
 psgrep() { command ps auxwwww | grep "$1" | grep -v "grep $1"; }
 
 zw() { command zwrite "$1" -m "$2"*; }
@@ -137,9 +137,10 @@ alias bigscreen='xrandr -s 1920x1200'
 alias aoeu='if [ $DISPLAY ]; then setxkbmap us; else loadkeys us; fi'
 alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 
-alias clauded='claude --dangerously-skip-permissions'
-alias claudea='claude --enable-auto-mode'
-alias claudemax='clauded --model opus --effort max'
+alias claudetrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.claude.json > ~/.claude.json.tmp && mv ~/.claude.json.tmp ~/.claude.json'
+alias clauded='claudetrustdir && claude --model opus --dangerously-skip-permissions'
+alias claudea='claudetrustdir && claude --model opus --enable-auto-mode'
+alias claudemax='claudetrustdir && clauded --model opus --effort max'
 
 ###########################################################################
 ### Printing
@@ -154,7 +155,7 @@ fi
 
 # psnup can read from standard input, but then it can't take an argument
 # for the output file; thus, use ">" file redirection.
-# These commands Works on .ps files, not on .pdf files
+# These commands work on .ps files, not on .pdf files
 acm2up() { command pstops "0(-125,-110)" "$@" | psnup -2 -W360 -H590 -pletter -m0.5in -b0.05in > "$(basename "$@" .ps)-2up.ps"; }
 # To make the print bigger on the final page, make the -W and -H arguments smaller.  To move the text logically downward toward the bottom of the page, make the last number in "0(-133,-97)" a larger negative number.
 lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m0.45in -b-0.15in > "$(basename "$@" .ps)-2up.ps"; }
@@ -163,6 +164,14 @@ lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m
 # # But, htmldoc is not installed at CSE, whereas html2ps is.
 # html2ps () { command htmldoc -f `basename "$@" .ps` --webpage "$@" ; }
 # html2pdf () { command htmldoc -f `basename "$@" .pdf` --webpage "$@" ; }
+
+html2pdf() {
+  for f in "$@"; do
+    command google-chrome --headless --disable-gpu \
+      --print-to-pdf="$(basename "$f" .html).pdf" \
+      "$f"
+  done
+}
 
 # Enscript/genscript (ens uses -pOUTFILE; gens uses -oOUTFILE to output to file)
 # -h: no burst/header page; -B: no page headings; -b 'header'; -G: gaudy page
@@ -206,9 +215,10 @@ ens1f() {
     echo "ens1f: pass one file argument; received $*"
     return 1
   fi
-  ens1 -o "$1".ps "$1"
-  ps2pdf "$1".ps "$1".pdf
-  rm -f "$1".ps
+  b="$(basename "$1")"
+  sed 's/═/=/g' "$1" | iconv -f UTF-8 -t ISO-8859-1//TRANSLIT > /tmp/"$b"
+  (cd /tmp && ens1 -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps)
+  mv /tmp/"$b".pdf .
 }
 ens1fi() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
@@ -233,9 +243,10 @@ ens100f() {
     echo "ens100f: pass one file argument; received $*"
     return 1
   fi
-  ens100 -o "$1".ps "$1"
-  ps2pdf "$1".ps "$1".pdf
-  rm -f "$1".ps
+  b="$(basename "$1")"
+  sed -e 's/═/=/g' -e 's/✓/yes/' -e 's/✗/no/g' -e 's/█/X/g' -e 's/Α/Alpha/g' -e 's/α/alpha/g' -e 's/Β/Beta/g' -e 's/β/beta/g' -e 's/Γ/Gamma/g' -e 's/γ/gamma/g' -e 's/Δ/Delta/g' -e 's/δ/delta/g' -e 's/Ε/Epsilon/g' -e 's/ε/epsilon/g' -e 's/Ζ/Zeta/g' -e 's/ζ/zeta/g' -e 's/Η/Eta/g' -e 's/η/eta/g' -e 's/Θ/Theta/g' -e 's/θ/theta/g' -e 's/Ι/Iota/g' -e 's/ι/iota/g' -e 's/Κ/Kappa/g' -e 's/κ/kappa/g' -e 's/Λ/Lambda/g' -e 's/λ/lambda/g' -e 's/Μ/Mu/g' -e 's/μ/mu/g' -e 's/Ν/Nu/g' -e 's/ν/nu/g' -e 's/Ξ/Xi/g' -e 's/ξ/xi/g' -e 's/Ο/Omicron/g' -e 's/ο/omicron/g' -e 's/Π/Pi/g' -e 's/π/pi/g' -e 's/Ρ/Rho/g' -e 's/ρ/rho/g' -e 's/Σ/Sigma/g' -e 's/σ/sigma/g' -e 's/Τ/Tau/g' -e 's/τ/tau/g' -e 's/Υ/Upsilon/g' -e 's/υ/upsilon/g' -e 's/Φ/Phi/g' -e 's/φ/phi/g' -e 's/Χ/Chi/g' -e 's/χ/chi/g' -e 's/Ψ/Psi/g' -e 's/ψ/psi/g' -e 's/Ω/Omega/g' -e 's/ω/omega/g' "$1" | iconv -c -f "$(file -b --mime-encoding "$1")" -t ISO-8859-1//TRANSLIT > /tmp/"$b"
+  (cd /tmp && ens100 -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps)
+  mv /tmp/"$b".pdf .
 }
 ens1fsmaller() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
@@ -317,7 +328,7 @@ alias ensw='enswide'
 alias ens1h='ens1 -h'
 alias ens2h='ens2 -h'
 
-# Problem: enscript does not properly handly unicode/UTF-8.
+# Problem: enscript does not properly handle unicode/UTF-8.
 # Neither does a2ps as of 9/2014, it seems.
 # Alternative:  paps does, and an Ubuntu package for it exists.
 # Alternative:  cedilla does.
@@ -401,6 +412,7 @@ alias usejdk21='(cd ~/java && rm -f jdk && ln -s jdk21 jdk)'
 alias usejdk24='(cd ~/java && rm -f jdk && ln -s jdk24 jdk)'
 alias usejdk25='(cd ~/java && rm -f jdk && ln -s jdk25 jdk)'
 alias usejdk26='(cd ~/java && rm -f jdk && ln -s jdk26 jdk)'
+alias usejdk27='(cd ~/java && rm -f jdk && ln -s jdk27 jdk)'
 TMP=$(mktemp -t .aliases-trap.XXXXXX)
 trap 'rm $TMP* 2>/dev/null' EXIT
 # Argument is a directory suffix like "fork-mernst-branch-scene-to-stub-writer-debug-3",
@@ -569,6 +581,8 @@ alias umnak='xsw umnak'
 alias warfa='xsw warfa'
 alias pipsqueak='xsw pipsqueak'
 alias yonder='xsw yonder'
+alias whale='xsw whale'
+alias leviathan=whale
 # "egodwit" is problematic because environment variables like $inv don't
 # get defined.  (Perhaps other commands have this problem too, but I don't
 # recall it as a problem for emangold.)

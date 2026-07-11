@@ -300,7 +300,7 @@
 ;;;
 
 (defun precision-recall-f-measure (tp fp fn)
-  "Arguments are: true positives, true negatives, false negatives."
+  "Arguments are: true positives, false positives, false negatives."
   ;; Uses of "0.0" are to force floating-point computation.
   (let* ((precision (/ tp (+ tp fp 0.0)))
 	 (recall (/ tp (+ tp fn 0.0)))
@@ -317,6 +317,13 @@
 ;; ;; This variable is in standard regex syntax, not Emacs regex syntax!
 ;; "^ *(public )?(boolean|byte|double|float|int|long|short|String|VarInfo) [^(]*,.*;"
 
+
+(defun fix-pmd-warnings ()
+  "Fix some PMD warnings."
+  (tags-query-replace "new FileInputStream(\\(.*?\\))" "Files.newInputStream(Paths.get(\\1))")
+  (tags-query-replace "^\\( *\\)\\b\\([a-zA-Z0-9_]+\\)\\.append(\\(.*\\) \\+ \\(.*\\));" "\\1\\2.append(\\3);\n\\1\\2.append(\\4);")
+  (tags-query-replace "\\.append(\"\\([^\\]\\|\\\\.\\)\")" ".append('\\1')")
+  )
 
 (defun ensure-in-same-file (regex1 regex2)
   "Ensure that if regex1 is in any file, then regex2 is in that file too."
@@ -480,6 +487,8 @@ Transfer them to source that appears later in the file."
     ;; Directory names
     (goto-char (point-min))
     (replace-regexp-noninteractive "^/__w/1/s/" "")
+    (goto-char (point-min))
+    (replace-regexp-noninteractive "^/__w/\\(.*\\)/\\1/" "")
     (goto-char (point-min))
     (replace-regexp-noninteractive "^/root/project/" "")
     (goto-char (point-min))

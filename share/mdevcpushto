@@ -5,6 +5,12 @@ while [ $# -gt 0 ]; do
     --debug)
       # shellcheck disable=SC2034 # DEBUG is not used yet
       DEBUG=--debug
+      VERBOSE=true
+      shift # past argument
+      ;;
+    --verbose)
+      # shellcheck disable=SC2034 # VERBOSE is not used yet
+      VERBOSE=true
       shift # past argument
       ;;
     -*)

@@ -267,9 +267,9 @@
 (setq mew-visit-inbox-after-setting-case t)
 
 
-(setq mew-case-guess-when-prepared t)	; defualt t
-(setq mew-case-guess-when-composed t)	; defualt nil
-(setq mew-case-guess-when-replied t)	; defualt t
+(setq mew-case-guess-when-prepared t)	; default t
+(setq mew-case-guess-when-composed t)	; default nil
+(setq mew-case-guess-when-replied t)	; default t
 
 
 ;; mew-case-guess-alist and mew-refile-guess-alist should perhaps be
@@ -691,7 +691,7 @@
 ;; replies.
 
 ;; (defun mew-subject-simplify-ml-no-github (str)
-;;   "Like `mew-subject-simplify-ml', but don't strip off GitHub notificatons."
+;;   "Like `mew-subject-simplify-ml', but don't strip off GitHub notifications."
 ;;   ;; The only change is to add a "/" to the regex.
 ;;   (if (string-match "^[[(][^])/]+[])][ \t]*" str)
 ;;       (substring str (match-end 0))
@@ -1064,6 +1064,23 @@
 ;;    (mew-summary-delete-one 'nodisplay))
 ;; Unfortunately, mew-summary-mark-regexp reads the regex interactively; it is not passed as an argument.  (After that, I would have run mew-summary-mark-delete.)
 
+;; no need to `set-buffer` if this is called from mew-message-hook.
+(defun view-it-on-github ()
+  "If the message contains \"view it on GitHub\", go to the linked URL."
+  (interactive)
+  (save-excursion
+    (browse-url-once-via-text-properties "view it on GitHub")))
+;; TO USE automatically:  (add-hook 'mew-message-hook #'view-it-on-github)
+
+
+(defun view-it-on-github ()
+  "Browse to a link with anchor text \"view it on GitHub\"."
+  (interactive)
+  (mew-summary-msg-or-part
+   (save-excursion
+     (set-buffer (mew-buffer-message))
+     (browse-url-via-text-properties "view it on GitHub"))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Mail sending
@@ -1126,7 +1143,7 @@ This prevents silently discarding mail to CSE support."
 ;;   > > > Some quoted text
 ;; I'm not sure whether my setup already handles that correctly, or not.
 
-;; Problem: mailman 2.1.9 and eariler drops the
+;; Problem: mailman 2.1.9 and earlier drops the
 ;;   format="flowed"
 ;; from the "Content-Type:" line.
 ;; So this can make messages sent through such
@@ -1154,7 +1171,7 @@ This prevents silently discarding mail to CSE support."
   (mew-draft-use-format-flowed t))
 (add-hook 'mew-draft-mode-hook 'mew-draft-use-format-flowed-t)
 
-;; Ther relevant routines are:
+;; The relevant routines are:
 ;;   mew-ecsdb-guess-region
 ;;   mew-charset-guess-region
 (defun mew-charset-set-delsp (charset)
@@ -1182,7 +1199,7 @@ This prevents silently discarding mail to CSE support."
 ;; ;; drafts folder, and try again.
 ;; (defadvice mew-encode-flowed (before warn-if-delsp activate)
 ;;   "Warn if the charset sets delsp.
-;; If delsp is set, then format=flowed breaks words arbirtary locations,
+;; If delsp is set, then format=flowed breaks words arbitrary locations,
 ;; not just on word boundaries."
 ;;   (let ((delsp (mew-charset-to-delsp charset)))
 ;;     (if (and delsp

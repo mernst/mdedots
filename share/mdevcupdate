@@ -4,6 +4,11 @@ while [ $# -gt 0 ]; do
   case $1 in
     --debug)
       DEBUG=--debug
+      VERBOSE=true
+      shift # past argument
+      ;;
+    --verbose)
+      VERBOSE=true
       shift # past argument
       ;;
     -*)
@@ -17,8 +22,13 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-alias mvc='java -ea -cp ${HOME}/java/plume-lib/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl'
-mvc pull --search-prefix
+### The MultiVersionControl program does most of the work!
+
+if [ -n "$VERBOSE" ]; then
+  verbose_arg="--print-directory --show"
+fi
+# shellcheck disable=SC2086
+java -ea -cp "${HOME}"/java/plume-lib/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl pull --search-prefix $DEBUG $verbose_arg
 
 ### Update my forks from upstream.
 
@@ -47,7 +57,7 @@ update_fork_kelloggm() {
 
 # Pull from $org/$repo into $parentdir/$repo-fork-mernst
 update_fork_from_rjust_bitbucket() {
-  if [ -n "$DEBUG" ]; then
+  if [ -n "$VERBOSE" ]; then
     echo "update_fork_from_rjust_bitbucket 1=$1 2=$2"
   fi
   update_fork_with_hosting_and_userid "rjust" "$1" "$2" "" bitbucket.org michaelernst
@@ -64,7 +74,7 @@ update_fork_with_hosting_and_userid() {
   if [ -z "$localname" ]; then
     localname="$repo"
   fi
-  if [ -n "$DEBUG" ]; then
+  if [ -n "$VERBOSE" ]; then
     echo "update_fork_with_hosting_and_userid org=$org repo=$repo parentdir=$parentdir localname=$localname hosting=$hosting userid=$userid"
   fi
   if [ -z "$parentdir" ] || [ -z "$userid" ]; then
@@ -77,17 +87,18 @@ update_fork_with_hosting_and_userid() {
     echo "6=$6"
     exit 2
   fi
-  cp -pf ~/private/.git-credentials-SAVE ~/private/.git-credentials
   if [ -d "$parentdir/$localname-fork-$userid" ]; then
     git_pull_command="git pull -q --ff-only git@${hosting}:$org/$repo --tags"
-    if [ -n "$DEBUG" ]; then
+    if [ -n "$VERBOSE" ]; then
       echo "cd $parentdir/$localname-fork-$userid && $git_pull_command"
     fi
     # Doesn't use `git -C` because multiple git commands will be run in the directory.
-    ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
     if [ -n "$DEBUG" ]; then
-      echo "sleeping"
-      sleep 30
+      # Run in the foreground.
+      ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command")
+    else
+      # Run in the background.
+      ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
     fi
   fi
 }

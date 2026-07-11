@@ -112,7 +112,7 @@ adjust `scheme-defform-regexp' to include named-lambda.")
           "\\s *"
           "\\)?"
           ")"
-          "[ \t]*\\($\\|[^ \t.]\\)"     ; aviod "foo()" in "foo().bar();"
+          "[ \t]*\\($\\|[^ \t.]\\)"     ; avoid "foo()" in "foo().bar();"
           ))
 ;; Unfortunately, this doesn't get member variables, only methods.
 ;; I don't see how to get the member variables without catching too

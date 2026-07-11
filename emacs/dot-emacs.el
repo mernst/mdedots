@@ -1,5 +1,4 @@
 ;;; -*- lexical-binding: t -*-
-
 ;;; dot-emacs.el --- Michael D. Ernst's Emacs customizations (.emacs file)
 
 ;;; Commentary:
@@ -31,6 +30,21 @@
 (auto-compile-on-save-mode)
 
 
+(defmacro static-when (condition &rest body)
+  "A conditional compilation macro.
+Evaluate CONDITION at macro-expansion time.  If it is non-nil,
+expand the macro to evaluate all BODY forms sequentially and return
+the value of the last one, or nil if there are none."
+  (declare (indent 1) (debug t))
+  (if body
+      (if (eval condition lexical-binding)
+          (cons 'progn body)
+        nil)
+    (macroexp-warn-and-return (format-message "`static-when' with empty body")
+                              (list 'progn nil nil) '(empty-body static-when) t)))
+
+(require 'compat)
+
 (eval-when-compile
   (require 'auto-compile)
   (require 'ispell)
@@ -40,7 +54,8 @@
   (require 'file-comparison)
   (require 'diff-clean)
   (require 'conflict-resolve)
-  (require 'dbus))
+  (require 'dbus)
+  (require 'compat))
 
 ;; To use the ELPA package manager, call  M-x list-packages
 ;; To install a package:  M-x package-install RET magit RET , or:
@@ -71,6 +86,15 @@
 ;; ;; Disable collection of benchmark data after init is done.
 ;; (if (fboundp 'benchmark-init/deactivate)
 ;;     (add-hook 'after-init-hook 'benchmark-init/deactivate))
+
+;; Prefer UTF-8 when detection is ambiguous (avoids raw-text fallbacks)
+(prefer-coding-system 'utf-8)
+;; Set default coding sub-systems to UTF-8
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+;; Treat clipboard selections and transfers as UTF-8
+(set-selection-coding-system 'utf-8)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -586,8 +610,8 @@
                        ;; not: (count-matches to-do-priority-regex)
                        ;; Count all paragraphs, because even paragraphs
                        ;; without priority numbers are important in
-                       ;; dtermining how well I am keeping up with my work.
-                       (count-matches "\n\n")
+                       ;; determining how well I am keeping up with my work.
+                       (count-matches "\n\n+")
                        ))))
          (to-dos-summary (concat (int-to-string to-dos)
                                  " to-do items (previously "
@@ -834,6 +858,37 @@ After running this, run from the shell:  print-mail bulk." t)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Language Server Protocol
+
+;; Prefer eglot to lsp-mode.
+
+;; eglot causes long pauses, probably while 
+;; (use-package eglot
+;;   :ensure t
+;;   :hook (prog-mode . eglot-ensure))
+;; (setq eglot-max-file-watches nil)       ; no limit
+;; 
+;; (use-package eglot-booster
+;;   :after eglot
+;;   :config (eglot-booster-mode))
+;; 
+;; (with-eval-after-load 'eglot
+;;   (add-to-list 'eglot-server-programs
+;;                '(python-base-mode . ("ruff" "server"))))
+;; (add-hook 'python-base-mode-hook
+;;           #'(lambda ()
+;;               (eglot-ensure)
+;;               ;; Do not include eglot formatting.
+;;               ))
+;; 
+;; (require 'eglot)
+;; (add-to-list 'eglot-server-programs '((c++-mode c-mode) "clangd"))
+;; (add-hook 'c-mode-hook 'eglot-ensure)
+;; (add-hook 'c++-mode-hook 'eglot-ensure)
+;; (add-hook 'xref-backend-functions #'eglot-xref-backend 0)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Key bindings
 
 ;;; Now the default behavior in Emacs 23, I think.
@@ -884,7 +939,7 @@ After running this, run from the shell:  print-mail bulk." t)
     (save-restriction
       (widen)
       (goto-char (point-min))
-      (replace-string-noninteractive "\n\n\n" "\n\n")
+      (replace-regexp-noninteractive "\n\n\n+" "\n\n")
       (goto-char (point-min))
       (let ((num-matches (count-matches to-do-priority-regex)))
         (let ((match-num 0))
@@ -1303,7 +1358,7 @@ After running this, run from the shell:  print-mail bulk." t)
 
   ;; ispell.el permits these letters but ignores LocalWords starting
   ;; with these letters.  Skip over leading such characters so we never
-  ;; even see a word starting whith these.
+  ;; even see a word starting with these.
   (add-to-list 'ispell-skip-region-alist '("\\b['0-9]+"))
 
   ;; Hexadecimal numbers
@@ -1397,7 +1452,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 
 
 
-;; Do this rather than setting INFOPATH environment variable becuase that
+;; Do this rather than setting INFOPATH environment variable because that
 ;; fails to catch the directory in which Emacs put its Info files, I think.
 ;; I should check that this is still the right thing in FSF Emacs 20.
 (setq Info-default-directory-list
@@ -1490,7 +1545,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 
 ;;; Ediff
 
-;;; Expermintally commented out, 2025-04-06.  (Would replace with :filter-args advice.)
+;;; Experimentally commented out, 2025-04-06.  (Would replace with :filter-args advice.)
 ;; (defadvice ediff-merge-files-with-ancestor (before strip-quotes activate)
 ;;   (ad-set-arg 0 (strip-single-quotes (ad-get-arg 0)))
 ;;   (ad-set-arg 1 (strip-single-quotes (ad-get-arg 1)))
@@ -1576,6 +1631,9 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (setq diff-clean-removed-files
       '(
         ".*/annotation-file-utilities/bib/.*"
+        ".*/annotation-file-utilities/tests/converted/.*"
+        ".*/annotation-file-utilities/tests/ad-hoc/bridge/C.jaif"
+        ".*/annotation-file-utilities/tests/system-test/out[25].jaif"
         ;; Is this pattern desirable?  If so, should it include .*.output?
         ".*/annotation-file-utilities/tests/.*.log"
         ".*/beepbeep-3[^/]*/CoreTest/bin/.*"
@@ -1643,18 +1701,6 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
         ".*/\\.git/.*"
         ))
 
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Emacs compatibility
-;;;
-
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Hacks and bug fixes
-;;;
 
 ;;; Experimentally commented out, 2025-04-06.
 ;; (defadvice thing-at-point-url-at-point (around no-trailing-paren activate)

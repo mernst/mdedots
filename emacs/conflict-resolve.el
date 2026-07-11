@@ -4,17 +4,19 @@
 ;; This file contains functions that resolve merge conflicts.
 ;; Also see file diff-clean.el, which is for diffs (not conflicts).
 
-;; Typical workflow for resolving conflicts:
-;; Run at the top level: etags $(rg --files-with-matches '<<<<<<')
+;; Typical workflow for resolving conflicts, using a tags table:
+;; Run at the top level: etags $(rg --files-with-matches '^<<<<<<')
 ;; Visit that tags table.
 ;; (require 'conflict-resolve)
 ;; ;; TODO: What is the purpose of this?
 ;; ;; (read-conflict-files-from-tags-table)
 ;; Now run as many of the following as desired.
-;; (conflict-resolve)
 ;; (tags-conflict-resolve)
-;; (conflict-resolve-annotation-lines)
 ;; (tags-conflict-resolve-annotation-lines)
+
+;; When not using a tags table:
+;; (conflict-resolve)
+;; (conflict-resolve-annotation-lines)
 ;; (resolve-annotatedfor-conflicts)
 ;; (move-cf-imports-to-beginning)
 ;; (resolve-import-conflicts)
@@ -26,7 +28,8 @@
 ;; Most useful for pulling remote into annotated code, such as the
 ;; Checker Framework annotated JDK:
 ;; (tags-conflict-resolve-annotation-lines-in-head)
-;; (tags-conflict-resolve-annotation-lines-in-other ()
+;; (tags-conflict-resolve-annotation-lines-in-other)
+;; (tags-conflict-resolve-import-conflicts)
 
 
 ;; Run vc-resolve-conflicts for each file that this matches.
@@ -63,7 +66,7 @@
 
 (defun lines-without-at-start-re (char)
   "Matches a sequence of lines that do not start with the given character."
-  (concat "\\(:?\n\\|[^" char "].*\n\\)*"))
+  (concat "\\(?:\n\\|[^" char "].*\n\\)*"))
 
 (defconst left-lines-re
   (lines-without-at-start-re "|"))
@@ -84,7 +87,7 @@
 ;;;
 
 (defun resolve-annotatedfor-conflicts ()
-  "Resolve conflicts that invove only @AnnotatedFor lines.
+  "Resolve conflicts that involve only @AnnotatedFor lines.
 A caveat:
 The mode-hook might blow away the match-data, in which case first run
    `M-x read-conflict-files-from-tags-table`."
@@ -128,7 +131,7 @@ The mode-hook might blow away the match-data, in which case first run
 
 
 (defun resolve-annotatedfor-usesobjectequals-conflicts ()
-  "Resolve conflicts that invove only @AnnotatedFor and @UsesObjectEquals.
+  "Resolve conflicts that involve only @AnnotatedFor and @UsesObjectEquals.
 A caveat:
 The mode-hook might blow away the match-data, in which case first run
    `M-x read-conflict-files-from-tags-table`."
@@ -205,7 +208,7 @@ public\\1 @UsesObjectEquals class \\2
 
 ;; This is superseded by merge-java-imports-driver.sh .
 (defun tags-conflict-resolve-import-conflicts ()
-  "Resolve conflicts that invove only import lines, by accepting all the lines.
+  "Resolve conflicts that involve only import lines, by accepting all the lines.
 Two caveats:
 1. You may have to adjust whitespace at the beginning and end manually.
 2. The mode-hook might blow away the match-data, in which case first run
@@ -218,19 +221,19 @@ Two caveats:
   (read-conflict-files-from-tags-table)
   (tags-search
    (concat less-than-hunk-start-re
-           "\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)"
+           "\\(\\(?:\\(?:\\(?:// \\)?import .*;\\)?\n\\)*\\)"
            vertical-bar-separator-re
-           "\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)"
+           "\\(\\(?:\\(?:\\(?:// \\)?import .*;\\)?\n\\)*\\)"
            equal-sign-separator-re
-           "\\(\\(?:\\(?:import .*;\\)?\n\\)*\\)"
+           "\\(\\(?:\\(?:\\(?:// \\)?import .*;\\)?\n\\)*\\)"
            greater-than-hunk-end-re)
    )
-  (while t
-    ;; (message "#1 %s" (match-string 1))
-    ;; (message "#3 %s" (match-string 3))
-    (replace-match (sorted-non-duplicate-lines (match-string 1) (match-string 3)))
-    (fileloop-continue))
-  ;; TODO: does not get run because previous loop throws an exception
+  (ignore-errors
+    (while t
+      (message "#1 %s" (match-string 1))
+      (message "#3 %s" (match-string 3))
+      (replace-match (sorted-non-duplicate-lines (match-string 1) (match-string 3)))
+      (fileloop-continue)))
   )
 
 
@@ -246,7 +249,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
        " *@\\(?:"
        (string-join
         '(
-          ;; "SuppressWarnings(.*)" intentionally omitted; it should be be the
+          ;; "SuppressWarnings(.*)" intentionally omitted; it should be the
           ;; last annotation textually and should be resolved by hand.
           "CallerSensitive"
           "Deprecated.*"
@@ -511,7 +514,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     vertical-bar-separator-re
     "\\1"
     equal-sign-separator-re
-    right-lines-re
+    right-lines-grouped-re
     greater-than-hunk-end-re)
    "\\2"))
 
@@ -519,11 +522,11 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
   (list
    (concat
     less-than-hunk-start-re
-    left-lines-re
+    left-lines-grouped-re
     vertical-bar-separator-re
     base-lines-grouped-re
     equal-sign-separator-re
-    "\\1"
+    "\\2"
     greater-than-hunk-end-re)
    "\\1"))
 
@@ -533,7 +536,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
     less-than-hunk-start-re
     left-lines-grouped-re
     vertical-bar-separator-re
-    base-lines-re
+    base-lines-grouped-re
     equal-sign-separator-re
     "\\1"
     greater-than-hunk-end-re)
@@ -827,11 +830,12 @@ In the result, the lines are sorted."
 ;;;
 
 (defun read-conflict-files-from-tags-table ()
-  "Reald all the files in the tags table into their own buffers."
+  "Read all the conflicting files in the tags table into their own buffers."
   (interactive)
   (tags-search less-than-hunk-start-re)
-  (while t
-    (fileloop-continue)))
+  (ignore-errors
+    (while t
+      (fileloop-continue))))
 
 
 ;;; TODO: What is the purpose of this?  That is, why would I want to run it?
@@ -840,8 +844,9 @@ In the result, the lines are sorted."
 This takes up a ridiculous amount of Emacs memory, for large TAGS tables."
   (interactive)
   (tags-search "\\`[^z]")
-  (while t
-    (fileloop-continue)))
+  (ignore-errors
+    (while t
+      (fileloop-continue))))
 
 
 

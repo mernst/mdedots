@@ -131,7 +131,7 @@ Good for passing to sort in order to sort strings by length."
 (defun starts-with (string prefix)
   "Return t if STRING starts with PREFIX."
   (string-prefix-p prefix string))
-(make-obsolete 'starts-with 'string-prefix-p-BUT-WITH-ARGUMENTS-REVERSED "")
+(make-obsolete 'starts-with 'string-prefix-p-BUT-WITH-ARGUMENTS-REVERSED "use built-in, not library")
 
 
 (defun right-justify (string fieldwidth)
@@ -1136,8 +1136,8 @@ as by `scroll-up'."
 ;;; to be displayed change meta sequences to escape sequences, even without
 ;;; changing meta-flag to nil.
 
-;;; This does't work, because meta-flag is t in the implementations I'm
-;;; targetting.  (Besides the syntax being wrong for a macro.)
+;;; This doesn't work, because meta-flag is t in the implementations I'm
+;;; targeting.  (Besides the syntax being wrong for a macro.)
 ;; (defmacro meta-prefix-ify (keys)
 ;;   "Set meta bit of first character of KEYS or prepend  meta-prefix-char,
 ;; depending on  meta-flag."
@@ -1336,7 +1336,7 @@ REGEXP should not match the empty string."
 ;; `string-match' or `cl-search' can do the search, but not for the Nth occurrence.
 (defun find-char (char string &optional count)
   "Look for CHAR in STRING; return first index in STRING whose element is CHAR.
-If optional arg COUNT is specified, return the COUNTth occurrance."
+If optional arg COUNT is specified, return the COUNTth occurrence."
   (if (not count)
       (setq count 1))
   (let ((index 0)
@@ -1352,7 +1352,7 @@ If optional arg COUNT is specified, return the COUNTth occurrance."
 
 (defun find-char-from-end (char string &optional count)
   "Look for CHAR in STRING; return last index in STRING whose element is CHAR.
-If optional arg COUNT is specified, return the COUNTth occurrance from the end."
+If optional arg COUNT is specified, return the COUNTth occurrence from the end."
   (if (not count)
       (setq count 1))
   (let ((index (1- (length string)))

@@ -17,7 +17,7 @@ from io import BytesIO
 
 # The Stack Exchange API lacks some features such as is:question that I want to use.
 
-# Idea:  use the Stack Exchange API only for simple searches that I can usually flter out.
+# Idea:  use the Stack Exchange API only for simple searches that I can usually filter out.
 
 # I could instead use the Stack Exchange API; see https://api.stackexchange.com/docs .
 # For instance, run:

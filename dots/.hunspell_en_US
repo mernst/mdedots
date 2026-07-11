@@ -76,6 +76,7 @@ Bazel
 Bellevue
 Bellingham
 Benedikt
+Benedikt's
 Beres
 Beschastnikh
 Beschastnikh's
@@ -371,6 +372,7 @@ LLM's
 LLMs
 LLVM
 LLVM's
+LOC
 LPL
 LTEqLength
 LTEqLengthOf
@@ -743,11 +745,13 @@ acyclic
 advisees
 affordance
 affordances
+agentic
 al
 algorithmically
 alkylating
 allocator
 allocators
+amongst
 analytics
 anaphor
 anonymized
@@ -833,6 +837,7 @@ compositionality
 compositionally
 computability
 computable
+computeIfAbsent
 concolic
 concolically
 concretization
@@ -1077,6 +1082,7 @@ misconfigurations
 misconfigured
 modalities
 modality
+modifiability
 modularity
 modularize
 modularized

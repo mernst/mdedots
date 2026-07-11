@@ -52,7 +52,7 @@ XLoad*showGrip: false
 emacs.geometry:			101x88+0+0
 #else
 /*
-! This is good for my laptop's the external monitor, but probably won't
+! This is good for my laptop's external monitor, but probably won't
 ! work for when using the laptop on its own.
 */
 emacs.geometry:			101x60+0+0

@@ -17,8 +17,8 @@
 
 # Speed up "git status".
 [core]
-        untrackedCache=true
-        fsmonitor=true
+        untrackedCache = true
+        fsmonitor = true
 
 [core]
 	whitespace = trailing-space,space-before-tab
@@ -120,6 +120,10 @@
 ### End of diff and merge
 ###
 
+###
+### Credentials
+###
+
 # For https access
 [credential]
 ## 360000 seconds is 100 hours
@@ -127,6 +131,10 @@
 ## Store keeps passwords forever and is OK for low-security passwords
 ## (which are most; I use ssh for high-security projects).
 	helper = store
+
+###
+### End of credentials
+###
 
 [rerere]
 	enabled = true
@@ -172,12 +180,15 @@
 
 [pull]
 	rebase = false
+
 [safe]
 	directory = /scratch/markro/clones/mydefects4j.j17
+
 [filter "lfs"]
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
+
 [coderabbit]
 	machineId = cli/3c01479e400e4496a0332660225008d9

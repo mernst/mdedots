@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# Converts a .html file created by Cyperchair into a set of ASCII reviews,
+# Converts a .html file created by Cyberchair into a set of ASCII reviews,
 # one per reviewer.
 
 use strict;

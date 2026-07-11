@@ -89,7 +89,7 @@ store-passwords = yes
 ### path separator.  A single backslash will be treated as an
 ### escape for the following character.
 
-### Section for configuring miscelleneous Subversion options.
+### Section for configuring miscellaneous Subversion options.
 [miscellany]
 ### Set global-ignores to a set of whitespace-delimited globs
 ### which Subversion will ignore in its 'status' output, and
