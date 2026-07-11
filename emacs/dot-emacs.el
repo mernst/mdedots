@@ -862,29 +862,30 @@ After running this, run from the shell:  print-mail bulk." t)
 
 ;; Prefer eglot to lsp-mode.
 
-(use-package eglot
-  :ensure t
-  :hook (prog-mode . eglot-ensure))
-(setq eglot-max-file-watches nil)       ; no limit
-
-(use-package eglot-booster
-  :after eglot
-  :config (eglot-booster-mode))
-
-(with-eval-after-load 'eglot
-  (add-to-list 'eglot-server-programs
-               '(python-base-mode . ("ruff" "server"))))
-(add-hook 'python-base-mode-hook
-          #'(lambda ()
-              (eglot-ensure)
-              ;; Do not include eglot formatting.
-              ))
-
-(require 'eglot)
-(add-to-list 'eglot-server-programs '((c++-mode c-mode) "clangd"))
-(add-hook 'c-mode-hook 'eglot-ensure)
-(add-hook 'c++-mode-hook 'eglot-ensure)
-(add-hook 'xref-backend-functions #'eglot-xref-backend 0)
+;; eglot causes long pauses, probably while 
+;; (use-package eglot
+;;   :ensure t
+;;   :hook (prog-mode . eglot-ensure))
+;; (setq eglot-max-file-watches nil)       ; no limit
+;; 
+;; (use-package eglot-booster
+;;   :after eglot
+;;   :config (eglot-booster-mode))
+;; 
+;; (with-eval-after-load 'eglot
+;;   (add-to-list 'eglot-server-programs
+;;                '(python-base-mode . ("ruff" "server"))))
+;; (add-hook 'python-base-mode-hook
+;;           #'(lambda ()
+;;               (eglot-ensure)
+;;               ;; Do not include eglot formatting.
+;;               ))
+;; 
+;; (require 'eglot)
+;; (add-to-list 'eglot-server-programs '((c++-mode c-mode) "clangd"))
+;; (add-hook 'c-mode-hook 'eglot-ensure)
+;; (add-hook 'c++-mode-hook 'eglot-ensure)
+;; (add-hook 'xref-backend-functions #'eglot-xref-backend 0)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
