@@ -319,3 +319,6 @@ export SDKMAN_DIR="/home/mernst/.sdkman"
 # Generated for envman. Do not edit.
 # shellcheck disable=SC1091 # files might not exist
 [ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
+
+# Added by Antigravity CLI installer
+export PATH="/home/mernst/.local/bin:$PATH"
