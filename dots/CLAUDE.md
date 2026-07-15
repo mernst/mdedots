@@ -1,5 +1,9 @@
 # Claude personalization
 
+## Files on disk
+
+* Before responding to a user query, re-read any files that you previously read but have changed since then.
+
 ## English text
 
 * Do not replace concrete nouns by pronouns.
