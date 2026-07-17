@@ -216,3 +216,6 @@ fi
 
 # Added by Antigravity CLI installer
 export PATH="/home/mernst/.local/bin:$PATH"
+
+# kimi-code
+export PATH="/homes/gws/mernst/.kimi-code/bin:$PATH"
