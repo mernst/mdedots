@@ -123,7 +123,7 @@ print('Foreign languages (watch out for "Showing related results")')
 # This does not seem to work; at least, a "Herzlichen Glückwunsch" email remained
 spam_search(
     "("
-    + " OR ".join(  # noqa: FLY002
+    + " OR ".join(  # ruff:ignore[static-join-to-f-string]
         [
             '("Geschäft"',
             '"Sehr geehrter"',
@@ -172,7 +172,7 @@ spam_search("重要")
 
 # NOTE: Most of these aren't a problem because the email subject sorts
 # at the end when I review the email in Emacs Mew.
-# spam_search("К")  # noqa
+# spam_search("К")  # ruff:ignore[ambiguous-unicode-character-comment]
 # spam_search("и")
 # spam_search("в")
 # spam_search("я")
