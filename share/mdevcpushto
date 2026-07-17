@@ -1,5 +1,10 @@
 #!/bin/sh
 
+## Every command in this file is temporary.  It keeps dependent branches up to date.
+
+set -e
+set -u
+
 while [ $# -gt 0 ]; do
   case $1 in
     --debug)
@@ -24,49 +29,167 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-## Each of these commands is temporary.  It keeps dependent branches up to date.
+## Environment variables
 
-# shellcheck disable=SC2154 # var is defined
-# cd "$t" && \
-# git-push-to checker-framework-branch-master \
-#             checker-framework-fork-jyoo980-branch-yoo-optional-checker-latest && \
-# true
+## These constructions suppress warnings from shellcheck.
+if [ -z "${cf+x}" ]; then
+  echo 'Not set: cf'
+fi
+if [ -z "${h+x}" ]; then
+  echo 'Not set: h'
+fi
+if [ -z "${inv+x}" ]; then
+  echo 'Not set: inv'
+fi
+if [ -z "${t+x}" ]; then
+  echo 'Not set: t'
+fi
 
-# shellcheck disable=SC2154 # var is defined
-# cd "$t" && \
-# git-push-to annotation-tools-branch-master \
-#             annotation-tools-fork-mernst-branch-no-annotations-in-comments && \
-# git-push-to checker-framework-branch-master \
-#             checker-framework-fork-mernst-branch-asm-annos && \
-# true
+orig_cf="$(basename "$(readlink -f "$cf")")"
 
-# shellcheck disable=SC2154 # var is defined
-# cd "$t/libraries" && \
-# git-push-to --nocompile \
-#             jdk-branch-master \
-#             jdk-fork-jyoo980-branch-yoo-optional-checker-latest && \
-# true
+### Beepbeep
 
-## "agora-improved" is daikon-fork-JuanCarlosAlonsoValenzuela with some other branches pulled in.  Check its diffs before deleting it.
-# shellcheck disable=SC2154 # var is defined
-# cd "$inv" && \
-# git-push-to --nocompile \
-#             daikon-branch-master \
-#             daikon-fork-mernst-branch-agora-without-alwaysempty \
-#             daikon-fork-mernst-branch-agora-without-alwaysempty-2
-# git-push-to --nocompile \
-#             daikon-branch-master \
-#             daikon-fork-JuanCarlosAlonsoValenzuela \
-#             daikon-fork-mernst-branch-agora-improved
-# git-push-to --nocompile \
-#             daikon-branch-master \
-#             daikon-fork-mernst-branch-sampletester \
-#             daikon-fork-mernst-branch-agora-improved
-# git-push-to --nocompile \
-#             daikon-branch-master \
-#             daikon-fork-mernst-branch-sampletester \
-#             daikon-fork-mernst-branch-agora-without-alwaysempty \
-#             daikon-fork-mernst-branch-agora-without-alwaysempty-2 && \
-# true
+cd ~/java
 
-true
+git-push-to \
+  beepbeep-3-branch-master \
+  beepbeep-3-fork-mernst-branch-buildfile-for-daikon
+
+git-push-to \
+  beepbeep-3-branch-master \
+  beepbeep-3-fork-mernst-branch-daikon
+
+git-push-to \
+  beepbeep-3-branch-master \
+  beepbeep-3-fork-mernst-branch-github-actions-update
+
+git-push-to \
+  beepbeep-3-branch-master \
+  beepbeep-3-fork-mernst-branch-nullness
+
+git-push-to \
+  beepbeep-3-branch-master \
+  beepbeep-3-fork-mernst-branch-resourceleak
+
+### Checker Framework
+
+cd "$t"
+
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-mernst-branch-canonical-annotation
+
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-mernst-branch-dont-insert-irrelevant
+
+#### Confidential Checker
+
+cd "$t"/libraries
+
+git-push-to --nocompile \
+  jdk-branch-master \
+  jdk-fork-iywang2016-branch-iywang
+
+cd "$t"
+
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-iywang2016-branch-iywang
+
+#### Side effects
+
+cd "$t"
+
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-mernst-branch-purity-checker-misc \
+  checker-framework-fork-mernst-branch-side-effects-only-2-pre
+
+git-push-to \
+  checker-framework-fork-mernst-branch-side-effects-only-2-pre \
+  checker-framework-fork-mernst-branch-side-effects-only-2
+
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-mernst-branch-security-advisory-GHSA-g4jf-chwx-8gv4
+
+#### Gradle
+
+cd "$t"
+
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-mernst-branch-gradle-root-project-libs \
+  checker-framework-fork-mernst-branch-gradle-deprecation-pre
+
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-mernst-branch-gradle-root-project-create-check-type-task \
+  checker-framework-fork-mernst-branch-gradle-deprecation-pre
+
+#### Resource Leak Checker for collections
+
+usecf checker-framework-fork-iamsanjaymalakar-branch-rlc-for-collections
+
+cd "$t"/libraries
+
+git-push-to --nocompile \
+  jdk-branch-master \
+  jdk-fork-iamsanjaymalakar-branch-rlc-for-collections
+
+cd "$t"
+
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-iamsanjaymalakar-branch-rlc-for-collections
+
+usecf "$orig_cf"
+
+#### Modifiability
+
+usecf checker-framework-fork-yukiyang31-branch-modifiability
+
+cd "$t"/libraries
+
+git-push-to --nocompile \
+  jdk-branch-master \
+  jdk-fork-yukiyang31-branch-modifiability \
+  jdk-fork-smillst-branch-modifiability
+
+cd "$t"
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-yukiyang31-branch-modifiability \
+  checker-framework-fork-smillst-branch-modifiability
+
+usecf "$orig_cf"
+
+### Daikon
+
+cd "$inv"
+
+git-push-to \
+  daikon-branch-master \
+  daikon-fork-markro49-branch-java-24-dcomp-3
+
+## Harvest
+
+cd "$h"
+
+git-push-to --nocompile \
+  rust_verification \
+  rust_verification-branch-end-line \
+  rust_verification-branch-review-pre
+
+git-push-to --nocompile \
+  rust_verification-branch-review-pre \
+  rust_verification-branch-review
+
+git-push-to --nocompile \
+  rust_verification \
+  rust_verification-branch-sorted-function-specification
+
+## Restore environment
+
+usecf "$orig_cf"
