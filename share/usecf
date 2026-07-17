@@ -3,8 +3,8 @@
 # Argument is a directory suffix like "fork-mernst-branch-scene-to-stub-writer-debug-3",
 # or an entire directory name.
 
-if [ "$#" -ge 1 ]; then
-  echo "$0: Provide 0 or 1 arguments."
+if [ "$#" -gt 1 ]; then
+  echo "$0: Provide 0 or 1 arguments, got $#: $*"
   exit 1
 fi
 
