@@ -138,6 +138,7 @@ alias aoeu='if [ $DISPLAY ]; then setxkbmap us; else loadkeys us; fi'
 alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 
 alias claudetrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.claude.json > ~/.claude.json.tmp && mv ~/.claude.json.tmp ~/.claude.json'
+alias claude='claudetrustdir && claude --model opus --dangerously-skip-permissions'
 alias clauded='claudetrustdir && claude --model opus --dangerously-skip-permissions'
 alias claudea='claudetrustdir && claude --model opus --enable-auto-mode'
 alias claudemax='claudetrustdir && clauded --model opus --effort max'
