@@ -3,6 +3,7 @@
 ## Every command in this file is temporary.  It keeps dependent branches up to date.
 
 set -e
+set -u
 
 while [ $# -gt 0 ]; do
   case $1 in
@@ -32,7 +33,10 @@ done
 
 ## These constructions suppress warnings from shellcheck.
 if [ -z "${cf+x}" ]; then
-  echo 'Not set: inv'
+  echo 'Not set: cf'
+fi
+if [ -z "${h+x}" ]; then
+  echo 'Not set: h'
 fi
 if [ -z "${inv+x}" ]; then
   echo 'Not set: inv'
@@ -81,20 +85,21 @@ git-push-to \
 
 #### Confidential Checker
 
+cd "$t"/libraries
+
 git-push-to --nocompile \
   jdk-branch-master \
-  jdk-fork-iywang2016-branch-iywang \
-  jdk-fork-mernst-branch-iywang2016-iywang
+  jdk-fork-iywang2016-branch-iywang
 
-git-push-to --nocompile \
-  jdk-fork-mernst-branch-iywang2016-iywang \
-  jdk-fork-mernst-branch-iywang2016-iywang-without-stubs
+cd "$t"
 
-git-push-to --nocompile \
-  jdk-fork-mernst-branch-iywang2016-iywang \
-  jdk-fork-mernst-branch-iywang2016-iywang-without-tests
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-iywang2016-branch-iywang
 
 #### Side effects
+
+cd "$t"
 
 git-push-to \
   checker-framework-branch-master \
@@ -111,63 +116,46 @@ git-push-to \
 
 #### Gradle
 
-cd "$t" \
-  && git-push-to \
-    checker-framework-branch-master \
-    checker-framework-fork-mernst-branch-gradle-root-project-libs \
-    checker-framework-fork-mernst-branch-gradle-deprecation-pre \
-  && git-push-to \
-    checker-framework-branch-master \
-    checker-framework-fork-mernst-branch-gradle-root-project-ext \
-    checker-framework-fork-mernst-branch-gradle-deprecation-pre \
-  && git-push-to \
-    checker-framework-branch-master \
-    checker-framework-fork-mernst-branch-gradle-providers-get-property \
-    checker-framework-fork-mernst-branch-gradle-deprecation-pre \
-  && git-push-to \
-    checker-framework-branch-master \
-    checker-framework-fork-mernst-branch-gradle-root-project-create-check-type-task \
-    checker-framework-fork-mernst-branch-gradle-deprecation-pre \
-  && true
+cd "$t"
 
-cd "$t" \
-  && git-push-to \
-    checker-framework-branch-master \
-    checker-framework-fork-mernst-branch-local-vars-2 \
-    checker-framework-fork-mernst-branch-equals-shallow-effective \
-    checker-framework-fork-mernst-branch-check-receiver-override \
-  && cd "$t" \
-  && git-push-to \
-    checker-framework-branch-master \
-    checker-framework-fork-mernst-branch-local-vars-2 \
-    checker-framework-fork-mernst-branch-warn-unneeded-in-tests \
-  && cd "$t" \
-  && git-push-to \
-    checker-framework-branch-master \
-    checker-framework-fork-mernst-branch-warn-unneeded-efficiency \
-    checker-framework-fork-mernst-branch-warn-unneeded-in-tests \
-  && true
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-mernst-branch-gradle-root-project-libs \
+  checker-framework-fork-mernst-branch-gradle-deprecation-pre
+
+git-push-to \
+  checker-framework-branch-master \
+  checker-framework-fork-mernst-branch-gradle-root-project-create-check-type-task \
+  checker-framework-fork-mernst-branch-gradle-deprecation-pre
 
 #### Resource Leak Checker for collections
 
 usecf checker-framework-fork-iamsanjaymalakar-branch-rlc-for-collections
 
+cd "$t"/libraries
+
+git-push-to --nocompile \
+  jdk-branch-master \
+  jdk-fork-iamsanjaymalakar-branch-rlc-for-collections
+
+cd "$t"
+
 git-push-to \
   checker-framework-branch-master \
-  checker-framework-fork-iamsanjaymalakar-branch-rlc-for-collections \
-  && usecf "$orig_cf"
+  checker-framework-fork-iamsanjaymalakar-branch-rlc-for-collections
+
+usecf "$orig_cf"
 
 #### Modifiability
 
 usecf checker-framework-fork-yukiyang31-branch-modifiability
 
-(
-  cd "$t"/libraries \
-    && git-push-to --nocompile \
-      jdk-branch-master \
-      jdk-fork-yukiyang31-branch-modifiability \
-      jdk-fork-smillst-branch-modifiability
-)
+cd "$t"/libraries
+
+git-push-to --nocompile \
+  jdk-branch-master \
+  jdk-fork-yukiyang31-branch-modifiability \
+  jdk-fork-smillst-branch-modifiability
 
 cd "$t"
 git-push-to \
@@ -180,9 +168,27 @@ usecf "$orig_cf"
 ### Daikon
 
 cd "$inv"
+
 git-push-to \
   daikon-branch-master \
   daikon-fork-markro49-branch-java-24-dcomp-3
+
+## Harvest
+
+cd "$h"
+
+git-push-to --nocompile \
+  rust_verification \
+  rust_verification-branch-end-line \
+  rust_verification-branch-review-pre
+
+git-push-to --nocompile \
+  rust_verification-branch-review-pre \
+  rust_verification-branch-review
+
+git-push-to --nocompile \
+  rust_verification \
+  rust_verification-branch-sorted-function-specification
 
 ## Restore environment
 
