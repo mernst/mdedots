@@ -86,7 +86,7 @@ debug = False
 # debug = True
 
 
-MAILBODY = tempfile.NamedTemporaryFile(mode="w", delete=not debug)  # noqa
+MAILBODY = tempfile.NamedTemporaryFile(mode="w", delete=not debug)  # ruff:ignore[open-file-with-context-handler]
 if debug:
     print("MAILBODY=" + MAILBODY.name)
 
