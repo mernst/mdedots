@@ -29,7 +29,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-## Environment variables
+### Environment variables
 
 ## These constructions suppress warnings from shellcheck.
 if [ -z "${cf+x}" ]; then
@@ -83,7 +83,7 @@ git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-mernst-branch-dont-insert-irrelevant
 
-#### Confidential Checker
+## Confidential Checker
 
 cd "$t"/libraries
 
@@ -97,7 +97,7 @@ git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-iywang2016-branch-iywang
 
-#### Side effects
+## Side effects
 
 cd "$t"
 
@@ -114,7 +114,7 @@ git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-mernst-branch-security-advisory-GHSA-g4jf-chwx-8gv4
 
-#### Gradle
+## Gradle
 
 cd "$t"
 
@@ -128,7 +128,7 @@ git-push-to \
   checker-framework-fork-mernst-branch-gradle-root-project-create-check-type-task \
   checker-framework-fork-mernst-branch-gradle-deprecation-pre
 
-#### Resource Leak Checker for collections
+## Resource Leak Checker for collections
 
 usecf checker-framework-fork-iamsanjaymalakar-branch-rlc-for-collections
 
@@ -146,7 +146,7 @@ git-push-to \
 
 usecf "$orig_cf"
 
-#### Modifiability
+## Modifiability
 
 usecf checker-framework-fork-yukiyang31-branch-modifiability
 
@@ -173,22 +173,17 @@ git-push-to \
   daikon-branch-master \
   daikon-fork-markro49-branch-java-24-dcomp-3
 
-## Harvest
+### Harvest
 
 cd "$h"
 
 git-push-to --nocompile \
   rust_verification \
-  rust_verification-branch-end-line \
   rust_verification-branch-review-pre
 
 git-push-to --nocompile \
   rust_verification-branch-review-pre \
   rust_verification-branch-review
-
-git-push-to --nocompile \
-  rust_verification \
-  rust_verification-branch-sorted-function-specification
 
 ## Restore environment
 
