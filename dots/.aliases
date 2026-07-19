@@ -141,7 +141,7 @@ alias claudetrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~
 alias claude='claudetrustdir && claude --model opus --dangerously-skip-permissions'
 alias clauded='claudetrustdir && claude --model opus --dangerously-skip-permissions'
 alias claudea='claudetrustdir && claude --model opus --enable-auto-mode'
-alias claudemax='claudetrustdir && clauded --model opus --effort max'
+alias claudemax='claudetrustdir && claude --model opus --effort max'
 
 ###########################################################################
 ### Printing
@@ -186,6 +186,7 @@ iconv_latin_1() {
   b="$(basename "$1")"
   sed -e 's/═/=/g' -e 's/∈/in/g' \
     -e 's/✓/yes/' -e 's/✗/no/g' -e 's/█/X/g' \
+    -e 's/⊤/T/' \
     -e 's/Α/Alpha/g' -e 's/α/alpha/g' -e 's/Β/Beta/g' -e 's/β/beta/g' -e 's/Γ/Gamma/g' -e 's/γ/gamma/g' -e 's/Δ/Delta/g' -e 's/δ/delta/g' -e 's/Ε/Epsilon/g' -e 's/ε/epsilon/g' -e 's/Ζ/Zeta/g' -e 's/ζ/zeta/g' -e 's/Η/Eta/g' -e 's/η/eta/g' -e 's/Θ/Theta/g' -e 's/θ/theta/g' -e 's/Ι/Iota/g' -e 's/ι/iota/g' -e 's/Κ/Kappa/g' -e 's/κ/kappa/g' -e 's/Λ/Lambda/g' -e 's/λ/lambda/g' -e 's/Μ/Mu/g' -e 's/μ/mu/g' -e 's/Ν/Nu/g' -e 's/ν/nu/g' -e 's/Ξ/Xi/g' -e 's/ξ/xi/g' -e 's/Ο/Omicron/g' -e 's/ο/omicron/g' -e 's/Π/Pi/g' -e 's/π/pi/g' -e 's/Ρ/Rho/g' -e 's/ρ/rho/g' -e 's/Σ/Sigma/g' -e 's/σ/sigma/g' -e 's/Τ/Tau/g' -e 's/τ/tau/g' -e 's/Υ/Upsilon/g' -e 's/υ/upsilon/g' -e 's/Φ/Phi/g' -e 's/φ/phi/g' -e 's/Χ/Chi/g' -e 's/χ/chi/g' -e 's/Ψ/Psi/g' -e 's/ψ/psi/g' -e 's/Ω/Omega/g' -e 's/ω/omega/g' \
     "$1" | iconv -c -f "$(file -b --mime-encoding "$1")" -t ISO-8859-1//TRANSLIT > /tmp/"$b"
 }
