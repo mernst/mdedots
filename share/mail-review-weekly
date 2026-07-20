@@ -8,8 +8,9 @@ Usage: mail-review-weekly
 import time
 import webbrowser
 
-# This stopped working in April 2026.
+# Non-numeric usernames stopped working in April 2026.
 # usernames = ["mernst@cs.washington.edu", "michael.ernst"]
+# TODO: enable the user to pass these values as command-line arguments.
 usernames = ["0", "1"]
 
 

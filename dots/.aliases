@@ -138,9 +138,10 @@ alias aoeu='if [ $DISPLAY ]; then setxkbmap us; else loadkeys us; fi'
 alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 
 alias claudetrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.claude.json > ~/.claude.json.tmp && mv ~/.claude.json.tmp ~/.claude.json'
+alias claude='claudetrustdir && claude --model opus --dangerously-skip-permissions'
 alias clauded='claudetrustdir && claude --model opus --dangerously-skip-permissions'
 alias claudea='claudetrustdir && claude --model opus --enable-auto-mode'
-alias claudemax='claudetrustdir && clauded --model opus --effort max'
+alias claudemax='claudetrustdir && claude --model opus --effort max'
 
 ###########################################################################
 ### Printing
@@ -173,6 +174,23 @@ html2pdf() {
   done
 }
 
+# Optional todo: Make this accept stdin and write to stdout.  (But, I tried to do that and
+# it's difficult to do in a function.  I could do it in a shell script more easily.)
+iconv_latin_1() {
+  # Given a file name (does not work on standard input), produces a file of the same name in
+  # directory /tmp/, encoded using ISO-8859-1 (= Latin 1).
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
+    echo "iconv_latin_1: pass one file argument; received $*"
+    return 1
+  fi
+  b="$(basename "$1")"
+  sed -e 's/═/=/g' -e 's/∈/in/g' \
+    -e 's/✓/yes/' -e 's/✗/no/g' -e 's/█/X/g' \
+    -e 's/⊤/T/' \
+    -e 's/Α/Alpha/g' -e 's/α/alpha/g' -e 's/Β/Beta/g' -e 's/β/beta/g' -e 's/Γ/Gamma/g' -e 's/γ/gamma/g' -e 's/Δ/Delta/g' -e 's/δ/delta/g' -e 's/Ε/Epsilon/g' -e 's/ε/epsilon/g' -e 's/Ζ/Zeta/g' -e 's/ζ/zeta/g' -e 's/Η/Eta/g' -e 's/η/eta/g' -e 's/Θ/Theta/g' -e 's/θ/theta/g' -e 's/Ι/Iota/g' -e 's/ι/iota/g' -e 's/Κ/Kappa/g' -e 's/κ/kappa/g' -e 's/Λ/Lambda/g' -e 's/λ/lambda/g' -e 's/Μ/Mu/g' -e 's/μ/mu/g' -e 's/Ν/Nu/g' -e 's/ν/nu/g' -e 's/Ξ/Xi/g' -e 's/ξ/xi/g' -e 's/Ο/Omicron/g' -e 's/ο/omicron/g' -e 's/Π/Pi/g' -e 's/π/pi/g' -e 's/Ρ/Rho/g' -e 's/ρ/rho/g' -e 's/Σ/Sigma/g' -e 's/σ/sigma/g' -e 's/Τ/Tau/g' -e 's/τ/tau/g' -e 's/Υ/Upsilon/g' -e 's/υ/upsilon/g' -e 's/Φ/Phi/g' -e 's/φ/phi/g' -e 's/Χ/Chi/g' -e 's/χ/chi/g' -e 's/Ψ/Psi/g' -e 's/ψ/psi/g' -e 's/Ω/Omega/g' -e 's/ω/omega/g' \
+    "$1" | iconv -c -f "$(file -b --mime-encoding "$1")" -t ISO-8859-1//TRANSLIT > /tmp/"$b"
+}
+
 # Enscript/genscript (ens uses -pOUTFILE; gens uses -oOUTFILE to output to file)
 # -h: no burst/header page; -B: no page headings; -b 'header'; -G: gaudy page
 # headings; -R: portrait
@@ -192,13 +210,11 @@ alias ens1nofont='enscript --pretty-print -1R --non-printable-format=questionmar
 alias ens1c='ens1nofont -f Courier10'
 alias ens1d='ens1nofont -f DejaVuSansMono10'
 alias ens1i='ens1nofont -f Inconsolata10'
-alias ens1='ens1d'
 # tweak sizes to fit 100 columns
 alias ens1csmall='ens1nofont -f Courier8.7'
 alias ens1dsmall='ens1nofont -f DejaVuSansMono8.7'
 alias ens1ismall='ens1nofont -f Inconsolata9'
 alias ens1small='ens1csmall'
-alias ens100='ens1small'
 alias ens1csmaller='ens1nofont -f Courier8'
 alias ens1dsmaller='ens1nofont -f DejaVuSansMono8'
 alias ens1ismaller='ens1nofont -f Inconsolata8'
@@ -210,14 +226,23 @@ alias ens1r='ens1dr'
 alias ens1diff='ens1 --color -Ediffu'
 # Output to PDF file.  i means inconsolata.
 # For no header, add:  -b ""
+ens1() {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
+    echo "ens11: pass one file argument; received $*"
+    return 1
+  fi
+  b="$(basename "$1")"
+  iconv_latin_1 "$1"
+  (cd /tmp && ens1d -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps && lpr "$b".pdf && rm -f "$b".pdf)
+}
 ens1f() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
     echo "ens1f: pass one file argument; received $*"
     return 1
   fi
   b="$(basename "$1")"
-  sed 's/═/=/g' "$1" | iconv -f UTF-8 -t ISO-8859-1//TRANSLIT > /tmp/"$b"
-  (cd /tmp && ens1 -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps)
+  iconv_latin_1 "$1"
+  (cd /tmp && ens1d -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps)
   mv /tmp/"$b".pdf .
 }
 ens1fi() {
@@ -238,14 +263,23 @@ ens1fsmall() {
   ps2pdf "$1".ps "$1".pdf
   rm -f "$1".ps
 }
+ens100() {
+  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
+    echo "ens100: pass one file argument; received $*"
+    return 1
+  fi
+  b="$(basename "$1")"
+  iconv_latin_1 "$1"
+  (cd /tmp && ens1small -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps && lpr "$b".pdf && rm -f "$b".pdf)
+}
 ens100f() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
     echo "ens100f: pass one file argument; received $*"
     return 1
   fi
   b="$(basename "$1")"
-  sed -e 's/═/=/g' -e 's/✓/yes/' -e 's/✗/no/g' -e 's/█/X/g' -e 's/Α/Alpha/g' -e 's/α/alpha/g' -e 's/Β/Beta/g' -e 's/β/beta/g' -e 's/Γ/Gamma/g' -e 's/γ/gamma/g' -e 's/Δ/Delta/g' -e 's/δ/delta/g' -e 's/Ε/Epsilon/g' -e 's/ε/epsilon/g' -e 's/Ζ/Zeta/g' -e 's/ζ/zeta/g' -e 's/Η/Eta/g' -e 's/η/eta/g' -e 's/Θ/Theta/g' -e 's/θ/theta/g' -e 's/Ι/Iota/g' -e 's/ι/iota/g' -e 's/Κ/Kappa/g' -e 's/κ/kappa/g' -e 's/Λ/Lambda/g' -e 's/λ/lambda/g' -e 's/Μ/Mu/g' -e 's/μ/mu/g' -e 's/Ν/Nu/g' -e 's/ν/nu/g' -e 's/Ξ/Xi/g' -e 's/ξ/xi/g' -e 's/Ο/Omicron/g' -e 's/ο/omicron/g' -e 's/Π/Pi/g' -e 's/π/pi/g' -e 's/Ρ/Rho/g' -e 's/ρ/rho/g' -e 's/Σ/Sigma/g' -e 's/σ/sigma/g' -e 's/Τ/Tau/g' -e 's/τ/tau/g' -e 's/Υ/Upsilon/g' -e 's/υ/upsilon/g' -e 's/Φ/Phi/g' -e 's/φ/phi/g' -e 's/Χ/Chi/g' -e 's/χ/chi/g' -e 's/Ψ/Psi/g' -e 's/ψ/psi/g' -e 's/Ω/Omega/g' -e 's/ω/omega/g' "$1" | iconv -c -f "$(file -b --mime-encoding "$1")" -t ISO-8859-1//TRANSLIT > /tmp/"$b"
-  (cd /tmp && ens100 -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps)
+  iconv_latin_1 "$1"
+  (cd /tmp && ens1small -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps)
   mv /tmp/"$b".pdf .
 }
 ens1fsmaller() {
@@ -415,33 +449,7 @@ alias usejdk26='(cd ~/java && rm -f jdk && ln -s jdk26 jdk)'
 alias usejdk27='(cd ~/java && rm -f jdk && ln -s jdk27 jdk)'
 TMP=$(mktemp -t .aliases-trap.XXXXXX)
 trap 'rm $TMP* 2>/dev/null' EXIT
-# Argument is a directory suffix like "fork-mernst-branch-scene-to-stub-writer-debug-3",
-# or an entire directory name.
-usecf() {
-  suffix=$1
-  suffix=${suffix##*/}
-  suffix=${suffix#checker-framework-}
-  suffix=${suffix#demos-}
-  suffix=${suffix#jdk-}
-  suffix=${suffix#jdk11u-}
-  suffix=${suffix#jdk17u-}
-  suffix=${suffix#jdk21u-}
-  suffix=${suffix#stubparser-}
-  # echo "suffix = ${suffix}"
-  (
-    cd "${t:?}" \
-      && rm -f checker-framework
-    if [ -d "checker-framework-$suffix" ]; then ln -sf "checker-framework-$suffix" checker-framework; else ln -sf checker-framework-branch-master checker-framework; fi
-    rm -f demos
-    if [ -d "demos-$suffix" ]; then ln -sf "demos-$suffix" demos; else ln -sf demos-branch-master demos; fi
-    rm -f stubparser
-    if [ -d "stubparser-$suffix" ]; then ln -sf "stubparser-$suffix" stubparser; else ln -sf stubparser-branch-master stubparser; fi
-    cd "$t/libraries" && rm -f jdk
-    if [ -d "jdk-$suffix" ]; then ln -sf "jdk-$suffix" jdk; else ln -sf jdk-branch-master jdk; fi
-    cd "$t/libraries" && rm -f jdk21u
-    if [ -d "jdk21u-$suffix" ]; then ln -sf "jdk21u-$suffix" jdk21u; else ln -sf jdk21u-branch-master jdk21u; fi
-  )
-}
+# shellcheck disable=SC2154  # $t is defined
 usenocf() { (cd "$t" && rm -f checker-framework stubparser libraries/jdk libraries/jdk11u checker-framework-inference); }
 
 jstackf() { jstack "$1" > jstack-"$1".txt; }
