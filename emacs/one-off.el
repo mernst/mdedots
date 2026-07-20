@@ -490,6 +490,8 @@ Transfer them to source that appears later in the file."
     (goto-char (point-min))
     (replace-regexp-noninteractive "^/__w/\\(.*\\)/\\1/" "")
     (goto-char (point-min))
+    (replace-regexp-noninteractive "\] /__w/checker-framework/" "] ")
+    (goto-char (point-min))
     (replace-regexp-noninteractive "^/root/project/" "")
     (goto-char (point-min))
     (replace-regexp-noninteractive "^/home/runner/work/\\(.+\\)/\\1/" "")

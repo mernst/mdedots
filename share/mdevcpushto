@@ -51,23 +51,23 @@ orig_cf="$(basename "$(readlink -f "$cf")")"
 
 cd ~/java
 
-git-push-to \
+cronic git-push-to \
   beepbeep-3-branch-master \
   beepbeep-3-fork-mernst-branch-buildfile-for-daikon
 
-git-push-to \
+cronic git-push-to \
   beepbeep-3-branch-master \
   beepbeep-3-fork-mernst-branch-daikon
 
-git-push-to \
+cronic git-push-to \
   beepbeep-3-branch-master \
   beepbeep-3-fork-mernst-branch-github-actions-update
 
-git-push-to \
+cronic git-push-to \
   beepbeep-3-branch-master \
   beepbeep-3-fork-mernst-branch-nullness
 
-git-push-to \
+cronic git-push-to \
   beepbeep-3-branch-master \
   beepbeep-3-fork-mernst-branch-resourceleak
 
@@ -75,11 +75,11 @@ git-push-to \
 
 cd "$t"
 
-git-push-to \
+cronic git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-mernst-branch-canonical-annotation
 
-git-push-to \
+cronic git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-mernst-branch-dont-insert-irrelevant
 
@@ -87,13 +87,13 @@ git-push-to \
 
 cd "$t"/libraries
 
-git-push-to --nocompile \
+cronic git-push-to --nocompile \
   jdk-branch-master \
   jdk-fork-iywang2016-branch-iywang
 
 cd "$t"
 
-git-push-to \
+cronic git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-iywang2016-branch-iywang
 
@@ -101,18 +101,18 @@ git-push-to \
 
 cd "$t"
 
-git-push-to \
+cronic git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-mernst-branch-purity-checker-misc \
   checker-framework-fork-mernst-branch-side-effects-only-2-pre
 
-git-push-to \
+cronic git-push-to \
   checker-framework-fork-mernst-branch-side-effects-only-2-pre \
   checker-framework-fork-mernst-branch-side-effects-only-2
 
 cd "$t"/libraries
 
-git-push-to \
+cronic git-push-to --nocompile \
   jdk-branch-master \
   jdk-fork-mernst-branch-side-effects-only-2
 
@@ -120,12 +120,12 @@ git-push-to \
 
 cd "$t"
 
-git-push-to \
+cronic git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-mernst-branch-gradle-root-project-libs \
   checker-framework-fork-mernst-branch-gradle-deprecation-pre
 
-git-push-to \
+cronic git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-mernst-branch-gradle-root-project-create-check-type-task \
   checker-framework-fork-mernst-branch-gradle-deprecation-pre
@@ -136,13 +136,13 @@ usecf checker-framework-fork-iamsanjaymalakar-branch-rlc-for-collections
 
 cd "$t"/libraries
 
-git-push-to --nocompile \
+cronic git-push-to --nocompile \
   jdk-branch-master \
   jdk-fork-iamsanjaymalakar-branch-rlc-for-collections
 
 cd "$t"
 
-git-push-to \
+cronic git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-iamsanjaymalakar-branch-rlc-for-collections
 
@@ -154,13 +154,13 @@ usecf checker-framework-fork-yukiyang31-branch-modifiability
 
 cd "$t"/libraries
 
-git-push-to --nocompile \
+cronic git-push-to --nocompile \
   jdk-branch-master \
   jdk-fork-yukiyang31-branch-modifiability \
   jdk-fork-smillst-branch-modifiability
 
 cd "$t"
-git-push-to \
+cronic git-push-to \
   checker-framework-branch-master \
   checker-framework-fork-yukiyang31-branch-modifiability \
   checker-framework-fork-smillst-branch-modifiability
@@ -171,7 +171,7 @@ usecf "$orig_cf"
 
 cd "$inv"
 
-git-push-to \
+cronic git-push-to \
   daikon-branch-master \
   daikon-fork-markro49-branch-java-24-dcomp-3
 
@@ -179,11 +179,11 @@ git-push-to \
 
 cd "$h"
 
-git-push-to --nocompile \
+cronic git-push-to --nocompile \
   rust_verification \
   rust_verification-branch-review-pre
 
-git-push-to --nocompile \
+cronic git-push-to --nocompile \
   rust_verification-branch-review-pre \
   rust_verification-branch-review
 
