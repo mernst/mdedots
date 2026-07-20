@@ -75,7 +75,7 @@ for dir in $(locate .git/gc.log | sed 's:/.git/gc.log$::'); do
 done
 
 # shellcheck disable=SC2086
-cronic mdevcpushto ${DEBUG}
+cronic $HOME/private/mdevcpushto ${DEBUG}
 
 ## Notify about files that require attention
 

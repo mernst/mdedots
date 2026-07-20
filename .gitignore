@@ -67,6 +67,7 @@ emacs/vm-8.0.12
 emacs/vm-8.0.12.tgz
 
 share/crontab
+share/mdevcpushto
 share/old
 share/validate
 share/validate-html4
