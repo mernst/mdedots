@@ -110,9 +110,11 @@ git-push-to \
   checker-framework-fork-mernst-branch-side-effects-only-2-pre \
   checker-framework-fork-mernst-branch-side-effects-only-2
 
+cd "$t"/libraries
+
 git-push-to \
-  checker-framework-branch-master \
-  checker-framework-fork-mernst-branch-security-advisory-GHSA-g4jf-chwx-8gv4
+  jdk-branch-master \
+  jdk-fork-mernst-branch-side-effects-only-2
 
 ## Gradle
 
