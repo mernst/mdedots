@@ -12,38 +12,38 @@ condition_that_fails==0 "exec" "gawk" "-f" "$0" "$@"
 # Perhaps get rid of email altogether?  No, probably not.
 
 BEGIN { killit = "--kill it--"
-	prevprevprevline = killit
-	prevprevline = killit
-	prevline = killit
-	print "\\vbox{"
+  prevprevprevline = killit
+  prevprevline = killit
+  prevline = killit
+  print "\\vbox{"
       }
 
 ($0 == "") && ((prevline ~ /^dates/) || (prevline ~ /^email/))  && (prevprevprevline == "") {
-	prevprevprevline = killit
-	prevprevline = killit
-	prevline = killit }
+  prevprevprevline = killit
+  prevprevline = killit
+  prevline = killit }
 
 # This \vbox{...} is to work around a problem with \multicols, which
 # permits a page break at any line break.
 
 ($0 == "") && (prevline != "") && (prevline != killit) {
-	prevline = prevline "\n}" }
+  prevline = prevline "\n}" }
 
 ($0 == "") && (prevline == killit) && (prevprevline != "") && (prevprevline != killit) {
-	prevprevline = prevprevline "\n}" }
+  prevprevline = prevprevline "\n}" }
 
 ($0 == "") && (prevline == killit) && (prevprevline == killit) && (prevprevprevline != "") && (prevprevprevline != killit) {
-	prevprevprevline = prevprevprevline "\n}" }
+  prevprevprevline = prevprevprevline "\n}" }
 
 ($0 != "") && (prevline == "") {
-	$0 = "\\vbox{" $0 }
+  $0 = "\\vbox{" $0 }
 
 # Get rid of email lines without <>; otherwise typeset in tt font
 ($1 == "email:") { if ($NF ~ /<.*>/) { $0 = $NF
-				       sub(/</, "{\\tt ")
-				       sub(/>/, "}")
-				       sub(/%/, "\\%") }
-			else $0 = killit }
+               sub(/</, "{\\tt ")
+               sub(/>/, "}")
+               sub(/%/, "\\%") }
+      else $0 = killit }
 
 { if (prevprevprevline != killit) { print prevprevprevline }
   prevprevprevline = prevprevline

@@ -27,7 +27,7 @@ config:
 # customRules:
 #   - markdownlint-rule-extended-ascii
 
-# Fix any fixable errors
+# Fix any fixable errors; equivalent to passing `--fix`.
 fix: true
 
 # # Define a custom front matter pattern

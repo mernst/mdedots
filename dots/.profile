@@ -177,7 +177,7 @@ export PATH=${PATH}:$HOME/bin/install/global-6.6.3-install/bin
 # export PATH=${HOME}/.venv/bin:${PATH}
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$PATH:/root/.local/bin"
-if command -v register-python-argcomplete > /dev/null; then
+if command -v register-python-argcomplete >/dev/null; then
   eval "$(register-python-argcomplete pipx)"
 fi
 
@@ -299,9 +299,9 @@ if [ "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
 
 # At UW CSE (that is, when directory /homes/gws/mernst exists), only run syncthing on tricycle.cs.
 if [ ! -d /homes/gws/mernst ] || [ "$(hostname)" = "tricycle.cs.washington.edu" ]; then
-  if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' > /dev/null 2>&1); then
+  if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' >/dev/null 2>&1); then
     # syncthing is not running
-    nohup syncthing > "$HOME"/tmp/syncthing.log 2>&1 &
+    nohup syncthing >"$HOME"/tmp/syncthing.log 2>&1 &
   fi
 fi
 

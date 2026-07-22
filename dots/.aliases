@@ -85,7 +85,7 @@ uue() {
     echo "uue: pass one directory argument; received $*"
     return 1
   fi
-  command uuencode "$1" "$1" > "$1".UUE
+  command uuencode "$1" "$1" >"$1".UUE
 }
 alias whihc='which'
 
@@ -157,9 +157,9 @@ fi
 # psnup can read from standard input, but then it can't take an argument
 # for the output file; thus, use ">" file redirection.
 # These commands work on .ps files, not on .pdf files
-acm2up() { command pstops "0(-125,-110)" "$@" | psnup -2 -W360 -H590 -pletter -m0.5in -b0.05in > "$(basename "$@" .ps)-2up.ps"; }
+acm2up() { command pstops "0(-125,-110)" "$@" | psnup -2 -W360 -H590 -pletter -m0.5in -b0.05in >"$(basename "$@" .ps)-2up.ps"; }
 # To make the print bigger on the final page, make the -W and -H arguments smaller.  To move the text logically downward toward the bottom of the page, make the last number in "0(-133,-97)" a larger negative number.
-lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m0.45in -b-0.15in > "$(basename "$@" .ps)-2up.ps"; }
+lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m0.45in -b-0.15in >"$(basename "$@" .ps)-2up.ps"; }
 
 # # Seems more robust than the real html2ps
 # # But, htmldoc is not installed at CSE, whereas html2ps is.
@@ -188,7 +188,7 @@ iconv_latin_1() {
     -e 's/✓/yes/' -e 's/✗/no/g' -e 's/█/X/g' \
     -e 's/⊤/T/' \
     -e 's/Α/Alpha/g' -e 's/α/alpha/g' -e 's/Β/Beta/g' -e 's/β/beta/g' -e 's/Γ/Gamma/g' -e 's/γ/gamma/g' -e 's/Δ/Delta/g' -e 's/δ/delta/g' -e 's/Ε/Epsilon/g' -e 's/ε/epsilon/g' -e 's/Ζ/Zeta/g' -e 's/ζ/zeta/g' -e 's/Η/Eta/g' -e 's/η/eta/g' -e 's/Θ/Theta/g' -e 's/θ/theta/g' -e 's/Ι/Iota/g' -e 's/ι/iota/g' -e 's/Κ/Kappa/g' -e 's/κ/kappa/g' -e 's/Λ/Lambda/g' -e 's/λ/lambda/g' -e 's/Μ/Mu/g' -e 's/μ/mu/g' -e 's/Ν/Nu/g' -e 's/ν/nu/g' -e 's/Ξ/Xi/g' -e 's/ξ/xi/g' -e 's/Ο/Omicron/g' -e 's/ο/omicron/g' -e 's/Π/Pi/g' -e 's/π/pi/g' -e 's/Ρ/Rho/g' -e 's/ρ/rho/g' -e 's/Σ/Sigma/g' -e 's/σ/sigma/g' -e 's/Τ/Tau/g' -e 's/τ/tau/g' -e 's/Υ/Upsilon/g' -e 's/υ/upsilon/g' -e 's/Φ/Phi/g' -e 's/φ/phi/g' -e 's/Χ/Chi/g' -e 's/χ/chi/g' -e 's/Ψ/Psi/g' -e 's/ψ/psi/g' -e 's/Ω/Omega/g' -e 's/ω/omega/g' \
-    "$1" | iconv -c -f "$(file -b --mime-encoding "$1")" -t ISO-8859-1//TRANSLIT > /tmp/"$b"
+    "$1" | iconv -c -f "$(file -b --mime-encoding "$1")" -t ISO-8859-1//TRANSLIT >/tmp/"$b"
 }
 
 # Enscript/genscript (ens uses -pOUTFILE; gens uses -oOUTFILE to output to file)
@@ -371,14 +371,14 @@ alias ens2h='ens2 -h'
 
 paps1f() {
   file="$1"
-  paps --font="Monospace 10" --paper letter "$@" > "$file".ps
+  paps --font="Monospace 10" --paper letter "$@" >"$file".ps
   ps2pdf "$file".ps "$file".pdf
   rm -f "$file".ps
 }
 paps1() { paps1f "$@"; }
 paps2f() {
   file="$1"
-  paps --cpi 18 --header --landscape --columns=2 --paper letter "$@" > "$file".ps
+  paps --cpi 18 --header --landscape --columns=2 --paper letter "$@" >"$file".ps
   ps2pdf "$file".ps "$file".pdf
   rm -f "$file".ps
 }
@@ -427,7 +427,7 @@ pdfclean() {
 
 # Convert a markdown file into a HTML file.
 md2html() {
-  pandoc --standalone --css "${HOME}"/dots/fullwidth.css < "$1" > "${1%.*}".html
+  pandoc --standalone --css "${HOME}"/dots/fullwidth.css <"$1" >"${1%.*}".html
 }
 
 ###########################################################################
@@ -452,7 +452,7 @@ trap 'rm $TMP* 2>/dev/null' EXIT
 # shellcheck disable=SC2154  # $t is defined
 usenocf() { (cd "$t" && rm -f checker-framework stubparser libraries/jdk libraries/jdk11u checker-framework-inference); }
 
-jstackf() { jstack "$1" > jstack-"$1".txt; }
+jstackf() { jstack "$1" >jstack-"$1".txt; }
 
 alias jikes='jikes -g +E +F'
 
@@ -710,16 +710,16 @@ alias git-log-show=git_log_show
 
 # Pretty-print a .json or .jsonl file.
 json_pp() {
-  cp "$1" "$1".tmp \
-    && jq . "$1".tmp > "$1" \
-    && rm "$1".tmp
+  cp "$1" "$1".tmp &&
+    jq . "$1".tmp >"$1" &&
+    rm "$1".tmp
 }
 alias jsonpp=json_pp
 # Compact a .json or .jsonl file.
 json_compact() {
-  cp "$1" "$1".tmp \
-    && jq -c . "$1".tmp > "$1" \
-    && rm "$1".tmp
+  cp "$1" "$1".tmp &&
+    jq -c . "$1".tmp >"$1" &&
+    rm "$1".tmp
 }
 alias jsoncompact=json_compact
 
@@ -731,13 +731,13 @@ alias jsoncompact=json_compact
 
 # If not running interactively, return.
 case "$-" in
-  *i*)
-    # Interactive shell.
-    :
-    ;;
-  *) # Non-interactive shell.
-    return
-    ;;
+*i*)
+  # Interactive shell.
+  :
+  ;;
+*) # Non-interactive shell.
+  return
+  ;;
 esac
 
 ## Don't do this, because even "cp -f" doesn't work then; you need "\cp -f".

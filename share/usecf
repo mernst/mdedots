@@ -20,8 +20,8 @@ suffix=${suffix#stubparser-}
 # echo "suffix = ${suffix}"
 
 (
-  cd "${t:?}" \
-    && rm -f checker-framework
+  cd "${t:?}" &&
+    rm -f checker-framework
   if [ -d "checker-framework-$suffix" ]; then ln -sf "checker-framework-$suffix" checker-framework; else ln -sf checker-framework-branch-master checker-framework; fi
   rm -f demos
   if [ -d "demos-$suffix" ]; then ln -sf "demos-$suffix" demos; else ln -sf demos-branch-master demos; fi

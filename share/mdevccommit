@@ -12,24 +12,24 @@
 
 while [ $# -gt 0 ]; do
   case $1 in
-    --debug)
-      # shellcheck disable=SC2034 # DEBUG is not used yet
-      DEBUG=--debug
-      VERBOSE=true
-      shift # past argument
-      ;;
-    --verbose)
-      VERBOSE=true
-      shift # past argument
-      ;;
-    -*)
-      echo "Unknown option $1"
-      exit 2
-      ;;
-    *)
-      echo "Do not pass arguments to $0: $1"
-      exit 2
-      ;;
+  --debug)
+    # shellcheck disable=SC2034 # DEBUG is not used yet
+    DEBUG=--debug
+    VERBOSE=true
+    shift # past argument
+    ;;
+  --verbose)
+    VERBOSE=true
+    shift # past argument
+    ;;
+  -*)
+    echo "Unknown option $1"
+    exit 2
+    ;;
+  *)
+    echo "Do not pass arguments to $0: $1"
+    exit 2
+    ;;
   esac
 done
 
@@ -66,11 +66,11 @@ for dir in ~/bib ~/bin/src/mdedots ~/research/notes ~/wisdom; do
       ## Resolving deltas".  See https://stackoverflow.com/questions/69475310/ .
       ## TODO: Another problem is the possibility of git commands happening simultaneously.
       (
-        cd $dir && git status > /dev/null
+        cd $dir && git status >/dev/null
         (git diff --quiet --exit-code HEAD || git commit -q -a --allow-empty-message -m " ")
         git pull -q
-        (git log --branches --not --remotes --exit-code > /dev/null 2>&1 \
-          || (git push -q --dry-run && git push -q))
+        (git log --branches --not --remotes --exit-code >/dev/null 2>&1 ||
+          (git push -q --dry-run && git push -q))
       )
 
     else

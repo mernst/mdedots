@@ -62,8 +62,8 @@ my %markup =
                  latex2e => ['\emph{', '}'],
                  html => ['<em>', '</em>'] },
     tie => { latex => '~',
-	     latex2e => '~',
-	     html => '&nbsp;' },
+             latex2e => '~',
+             html => '&nbsp;' },
    );
 
 
@@ -78,12 +78,12 @@ while (scalar(@ARGV) > 0) {
    my $filename = shift;
    my $bibfile = new Text::BibTeX::File($filename) or die "$filename: $!\n";
    $bibfile->set_structure ('Bib', namestyle => 'full', nameorder => 'first',
-			    atitle_mkup => $markup{atitle}{$markup},
-			    btitle_mkup => $markup{btitle}{$markup},
-			    journal_mkup => $markup{journal}{$markup},
-			    tie_mkup => $markup{tie}{$markup},
-			    sortby => 'year',
-			    );
+                            atitle_mkup => $markup{atitle}{$markup},
+                            btitle_mkup => $markup{btitle}{$markup},
+                            journal_mkup => $markup{journal}{$markup},
+                            tie_mkup => $markup{tie}{$markup},
+                            sortby => 'year',
+                            );
 
 
    %select = map { ($_ => 1) } @select
@@ -109,7 +109,7 @@ sub author_ernst ( $ ) {
   my $author = $ae_entry->get('author');
   my $editor = $ae_entry->get('editor');
   return ((defined($author) && $author =~ /Michael/ && $author =~ /Ernst/)
-	  || (defined($editor) && $editor =~ /Michael/ && $editor =~ /Ernst/));
+          || (defined($editor) && $editor =~ /Michael/ && $editor =~ /Ernst/));
 }
 
 # strip entries not by me
@@ -126,7 +126,7 @@ my $pubsdir = "/g2/users/mernst/public_html/pubs-new";
 # directory; every one of them should be hyperlinked to from somewhere, and
 # we keep track of that.
 my @filestolink;
-my @linkedfiles = ();		# files that were actually hyperlinked to
+my @linkedfiles = ();           # files that were actually hyperlinked to
 { # set filestolink
   opendir(DIR, $pubsdir) || die "can't opendir $pubsdir: $!";
   @filestolink = grep { ! (/\.html/ || /^TAGS$/ || /^\./) } readdir(DIR);
@@ -154,37 +154,37 @@ while (my $entry = shift @entries)
 
       my $basefilename = $entry->get('basefilename');
       if (!defined($basefilename)) {
-	if (! $entry->get('supersededby')) {
-	  print STDERR "No basefilename for ", $entry->get('title'), "\n";
-	}
+        if (! $entry->get('supersededby')) {
+          print STDERR "No basefilename for ", $entry->get('title'), "\n";
+        }
       } elsif ($basefilename eq "") {
-	# not available online
+        # not available online
       } else {
-	print "<br>\n";
-	print "<a href=\"$basefilename-abstract.html\">Abstract</a>.\n";
-	my @downloadparts = ();
-	{
-	  my @printparts = ();
-	  if (-f "$pubsdir/$basefilename.ps") {
-	    push @printparts, "<a href=\"$basefilename.ps\">PostScript</a>";
-	    push @linkedfiles, "$basefilename.ps";
-	  }
-	  if (-f "$pubsdir/$basefilename.ps.gz") {
-	    push @printparts, "<a href=\"$basefilename.ps.gz\">gzipped PostScript</a>";
-	    push @linkedfiles, "$basefilename.ps.gz";
-	  }
-	  if (-f "$pubsdir/$basefilename.pdf") {
-	    push @printparts, "<a href=\"$basefilename.pdf\">PDF</a>";
-	    push @linkedfiles, "$basefilename.pdf";
-	  }
-	  if (scalar(@printparts) > 0) {
-	    push @downloadparts, join(",\n", @printparts);
-	  }
-	}
-	## Add other downloadparts here
-	if (scalar(@downloadparts) > 0) {
-	  print "Download:\n", join(";\n", @downloadparts), ".\n";
-	}
+        print "<br>\n";
+        print "<a href=\"$basefilename-abstract.html\">Abstract</a>.\n";
+        my @downloadparts = ();
+        {
+          my @printparts = ();
+          if (-f "$pubsdir/$basefilename.ps") {
+            push @printparts, "<a href=\"$basefilename.ps\">PostScript</a>";
+            push @linkedfiles, "$basefilename.ps";
+          }
+          if (-f "$pubsdir/$basefilename.ps.gz") {
+            push @printparts, "<a href=\"$basefilename.ps.gz\">gzipped PostScript</a>";
+            push @linkedfiles, "$basefilename.ps.gz";
+          }
+          if (-f "$pubsdir/$basefilename.pdf") {
+            push @printparts, "<a href=\"$basefilename.pdf\">PDF</a>";
+            push @linkedfiles, "$basefilename.pdf";
+          }
+          if (scalar(@printparts) > 0) {
+            push @downloadparts, join(",\n", @printparts);
+          }
+        }
+        ## Add other downloadparts here
+        if (scalar(@downloadparts) > 0) {
+          print "Download:\n", join(";\n", @downloadparts), ".\n";
+        }
       }
 
       print "\n\n";
@@ -215,38 +215,38 @@ sub format_blocks {
       # This test is necessary because the "Note" field is returned as text,
       # not as a reference.
       if (ref($block)) {
-	 SENTENCE:
-	 for my $sentence (@$block)
-	 {
-	    if (! defined($sentence)) { $sentence = ''; next SENTENCE; }
+         SENTENCE:
+         for my $sentence (@$block)
+         {
+            if (! defined($sentence)) { $sentence = ''; next SENTENCE; }
 
-	    # If sentence has multiple clauses, process them: first, strip
-	    # out empties, and jump to the next sentence if it turns out
-	    # this one is empty (ie. just a bunch of empty clauses).  Then
-	    # join the left-over clauses with commas.
-	    if (ref $sentence eq 'ARRAY')
-	    {
-	       @$sentence = grep ($_, @$sentence);
-	       ($sentence = '', next SENTENCE) unless @$sentence;
-	       $sentence = join (', ', @$sentence);
-	    }
+            # If sentence has multiple clauses, process them: first, strip
+            # out empties, and jump to the next sentence if it turns out
+            # this one is empty (ie. just a bunch of empty clauses).  Then
+            # join the left-over clauses with commas.
+            if (ref $sentence eq 'ARRAY')
+            {
+               @$sentence = grep ($_, @$sentence);
+               ($sentence = '', next SENTENCE) unless @$sentence;
+               $sentence = join (', ', @$sentence);
+            }
 
-	    if (defined($sentence)) {
-	       # finish sentence with a period if it's not already punctuated
-	       $sentence .= '.' unless $sentence eq '' || $sentence =~ /[.!?]$/;
-	    }
-	 }
+            if (defined($sentence)) {
+               # finish sentence with a period if it's not already punctuated
+               $sentence .= '.' unless $sentence eq '' || $sentence =~ /[.!?]$/;
+            }
+         }
 
-	 # Now join together all the sentences in the block, first stripping
-	 # any empties.
-	 @$block = grep ($_, @$block);
-	 if (scalar(@$block) > 0) {
-	    $block = join (' ', @$block);     # put the sentences together
-	 } else {
-	    $block = "";	# set to empty; will be stripped later
-	 }
+         # Now join together all the sentences in the block, first stripping
+         # any empties.
+         @$block = grep ($_, @$block);
+         if (scalar(@$block) > 0) {
+            $block = join (' ', @$block);     # put the sentences together
+         } else {
+            $block = "";        # set to empty; will be stripped later
+         }
       } else {
-	 $block .= '.' unless $block eq '' || $block =~ /[.!?]$/;
+         $block .= '.' unless $block eq '' || $block =~ /[.!?]$/;
       }
    }
 
@@ -280,10 +280,10 @@ sub format_entry ( $$ ) {
       $header = "<p>\n";
 
       if ($title_first) {
-	# Swap title and author (put title first).
-	my $authors = $blocks[0];
-	$blocks[0] = "<b>$blocks[1]</b>";
-	$blocks[1] = $authors;
+        # Swap title and author (put title first).
+        my $authors = $blocks[0];
+        $blocks[0] = "<b>$blocks[1]</b>";
+        $blocks[1] = $authors;
       }
 
       my $f_entry = join ($markup{inter_block}{$markup}, @blocks);

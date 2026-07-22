@@ -2284,6 +2284,9 @@ Use as a hook, like so:
   (setq compilation-error-regexp-alist
 	(append
 	 (list
+          ;; prek output for markdownlint
+          '("^  \\(/[^ :\n]*\\):\\([0-9]+\\):\\([0-9]+\\):? " 1 2 3)
+
           ;; Javac output under gradle is indented.  Require leading "/" for absolute path.
           '("^  \\(/[^ :\n]*\\):\\([0-9]+\\): " 1 2)
 

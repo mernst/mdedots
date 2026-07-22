@@ -40,12 +40,12 @@
 ;;;
 
 (defalias 'copmile 'compile)
-(setq-default compile-command "make -k -j ")	; default: "make -k "
+(setq-default compile-command "make -k -j ")    ; default: "make -k "
 
 ;; Coding
                                         ; GNU boilerplate
 (push '("is free software; you can redistribute it" .
-	        "Boston, MA 02111-1307, USA\\.\\|Cambridge, MA 02139, USA\\.")
+        "Boston, MA 02111-1307, USA\\.\\|Cambridge, MA 02139, USA\\.")
       elide-head-headers-to-hide)
 
 
@@ -63,12 +63,12 @@
 (autoload 'chez-scheme-mode "chezscheme" "Chez Scheme mode" t)
 (setq auto-mode-alist
       (cons '("\\.ss$" . scheme-mode)
-	    auto-mode-alist))
+            auto-mode-alist))
 
 (autoload 'cecil-mode "cecil-mode" "Cecil programming" t)
 (setq auto-mode-alist
       (cons '("\\.cecil$" . cecil-mode)
-	    auto-mode-alist))
+            auto-mode-alist))
 
 ;; Running Lisp
 (autoload 'run-kcl "/u/mic/el/kcl-mode" "Run kcl (not loaded)" t)
@@ -87,8 +87,8 @@
 (autoload 'run-asim "$PARARCHPATH/bin/asim"
   "Run an inferior ASIM (experimental) process." t)
 (setq auto-mode-alist
-      (cons '("\\.t$" . scheme-mode)	; Scheme mode for T files.
-	    auto-mode-alist))
+      (cons '("\\.t$" . scheme-mode)    ; Scheme mode for T files.
+            auto-mode-alist))
 
 (autoload 'javadoc-lookup "javadoc-lookup" "Look up Java entity." t)
 (autoload 'jlookup "javadoc-lookup" "Look up Java entity." t)
@@ -107,18 +107,27 @@
 ;; is clean, the magit status should be clean too.
 (with-eval-after-load "magit"
   (magit-add-section-hook 'magit-status-sections-hook
-			  'magit-insert-unpushed-to-upstream
-			  'magit-insert-unpushed-to-upstream-or-recent
-			  'replace))
+                          'magit-insert-unpushed-to-upstream
+                          'magit-insert-unpushed-to-upstream-or-recent
+                          'replace))
 ;; with-eval-after-load would be better, but was only introduced in Emacs 24.4.
 (with-eval-after-load 'info
   (info-initialize)
   (add-to-list 'Info-directory-list
-	       "~/emacs/magit/Documentation/"))
+               "~/emacs/magit/Documentation/"))
 ;; Work around: Key sequence C-x M-g starts with non-prefix key C-x ESC
 ;; https://gitter.im/magit/magit?at=601c19379fa6765ef8f9eb8d
 (setq magit-define-global-key-bindings nil)
 
+(defun pull-request-url ()
+  "URL for the pull request on GitHub corresponding to the current branch. Uses Magit."
+  (interactive)
+  (format "%s/compare/%s"
+          (replace-regexp-in-string
+           (rx (and string-start (1+ any) "github.com:" (group (1+ any)) ".git" string-end))
+           "https://github.com/\\1"
+           (magit-get "remote" (magit-get-current-remote) "url"))
+          (magit-get-current-branch)))
 
 ;;;
 ;;; Emacs Lisp Coding
@@ -126,7 +135,7 @@
 
 (autoload 'headers "headers" "Definition headers." t)
 ;; (autoload 'docstring-substitute "docstring"
-;; 	  "Substitute variable or function documentation into a buffer, to keep manuals consistent with code." t)
+;;        "Substitute variable or function documentation into a buffer, to keep manuals consistent with code." t)
 
 ;; util-mde
 (autoload 'in-window "util-mde")
@@ -176,7 +185,7 @@
 ;; Use M-x hscroll-mode instead of M-x truncate-lines
 (autoload 'turn-on-hscroll "hscroll" nil t)
 (autoload 'hscroll-mode "hscroll" nil t)
-;;(autoload 'hscroll-global-mode "hscroll" nil t)	; don't use this.
+;;(autoload 'hscroll-global-mode "hscroll" nil t)       ; don't use this.
 
 ;; Spelling
 (defalias 'ispell 'ispell-buffer)  ; in ispell.el, but want short version early
@@ -203,23 +212,23 @@
   "Look up definition of WORD in a browser."
   (interactive (webster-prompt "Define word"))
   (funcall browse-url-browser-function
-	   ;; (concat "http://www.google.com/dictionary?aq=f&langpair=en|en&hl=en&q=" word)
-	   ;; (concat "http://work.ucsd.edu:5141/cgi-bin/http_webster?" word)
-	   ;; (concat "http://dictionary.com/browse/" word)
-	   (concat "https://www.merriam-webster.com/dictionary/" word)
-	   ))
+           ;; (concat "http://www.google.com/dictionary?aq=f&langpair=en|en&hl=en&q=" word)
+           ;; (concat "http://work.ucsd.edu:5141/cgi-bin/http_webster?" word)
+           ;; (concat "http://dictionary.com/browse/" word)
+           (concat "https://www.merriam-webster.com/dictionary/" word)
+           ))
 
 (defun thesaurus-www (word)
   "Look up WORD in Merriam-Webster's thesaurus on the WWW."
   (interactive (webster-prompt "Thesaurus word"))
   (setq word (replace-regexp-in-string " " "%20" word))
   (funcall browse-url-browser-function
-	   ;; (concat "http://work.ucsd.edu:5141/cgi-bin/http_webster?" word)
-	   ;; (concat "http://www.m-w.com/cgi-bin/thesaurus?book=Thesaurus&va=" word)
-	   ;; (concat "http://thesaurus.reference.com/search?q=" word)
-	   ;; (concat "http://thesaurus.com/browse/" word)
-	   (concat "https://www.merriam-webster.com/thesaurus/" word)
-	   ))
+           ;; (concat "http://work.ucsd.edu:5141/cgi-bin/http_webster?" word)
+           ;; (concat "http://www.m-w.com/cgi-bin/thesaurus?book=Thesaurus&va=" word)
+           ;; (concat "http://thesaurus.reference.com/search?q=" word)
+           ;; (concat "http://thesaurus.com/browse/" word)
+           (concat "https://www.merriam-webster.com/thesaurus/" word)
+           ))
 
 ;; Love22
 (autoload 'show-abc-chart "love22"
@@ -264,8 +273,8 @@
 ;; (autoload 'mc-setversion "mc-setversion" nil t)
 ;; ; writing
 ;; (add-hook 'mail-mode-hook 'mc-install-write-mode)
-;; (setq mc-pgp-comment nil)		; eliminate gratuituous advertising
-;; (setq mc-pgp50-comment nil)		; eliminate gratuituous advertising
+;; (setq mc-pgp-comment nil)            ; eliminate gratuituous advertising
+;; (setq mc-pgp50-comment nil)          ; eliminate gratuituous advertising
 ;; ; reading
 ;; (add-hook 'rmail-mode-hook 'mc-install-read-mode)
 ;; (add-hook 'rmail-summary-mode-hook 'mc-install-read-mode)
@@ -314,9 +323,9 @@
 (define-key Buffer-menu-mode-map "=" 'Buffer-menu-bdiff)
 (define-key Buffer-menu-mode-map "R" 'Buffer-menu-revert)
 (define-key Buffer-menu-mode-map "r" 'Buffer-menu-revert-select)
-(setq bdiff-context-lines 'unidiff)	; default 1; 2 is better; 'unidiff best
+(setq bdiff-context-lines 'unidiff)     ; default 1; 2 is better; 'unidiff best
 (setq bdiff-ignore-whitespace 'compare-whitespace-equal)
-;; (setq bdiff-extra-flags "u")		; default "a"
+;; (setq bdiff-extra-flags "u")         ; default "a"
 (autoload 'bdiff "bdiff" "Buffer differences from disk." t)
 (autoload 'list-munged-buffers "bdiff" "List buffers with modified disk files." t)
 (autoload 'list-unsaved-buffers "bdiff" "List modified buffers." t)
@@ -370,17 +379,17 @@
 
 ;; buffer-menu
 (autoload 'do-buffer-menu-replacements "buffer-menu-mde" "Abbreviate filenames" t)
-(define-key ctl-x-map "\C-b" 'buffer-menu)	; was list-buffers
+(define-key ctl-x-map "\C-b" 'buffer-menu)      ; was list-buffers
 (with-eval-after-load "buff-menu" (require 'buffer-menu-mde))
-;; (setq Buffer-menu-use-header-line t)	; default t
+;; (setq Buffer-menu-use-header-line t) ; default t
 
 ;; Dired
 (autoload 'dired-jump "dired-x" "Tree dired" t)
 
 
 ;; Games, silly and serious.
-(autoload 'games	"games" "Games comint mode." t)
-(autoload 'games-ask	"games" "Games comint mode." t)
+(autoload 'games        "games" "Games comint mode." t)
+(autoload 'games-ask    "games" "Games comint mode." t)
 (autoload 'konane-substitute "games-k-exp"
   "Substitute Konane games into file." t)
 (autoload 'games-defexpectation "games" "Define a new games expectation form.")

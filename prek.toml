@@ -40,6 +40,43 @@ hooks = [
   ] } },
 ]
 
+## GitHub Actions
+
+[[repos]]
+repo = "https://github.com/rhysd/actionlint"
+rev = "v1.7.12"
+hooks = [{ id = "actionlint" }]
+
+## HTML
+
+[[repos]]
+repo = "https://github.com/Lucas-C/pre-commit-hooks-java"
+rev = "1.3.10"
+hooks = [ { id = "validate-html" } ]
+
+## Makefiles
+
+[[repos]]
+repo = "https://github.com/checkmake/checkmake.git"
+rev = "0.2.2"
+hooks = [{ id = "checkmake" }]
+
+## Markdown
+
+[[repos]]
+repo = "https://github.com/DavidAnson/markdownlint-cli2"
+rev = "v0.23.1"
+hooks = [{ id = "markdownlint-cli2" }]
+
+## Pre-commit itself
+
+[[repos]]
+repo = "https://github.com/pre-commit/sync-pre-commit-deps"
+rev = "v0.0.4"
+hooks = [{ id = "sync-pre-commit-deps" }]
+
+## Python
+
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
 rev = "v0.15.22" # Ruff version.
@@ -52,21 +89,28 @@ hooks = [
 ]
 
 [[repos]]
-repo = "https://github.com/Yelp/detect-secrets"
-rev = "v1.5.0"
-hooks = [{ id = "detect-secrets" }]
-
-
-[[repos]]
-repo = "https://github.com/pre-commit/sync-pre-commit-deps"
-rev = "v0.0.4"
-hooks = [{ id = "sync-pre-commit-deps" }]
+repo = "https://github.com/astral-sh/ty-pre-commit"
+rev = "v0.0.62" # ty version.
+hooks = [{ id = "ty" }]
 
 [[repos]]
 repo = "https://github.com/asottile/pyupgrade"
 rev = "v3.21.2"
 hooks = [{ id = "pyupgrade" }]
 
+## Secrets
+
+[[repos]]
+repo = "https://github.com/gitleaks/gitleaks"
+rev = "v8.24.2"
+hooks = [{ id = "gitleaks" }]
+
+[[repos]]
+repo = "https://github.com/Yelp/detect-secrets"
+rev = "v1.5.0"
+hooks = [{ id = "detect-secrets" }]
+
+## Shell scripts
 
 [[repos]]
 repo = "https://github.com/shellcheck-py/shellcheck-py"
@@ -86,10 +130,81 @@ hooks = [
 ]
 
 [[repos]]
-repo = "https://github.com/rhysd/actionlint"
-rev = "v1.7.12"
-hooks = [{ id = "actionlint" }]
+repo = "https://github.com/scop/pre-commit-shfmt"
+rev = "v3.13.1-1"
+hooks = [
+  { id = "shfmt", args = [
+    "-i",
+    "2",
+    "-ci",
+    "-bn",
+    "-sr",
+  ], exclude = { glob = [
+    "gradlew", "share/addrfilter"
+  ] } },
+]
 
+# TODO: Make this also install the program if necessary.
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "checkbashisms", name = "Run checkbashisms", entry = "checkbashisms", language = "system", types = [
+    "shell",
+  ], exclude = { glob = [
+    "share/addrfilter",
+    "share/print-mail",
+    "share/myxapps",
+    "share/javapp",
+    "gradlew",
+  ] } },
+]
+
+# Problems:
+# * False positives for E011.
+# * It requires indent to be a multiple of 4.
+# [[repos]]
+# repo = "https://github.com/openstack/bashate"
+# rev = "2.1.1"
+# hooks = [
+#     { id = "bashate", exclude = { glob = ["share/csail-athena-tickets.bash" ] } },
+# ]
+
+## Text
+
+# Very noisy.
+# [[repos]]
+# repo = "https://github.com/errata-ai/vale"
+# rev = "16d3a7f"
+# hooks = [ #{id = "vale", name = "vale sync",         pass_filenames = false,         args =  ["sync"], },
+#   { id = "vale", args = [
+#     "--output=line",
+#     "--minAlertLevel=error",
+#   ] },
+# ]
+
+# Very disruptive.  Perhaps re-enable later.
+# [[repos]]
+# repo = "https://github.com/crate-ci/typos"
+# rev = "v1.48.0"
+# hooks = [
+#     { id = "typos", exclude = { glob = [".abbrev_defs", "share/mail-review-spam", "bugs/jikes-patches/*", "share/checkbashisms", "dots/.aspell.en.prepl", ".aspell.en.prepl", "dots/en_US_apostrophe.dic", "dots/.aspell.en.pws", ".aspell.en.pws", "dots/en_US_apostrophe.aff", "en_US_apostrophe.aff" ] } }
+# ]
+
+# Very noisy.  Perhaps re-enable later.
+# [[repos]]
+# repo = "https://github.com/codespell-project/codespell"
+# rev = "v2.4.1"
+# hooks = [
+#     { id = "codespell", exclude = { glob = [ "en_US_apostrophe.dic", ".ssh/known_hosts", "enscript.st" ] } },
+# ]
+
+# proselint does not understand fenced code blocks in markdown files.
+# [[repos]]
+# repo = "https://github.com/amperser/proselint"
+# rev = "v0.16.0"
+# hooks = [{ id = "proselint", args = ["check"],  }]
+
+## YAML
 
 [[repos]]
 repo = "https://github.com/google/yamlfmt"
@@ -100,50 +215,3 @@ hooks = [{ id = "yamlfmt" }]
 repo = "https://github.com/adrienverge/yamllint.git"
 rev = "v1.29.0"
 hooks = [{ id = "yamllint" }]
-
-
-## Very disruptive.  Perhaps re-enable later.
-# [[repos]]
-# repo = "https://github.com/crate-ci/typos"
-# rev = "v1.48.0"
-# hooks = [
-#     { id = "typos", exclude = { glob = [".abbrev_defs", "share/mail-review-spam", "bugs/jikes-patches/*", "share/checkbashisms", "dots/.aspell.en.prepl", ".aspell.en.prepl", "dots/en_US_apostrophe.dic", "dots/.aspell.en.pws", ".aspell.en.pws", "dots/en_US_apostrophe.aff", "en_US_apostrophe.aff" ] } }
-# ]
-
-[[repos]]
-repo = "https://github.com/amperser/proselint"
-rev = "v0.16.0"
-hooks = [{ id = "proselint", args = ["check"], files = "\\.(dj|md|rst|txt)$" }]
-
-## Very noisy.  Perhaps re-enable later.
-# [[repos]]
-# repo = "https://github.com/codespell-project/codespell"
-# rev = "v2.4.1"
-# hooks = [
-#     { id = "codespell", exclude = { glob = [ "en_US_apostrophe.dic", ".ssh/known_hosts", "enscript.st" ] } },
-# ]
-
-[[repos]]
-repo = "https://github.com/DavidAnson/markdownlint-cli2"
-rev = "v0.23.1"
-hooks = [{ id = "markdownlint-cli2" }]
-
-[[repos]]
-repo = "https://github.com/checkmake/checkmake.git"
-rev = "0.2.2"
-hooks = [{ id = "checkmake" }]
-
-[[repos]]
-repo = "https://github.com/gitleaks/gitleaks"
-rev = "v8.24.2"
-hooks = [{ id = "gitleaks" }]
-
-## Problems:
-## * False positives for E011.
-## * It requires indent to be a multiple of 4.
-# [[repos]]
-# repo = "https://github.com/openstack/bashate"
-# rev = "2.1.1"
-# hooks = [
-#     { id = "bashate", exclude = { glob = ["share/csail-athena-tickets.bash" ] } },
-# ]
