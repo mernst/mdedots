@@ -5,28 +5,39 @@
 [[repos]]
 repo = "builtin"
 hooks = [
-    { id = "check-added-large-files" },
-    { id = "check-case-conflict" },
-    { id = "check-executables-have-shebangs" },
-    { id = "check-json" },
-    { id = "check-merge-conflict" },
-    { id = "check-shebang-scripts-are-executable" },
-    { id = "check-symlinks" },
-    { id = "check-toml" },
-    { id = "check-vcs-permalinks" },
-    { id = "check-xml" },
-    { id = "check-yaml" },
-    { id = "destroyed-symlinks" },
-    { id = "detect-private-key" },
-    { id = "end-of-file-fixer",
-      exclude = { glob = [ "bugs/jikes-patches/*" ] },
-    },
-    { id = "fix-byte-order-marker" },
-    { id = "forbid-new-submodules" },
-    { id = "mixed-line-ending" },
-    { id = "trailing-whitespace",
-      exclude = { glob = [ "bugs/jikes-patches/*", "bugs/bug-mew", "bugs/BUGS.to-do", "dots/.aspell.en.prepl", ".aspell.en.prepl", "dots/.aspell.en.pws", ".aspell.en.pws", "dots/en_US_apostrophe.aff", "en_US_apostrophe.aff", "dots/enscript.st", "enscript.st", "emacs/bug/crypted.UUE" ] },
-},
+  { id = "check-added-large-files" },
+  { id = "check-case-conflict" },
+  { id = "check-executables-have-shebangs" },
+  { id = "check-json" },
+  { id = "check-merge-conflict" },
+  { id = "check-shebang-scripts-are-executable" },
+  { id = "check-symlinks" },
+  { id = "check-toml" },
+  { id = "check-vcs-permalinks" },
+  { id = "check-xml" },
+  { id = "check-yaml" },
+  { id = "destroyed-symlinks" },
+  { id = "detect-private-key" },
+  { id = "end-of-file-fixer", exclude = { glob = [
+    "bugs/jikes-patches/*",
+  ] } },
+  { id = "fix-byte-order-marker" },
+  { id = "forbid-new-submodules" },
+  { id = "mixed-line-ending" },
+  { id = "trailing-whitespace", exclude = { glob = [
+    "bugs/jikes-patches/*",
+    "bugs/bug-mew",
+    "bugs/BUGS.to-do",
+    "dots/.aspell.en.prepl",
+    ".aspell.en.prepl",
+    "dots/.aspell.en.pws",
+    ".aspell.en.pws",
+    "dots/en_US_apostrophe.aff",
+    "en_US_apostrophe.aff",
+    "dots/enscript.st",
+    "enscript.st",
+    "emacs/bug/crypted.UUE",
+  ] } },
 ]
 
 [[repos]]
@@ -43,62 +54,52 @@ hooks = [
 [[repos]]
 repo = "https://github.com/Yelp/detect-secrets"
 rev = "v1.5.0"
-hooks = [
-    { id = "detect-secrets",
-      # args = ["--baseline", ".secrets.baseline"],
-      exclude = { glob = ["package.lock.json"] }
-      },
-]
+hooks = [{ id = "detect-secrets" }]
 
 
 [[repos]]
 repo = "https://github.com/pre-commit/sync-pre-commit-deps"
 rev = "v0.0.4"
-hooks = [
-    { id = "sync-pre-commit-deps" },
-]
+hooks = [{ id = "sync-pre-commit-deps" }]
 
 [[repos]]
 repo = "https://github.com/asottile/pyupgrade"
 rev = "v3.21.2"
-hooks = [
-    { id = "pyupgrade" },
-]
-
+hooks = [{ id = "pyupgrade" }]
 
 
 [[repos]]
 repo = "https://github.com/shellcheck-py/shellcheck-py"
 rev = "v0.11.0.1"
 hooks = [
-    { id = "shellcheck",
-      args = ["-x", "-P", "SCRIPTDIR" ],
-      exclude = { glob = [ "share/csail-athena-tickets.bash", "share/addrfilter", "share/print-mail", "share/javapp", "share/myxapps", ] },
-    },
+  { id = "shellcheck", args = [
+    "-x",
+    "-P",
+    "SCRIPTDIR",
+  ], exclude = { glob = [
+    "share/csail-athena-tickets.bash",
+    "share/addrfilter",
+    "share/print-mail",
+    "share/javapp",
+    "share/myxapps",
+  ] } },
 ]
 
 [[repos]]
 repo = "https://github.com/rhysd/actionlint"
 rev = "v1.7.12"
-hooks = [
-    { id = "actionlint" },
-]
-
+hooks = [{ id = "actionlint" }]
 
 
 [[repos]]
 repo = "https://github.com/google/yamlfmt"
 rev = "v0.19.0"
-hooks = [
-    { id = "yamlfmt" },
-]
+hooks = [{ id = "yamlfmt" }]
 
 [[repos]]
 repo = "https://github.com/adrienverge/yamllint.git"
 rev = "v1.29.0"
-hooks = [
-    { id = "yamllint" },
-]
+hooks = [{ id = "yamllint" }]
 
 
 ## Very disruptive.  Perhaps re-enable later.
@@ -106,51 +107,36 @@ hooks = [
 # repo = "https://github.com/crate-ci/typos"
 # rev = "v1.48.0"
 # hooks = [
-#     { id = "typos",
-#       exclude = { glob = [".abbrev_defs", "share/mail-review-spam", "bugs/jikes-patches/*", "share/checkbashisms", "dots/.aspell.en.prepl", ".aspell.en.prepl", "dots/en_US_apostrophe.dic", "dots/.aspell.en.pws", ".aspell.en.pws", "dots/en_US_apostrophe.aff", "en_US_apostrophe.aff" ] },
-#     }
+#     { id = "typos", exclude = { glob = [".abbrev_defs", "share/mail-review-spam", "bugs/jikes-patches/*", "share/checkbashisms", "dots/.aspell.en.prepl", ".aspell.en.prepl", "dots/en_US_apostrophe.dic", "dots/.aspell.en.pws", ".aspell.en.pws", "dots/en_US_apostrophe.aff", "en_US_apostrophe.aff" ] } }
 # ]
 
 [[repos]]
 repo = "https://github.com/amperser/proselint"
 rev = "v0.16.0"
-hooks = [
-    { id = "proselint",
-      args = ["check" ],
-      files = "\\.(dj|md|rst|txt)$"
-    },
-]
+hooks = [{ id = "proselint", args = ["check"], files = "\\.(dj|md|rst|txt)$" }]
 
 ## Very noisy.  Perhaps re-enable later.
 # [[repos]]
 # repo = "https://github.com/codespell-project/codespell"
 # rev = "v2.4.1"
 # hooks = [
-#     { id = "codespell",
-#       exclude = { glob = [ "en_US_apostrophe.dic", ".ssh/known_hosts", "enscript.st" ] },
-#     },
+#     { id = "codespell", exclude = { glob = [ "en_US_apostrophe.dic", ".ssh/known_hosts", "enscript.st" ] } },
 # ]
 
 [[repos]]
 repo = "https://github.com/DavidAnson/markdownlint-cli2"
 rev = "v0.23.1"
-hooks = [
-    { id = "markdownlint-cli2" },
-]
+hooks = [{ id = "markdownlint-cli2" }]
 
 [[repos]]
 repo = "https://github.com/checkmake/checkmake.git"
 rev = "0.2.2"
-hooks = [
-    { id = "checkmake" },
-]
+hooks = [{ id = "checkmake" }]
 
 [[repos]]
 repo = "https://github.com/gitleaks/gitleaks"
 rev = "v8.24.2"
-hooks = [
-    { id = "gitleaks" },
-]
+hooks = [{ id = "gitleaks" }]
 
 ## Problems:
 ## * False positives for E011.
@@ -159,8 +145,5 @@ hooks = [
 # repo = "https://github.com/openstack/bashate"
 # rev = "2.1.1"
 # hooks = [
-#     { id = "bashate",
-#       exclude = "^package\\.lock\\.json$"
-#       exclude = { glob = ["share/csail-athena-tickets.bash" ] }
-#     },
+#     { id = "bashate", exclude = { glob = ["share/csail-athena-tickets.bash" ] } },
 # ]
