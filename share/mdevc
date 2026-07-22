@@ -2,22 +2,22 @@
 
 while [ $# -gt 0 ]; do
   case $1 in
-  --debug)
-    DEBUG="${DEBUG} --debug"
-    shift # past argument
-    ;;
-  --verbose)
-    DEBUG="${DEBUG} --verbose"
-    shift # past argument
-    ;;
-  -*)
-    echo "Unknown option $1"
-    exit 2
-    ;;
-  *)
-    echo "Do not pass arguments to $0"
-    exit 2
-    ;;
+    --debug)
+      DEBUG="${DEBUG} --debug"
+      shift # past argument
+      ;;
+    --verbose)
+      DEBUG="${DEBUG} --verbose"
+      shift # past argument
+      ;;
+    -*)
+      echo "Unknown option $1"
+      exit 2
+      ;;
+    *)
+      echo "Do not pass arguments to $0"
+      exit 2
+      ;;
   esac
 done
 
@@ -49,12 +49,12 @@ replace_dir_by_link() {
   to_replace="$2"
   replacement="$3"
   tempfile=$(mktemp)
-  find "$dir" -type d -name "${to_replace}" >"${tempfile}"
+  find "$dir" -type d -name "${to_replace}" > "${tempfile}"
   while IFS= read -r line; do
     cd "$(dirname "$line")" || exit
     rm -rf "${to_replace}"
     ln -sr "$replacement" "$to_replace"
-  done <"${tempfile}"
+  done < "${tempfile}"
   rm -f "${tempfile}"
 }
 

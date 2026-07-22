@@ -2,23 +2,23 @@
 
 while [ $# -gt 0 ]; do
   case $1 in
-  --debug)
-    DEBUG=--debug
-    VERBOSE=true
-    shift # past argument
-    ;;
-  --verbose)
-    VERBOSE=true
-    shift # past argument
-    ;;
-  -*)
-    echo "Unknown option $1"
-    exit 2
-    ;;
-  *)
-    echo "Do not pass arguments to $0"
-    exit 2
-    ;;
+    --debug)
+      DEBUG=--debug
+      VERBOSE=true
+      shift # past argument
+      ;;
+    --verbose)
+      VERBOSE=true
+      shift # past argument
+      ;;
+    -*)
+      echo "Unknown option $1"
+      exit 2
+      ;;
+    *)
+      echo "Do not pass arguments to $0"
+      exit 2
+      ;;
   esac
 done
 
@@ -95,10 +95,10 @@ update_fork_with_hosting_and_userid() {
     # Doesn't use `git -C` because multiple git commands will be run in the directory.
     if [ -n "$DEBUG" ]; then
       # Run in the foreground.
-      ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin >/dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command")
+      ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command")
     else
       # Run in the background.
-      ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin >/dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
+      ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
     fi
   fi
 }
@@ -107,11 +107,11 @@ update_from() {
   upstream=$1
   dir=$2
   if [ -d "$dir" ]; then
-    (cd "$dir" &&
-      git pull -q --ff-only &&
-      git pull -q --ff-only "$upstream" --tags &&
-      git push -q &&
-      git remote prune origin) || (echo "$dir" && false)
+    (cd "$dir" \
+      && git pull -q --ff-only \
+      && git pull -q --ff-only "$upstream" --tags \
+      && git push -q \
+      && git remote prune origin) || (echo "$dir" && false)
   fi
 }
 
@@ -313,11 +313,11 @@ update_fork typetools commons-bcel ~/research/types/libraries
 ## So do it directly:
 dir=~/java/kotlin-fork-mernst
 if [ -d $dir ]; then
-  (cd $dir &&
-    git pull -q --ff-only &&
-    git pull -q --ff-only "git@github.com:JetBrains/kotlin" &&
-    git push -q &&
-    git remote prune origin) || (echo "$dir" && false)
+  (cd $dir \
+    && git pull -q --ff-only \
+    && git pull -q --ff-only "git@github.com:JetBrains/kotlin" \
+    && git push -q \
+    && git remote prune origin) || (echo "$dir" && false)
 fi
 
 ### Update from a non-GitHub upstream

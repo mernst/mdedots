@@ -1,5 +1,5 @@
 #! /bin/sh -f
 
 \rm -f "$HOME"/mernst/.mailrc.el
-"$HOME"/bin/share/make-mail-aliases.awk <~mernst/private/addresses.tex >~mernst/.mailrc.el
+"$HOME"/bin/share/make-mail-aliases.awk < ~mernst/private/addresses.tex > ~mernst/.mailrc.el
 # echo "Perform any desired touchups by hand."

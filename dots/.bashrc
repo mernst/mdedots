@@ -50,7 +50,7 @@ shopt -s expand_aliases
 if [ -d /cygdrive/c/ ]; then
   export DISPLAY=localhost:0
 elif [ -d /home/mernst/ ]; then
-  if grep -qE "(Microsoft|WSL)" /proc/version &>/dev/null; then
+  if grep -qE "(Microsoft|WSL)" /proc/version &> /dev/null; then
     # Windows Subsystem for Linux
     export DISPLAY=:0
   fi
@@ -58,7 +58,7 @@ fi
 
 if [ -n "$DEBUGLOGIN" ]; then echo "Sourcing .aliases"; fi
 if [ -f "$HOME/.aliases" ]; then
-  if ! alias eth0 >/dev/null 2>&1; then
+  if ! alias eth0 > /dev/null 2>&1; then
     source "$HOME/.aliases"
   fi
 fi
@@ -175,10 +175,10 @@ export PERL_MM_OPT
 # `~/dots/conda-initialize.sh`.  However, running these lines for every shell
 # interferes with ssh-agent.  So, comment them out with a here-document.
 # When using conda, run ~/dots/conda-initialize.sh or run the commands manually.
-true <<ENDCONDA
+true << ENDCONDA
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/mernst/miniconda3/bin/conda' 'shell.bash' 'hook' 2>/dev/null)"
+__conda_setup="$('/home/mernst/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
   eval "$__conda_setup"
 else
