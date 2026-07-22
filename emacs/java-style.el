@@ -342,7 +342,7 @@ for files in the current TAGS table."
 ;;  * block tags start with a lowercase letter unless they are a complete sentence.
 
 ;; Be sure to check the changes; occasionally, the first word of a Javadoc
-;; comment is a proper noun and should not be downcased, or the 
+;; comment is a proper noun and should not be downcased.
 (defun improve-javadoc-tag-style ()
   "Improve style for Javadoc @param and @return,
 for files in the current TAGS tables."
@@ -361,7 +361,7 @@ for files in the current TAGS tables."
     (tags-replace-regexp regexp replacement)
     (tags-replace-regexp regexp replacement)
     )
-  
+
   (tags-replace-regexp "\\(@\\(?:param[ \t\n*]+[A-Za-z0-9_]+\\|return\\)\\) +- +" "\\1 ")
 
   ;; PROBLEM: Execution does not get to here.
@@ -738,7 +738,7 @@ The description is everything but the block tags (such as @param and @return)."
 ;; Search for:
 ;;  * \.get.*\n.*== null
 ;;  * \.contains\(
-;; 
+;;
 ;; Here are searches for the two:
 ;; C-u M-x rg RET \.get\(.*\n.*== null RET  (add --multiline)
 ;; (rg "\\.get\\(.*\\n.*== null" "java" default-directory)

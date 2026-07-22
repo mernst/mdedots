@@ -244,7 +244,7 @@ To report a bug:  M-x bbdb-submit-bug-report
 [To make the annoying "->" prompt go away (if, say, I buried the *BBDB*
 buffer instead of exiting with SPC), do a ^G at top-level.]
 [Can turn electric mode off and make it just use display-buffer.
- But the idea behind electric modes is that when you hit SPC, the buffer 
+ But the idea behind electric modes is that when you hit SPC, the buffer
  goes away and restores the window configuration.]
 
 ===========================================================================
@@ -400,14 +400,14 @@ if they are all the same, we want to adjust the capitalization.
 (completion-test-4 "getMilli" t)
 
 
-(try-completion "getmilli" 
+(try-completion "getmilli"
 	'(("getMillis" . 1)
                        ("getMillisToDecideToPopup" . 2)
                        ("getMillisToPopup" . 3)
                        ("getMillisecond" . 4)))
 
 (let ((completion-ignore-case t))
-  (try-completion "getmilli" 
+  (try-completion "getmilli"
 		  '("getMillis"
 		    "getMillisToDecideToPopup"
 		    "getMillisToPopup"

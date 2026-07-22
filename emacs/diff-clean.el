@@ -171,7 +171,7 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
 
   (diff-realign-hunks)
   (diff-concatenate-hunks)
-  
+
   (diff-clean-prefix-suffix)
   (diff-clean-empty-parts)
   )

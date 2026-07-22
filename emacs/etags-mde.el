@@ -77,7 +77,7 @@ pay to try to merge them."
 ;; (defadvice tags-search (before interactive-enhancement activate)
 ;;   "Use `tags-search-tag' to read interactive argument."
 ;;   (interactive (list (tags-search-tag "Tags search regexp"))))
-;; 
+;;
 ;; (defadvice tags-query-replace (before interactive-enhancement activate)
 ;;   "Use `tags-search-tag' to read interactive argument."
 ;;   (interactive

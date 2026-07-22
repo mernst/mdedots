@@ -1,23 +1,23 @@
 ;;; -*- lexical-binding: t -*-
 
-;; 
+;;
 ;; # This sequence of two commands works:
 ;; wget --keep-session-cookies --save-cookies ~/cookies-saved.txt --post-data 'email=mernst@cs.washington.edu&password=rzRI8bl7tfVD11oe' https://pldi16.hotcrp.com/
-;; 
+;;
 ;; # Get a list of all papers by doing:
 ;; wget --keep-session-cookies --load-cookies ~/cookies-saved.txt 'https://pldi16.hotcrp.com/search?q=&t=s' -O all-submissions.html
 ;; # and find the line containing "needload"
-;; 
+;;
 ;; # Download a single paper with
 ;; wget --keep-session-cookies --load-cookies ~/cookies-saved.txt 'https://pldi16.hotcrp.com/paper/2' -p -k -H
-;; 
+;;
 ;; # Postprocessing, after downloading everything:
-;; 
+;;
 ;; I need to remove:
 ;; ?mtime=1452886024" crossorigin="anonymous"
-;; 
+;;
 ;; and also rename files.
-;; 
+;;
 ;; And also remove any line that matches
 ;;   https://pldi16.hotcrp.com/review/[0-9]+[A-Z]
 ;; to minimize risk of clicking on it.
@@ -57,9 +57,9 @@
 	  305 306 307 308 309 310 311 312 313 314 317 318 319 321
 	  322 323 325
 	  ))
-      (my-papers '(62 74 83 161 166 202 209 228 248 302))
-      ;; change this line to choose all-papers or my-papers
-      (papers (shuffle all-papers)))
+       (my-papers '(62 74 83 161 166 202 209 228 248 302))
+       ;; change this line to choose all-papers or my-papers
+       (papers (shuffle all-papers)))
   (while papers
     (let ((paper (car papers)))
       ;; All the reviews

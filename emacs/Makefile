@@ -1,3 +1,5 @@
+.PHONY: all clean test default
+
 default: compile-without-mew
 
 EMACS ?= emacs
@@ -33,6 +35,7 @@ bytecompile:
 	${EMACS} -batch -f batch-byte-compile *.el
 	${MAKE} clean
 
+.PHONY: TAGS
 TAGS: tags
 tags:
 	etags *.el

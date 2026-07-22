@@ -44,7 +44,7 @@
 
 ;; Coding
                                         ; GNU boilerplate
-(push '("is free software; you can redistribute it" . 
+(push '("is free software; you can redistribute it" .
 	        "Boston, MA 02111-1307, USA\\.\\|Cambridge, MA 02139, USA\\.")
       elide-head-headers-to-hide)
 

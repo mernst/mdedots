@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck disable=SC1091
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!

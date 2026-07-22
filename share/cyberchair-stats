@@ -93,4 +93,3 @@ print "  score: " . (int(100*$signedscore/$signedcount)/100) . "\n";
 print "Unsigned: $unsignedcount reviews\n";
 print "  length: " . int($unsignedlength/$unsignedcount) . "\n";
 print "  score: " . (int(100*$unsignedscore/$unsignedcount)/100) . "\n";
-

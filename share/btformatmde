@@ -294,4 +294,3 @@ sub format_entry ( $$ ) {
    }
    return undef;
 }
-

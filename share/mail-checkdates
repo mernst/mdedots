@@ -1,13 +1,13 @@
-#! /bin/csh -f
+#! /bin/sh
 
-setenv COMMAND "$HOME/bin/Linux-x86_64/checkdates"
+export COMMAND="$HOME/bin/Linux-x86_64/checkdates"
 
-setenv SUBJECT "Checkdates"
+export SUBJECT="Checkdates"
 
 # On Solaris, don't use "mail", which is /bin/mail;
 # use /usr/ucb/mail, which understands the -s argument.
 # On Debian, must use /usr/bin/mail instead of /bin/mail.
 # setenv MAILCOMMAND /usr/bin/mail
-setenv MAILE $HOME/bin/src/plume-scripts/mail-e
+export MAILE="$HOME/bin/src/plume-scripts/mail-e"
 
-${COMMAND} |& ${MAILE} -s "${SUBJECT}" mernst@alum.mit.edu scath@alumni.duke.edu
+${COMMAND} 2>&1 "${MAILE}" -s "${SUBJECT}" mernst@alum.mit.edu scath@alumni.duke.edu

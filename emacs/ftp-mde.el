@@ -15,10 +15,10 @@
 ;;                  (thing-at-point 'url)))))
 ;;     (set-text-properties 0 (length url) nil url)
 ;;     (setq ad-return-value url)))
-;; 
+;;
 ;; (eval-when-compile
 ;;   (require 'thingatpt))
-;; 
+;;
 ;; (defun thing-at-point-file-name-forward ()
 ;;   (if (equal major-mode 'dired-mode)
 ;;       (end-of-line)
@@ -29,13 +29,13 @@
 ;;       (dired-next-line 0)
 ;;     ;; original definition
 ;;     (skip-chars-backward thing-at-point-file-name-chars)))
-;; 
+;;
 ;; (with-eval-after-load "thingatpt"
 ;;   (put 'filename 'end-op 'thing-at-point-file-name-forward))
 ;; (with-eval-after-load "thingatpt"
 ;;   (put 'filename 'beginning-op 'thing-at-point-file-name-backward))
-;; 
-;; 
+;;
+;;
 ;; (defun quote-url (url)
 ;;   "Return a HTML-quoted version of URL."
 ;;   (while (string-match ":" url)

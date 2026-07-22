@@ -355,7 +355,7 @@ Intended to run after `visual-line-mode' runs."
 
 ;;;
 ;;; Converting records to and from tab-separated and newline-separated
-;;; 
+;;;
 
 (defvar convert-record-separator "CNTCS_NEWLINE_GOES_HERE_CNTCS")
 
@@ -1178,7 +1178,7 @@ proposal")
 
 ;; (defun xterm-color-colorize-shell-command-output-advice (proc &rest rest)
 ;;   (xterm-color-colorize-shell-command-output))
-;; 
+;;
 ;; (advice-add 'shell-command :after #'xterm-color-colorize-shell-command-output-advice)
 ;; ;; (advice-remove 'shell-command #'xterm-color-colorize-shell-command-output-advice)
 

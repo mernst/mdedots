@@ -197,7 +197,7 @@ I would like to have the reviews done by January 23.
 
 ;; as of 3/2014, from http://www.seattle.gov/council/councilcontact.htm
 (defvar bulk-mail-councilmembers
- "
+  "
  Sally Bagshaw <sally.bagshaw@seattle.gov>
  Tim Burgess <tim.burgess@seattle.gov>
  Sally Clark <sally.clark@seattle.gov>
@@ -210,12 +210,12 @@ I would like to have the reviews done by January 23.
 ")
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-lastname)
-(setq my-honorific "Councilmember")
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Please do not limit ride-sharing in Seattle")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-lastname)
+          (setq my-honorific "Councilmember")
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Please do not limit ride-sharing in Seattle")
+          (setq my-message
+                "\
 I urge you to vote against limits to ridesharing companies next Monday.
 
 If Seattle limits ridesharing, that would hurt consumers who want more choices and convenience, and it would hurt workers who drive to put food on their tables.  (Even some current taxi drivers are finding it desirable to work for rideshare companies!)
@@ -224,7 +224,7 @@ Seattle should not be in the business of legislating a monopoly for taxis.  Nor 
 
                     -Michael Ernst
 ")
-))
+          ))
 
 
 
@@ -233,11 +233,11 @@ Seattle should not be in the business of legislating a monopoly for taxis.  Nor 
 ;;;
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "UW is recruiting grad students, postdocs, and faculty")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "UW is recruiting grad students, postdocs, and faculty")
+          (setq my-message
+                "\
 The University of Washington is looking for great grad students.  We have recently increased the size of our entering class of grad students, and so we're interested in increasing our pool of applicants.  I will finish 5-6 students this year and want to refresh my pipeline; we have added a great new faculty member in Zach Tatlock; and we have hired outside programming languages and software engineering as well.
 
 Please encourage your outstanding students to apply to UW's PhD program!  You can point them at http://www.cs.washington.edu/education/grad/prospective.html .
@@ -252,15 +252,15 @@ Thanks!
 
 --
 http://homes.cs.washington.edu/~mernst/")
-))
+          ))
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Acceptance to the Combined BS/MS degree program
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Acceptance to the Combined BS/MS degree program
 Cc: ugrad-advisor@cs.washington.edu")
-(setq my-message
-      "\
+          (setq my-message
+                "\
 Congratulations!  You have been admitted into the Combined BS/MS
 degree program in Computer Science & Engineering.
 
@@ -291,15 +291,15 @@ Sincerely,
 Michael Ernst
 Combined BS/MS Chair
 ")
-))
+          ))
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Your application to the Combined BS/MS degree program
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Your application to the Combined BS/MS degree program
 Cc: ugrad-advisor@cs.washington.edu")
-(setq my-message
-      "\
+          (setq my-message
+                "\
 I regret to inform you that you were not admitted to the CSE
 Combined BS/MS program.  The program has a very limited number of
 spaces, and we received applications from many more strong
@@ -320,15 +320,15 @@ Sincerely,
 Michael Ernst
 Combined BS/MS Chair
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "CSE 331 TAing")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "CSE 331 TAing")
+          (setq my-message
+                "\
 We are looking to add an additional TA to CSE 331 next quarter, to reduce
 the overall workload for all the TAs.  (We are making some other changes to
 reduce workload as well.)  Would you be interested in considering TAing?  I
@@ -337,15 +337,15 @@ would be happy to talk with you about the position.
                      Thanks,
 
                     -Mike")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Follow-on to CSE 331: research and teaching")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Follow-on to CSE 331: research and teaching")
+          (setq my-message
+                "\
 Congratulations for doing very well in CSE 331 last winter!
 
 I am writing to ask you to think about both research and teaching, since I
@@ -363,15 +363,15 @@ opportunities in my research group, and elsewhere in the department, for
 this or later quarters.
 
                     -Mike")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Opportunity to TA for CSE 331")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Opportunity to TA for CSE 331")
+          (setq my-message
+                "\
 I'm looking for excellent TAs to help with CSE 331 next quarter.  I think
 you would make a good match for the class.  Would you be interested in
 talking with me about the opportunity?
@@ -390,15 +390,15 @@ I would enjoy talking with you about CSE 331.  My calendar is at
 http://homes.cs.washington.edu/~mernst/.
 
                     -Mike")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "UW CSE software engineer job")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "UW CSE software engineer job")
+          (setq my-message
+                "\
 I'm writing to you about a software engineer (staff programmer) job at UW
 CSE, which you previously applied for:
 https://uwhires.admin.washington.edu/eng/candidates/default.cfm?szCategory=jobprofile&szOrderID=78994
@@ -418,15 +418,15 @@ me know if you would still like to be considered for the position?
 Michael Ernst
 Professor, U. of Washington Computer Science & Engineering
 mernst@cs.washington.edu   http://homes.cs.washington.edu/~mernst/")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Choosing which grad schools to apply to")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Choosing which grad schools to apply to")
+          (setq my-message
+                "\
 I'm writing to ask you for a quick piece of information that will be
 helpful to me.
 
@@ -442,15 +442,15 @@ Thanks very much.  I wish you the very best in your graduate studies!
 Michael Ernst
 Professor, U. of Washington Computer Science & Engineering
 mernst@cs.washington.edu   http://homes.cs.washington.edu/~mernst/")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "CSE 140 registration:  please drop")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "CSE 140 registration:  please drop")
+          (setq my-message
+                "\
 You are currently registered for CSE 140.  However, CSE 140 is not open to
 any student who has taken, or is currently taking, any 300-level CSE class.
 You have taken CSE 373, or you are registered for it in Winter 2013.  Can
@@ -465,15 +465,15 @@ in the class?
 Michael Ernst
 Professor, U. of Washington Computer Science & Engineering
 mernst@cs.washington.edu   http://homes.cs.washington.edu/~mernst/")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "CSE 140 registration:  please drop")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "CSE 140 registration:  please drop")
+          (setq my-message
+                "\
 You are currently registered for CSE 140.  However, CSE 140 is not open to
 any student who has taken, or is currently taking, any 300-level CSE class.
 You have taken CSE 373, or you are registered for it in Winter 2013.  Can
@@ -488,15 +488,15 @@ in the class?
 Michael Ernst
 Professor, U. of Washington Computer Science & Engineering
 mernst@cs.washington.edu   http://homes.cs.washington.edu/~mernst/")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Feedback on CSE 140")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Feedback on CSE 140")
+          (setq my-message
+                "\
 You started CSE 140 in Winter 2013, then dropped the class.
 
 I would love to have your feedback on CSE 140, so that we can improve it in the future.  I'm curious about:
@@ -514,18 +514,18 @@ You can reply to me by email, or if you are uncomfortable with that there is a f
 Thanks very much!  I really appreciate your help in improving CSE 140.
 
                     -Mike")
-))
+          ))
 
 
 
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Speak at Notkinfest?")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Speak at Notkinfest?")
+          (setq my-message
+                "\
 Recall that there will be an opportunity to speak to the audience at the
 Notkinfest, to briefly recount an anecdote that captures David's spirit.
 
@@ -537,16 +537,16 @@ contribute a written anecdote, that is fine too.
 
                     -Mike
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Notkinfest invitation and call for anecdotes
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Notkinfest invitation and call for anecdotes
 Cc: Kay Beck-Benton <kbeck@cs.washington.edu>")
-(setq my-message
-      "\
+          (setq my-message
+                "\
 You are invited to a Notkinfest on Friday, February 1.  See the invitation at
 http://homes.cs.washington.edu/~mernst/notkinfest-dinner-invitation.pdf .
 In brief, there will be a colloquium at 4:00, reception 4:30-6:00 (with
@@ -568,16 +568,16 @@ you on February 1.
 
                     -Mike
 ")
-))
+          ))
 
 
 ;; for reception only:
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Notkinfest invitation")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Notkinfest invitation")
+          (setq my-message
+                "\
 You are invited to a Notkinfest on Friday, February 1.  The
 invitation is attached.  In brief, there will be a colloquium at
 4:00 and a reception 4:30-6:00 (with some remarks at 5:00).
@@ -586,15 +586,15 @@ I look forward to seeing you on February 1.
 
                     -Mike
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Slides about your research with David Notkin")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Slides about your research with David Notkin")
+          (setq my-message
+                "\
 I've been asked to give a brief technical presentation at the Notkinfest,
 titled \"Software evolution then and now:  the research impact of David
 Notkin\".  It's part of the public portion of the Notkinfest, and we expect
@@ -613,20 +613,20 @@ Thanks, once again, for your help!  I really appreciate it.
 
                     -Mike
 ")
-))
+          ))
 
 
 (if nil (progn
 
 ;;; Commentary:
-;;
+          ;;
 
-(require 'bulk-mail)
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "Sai Zhang faculty application")
-(setq my-message
-      "\
+          (require 'bulk-mail)
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "Sai Zhang faculty application")
+          (setq my-message
+                "\
 If your department is interested in hiring in software engineering this year, I suggest you take a look at my student Sai Zhang (http://homes.cs.washington.edu/~szhang/).  The consensus is that he is one of the top 2 students graduating in software engineering this year.  (The other is Lingming Zhang of the University of Texas, and I am arguing for my department to interview Lingming this year; we have never interviewed one of our own new graduates.)  I still think Sai is better, but I might be biased. :-)
 
 I wanted to write to make sure that Sai Zhang's application does not fall through the cracks.  Please let me know if you need any more information that would help you, and best wishes for a good recruiting year!
@@ -634,15 +634,15 @@ I wanted to write to make sure that Sai Zhang's application does not fall throug
                      Thanks,
 
                     -Mike")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Signing up to meet with Chris Parnin")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Signing up to meet with Chris Parnin")
+          (setq my-message
+                "\
 Chris Parnin is interviewing for a faculty position in CSE this week.  His bio appears below.  Could you sign up to meet with him?  You can use this link to do so:
 https://reserve.cs.washington.edu/visitor/week.php?year=2014&month=02&day=20&area=5&room=2245
 
@@ -655,15 +655,15 @@ Thanks!
 
 Chris Parnin is hard to pigeonhole, since his work is characterized by unorthodoxy, but the simplest perspective is that he studies software engineering from empirical, HCI, and cognitive neuroscience perspectives. He also builds tools informed by his findings.  Topics he has addressed include workplace interruptions, cognitive frameworks of program comprehension, adoption of language features and tools, software visualization, alternative and live programming environments, usability of developer tools, and crowdsourcing systems.  Two of his recent research results involve using fMRI and EMG to actually study the brain activity of developers, and understanding how crowds of developers come together on sites such as Stack Overflow and Github to contribute software knowledge. Chris also has over a decade of professional programming experience in the defense industry.  Despite supporting himself and his family through grad school, Chris's research has been recognized by the SIGSOFT Distinguished Paper Award at ICSE 2009, Best Paper Nominee at CHI 2010, Best Paper Award at ICPC 2012, IBM HVC Most Influential Paper Award 2013, and featured in the press such as Game Developer's Magazine and Hacker Monthly.  Chris will receive his PhD from Georgia Tech in 2014.
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "Possible visit in summer or fall 2014")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "Possible visit in summer or fall 2014")
+          (setq my-message
+                "\
 I hope to be in Europe on sabbatical from early August to late December 2014.
 
 I would enjoy visiting you at some point during that time, if possible.
@@ -672,15 +672,15 @@ Are there times that would be better or worse for you?
 
                     -Mike
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "Signing up to meet with Chris Parnin")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "Signing up to meet with Chris Parnin")
+          (setq my-message
+                "\
 I'm looking to fill two more slots for meetings with Chris Parnin, at 10:00 and 11:00 on Thursday.  There is also time available at 5:00 or later on Friday.  Are you able to help fill one of those slots?  If not, I could perhaps rearrange some other meetings to make a slot available when you have time.
 
 Here is the signup link:
@@ -690,14 +690,14 @@ Thanks!
 
                     -Mike
 ")
-))
+          ))
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "One more slot to fill with Emina Torlak")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "One more slot to fill with Emina Torlak")
+          (setq my-message
+                "\
 Someone dropped out of Emina Torlak's schedule on Friday at 3:30 and I need to fill it.  Can you help?  (There is also a slot at 9:00 on Thursday, which would be delightful to fill, but it isn't as critical.)
 
 Here is the signup link:
@@ -707,53 +707,53 @@ Thanks!
 
                     -Mike
 ")
-))
+          ))
 
 ;; Open call
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "René Just's faculty application")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "René Just's faculty application")
+          (setq my-message
+                "\
 I wanted to draw your attention to René Just's faculty application, just to make sure that it doesn't fall through the cracks.  René is currently finishing up a postdoc with me.  René is extremely strong; for example, he won two ACM Distinguished Paper Awards last year and I expect him to continue the trend.  René works primarily in software engineering, such as testing and program analysis.  He is also a genuinely nice guy who would make a good colleague.  I encourage you to look at his application and try to hire him before other places beat you to it.  Let me know if you have any questions or concerns.
 
                     -Mike
 ")
-))
+          ))
 
 ;; SE focus
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "René Just's faculty application")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "René Just's faculty application")
+          (setq my-message
+                "\
 I wanted to draw your attention to René Just's faculty application, just to make sure that it doesn't fall through the cracks.  René is currently finishing up a postdoc with me.  René is extremely strong; for example, he won two ACM Distinguished Paper Awards last year and I expect him to continue the trend.  René works primarily in software engineering, such as testing and program analysis.  He is also a genuinely nice guy who would make a good colleague.  Your job posting says that software engineering is a focus area, so I think it would be an error not to interview René.  I encourage you to look at his application and try to hire him before other places beat you to it.  Let me know if you have any questions or concerns.
 
                     -Mike
 ")
-))
+          ))
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "Kivanc Muslu's faculty application")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "Kivanc Muslu's faculty application")
+          (setq my-message
+                "\
 I wanted to draw your attention to Kivanc Muslu's faculty application, just to make sure that it doesn't fall through the cracks.  Kivanc is finishing up his PhD.  In a short time, Kivanc has amassed a strong publication record in a broad set of topics, generally in the field of software engineering but spanning speculative analysis, development tools, testing, concurrency, type systems, and studies of development histories.  I encourage you to take a serious look at his application, before other places beat you to hiring him.  Let me know if you have any questions or concerns.
 
                     -Mike
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "Two faculty applications (René Just and Kivanc Muslu")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "Two faculty applications (René Just and Kivanc Muslu")
+          (setq my-message
+                "\
 I wanted to draw your attention to two faculty applications, just to make sure that it doesn't fall through the cracks.
 
 René Just is currently finishing up a postdoc with me.  René is extremely strong; for example, he won two ACM Distinguished Paper Awards last year and I expect him to continue the trend.  René works primarily in software engineering, such as testing and program analysis.  He is also a genuinely nice guy who would make a good colleague.
@@ -764,14 +764,14 @@ I encourage you to look at their applications and try to hire them before other 
 
                     -Mike
 ")
-))
+          ))
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "UW grad school")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "UW grad school")
+          (setq my-message
+                "\
 Congratulations on being admitted to grad school at UW!  We are delighted about this:  we think you will be a good match for UW, will be productive, and most importantly will have lots of fun learning and doing research.  I trust you are happy about it too!
 
 You doubtless have multiple good options, so you have a big decision ahead of you.  To help you with your decision, I would enjoy talking with you about research, UW, grad school in general, or anything else that is on your mind.
@@ -782,15 +782,15 @@ Congratulations again, and I look forward to talking with you.
 
                     -Mike
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "Research Software Engineer job at UW CSE")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "Research Software Engineer job at UW CSE")
+          (setq my-message
+                "\
 You recently applied for a Research Software Engineer job at UW CSE (https://uwhires.admin.washington.edu/eng/candidates/default.cfm?szCategory=jobprofile&szOrderID=122574).  From your application, it seems you could be a good match for the position.
 
 Could we talk by phone to explore whether this is right?  I can answer your questions about the job, and you can tell me more about your interests.
@@ -805,15 +805,15 @@ Michael Ernst
 Professor, U. of Washington Computer Science & Engineering
 mernst@cs.washington.edu   http://homes.cs.washington.edu/~mernst/
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "UW software engineer job: interview invitation")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "UW software engineer job: interview invitation")
+          (setq my-message
+                "\
 I'm writing to you about the Software Engineer job that you applied for in my group at UW (http://homes.cs.washington.edu/~mernst/programmer-ad.html).
 
 It seems the job could be a good match to your skills and interests.  My team would like to meet you in person to learn more and to let you learn more.  Do you have particular constraints or preferences regarding when you could visit UW for an interview?  Our interviews generally last about 4.5 hours.
@@ -828,15 +828,15 @@ Michael Ernst
 Professor, U. of Washington Computer Science & Engineering
 mernst@cs.washington.edu   http://homes.cs.washington.edu/~mernst/
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "PNW PL&SE meeting, March 15, 2016 at UW")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "PNW PL&SE meeting, March 15, 2016 at UW")
+          (setq my-message
+                "\
 We are happy to invite you to the Inaugural PNW Programming Languages and Software Engineering Meeting, which will take place on March 15, 2016, at the University of Washington, 12pm-7pm, in Husky Union Building (HUB 332).
 
 We hope you decide to attend! We encourage you to give a talk or a demo.
@@ -853,41 +853,41 @@ Your PL/SE colleagues at UW and MSR
 http://uwplse.org/#faculty
 http://research.microsoft.com/en-us/groups/rise/
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "CSE 590N schedule")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "CSE 590N schedule")
+          (setq my-message
+                "\
 This is a gentle reminder to please sign up for a slot to lead the CSE 590N discussion.  For any unclaimed week, you can also change the paper (including taking ones from the paper suggestions), if you know of a paper that is better.  Thanks!
 
                     -Mike
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "CSE 590N schedule")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "CSE 590N schedule")
+          (setq my-message
+                "\
 Could you please select a paper and a day, and sign up to lead the CSE 590N discussion at http://uwplse.org/meet/serg/ ?  Let me know if you need any help or advice.  Thanks!
 
                     -Mike
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "FSE Student Research Competition, 2-page paper due July 1")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "FSE Student Research Competition, 2-page paper due July 1")
+          (setq my-message
+                "\
 I encourage you to submit to the FSE Student Research Competition (http://www.cs.ucdavis.edu/fse2016/calls/student-research-competition/).  The competition itself is in Seattle in November 2016, at the Foundations of Software Engineering conference.
 
 The deadline to submit is July 1.  The only thing that is required by July 1 is a two-page paper describing your research.  You should be able to adapt other things you have written, though it will take some effort to do that adaptation.  I'm happy to help you with that.
@@ -896,28 +896,28 @@ Please let me know whether you are interested, so that we can plan your submissi
 
                     -Mike
 ")
-))
+          ))
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "PLSE lunch presentation")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "PLSE lunch presentation")
+          (setq my-message
+                "\
 Could you sign up for a slot to speak in the PLSE lunch (http://uwplse.org/meet/lunch/) this quarter?
 
                     -Mike
 ")
-))
+          ))
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "UW PLSE retreat invitation, Sep 12-13 in Leavenworth, WA
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "UW PLSE retreat invitation, Sep 12-13 in Leavenworth, WA
 cc: Amanda Robles <arobles@cs.washington.edu>")
-(setq my-message
-      "\
+          (setq my-message
+                "\
 I would like to invite you to our inaugural PLSE Research Retreat! The retreat will take place on Sep. 12-13, 2016 at Icicle Village Resort in Leavenworth, WA. The retreat will emulate a workshop-style meeting.  Both guests, and members of the UW PLSE research group, will participate with short talks and intensive discussions. The goal is for all of us to leave the retreat with inspiration for new and expanded directions in our field.
 
 Some of the potential projects that will be discussed can be found here: http://uwplse.org/#projects
@@ -945,7 +945,7 @@ Day Two: Sept 13
 4:00pm Feedback from visitors
 5:00pm End
 ")
-))
+          ))
 "
 Retreat invitations:
 Second round invited:
@@ -971,16 +971,16 @@ NO:
 
 ;; This was ill-advised.  I should have just asked for a talk title.
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "UW PLSE retreat talks")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "UW PLSE retreat talks")
+          (setq my-message
+                "\
 The PLSE retreat is coming up in about a month.  We need to decide on speakers.  There will be short slots of about 7+3 minutes and long slots of about 12+3 minutes.  Most students are expected to give a talk, on a project that is not already finished (where \"already finished\" means approximately that the camera-ready version of the paper has been accepted).  The goal is to talk about earlier-stage work so that you can get feedback and so that there are more interesting discussions.  Can you give a talk, and what length do you prefer?
 
                     -Mike
 ")
-))
+          ))
 "
  Martin Kellogg <kelloggm@cs.washington.edu>
  Calvin Loncaric <loncaric@cs.washington.edu>
@@ -992,11 +992,11 @@ The PLSE retreat is coming up in about a month.  We need to decide on speakers. 
 "
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "FSE SRC paper")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "FSE SRC paper")
+          (setq my-message
+                "\
 Congratulations again on your acceptance to the FSE 2016 Student Research Competition.  Before the competition, you will need to do three things.
 
 First, you will revise your paper to address comments from the reviewer and possibly to incorporate improved results.  This is due in less than a month (on September 15), so you will want to get started soon.
@@ -1007,7 +1007,7 @@ Third, you will prepare and practice a talk.  The talks are quite short (perhaps
 
                     -Mike
 ")
-))
+          ))
 ;; With point here, repeatedly call:  M-x compose-mail-address-buffer-and-bury
 "
  Spencer Pearson <suspense@cs.washington.edu>
@@ -1023,11 +1023,11 @@ Third, you will prepare and practice a talk.  The talks are quite short (perhaps
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "Support letter for a grant proposal to maintain Randoop")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "Support letter for a grant proposal to maintain Randoop")
+          (setq my-message
+                "\
 Would you be willing to write a letter of support for a grant proposal I am writing?  The grant proposal is to do maintenance of Randoop.  The money is not allowed to fund research, only to support the research of other people who use Randoop, and you are an example of such a person.
 
 Examples of work done under the grant might be:
@@ -1045,7 +1045,7 @@ If you can't write a letter, I understand.  Just let me know, and thanks anyway.
 
                     -Mike
 "))
-)
+  )
 ;; With point here, repeatedly call:  M-x compose-mail-address-buffer-and-bury
 "
  Lei Ma <malei@hit.edu.cn>
@@ -1072,11 +1072,11 @@ If you can't write a letter, I understand.  Just let me know, and thanks anyway.
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "PLSE research showcase followup")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "PLSE research showcase followup")
+          (setq my-message
+                "\
 I enjoyed talking with you last Wednesday evening about applying natural language processing to problems in software engineering -- just one of many problems in PL and SE that I am interested in.
 
 A number of people asked whether my work is written up.  An initial version of the work on translating Javadoc comments to assertions appeared in July (http://homes.cs.washington.edu/~mernst/pubs/exception-oracles-issta2016-abstract.html).  Next year, we plan to extend that work and to write a paper on translation from sentences to bash commands.  In the meanwhile, I gave an invited talk on my NLP work earlier this month, and you can find the slides from that talk in PowerPoint and PDF at http://homes.cs.washington.edu/~mernst/pubs/nlp-meets-se-201612.pptx and http://homes.cs.washington.edu/~mernst/pubs/nlp-meets-se-201612.pdf.
@@ -1087,7 +1087,7 @@ Thanks for the fun conversations!  I look forward to the next time we meet.
 
                     -Mike
 "))
-)
+  )
 ;; With point here, repeatedly call:  M-x compose-mail-address-buffer-and-bury
 "
  Martin Bickeboeller <bickeboeller@yahoo.com>
@@ -1101,16 +1101,16 @@ Thanks for the fun conversations!  I look forward to the next time we meet.
  Wolfram Schulte <wolfram.schulte@outlook.com>
  Ben Zorn <Ben.Zorn@microsoft.com>
 "
-;; Rob Short - Robs124@hotmail.com - Ed has a very close relationship with Rob and he's a member of the CSE Campaign Committee - so please double-check with Ed before you reach out to him. 
+;; Rob Short - Robs124@hotmail.com - Ed has a very close relationship with Rob and he's a member of the CSE Campaign Committee - so please double-check with Ed before you reach out to him.
 
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "TAing for CSE 331 in autumn")
-(setq my-message-orig
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "TAing for CSE 331 in autumn")
+          (setq my-message-orig
+                "\
 I'm looking for TAs for CSE 331 in the autumn.
 It's a fun, important class that gives TAs considerable leeway, and the chance to teach section.
 
@@ -1123,8 +1123,8 @@ My calendar is in Google Apps as mernst@cs.washington.edu or at http://homes.cs.
 
                     -Mike
 ")
-(setq my-message-second-pass
-      "\
+          (setq my-message-second-pass
+                "\
 I'm looking for TAs for CSE 331 in the autumn.
 It's a fun, important class that gives TAs considerable leeway, and the chance to teach section.
 
@@ -1138,8 +1138,8 @@ My calendar is in Google Apps as mernst@cs.washington.edu or at http://homes.cs.
 
                     -Mike
 ")
-(setq my-message my-message-second-pass))
-)
+          (setq my-message my-message-second-pass))
+  )
 ;; With point here, repeatedly call:  M-x compose-mail-address-buffer-and-bury
 "
  Alexander Davis <ahd2112@uw.edu>
@@ -1171,7 +1171,7 @@ NO, on internship: Natalie Fetsch <nfetsch@cs.washington.edu>
 NO: graduating:  Nate Yazdani
 NO, MIGHT BE ON INTERNSHIP IN FALL: Sarah Yu <sarahyu@cs.washington.edu>
  Su Ye <yes23@cs.washington.edu> [first name Ye??]
-Zach has concerns about him: Tim Chirananthavat <theme@cs.washington.edu> 
+Zach has concerns about him: Tim Chirananthavat <theme@cs.washington.edu>
 NO: doesn't need a TAship: Vincent Liew <vliew@cs.washington.edu>
 NO: graduating Waylon Huang
  Yifan (Vanadis) Xu <xuyf@cs.washington.edu>
@@ -1234,12 +1234,12 @@ NO: is TAing CSE 143: Tyler Mi <gartymi@cs.washington.edu>
 "
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "TAing for CSE 403 in winter or spring")
-(setq my-message
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "TAing for CSE 403 in winter or spring")
+          (setq my-message
 
-      "\
+                "\
 Congratulations for doing very well in CSE 403 in the spring!
 
 I am writing to ask you to think about both teaching and research, since I suspect you would do well at both.
@@ -1261,21 +1261,21 @@ PS: Here are some potential research projects where I am looking for help:
  * Improve test generation tools that automatically create unit tests for a program.  For example, the improvement can use side effect analysis, measurements of coverage and run time, and constants in the program under test.
  * Create tools to detect security vulnerabilities (SQL injection, cross-site scripting, etc.) by customizing a general taint analysis.
 "
-))
-)
+                ))
+  )
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "Pavel Panchekha: potential faculty applicant")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "Pavel Panchekha: potential faculty applicant")
+          (setq my-message
+                "\
 My student Pavel Panchekha (https://pavpanchekha.com/) is on the academic job market.  He plans to graduate in June 2019.  If you are open to hiring in programming languages, I encourage you to recruit him, because he is first-rate.  For example, he received a distinguished paper award at PLDI 2015 and has two papers at PLDI 2018.  He has expressed interest and may contact you, but you are likely to have lots of competition!
 
                     -Mike
 "))
-)
+  )
 ;; With point here, repeatedly call:  M-x compose-mail-address-buffer-and-bury
 "
  David Stotts <stotts@cs.unc.edu>
@@ -1288,11 +1288,11 @@ My student Pavel Panchekha (https://pavpanchekha.com/) is on the academic job ma
 "
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "CSE 331 HW1")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "CSE 331 HW1")
+          (setq my-message
+                "\
 I noticed that you didn't yet submit HW1 for CSE 331.
 
 If you are having trouble, please don't get discouraged, but ask the staff for help.  We are convinced that every student in the class can succeed, and we are motivated to make that happen.
@@ -1301,7 +1301,7 @@ You have 4 late days and can use one of them on HW1, so you still have time to c
 
                     -Mike
 "))
-)
+  )
 ;; With point here, repeatedly call:  M-x compose-mail-address-buffer-and-bury
 "
  xiaoyixu@cs.washington.edu
@@ -1340,17 +1340,17 @@ You have 4 late days and can use one of them on HW1, so you still have time to c
 
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert)
-(setq email-address-group-comma-concatenates nil)
-(setq my-subject "CSE 403 estimated grade")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert)
+          (setq email-address-group-comma-concatenates nil)
+          (setq my-subject "CSE 403 estimated grade")
+          (setq my-message
+                "\
 Here is an estimate of your current grade in CSE 403:  .
 Your future work could affect this grade, leading to a higher or lower grade.
 
                     -Mike
 "))
-)
+  )
 ;; With point here, repeatedly call:  M-x compose-mail-address-buffer-and-bury
 "
  johnbar@cs.washington.edu
@@ -1392,14 +1392,14 @@ Your future work could affect this grade, leading to a higher or lower grade.
 ;; With point here, repeatedly call:  M-x compose-mail-address-buffer-and-bury
 
 "
-George Mason				
+George Mason
  David Rosenblum <dsr@gmu.edu>,
  Jeff Offutt <offutt@ise.gmu.edu>,
  Thomas LaToza <tlatoza@gmu.edu>,
  Paul Ammann <pammann@gmu.edu>,
  Brittany Jonhnson-Matthews <johnsonb@gmu.edu>
 
-CMU ISR		
+CMU ISR
 https://www.isri.cmu.edu/jobs/tenure-track.html
  Jonathan Aldrich <jonathan.aldrich@cs.cmu.edu>
 
@@ -1428,7 +1428,7 @@ Stevens Institute of Tech
  David Naumann <naumann@cs.stevens.edu>,
  Dominic Duggan <dduggan@cs.stevens.edu>
 
-UNC				
+UNC
  David Stotts <stotts@cs.unc.edu>
 
 NCSU
@@ -1471,11 +1471,11 @@ Tennessee
 "
 
 (if nil (progn
-(setq compose-mail-function 'compose-mail-and-insert-with-firstname)
-(setq email-address-group-comma-concatenates t)
-(setq my-subject "Martin Kellogg's faculty application")
-(setq my-message
-      "\
+          (setq compose-mail-function 'compose-mail-and-insert-with-firstname)
+          (setq email-address-group-comma-concatenates t)
+          (setq my-subject "Martin Kellogg's faculty application")
+          (setq my-message
+                "\
 My student Martin Kellogg (https://homes.cs.washington.edu/~kelloggm/) has applied for a tenure-track faculty job.  His research is in software engineering, on the program analysis and programming languages end of the field.
 
 I wanted to make sure that his application does not fall through the cracks.  I think he would be a great hire for you.
@@ -1486,7 +1486,7 @@ Good luck with faculty hiring this year!
 
                     -Mike
 "))
-)
+  )
 
 
 

@@ -43,9 +43,9 @@
 	  508 509 510 511 512 513 514 515 516 517 518 519 520 521 522 523
 	  524 525 526 528 529 530
 	  ))
-      (my-papers '(21 24 38 58 63 89 113 135 196 206 265 271 273 292 327 393 427 502))
-      ;; change this line to choose all-papers or my-papers
-      (papers all-papers))
+       (my-papers '(21 24 38 58 63 89 113 135 196 206 265 271 273 292 327 393 427 502))
+       ;; change this line to choose all-papers or my-papers
+       (papers all-papers))
   (while papers
     (let ((paper (car papers)))
       ;; All the reviews
@@ -59,7 +59,7 @@
 
 
 ;; PLDI
-(let ((papers 
+(let ((papers
        '(
 	 2 3 4 5 6 7 8 9 10 11
 	 12 13 14 15 17 20 21 22 23 24

@@ -179,7 +179,7 @@ is easier than clicking on the error."
                        (buffer-substring (point) (line-beginning-position))))
 	    (let ((result nil))
 	      (while (and (not result)
-			  (re-search-forward "\n\\(.*\\),include$" nil t))
+			  (re-search-forward "\f\n\\(.*\\),include$" nil t))
 		(save-excursion
 		  (setq result (find-in-tags-table file (match-string 1)))))
 	      result))))))
@@ -196,7 +196,7 @@ is easier than clicking on the error."
 ;; so stick with those starting with "0x" for now.
 
 ;; (defvar hex-re "\\b0x[0-9a-fA-F]+\\b")
-;; 
+;;
 ;; (defadvice mouse-yank-or-goto-error (around jdb-dump activate)
 ;;   "If click is on a hex number, dump a Java object.
 ;; Note the usual Emacs problem with the buffer being the wrong one when this

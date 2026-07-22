@@ -1,5 +1,5 @@
-#!/bin/csh -f
+#!/bin/sh
 
-foreach i (beet turnip yam scallion cassava shallot potato geyer meoptiplex manioc)
-  xterm -T $i -e ssh -c 3des $i.csail.mit.edu &
-end
+for machine in beet turnip yam scallion cassava shallot potato geyer meoptiplex manioc; do
+  xterm -T $machine -e ssh -c 3des $machine.csail.mit.edu &
+done

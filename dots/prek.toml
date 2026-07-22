@@ -18,11 +18,15 @@ hooks = [
     { id = "check-yaml" },
     { id = "destroyed-symlinks" },
     { id = "detect-private-key" },
-    { id = "end-of-file-fixer" },
+    { id = "end-of-file-fixer",
+      exclude = { glob = [ "bugs/jikes-patches/*" ] },
+    },
     { id = "fix-byte-order-marker" },
     { id = "forbid-new-submodules" },
     { id = "mixed-line-ending" },
-    { id = "trailing-whitespace" },
+    { id = "trailing-whitespace",
+      exclude = { glob = [ "bugs/jikes-patches/*", "bugs/bug-mew", "bugs/BUGS.to-do", "dots/.aspell.en.prepl", ".aspell.en.prepl", "dots/.aspell.en.pws", ".aspell.en.pws", "dots/en_US_apostrophe.aff", "en_US_apostrophe.aff", "dots/enscript.st", "enscript.st", "emacs/bug/crypted.UUE" ] },
+},
 ]
 
 [[repos]]
@@ -41,12 +45,12 @@ repo = "https://github.com/Yelp/detect-secrets"
 rev = "v1.5.0"
 hooks = [
     { id = "detect-secrets",
-      args = ["--baseline", ".secrets.baseline"],
-      exclude = "^package\\.lock\\.json$"
+      # args = ["--baseline", ".secrets.baseline"],
+      exclude = { glob = ["package.lock.json"] }
       },
 ]
 
-        
+
 [[repos]]
 repo = "https://github.com/pre-commit/sync-pre-commit-deps"
 rev = "v0.0.4"
@@ -67,7 +71,10 @@ hooks = [
 repo = "https://github.com/shellcheck-py/shellcheck-py"
 rev = "v0.11.0.1"
 hooks = [
-    { id = "shellcheck" },
+    { id = "shellcheck",
+      args = ["-x", "-P", "SCRIPTDIR" ],
+      exclude = { glob = [ "share/csail-athena-tickets.bash", "share/addrfilter", "share/print-mail", "share/javapp", "share/myxapps", ] },
+    },
 ]
 
 [[repos]]
@@ -94,26 +101,35 @@ hooks = [
 ]
 
 
-[[repos]]
-repo = "https://github.com/crate-ci/typos"
-rev = "v1.48.0"
-hooks = [
-    { id = "typos" },
-]
+## Very disruptive.  Perhaps re-enable later.
+# [[repos]]
+# repo = "https://github.com/crate-ci/typos"
+# rev = "v1.48.0"
+# hooks = [
+#     { id = "typos",
+#       exclude = { glob = [".abbrev_defs", "share/mail-review-spam", "bugs/jikes-patches/*", "share/checkbashisms", "dots/.aspell.en.prepl", ".aspell.en.prepl", "dots/en_US_apostrophe.dic", "dots/.aspell.en.pws", ".aspell.en.pws", "dots/en_US_apostrophe.aff", "en_US_apostrophe.aff" ] },
+#     }
+# ]
 
 [[repos]]
 repo = "https://github.com/amperser/proselint"
 rev = "v0.16.0"
 hooks = [
-    { id = "proselint" },
+    { id = "proselint",
+      args = ["check" ],
+      files = "\\.(dj|md|rst|txt)$"
+    },
 ]
 
-[[repos]]
-repo = "https://github.com/codespell-project/codespell"
-rev = "v2.4.1"
-hooks = [
-    { id = "codespell" },
-]
+## Very noisy.  Perhaps re-enable later.
+# [[repos]]
+# repo = "https://github.com/codespell-project/codespell"
+# rev = "v2.4.1"
+# hooks = [
+#     { id = "codespell",
+#       exclude = { glob = [ "en_US_apostrophe.dic", ".ssh/known_hosts", "enscript.st" ] },
+#     },
+# ]
 
 [[repos]]
 repo = "https://github.com/DavidAnson/markdownlint-cli2"
@@ -136,9 +152,15 @@ hooks = [
     { id = "gitleaks" },
 ]
 
-[[repos]]
-repo = "https://github.com/openstack/bashate"
-rev = "2.1.1"
-hooks = [
-    { id = "bashate" },
-]
+## Problems:
+## * False positives for E011.
+## * It requires indent to be a multiple of 4.
+# [[repos]]
+# repo = "https://github.com/openstack/bashate"
+# rev = "2.1.1"
+# hooks = [
+#     { id = "bashate",
+#       exclude = "^package\\.lock\\.json$"
+#       exclude = { glob = ["share/csail-athena-tickets.bash" ] }
+#     },
+# ]

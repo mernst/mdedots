@@ -2,7 +2,7 @@
 
 Reuse of old, inaccurate results when commits on two branches have the same SHA hash
 
-When the same commit SHA appears on two branches, Azure Pipelines does not run CI twice as it should.  Azure Pipelines runs only once, and GitHub displays that result for both of the branches.  
+When the same commit SHA appears on two branches, Azure Pipelines does not run CI twice as it should.  Azure Pipelines runs only once, and GitHub displays that result for both of the branches.
 
 
 Re-reporting a previous run gives incorrect execution results, because a CI job depends not just on the commit SHA, but also on CI variables (branch name, whether it is a pull request, etc.).  Here are examples of the need for different behavior:
@@ -16,7 +16,7 @@ Consider this GitHub branch webpage:
 https://github.com/mernst/azure-reuses-results/branches
 Both the `master` and `branch2` branches are at commit bdfea1c.
 The `master` branch should pass tests, and the `branch2` branch should fail.
-If you click on the "x" next to "master", you get to 
+If you click on the "x" next to "master", you get to
 https://dev.azure.com/mernst22/azure-reuses-results/_build/results?buildId=3585&view=results
 which is a build for the `branch2` branch.
 Oddly,

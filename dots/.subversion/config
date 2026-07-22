@@ -32,7 +32,7 @@
 # ~/.subversion/auth/svn.simple/ .
 # I only use subversion passwords for remote https servers.  I much prefer
 # to use svn+ssh, and then kerberos or ssh-agent.
-store-passwords = yes
+store-passwords = yes # pragma: allowlist secret
 ### Set store-auth-creds to 'no' to avoid storing any subversion
 ### credentials in the auth/ area of your config directory.
 ### It defaults to 'yes'.  Note that this option only prevents
@@ -44,7 +44,7 @@ store-passwords = yes
 [helpers]
 ### Set editor-cmd to the command used to invoke your text editor.
 ###   This will override the environment variables that Subversion
-###   examines by default to find this information ($EDITOR, 
+###   examines by default to find this information ($EDITOR,
 ###   et al).
 # editor-cmd = editor (vi, emacs, notepad, etc.)
 ### Set diff-cmd to the absolute path of your 'diff' program.

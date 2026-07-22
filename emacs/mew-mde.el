@@ -926,7 +926,7 @@
   (browse-url-once-if-matched "request(s)\\s-waiting\\s-for\\s-your\\s-consideration\\s-at:\n\n\t\\(http.*\\)" 1)
   (browse-url-once-if-matched "At your convenience, visit:\n\n    \\(http.*\\)" 1)
   (browse-url-once-if-matched "as soon as possible \nby browsing to\n\n  \\(http.*\\)" 1)
-  (browse-url-once-if-matched "ACTION REQUIRED: Your approval of a UW eGC1 for a grant or contract.\n\nPlease click the link below .*\n\n\\(http.*\\)\n" 1)
+  (browse-url-once-if-matched "ACTION REQUIRED: Your approval of a UW eGC1 for a grant or contract.\r\n\r\nPlease click the link below .*\r\n\r\n\\(http.*\\)\r\n" 1)
   (browse-url-once-if-matched "If you are still actively using .* and do not wish to have\nyour free host removed from our DNS servers and database please click the link\nbelow :\n\n\\(http.*\\)" 1)
   (browse-url-once-if-matched "To approve or deny this request, please visit \\(http.*\\) and complete\nthe web form." 1)
   (browse-url-once-if-matched "Log into eFECS at: \\(https://ucs.admin.washington.edu/effortreport/\\)" 1)
@@ -1327,14 +1327,14 @@ This prevents silently discarding mail to CSE support."
 ;; ;; 		 (equal mew-header-separator
 ;; ;; 			(buffer-substring (- (point) (length mew-header-separator))
 ;; ;; 					  (point)))))
-;; 
+;;
 ;; (defadvice mew-draft-kill (around disable-maybe-kill-mew-draft activate)
 ;;   (let ((disable-maybe-kill-mew-draft t))
 ;;     ad-do-it))
 ;; (defadvice mew-remove-buffer (around disable-maybe-kill-mew-draft activate)
 ;;   (let ((disable-maybe-kill-mew-draft t))
 ;;     ad-do-it))
-;; 
+;;
 ;; (add-hook 'kill-buffer-hook 'maybe-kill-mew-draft)
 
 
@@ -1485,12 +1485,12 @@ is inserted before the cursor, the short name is expanded to its address."
 ;;     mew-cite-prefix)
 ;;    (t
 ;;     mew-cite-default-prefix)))
-;; 
+;;
 ;; (defadvice mew-cite-original (after set-mail-yank-prefix activate)
 ;;   (make-local-variable 'mail-yank-prefix)
 ;;   (setq mail-yank-prefix
 ;; 	(mew-compute-mail-yank-prefix)))
-;; 
+;;
 ;; (defadvice mew-cite-original (around move-point-to-beginning activate)
 ;;   "Remove blank lines at end, and move point to beginning."
 ;;   (let ((start (min (marker-position (mark-marker)) (point))))
@@ -1616,7 +1616,7 @@ is inserted before the cursor, the short name is expanded to its address."
 ;;   (if current-prefix-arg
 ;;       (jl-forward-inline)
 ;;     ad-do-it))
-;; 
+;;
 ;; ;; Originally from http://cermics.enpc.fr/~lelong/Emacs/dotmewdotel.html,
 ;; ;; slightly modified.
 ;; (defun jl-forward-inline ()

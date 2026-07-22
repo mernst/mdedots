@@ -7,7 +7,7 @@ https://github.com/dependabot/feedback/issues/448
 
 ===========================================================================
 
-hppc remarks: 
+hppc remarks:
 
 This can be nicer with lambda:
 https://github.com/carrotsearch/hppc/blob/master/hppc-examples/src/test/java/com/carrotsearch/hppc/examples/HppcExample_001_IteratingOverLists.java
@@ -139,7 +139,7 @@ The key enhancements are:
 More specifically, the goal is to create a tool that does the following:
  * It takes as input a command line, such as an invocation of a compiler.
    In the initial implementation, the user would also need to supply a way to determine whether a particular execution failed, passed, or was unresolved.
- * It reduces the command line to find a shorter command line (fewer files or fewer command-line arguments) that fails in the same way as the original command did.  This step could use Delta Debugging. 
+ * It reduces the command line to find a shorter command line (fewer files or fewer command-line arguments) that fails in the same way as the original command did.  This step could use Delta Debugging.
  * For each file, it reduces the file to make smaller files that fail in the same way as the original command did.  This step could use Delta Debugging, too.
  * Probably iterate reducing the command line and the files until neither can be reduced any more.
 
@@ -693,7 +693,7 @@ displayed.
 After accepting the changes by clicking "OK", if I exit and re-start
 quicken, then once again the toolbar is not displayed.
 
-As a related problem, even when the above process made the toolbar appear, 
+As a related problem, even when the above process made the toolbar appear,
 The "Find all" field did not appear with the rest of the toolbar, even
 though the checkbox in the lower right-hand corner (that should have
 caused it to be displayed) was not checked.

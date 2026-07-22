@@ -299,10 +299,10 @@ the value of the last one, or nil if there are none."
 ;;               ;; I do want to add one, which is much of the point
 ;;               ;; of config-and-add-path anyway.
 ;;               "/mernst/emacs/uns/"
-;; 
+;;
 ;;               ;; prefer ~mernst/emacs/mew/
 ;;               "/mernst/emacs/mew-"
-;; 
+;;
 ;;               ;; Does not contain Emacs Lisp code
 ;;               "/mernst/emacs/bug/"
 ;;               ;;; This doesn't seem to work; how do I eliminate this?
@@ -313,16 +313,16 @@ the value of the last one, or nil if there are none."
 ;;               "/tramp-2.0.29/\\(contrib\\|info\\|test\\|texi\\|tramp2\\)/"
 ;;               ))))
 ;; (setq load-path-prune-noisy t)
-;; 
+;;
 ;; (setq load-path-assoc-list-file (expand-file-name "~/emacs/.path.el"))
 ;; (setq load-path-extra-load-dirs '("/usr/share/emacs/site-lisp"
 ;;                                   "/usr/share/emacs/21.4/site-lisp"))
 ;; (load (expand-file-name "~mernst/bin/src/plume-lib/emacs/config-and-add-path"))
-;; 
+;;
 ;; ;; This comes after the load, for interactive execution -- and thus, it
 ;; ;; cannot have the desired effect of suppressing compilation warnings.
 ;; (eval-when-compile (require 'config-and-add-path))
-;; 
+;;
 ;; (setq load-path
 ;;       (append
 ;;        ;; Move certain files to the beginning of load-path
@@ -331,7 +331,7 @@ the value of the last one, or nil if there are none."
 ;;                      (list
 ;;                       ;; fixes
 ;;                       "~mernst/emacs/fixes"
-;; 
+;;
 ;;                       "~mernst/emacs"
 ;;                       "~mernst/emacs/plume-lib"
 ;;                       "~mernst/emacs/magit/lisp"
@@ -345,13 +345,13 @@ the value of the last one, or nil if there are none."
 ;;                      (list
 ;;                       ;; Site-lisp stuff at end because newer versions of Emacs may
 ;;                       ;; already have what's in site-lisp.
-;; 
+;;
 ;;                       ;; (cse "/uns/share/emacs/site-lisp")
 ;;                       ;; (cse "/uns/share/emacs/site-lisp/elib") ; for pcl-cvs
 ;;                       )))))
-;; 
+;;
 ;; ;; (message load-path)
-;; 
+;;
 ;; ;; Is this necessary any more?
 ;; (cse
 ;;   (setq load-path
@@ -373,7 +373,7 @@ the value of the last one, or nil if there are none."
 ;; this init file, the autoloaded functions still get defined.
 (load "autoloads-mde.el" nil t)
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Fonts, colors, etc.
 ;;;
@@ -542,7 +542,7 @@ the value of the last one, or nil if there are none."
   (darken-face-foreground 'font-latex-doctex-documentation-face))
 
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Files that are always loaded
 ;;;
@@ -580,7 +580,7 @@ the value of the last one, or nil if there are none."
   (let* ((previous-messages (save-excursion
                               (re-search-backward "^\\([0-9]+\\) threads in my inbox" nil t)
                               (match-string 1)))
-         (message-summary (concat 
+         (message-summary (concat
                            " threads in my inbox (previously "
                            previous-messages
                            ")\n")))
@@ -645,7 +645,7 @@ Eliminate the question, \"A command is running - kill it?\""
 (advice-add 'shell-command :before #'shell-command--in-new-buffer)
 
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Packages I can't autoload or that I always use
 
@@ -856,22 +856,22 @@ After running this, run from the shell:  print-mail bulk." t)
   :config (atomic-chrome-start-server))
 
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Language Server Protocol
 
 ;; Prefer eglot to lsp-mode.
 
-;; eglot causes long pauses, probably while 
+;; eglot causes long pauses, probably while
 ;; (use-package eglot
 ;;   :ensure t
 ;;   :hook (prog-mode . eglot-ensure))
 ;; (setq eglot-max-file-watches nil)       ; no limit
-;; 
+;;
 ;; (use-package eglot-booster
 ;;   :after eglot
 ;;   :config (eglot-booster-mode))
-;; 
+;;
 ;; (with-eval-after-load 'eglot
 ;;   (add-to-list 'eglot-server-programs
 ;;                '(python-base-mode . ("ruff" "server"))))
@@ -880,14 +880,14 @@ After running this, run from the shell:  print-mail bulk." t)
 ;;               (eglot-ensure)
 ;;               ;; Do not include eglot formatting.
 ;;               ))
-;; 
+;;
 ;; (require 'eglot)
 ;; (add-to-list 'eglot-server-programs '((c++-mode c-mode) "clangd"))
 ;; (add-hook 'c-mode-hook 'eglot-ensure)
 ;; (add-hook 'c++-mode-hook 'eglot-ensure)
 ;; (add-hook 'xref-backend-functions #'eglot-xref-backend 0)
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Key bindings
 
@@ -1033,7 +1033,7 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; (set-register ?e '(file . "~/emacs"))
 
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Variables
 
@@ -1602,14 +1602,14 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (advice-add 'projectile-project-root :around #'projectile-project-root--not-nil)
 
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Emacs compatibility
 ;;;
 
 
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Hacks and bug fixes
 ;;;
@@ -1821,7 +1821,7 @@ This can make comparisons easier."
                'append))
 
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End of file
 ;;;

@@ -21,4 +21,3 @@
         ;; message.
         (shell-command (concat "html-update-toc --quiet " (buffer-file-name)))
 	(bdiff-revert-buffer-maybe))))
-

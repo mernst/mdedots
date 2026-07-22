@@ -1396,7 +1396,7 @@ If optional arg COUNT is specified, return the COUNTth occurrence from the end."
 ;;   (save-excursion
 ;;     (goto-char (point-min))
 ;;     (delete-matching-lines regexp)))
-;; 
+;;
 ;; (defun delete-all-non-matching-lines (regexp)
 ;;   (interactive "sKeep only lines (containing match for regexp): ")
 ;;   (save-excursion
@@ -1635,7 +1635,7 @@ by side effect."
 
 
 ;; This page feed is to defeat local variables processing.
-
+;;;;;;
 
 (provide 'util-mde)
 

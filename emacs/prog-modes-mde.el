@@ -358,11 +358,11 @@ With prefix arg, goes to end of class; otherwise to end of method."
 ;;   With argument, do it that many times.  Negative arg -N
 ;;   means move forward to Nth following beginning of defun.
 ;;   Returns t unless search stops due to beginning or end of buffer.
-;; 
+;;
 ;;   Unlike the built-in `beginning-of-defun' this tries to be smarter
 ;;   about finding the char with open-parenthesis syntax that starts the
 ;;   defun.
-;; 
+;;
 ;;   This also respects `c-beginning-of-defun-prefer-second'."
 ;;     (interactive "p")
 ;;     (unless arg (setq arg 1))
@@ -703,7 +703,7 @@ This is disabled on lines with a comment containing the string \"interned\"."
          (string-match-p "/org/plumelib/" filename))
         (not (string-match-p "/wpi-many-tests" filename))
         (not (string-match-p "fork-t-rasmud" filename)))
-       
+
        ;; Merging
        (string-match-p "/AST-Merging-Evaluation[^/]*/src/main/java/" filename)
        (string-match-p "/ast-merge-driver[^/]*/src/main/java/" filename)
@@ -754,7 +754,7 @@ This is disabled on lines with a comment containing the string \"interned\"."
           (and (string-match-p "/grt-testing" filename)
                (or (string-prefix-p "grt-testing" dir-simple-name)
                    (equal "subject-programs" dir-simple-name)))
-          
+
           )
       t)
 
@@ -1034,7 +1034,7 @@ ARGS are args to pass it.  Buffer file name is provided as last arg."
 ;; (defadvice perldoc-start-process (after bind-perldoc activate)
 ;;   "Set `C-h f' key to run `perldoc'."
 ;;   (local-set-key "\C-hf" 'perldoc))
-;; 
+;;
 ;; (defadvice indent-perl-exp (after unspace-brace-hash activate)
 ;;   "Insert no space before a hash (#) immediately following an open brace."
 ;;   (let* ((eol (save-excursion (end-of-line) (point)))
@@ -1248,7 +1248,7 @@ otherwise, raise an error after the first problem is encountered."
 ;;   (if (eq major-mode 'python-mode)
 ;;       (beginning-of-python-def-or-class 'either (ad-get-arg 0))
 ;;     ad-do-it))
-;; 
+;;
 ;; (defadvice end-of-defun (around python-eod activate)
 ;;   "Extension to work in Python mode."
 ;;   (if (eq major-mode 'python-mode)
@@ -1838,9 +1838,9 @@ How does this differ from whatever is built in?"
 
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
-  (with-temp-buffer 
-    (list (apply 'call-process program nil (current-buffer) nil args)
-          (buffer-string))))
+  (with-temp-buffer
+      (list (apply 'call-process program nil (current-buffer) nil args)
+            (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
@@ -2301,7 +2301,7 @@ Use as a hook, like so:
 	  ;; Build file '/home/mernst/class/331/18au/hw/build.gradle' line: 96
 	  '("Build file '\\(.*\\)' line: \\([0-9]+\\)$" 1 2)
 	  '("^  build file '\\([^']+\\)': \\([0-9]+\\): " 1 2) ;; column number is also available
-          
+
           ;; Kotlin
           '("^e: file://\\(.*\\):\\([0-9]\\):\\([0-9]\\): " 1 2 3)
 
@@ -2335,16 +2335,16 @@ Use as a hook, like so:
 
 	  ;; For checklink:
 	  ;; [ant:checkstyle] [ERROR] /....
-	  '("^\\(?::[-A-Za-z0-9_]+:checkstyle[-A-Za-z0-9_]+\\)?\\[ant:checkstyle\\] \\[\\(?:ERROR\\|WARN\\)] \\(.*\\):\\([0-9]+\\):\\([0-9]+\\):" 1 2 3) 
-	  '("^\\(?::[-A-Za-z0-9_]+:checkstyle[-A-Za-z0-9_]+\\)?\\[ant:checkstyle\\] \\[\\(?:ERROR\\|WARN\\)] \\(.*\\):\\([0-9]+\\):" 1 2) 
+	  '("^\\(?::[-A-Za-z0-9_]+:checkstyle[-A-Za-z0-9_]+\\)?\\[ant:checkstyle\\] \\[\\(?:ERROR\\|WARN\\)] \\(.*\\):\\([0-9]+\\):\\([0-9]+\\):" 1 2 3)
+	  '("^\\(?::[-A-Za-z0-9_]+:checkstyle[-A-Za-z0-9_]+\\)?\\[ant:checkstyle\\] \\[\\(?:ERROR\\|WARN\\)] \\(.*\\):\\([0-9]+\\):" 1 2)
 
 	  ;; Perl error messages
-	  '("\\bat \\([^ ]+\\) line \\([0-9]+\\)\\($\\|[\\.,]\\)" 1 2) 
-	  '("^syntax error in file \\([^ ]*\\) at line \\([0-9]+\\)," 1 2) 
+	  '("\\bat \\([^ ]+\\) line \\([0-9]+\\)\\($\\|[\\.,]\\)" 1 2)
+	  '("^syntax error in file \\([^ ]*\\) at line \\([0-9]+\\)," 1 2)
 
 	  ;; Python error messages
-	  '("^ *File \"\\(.*\\)\", line \\([0-9]+\\)" 1 2) 
-	  '("^SyntaxError: ('invalid syntax', ('\\(.*\\)', \\([0-9]+\\), " 1 2) 
+	  '("^ *File \"\\(.*\\)\", line \\([0-9]+\\)" 1 2)
+	  '("^SyntaxError: ('invalid syntax', ('\\(.*\\)', \\([0-9]+\\), " 1 2)
           ;; Python ty typechecker messages
 	  '("^ *--> \\(.*\\):\\([0-9]+\\):\\([0-9]+\\)$" 1 2 3)
 
@@ -2354,11 +2354,11 @@ Use as a hook, like so:
 	  '("^Reader error at \\([0-9]+\\) on #<Stream for file \"\\(.*\\)\">:" 2 1)
 
 	  ;; for gud
-	  '("\\bat \\([^ \n]+\\):\\([0-9]+\\)$" 1 2) 
+	  '("\\bat \\([^ \n]+\\):\\([0-9]+\\)$" 1 2)
 
 	  ;; Parse BibTeX error messages
-	  '("Warning--.*\n--line \\([0-9]+\\) of file \\(.*\\)" 2 1) 
-	  '("---line \\([0-9]+\\) of file \\(.*\\)" 2 1) 
+	  '("Warning--.*\n--line \\([0-9]+\\) of file \\(.*\\)" 2 1)
+	  '("---line \\([0-9]+\\) of file \\(.*\\)" 2 1)
 
 	  ;; XOM
 	  '("^\\[Fatal Error\\] \\([^ ]+\\):\\([0-9]+\\):\\([0-9]+\\)" 1 2 3)

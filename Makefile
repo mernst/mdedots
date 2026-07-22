@@ -1,4 +1,4 @@
-.PHONY: all
+.PHONY: all clean test default
 
 default: all
 all: style-fix style-check git-hooks

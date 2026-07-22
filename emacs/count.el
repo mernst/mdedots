@@ -4,7 +4,7 @@
 ;; Subject: More useful C-x = and ESC = commands
 ;; Date: 2 Nov 90 12:22:10 GMT
 ;; Organization: GNUs Not Usenet
-;; 
+;;
 ;; C-x = (what-cursor-position) should also display the line number, and
 ;; ESC = (count-lines-region) should not only count lines, but words and
 ;; characters as well:

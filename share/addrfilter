@@ -18,7 +18,7 @@ BEGIN { killit = "--kill it--"
 	print "\\vbox{"
       }
 
-($0 == "") && ((prevline ~ /^dates/) || (prevline ~ /^email/))  && (prevprevprevline == "") { 
+($0 == "") && ((prevline ~ /^dates/) || (prevline ~ /^email/))  && (prevprevprevline == "") {
 	prevprevprevline = killit
 	prevprevline = killit
 	prevline = killit }
@@ -39,7 +39,7 @@ BEGIN { killit = "--kill it--"
 	$0 = "\\vbox{" $0 }
 
 # Get rid of email lines without <>; otherwise typeset in tt font
-($1 == "email:") { if ($NF ~ /<.*>/) { $0 = $NF 
+($1 == "email:") { if ($NF ~ /<.*>/) { $0 = $NF
 				       sub(/</, "{\\tt ")
 				       sub(/>/, "}")
 				       sub(/%/, "\\%") }
@@ -56,4 +56,3 @@ END { if (prevprevprevline != killit) { print prevprevprevline }
       if (prevline != killit) { print prevline }
       if (((prevline != "") && (prevline != killit)) || ((prevline == killit) && (prevprevline != "") && (prevprevline != killit)) || ((prevline == killit) && (prevprevline == killit) && (prevprevprevline != "") && (prevprevprevline != killit))) { print "\n}" }
 }
-

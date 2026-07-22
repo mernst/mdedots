@@ -36,7 +36,7 @@
 
 
 	  (sort '("foo" "bar" "barf" "baz"))
-    
+
 
 (setq string-list (sort string-list))
 
@@ -55,11 +55,11 @@ SORTED-STRING-LIST should be a sorted list of strings."
 		 (
 
 	   (if (cdr (cdr ssl))
-	       (let 
-	 
+	       (let
 
-  
-			    
+
+
+
 
 
 (defvar dired-prev-omit-regexp)

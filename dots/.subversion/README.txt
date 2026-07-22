@@ -55,7 +55,7 @@ The syntax is standard INI format:
 
      The expansion is performed recursively and on demand, during
      svn_option_get.  The name is first searched for in the same
-     section, then in the special [DEFAULT] section. If the name
+     section, then in the special [DEFAULT] section.  If the name
      is not found, the whole '%(name)s' placeholder is left
      unchanged.
 
@@ -77,7 +77,7 @@ registry when passed file names of the form:
 
    REGISTRY:<hive>/path/to/config-key
 
-The REGISTRY: prefix must be in upper case. The <hive> part must be
+The REGISTRY: prefix must be in upper case.  The <hive> part must be
 one of:
 
    HKLM for HKEY_LOCAL_MACHINE
@@ -85,7 +85,7 @@ one of:
 
 The values in config-key represent the options in the [DEFAULT] section.
 The keys below config-key represent other sections, and their values
-represent the options. Only values of type REG_SZ whose name doesn't
+represent the options.  Only values of type REG_SZ whose name doesn't
 start with a '#' will be used; other values, as well as the keys'
 default values, will be ignored.
 
@@ -121,4 +121,3 @@ and one for per-user configuration:
     REGISTRY:HKCU\Software\Tigris.org\Subversion\Servers
     REGISTRY:HKCU\Software\Tigris.org\Subversion\Config
     REGISTRY:HKCU\Software\Tigris.org\Subversion\Hairstyles
-

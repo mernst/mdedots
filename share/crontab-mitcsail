@@ -11,7 +11,7 @@
 # If not at CSAIL, comment it out; do not use an empty definition like "AFS=".
 AFS=/afs/csail.mit.edu/u/m/mernst/bin/share/afs-cron-wrapper
 # Beware of running commands like "$AFS program > myfile":  that's parsed
-# as "($AFS program) > myfile" which means that there are no permissions to 
+# as "($AFS program) > myfile" which means that there are no permissions to
 # myfile.  Use  sh -c "program > myfile"  instead.
 ###
 ### Environment variables

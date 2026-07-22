@@ -121,7 +121,7 @@
 ;; https://annotation-tools.googlecode.com/hg
 ;; to
 ;; https://code.google.com/p/annotation-tools/
-;; 
+;;
 ;; cd
 ;; findfile hgrc > ~/find-hgrc
 ;; etags ~/.mvc-checkouts `cat ~/find-hgrc`
@@ -445,6 +445,8 @@ Transfer them to source that appears later in the file."
 ;;;
 
 
+;; TODO: There are scripts (and maybe even Emacs commands) that do
+;; this more completely and correctly.
 ;; Previously named travis-cleanup-output.
 (defun uncolorize ()
   "Remove color from a shell command output"
@@ -461,9 +463,9 @@ Transfer them to source that appears later in the file."
     (goto-char (point-min))
     (replace-regexp-noninteractive "\\[1m\\(.*?\\)\\[m" "\\1")
     (goto-char (point-min))
-    (replace-string-noninteractive "\n" "\n")
+    (replace-string-noninteractive "\r\n" "\n")
     (goto-char (point-min))
-    (replace-string-noninteractive "" "\n")
+    (replace-string-noninteractive "\r" "\n")
     (goto-char (point-min))
     (replace-string-noninteractive "[K\n" "\n")
     (goto-char (point-min))
@@ -539,7 +541,7 @@ Transfer them to source that appears later in the file."
 
 
 
-;; First convert from Mac 
+;; First convert from Mac.
 (defun cleanup-randoop-log ()
   "Remove/normalize from Randoop output (or the randoop-log.txt file) lines
 that differ from run to run, such as times and directory names."

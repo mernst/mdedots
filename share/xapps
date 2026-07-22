@@ -1,4 +1,0 @@
-#!/bin/csh
-emacs &
-netscape &
-sunbird &

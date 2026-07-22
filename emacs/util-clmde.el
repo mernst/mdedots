@@ -344,7 +344,7 @@ beginning and end, of STRING."
     (concat result string)))
 
 
-
+;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Non-CL utilities which depend on these functions follow.
 ;;;;

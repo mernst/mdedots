@@ -4,7 +4,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; For creating @Proceedings entries
-;;; 
+;;;
 
 (query-replace-regexp
  ;; 1=AAAI2000; 2=AAAI; 3=2000; 4=longtitle; 5=shorttitle
@@ -14,7 +14,7 @@
 @string{\\1date = \\([a-z][a-z][a-z]\\)\\( [#=] .*\\)?}
 @string{\\1addr = \\(\"[^\"]*\"\\|[A-Za-z]+\\)\\( = .*\\)?}
 "
-"@Proceedings{\\1,
+ "@Proceedings{\\1,
   title = 	 \"\\5: \\4\",
   booktitle = 	 \"\\5: \\4\",
   year = 	 \\3,
@@ -32,7 +32,7 @@
 @string{\\1addr = \\(\"[^\"]*\"\\|[A-Za-z]+\\)\\( = .*\\)?}
 @string{\\1date = \\([a-z][a-z][a-z]\\)\\( [#=] .*\\)?}
 "
-"@Proceedings{\\1,
+ "@Proceedings{\\1,
   title = 	 \"\\5: \\4\",
   booktitle = 	 \"\\5: \\4\",
   year = 	 \\3,
@@ -50,7 +50,7 @@
 @string{\\1addr = \\(\"[^\"]*\"\\|[A-Za-z]+\\)\\( = .*\\)?}
 @string{\\1date = \\([a-z][a-z][a-z]\\)\\( [#=] .*\\)?}
 "
-"@Proceedings{\\1,
+ "@Proceedings{\\1,
   title = 	 \"\\4\",
   booktitle = 	 \"\\4\",
   year = 	 \\3,
@@ -68,7 +68,7 @@
 @string{\\1date = \\([a-z][a-z][a-z]\\)\\( [#=] .*\\)?}
 @string{\\1addr = \\(\"[^\"]*\"\\|[A-Za-z]+\\)\\( = .*\\)?}
 "
-"@Proceedings{\\1,
+ "@Proceedings{\\1,
   title = 	 \"\\4\",
   booktitle = 	 \"\\4\",
   year = 	 \\3,
@@ -88,8 +88,8 @@
 
 ;; pages appears before month and address
 (let ((case-fold-search t))
-(tags-query-replace
-"^[ \t]*booktitle[ \t]*=[ \t]*\\([A-Za-z0-9]+\\),
+  (tags-query-replace
+   "^[ \t]*booktitle[ \t]*=[ \t]*\\([A-Za-z0-9]+\\),
 \\(?:[ \t]*year[ \t]*=[ \t]*[\"{]?[0-9]+[\"}]?,
 \\)?\\([ \t]*\\(NEED\\|NO\\)?[Pp]ages[ \t]*=[ \t]*[\"{].*[\"}],\\)
 \\(?:[ \t]*year[ \t]*=[ \t]*[\"{]?[0-9]+[\"}]?,
@@ -99,15 +99,15 @@
 [ \t]*address[ \t]*=[ \t]*\\1addr,?
 \\)\\(?:[ \t]*year[ \t]*=[ \t]*[\"{]?[0-9]+[\"}]?,?
 \\)?"
-"  crossref =     \"\\1\",
+   "  crossref =     \"\\1\",
 \\2
 ")
-)
+  )
 
 ;; pages appears after month and address
 (let ((case-fold-search t))
-(tags-query-replace
-"^[ \t]*booktitle[ \t]*=[ \t]*\\([A-Za-z0-9]+\\),
+  (tags-query-replace
+   "^[ \t]*booktitle[ \t]*=[ \t]*\\([A-Za-z0-9]+\\),
 \\(?:[ \t]*year[ \t]*=[ \t]*[\"{]?[0-9]+[\"}]?,
 \\)?\\(?:[ \t]*address[ \t]*=[ \t]*\\1addr,
 [ \t]*month[ \t]*=.*,?
@@ -117,17 +117,17 @@
 \\)?\\([ \t]*\\(NEED\\|NO\\)?[Pp]ages[ \t]*=[ \t]*[\"{].*[\"}],?\\)
 \\(?:[ \t]*year[ \t]*=[ \t]*[\"{]?[0-9]+[\"}]?,?
 \\)?"
-"  crossref =     \"\\1\",
+   "  crossref =     \"\\1\",
 \\2
 ")
-)
+  )
 
 ;; Only need to do this once ever
 (tags-query-replace
-"^\\([ \t]*pages[ \t]*=.*\\)
+ "^\\([ \t]*pages[ \t]*=.*\\)
 \\([ \t]*booktitle[ \t]*=[ \t]*\\(\"[^\"]*\"\\|{[^}]*}\\|[A-Za-z0-9]+\\),?\\)
 "
-"\\2
+ "\\2
 \\1
 ")
 
@@ -143,4 +143,3 @@
 .*\\)?\\(?:
 .*\\)?
 .*\"\\)\\1\\([:,]\\)" "{\\1\\2\\3\\1 '\\2\\4\\1 '\\2\\5")
-

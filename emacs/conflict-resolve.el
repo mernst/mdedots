@@ -340,7 +340,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
             greater-than-hunk-end-re "\\)")
     )
    "\\5\\1\\3\\4\\6")
-  
+
   ;; OTHER and base are the same.
   (tags-query-replace-noerror
    (concat
@@ -705,7 +705,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 ;; >>>>>>> e7e1e93d462edbc8326a066d532bae9848222596
 ;; ") "@AnnotatedFor({\"interning\", \"lock\"})
 ;; ")
-;; 
+;;
 ;; \\(\\(\\(?:import .*;\\)?
 ;; \\)*\\)"
 ;;
@@ -721,7 +721,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 ;; ") "@AnnotatedFor({\"interning\", \"lock\"})
 ;; public\\1 @UsesObjectEquals class \\2
 ;; ")
-;; 
+;;
 ;; (tags-query-replace (concat less-than-hunk-start-re
 ;; @AnnotatedFor({\"formatter\", \"i18n\"})
 ;; public\\(.*\\) @UsesObjectEquals class \\(.*\\)
@@ -736,7 +736,7 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 ;; ")
 
 ;; Help for merge conflicts:
-;; 
+;;
 ;; (tags-query-replace (concat less-than-hunk-start-re
 ;; \\([^|]*\\)||||||| merged common ancestors
 ;; <<<<<<<<< Temporary merge branch [0-9]
@@ -745,29 +745,29 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 ;; =======
 ;; >>>>>>> 188671d75f03ca6ac40460c17fd6f35bf91e88f3
 ;; ") "\\1\\2")
-;; 
+;;
 ;; (tags-query-replace (concat less-than-hunk-start-re
 ;; \\([^|]*\\)||||||| merged common ancestors
 ;; >>>>>>>>> Temporary merge branch 2
 ;; =======
-;; 
+;;
 ;; >>>>>>> 188671d75f03ca6ac40460c17fd6f35bf91e88f3
 ;; ") "\\1")
-;; 
+;;
 ;; (tags-query-replace (concat less-than-hunk-start-re
 ;; ||||||| merged common ancestors
 ;; <<<<<<<<< Temporary merge branch [0-9]
 ;; =======
 ;; >>>>>>> 188671d75f03ca6ac40460c17fd6f35bf91e88f3
 ;; ") "")
-;; 
+;;
 ;; (tags-query-replace (concat less-than-hunk-start-re
 ;; \\([^|]*\\)||||||| merged common ancestors
 ;; >>>>>>>>> Temporary merge branch [0-9]
 ;; =======
 ;; \\([^>]*\\)>>>>>>> 188671d75f03ca6ac40460c17fd6f35bf91e88f3
 ;; ") "\\1\\2")
-;; 
+;;
 ;; (tags-query-replace (concat less-than-hunk-start-re
 ;; \\([^|]*\\)||||||| merged common ancestors
 ;; <<<<<<<<< Temporary merge branch [0-9]
@@ -776,9 +776,9 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 ;; =======
 ;; \\([^>]*\\)>>>>>>> 188671d75f03ca6ac40460c17fd6f35bf91e88f3
 ;; ") "\\1\\2\\3\4")
-;; 
-;; 
-;; 
+;;
+;;
+;;
 
 (defun resolve-equals-method-conflict ()
   ;; Special case for the `equals()` method.

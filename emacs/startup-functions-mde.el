@@ -609,19 +609,19 @@ Not guaranteed to work in all cases."
 ;;     (if (eq t result)
 ;;         string
 ;;       (car result))))
-;; 
+;;
 ;; ;; Permit partial completion versions to override original when called from
 ;; ;; certain functions, for all-completions and try-completion.
-;; 
+;;
 ;; (defvar partial-completion-context-functions nil
 ;;   "A list of functions (symbols) in which `all-completions' and
 ;; `try-completion' should do partial completion.")
 ;; ;;; -*- lexical-binding: t -*-
-;; 
+;;
 ;; (defvar partial-completion-context-depth 15
 ;;   "The number of stack frames to examine looking for a match to
 ;; `partial-completion-context-functions'.  nil means no limit.")
-;; 
+;;
 ;; (defadvice all-completions (around maybe-partial activate)
 ;;   "Use partial completion, depending on the backtrace."
 ;;   ;; (message "") (backtrace)
@@ -638,7 +638,7 @@ Not guaranteed to work in all cases."
 ;;            (not (in-backtrace '(try-completion-partial))))
 ;;       (setq ad-return-value (apply 'try-completion-partial (ad-get-args 0)))
 ;;     ad-do-it))
-;; 
+;;
 ;; (defun try-completion-tester ()
 ;;   "Does partial completion."
 ;;   (let ((partial-completion-context-functions '(try-completion-tester)))
@@ -648,7 +648,7 @@ Not guaranteed to work in all cases."
 ;;   "Does not do partial completion."
 ;;   (try-completion "mich ern" '("michael ernst")))
 ;; ;; (cl-assert (not (try-completion-tester2)))
-;; 
+;;
 ;; (defun in-backtrace (functions &optional depth)
 ;;   "Return t if a function in `functions' is on the backtrace
 ;; at depth less than `depth'.  `functions' is a list of symbols."
@@ -669,8 +669,8 @@ Not guaranteed to work in all cases."
 ;;       result)))
 ;; ;; (cl-assert (null (in-backtrace '(foo) 100)))
 ;; ;; (cl-assert (in-backtrace '(eval-last-sexp) 15))
-;; 
-;; 
+;;
+;;
 ;; (setq partial-completion-context-functions
 ;;       '(mew-draft-addrbook-expand
 ;;         mew-complete
@@ -691,7 +691,7 @@ Not guaranteed to work in all cases."
 ;;     (end-of-buffer (if (eobp)
 ;;                        (signal (car err) (cdr err))
 ;;                      (goto-char (point-max))))))
-;; 
+;;
 ;; (defadvice scroll-down (around beginning-of-buffer-maybe activate)
 ;;   "If on the first screenful of a buffer but not at the beginning,
 ;; go to the beginning.
@@ -741,7 +741,7 @@ Not guaranteed to work in all cases."
 ;;                                       nil
 ;;                                     bdiff-ignore-whitespace)))
 ;;     ad-do-it))
-;; 
+;;
 ;; (defadvice diff (around emacs-diff-context activate)
 ;;   "For Emacs patches, use context diff format rather than unidiff format."
 ;;   (let* ((filename (if (stringp (ad-get-arg 0))
@@ -781,10 +781,10 @@ Not guaranteed to work in all cases."
 
 ;;; Experimentally commented out, 2025-04-06.
 ;; ;; (Is this still necessary as of Emacs 21.2?)
-;; 
+;;
 ;; ;; I need to advise write-region as well, because it may be called directly
 ;; ;; rather than through basic-save-buffer.
-;; 
+;;
 ;; ;; To disable: (ad-disable-advice 'basic-save-buffer-2 'around 'preserve-group-id)
 ;; (defadvice basic-save-buffer-2 (around preserve-group-id activate)
 ;;   "Try to set the group of the file to what it used to be on disk."
@@ -795,10 +795,10 @@ Not guaranteed to work in all cases."
 ;;              (not (= old-group (nth 3 (file-attributes buffer-file-name)))))
 ;;         (call-process "chgrp" nil 0 nil
 ;;                       (int-to-string old-group) buffer-file-name))))
-;; 
-;; 
+;;
+;;
 ;; ;;; Three failed implementations of preserve-group-id.
-;; 
+;;
 ;; ;; This doesn't work:  when write-region is called by basic-save-buffer-2,
 ;; ;; the original disk file no longer exists, having been moved aside.
 ;; ;; (defadvice write-region (around preserve-group-id activate)
@@ -809,7 +809,7 @@ Not guaranteed to work in all cases."
 ;; ;;     (if old-group
 ;; ;;      (call-process "chgrp" nil 0 nil
 ;; ;;                    (int-to-string old-group) (ad-get-arg 2)))))
-;; 
+;;
 ;; ;; This can't be an advice to basic-save-buffer because we may not know the
 ;; ;; file name until midway through the function, when we certainly call
 ;; ;; write-contents-hook and possibly call basic-save-buffer-1.  So it could
@@ -825,7 +825,7 @@ Not guaranteed to work in all cases."
 ;; ;;     (if old-group
 ;; ;;      (call-process "chgrp" nil 0 nil
 ;; ;;                    (int-to-string old-group) filename))))
-;; 
+;;
 ;; ;; This works, but it took forever to debug, mostly stupid errors masked by
 ;; ;; the fact that hooks don't let errors through.
 ;; ;; (defvar old-group nil

@@ -1,3 +1,5 @@
+.PHONY: all clean test
+
 all: .hunspell_en_US.sorted .enscriptrc .javadoc-index-files .jsr308-demos.properties .mvc-checkouts \
 	.Xresources-cse .Xresources-laptop .Xresources-mac .Xresources-yogaubuntu
 

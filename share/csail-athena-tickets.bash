@@ -2,7 +2,7 @@
 
 afs4athena() {
 
-	function help()	
+	function help()
 	{ #yes this is nasty
 	  echo
 	  echo "this function will get CSAIL and ATHENA krb5 tickets
@@ -19,26 +19,26 @@ afs4athena() {
 
 	function get_tokens()
 	{
-	
-	  KRB5CCNAME=/tmp/krb5cc_$UID 
+
+	  KRB5CCNAME=/tmp/krb5cc_$UID
 	  kinit -5 $USER@CSAIL.MIT.EDU
 	  aklog -cell csail.mit.edu
 
-	  KRB5CCNAME=/tmp/krb5cc_$UID.athena 
+	  KRB5CCNAME=/tmp/krb5cc_$UID.athena
 	  kinit -5 $ATHENA_NAME@ATHENA.MIT.EDU
 	  aklog -cell athena
 
-	  KRB5CCNAME=/tmp/krb5cc_$UID 
-	
+	  KRB5CCNAME=/tmp/krb5cc_$UID
+
 	}
 
-case $1 in 
-     ( "" ) ATHENA_NAME=$USER 
+case $1 in
+     ( "" ) ATHENA_NAME=$USER
 	    get_tokens ;;
 
      ( -h* | -H*) help;;
 
-     ( * )  ATHENA_NAME=$1 
+     ( * )  ATHENA_NAME=$1
 	    get_tokens;;
 esac
 

@@ -792,4 +792,3 @@ mernst@cs.washington.edu   http://homes.cs.washington.edu/~mernst/"
 
 (define-abbrev-table 'vc-git-region-history-mode-abbrev-table '(
                                                                 ))
-
