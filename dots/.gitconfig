@@ -192,3 +192,5 @@
 
 [coderabbit]
 	machineId = cli/3c01479e400e4496a0332660225008d9
+[init]
+	defaultBranch = main
