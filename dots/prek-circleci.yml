@@ -1,0 +1,17 @@
+version: 2.1
+jobs:
+  prek:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - checkout
+      - run:
+          name: Install prek
+          command: uv tool install prek
+      - run:
+          name: Run prek hooks
+          command: prek run -q --all-files
+workflows:
+  build:
+    jobs:
+      - prek
