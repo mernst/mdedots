@@ -13,7 +13,9 @@ hooks = [
   { id = "check-json" },
   { id = "check-merge-conflict" },
   { id = "check-shebang-scripts-are-executable" },
-  { id = "check-symlinks" },
+  { id = "check-symlinks", exclude = { glob = [
+    "dots/.subversion/auth",
+  ] } },
   { id = "check-toml" },
   { id = "check-vcs-permalinks" },
   { id = "check-xml" },
@@ -136,7 +138,7 @@ hooks = [
     "share/javapp",
     "share/myxapps",
     "cronic-orig",
-    "classfile_check_version"
+    "classfile_check_version",
   ] } },
 ]
 
