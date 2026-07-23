@@ -143,6 +143,8 @@ alias clauded='claudetrustdir && claude --model opus --dangerously-skip-permissi
 alias claudea='claudetrustdir && claude --model opus --enable-auto-mode'
 alias claudemax='claudetrustdir && claude --model opus --effort max'
 
+alias prekall='prek -q run --all-files'
+
 ###########################################################################
 ### Printing
 ###

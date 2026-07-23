@@ -155,6 +155,8 @@
 ## Git applies "last one wins", as shown by `git config --get user.email`.
 ## To show the origin of a configuration entry: `git config --list --show-origin`.
 # The include applies to all repositories inside the given directory.
+# Each "gitdir:..." is true if the repository matches the prefix; that
+# is, includeIf is per-repository, not per-machine.
 [includeIf "gitdir:/home/ANT.AMAZON.COM/mdernst/"]
 	path = ~/.gitconfig-extra-amazon
 [includeIf "gitdir:/home/mdernst/"]
