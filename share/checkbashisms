@@ -40,7 +40,7 @@ in /bin/sh scripts and the lack of bashisms in /bin/bash ones.
 EOF
 
 my $version = <<"EOF";
-This is $progname, from the Debian devscripts package, version 2.24.1
+This is $progname, from the Debian devscripts package, version 2.26.7
 This code is copyright 2003 by Julian Gilbey <jdg\@debian.org>,
 based on original code which is copyright 1998 by Richard Braakman
 and copyright 2002 by Josip Rodin.
@@ -657,7 +657,7 @@ sub init_hashes {
           . qr'read\s+(?:-[a-qs-zA-Z\d-]+)' =>
           q<read with option other than -r>,
         $LEADIN
-          . qr'read\s*(?:-\w+\s*)*(?:\".*?\"|[\'].*?[\'])?\s*(?:;|$)' =>
+          . qr'read(?:\s+(?:-\w+\s*)*(?:\".*?\"|[\'].*?[\'])?)?\s*(?:;|$)' =>
           q<read without variable>,
         $LEADIN . qr'echo\s+(-n\s+)?-n?en?\s' => q<echo -e>,
         $LEADIN . qr'exec\s+-[acl]'           => q<exec -c/-l/-a name>,

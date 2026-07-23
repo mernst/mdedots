@@ -1,3 +1,5 @@
+extends: default
+
 rules:
-  document-start:
-    present: disable
+  document-start: disable
+  line-length: disable
