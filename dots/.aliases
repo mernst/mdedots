@@ -581,7 +581,6 @@ alias csail='xsc login'
 alias laptop='(xterm -T laptop -e ssh -X -p 58512 mernst2.no-ip.org &)'
 
 # Godwit can only be logged into from a CSE machine, not from outside the CSE network.
-alias godwit='xswj godwit'
 alias gitlab06='xswj gitlab06'
 alias attu='xswj attu'
 alias honu='xswj honu'
@@ -593,20 +592,22 @@ alias pipsqueak='xsw pipsqueak'
 alias yonder='xsw yonder'
 alias whale='xsw whale'
 alias leviathan=whale
+# These are special because bicycle is the jump host.
+alias bicycle='xswy bicycle'
+alias bicycley='xswy bicycle'
+alias ebicycle='xew bicycle'
+alias godwit='xswy godwit'
 # "egodwit" is problematic because environment variables like $inv don't
 # get defined.  (Perhaps other commands have this problem too, but I don't
 # recall it as a problem for emangold.)
 alias egodwit='xew godwit'
-alias recycle='xsw recycle'
+alias recycle='xswy recycle'
 alias erecycle='xew recycle'
-alias bicycle='xsw bicycle'
-alias bicycley='xswy bicycle'
-alias ebicycle='xew bicycle'
-alias tricycle='xsw tricycle'
+alias tricycle='xswy tricycle'
 alias etricycle='xew tricycle'
-alias bam='xsw bam'
+alias bam='xswy bam'
 alias ebam='xew bam'
-alias boom='xsw boom'
+alias boom='xswy boom'
 alias eboom='xew boom'
 # Tex Live 2023 installation
 # TODO: Within cs.washington.edu, I do NOT need to use a jump host.
