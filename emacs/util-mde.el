@@ -86,7 +86,7 @@
   (expt (apply '* args) (/ 1.0 (funcall 'length args))))
 ;; (cl-assert (equal 2.0 (geometric-mean 1 2 4))
 
-;; To copmute a p-value for a chi-square test, use Excel.
+;; To compute a p-value for a chi-square test, use Excel.
 ;; See: https://www.statisticshowto.com/calculate-chi-square-p-value-excel/ .
 
 
@@ -379,7 +379,7 @@ after that, its first partial elements appear.  The length of LIST is
 
 (defun shuffle (LIST)
   "Shuffle the elements in LIST.
-shuffling is done in place."
+Shuffling is done in place."
   (cl-loop for i in (reverse (number-sequence 1 (1- (length LIST))))
            do (let ((j (random (+ i 1))))
                 (swap LIST i j)))
@@ -839,7 +839,7 @@ Optional fourth argument OBJECT is the string or buffer containing the text."
     (remove-text-properties orig-start end (list pushed-prop 'ignore) object)))
 
 (defun add-list-text-properties (pos prop new-elts &optional object)
-  "Add, at position POS, to the value of the PROP text-proprty.
+  "Add, at position POS, to the value of the PROP text-property.
 That value should be a list; add each of NEW-ELTS to it.
 Optional OBJECT holds the text.
 The old property is returned."
@@ -856,7 +856,7 @@ The old property is returned."
     old-list))
 
 (defun remove-list-text-properties (pos prop old-elts &optional object)
-  "Reduce, at position POS, the value of the PROP text-proprty.
+  "Reduce, at position POS, the value of the PROP text-property.
 That value should be a list; remove each of OLD-ELTS from it.
 Optional OBJECT holds the text.
 The old property is returned."
@@ -1077,7 +1077,7 @@ END, apply FUNCTION to ARGS and return a list of the result."
 
 (defmacro in-window (window &rest body)
   "Executes, in WINDOW, forms of BODY.
-This is more useful than `with-curent-buffer' for window manipulation,
+This is more useful than `with-current-buffer' for window manipulation,
 as by `scroll-up'."
   `(let ((this-window (selected-window)))
      (unwind-protect
@@ -1458,7 +1458,7 @@ iterating until no more occurrences of REGEX appear in the buffer."
 
 (defun buffer-substitute (substitutions backward check)
   "Make replacements in the current buffer according to SUBSTITUTIONS.
-  SUBSTITUTIONS is list of pairs of strings; the cdr of each pair will be
+  SUBSTITUTIONS is a list of pairs of strings; the cdr of each pair will be
 substituted for the car, in order, unless optional argument BACKWARD is
 non-nil, in which case the car is substituted for the cdr and the
 substitutions are done in reverse order.

@@ -123,7 +123,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 # Removed from the below: \nAuto-browse to https://uwcsephdadmits2023.slack.com/
 30 5 * * 1-5    echo -e "Auto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
 30 12 * * 1-5   echo -e "Auto-browse to https://uw-cse.slack.com/ \nAuto-browse to https://serg-9az3899.slack.com/ \nAuto-browse to https://star-lab-usit.slack.com/ \nAuto-browse to https://ucr-riple.slack.com/ " | $MAILCOMMAND -s "Read Slack channels" $EMAIL
-11 6 * * *	$CRONIC make -C $HOME/public_html style-check
+# 11 6 * * *	$CRONIC make -C $HOME/public_html style-check
 ###
 ### Daily -- verify that Checker Framework tests pass; also use for timing information
 ###
@@ -188,7 +188,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 # 20 4 * * Sun	echo -e "Remind TAs about reading assignments for the next week" | $MAILCOMMAND -s "Reading assignments" $EMAIL
 # 10 8 * * *     echo -e "Auto-browse to https://my.ooma.com/inbox" | $MAILCOMMAND -s "Check Ooma voicemail" $EMAIL
 # 10 8 * * Mon,Wed,Fri     echo -e "Auto-browse to https://my.ooma.com/inbox" | $MAILCOMMAND -s "Check Ooma voicemail" $EMAIL
-# Logging in is required per http://meta.stackoverflow.com/questions/275311/multiple-tags-with-java-not-working but I usually stay logged in, so avaid this message which usually isn't necessary
+# Logging in is required per http://meta.stackoverflow.com/questions/275311/multiple-tags-with-java-not-working but I usually stay logged in, so avoid this message which usually isn't necessary
 # 09 1 * * *	echo -e "Auto-browse to http://stackoverflow.com/" | $MAILCOMMAND -s "Log into Stack Overflow using personal Google ID" $EMAIL
 # 21 4 * * Tue,Fri	echo -e "Auto-browse to https://uwhires.admin.washington.edu/eng/hm/Order_Profile.cfm?szOrderID=125016" | $MAILCOMMAND -s "Check UW Hires" $EMAIL
 ###

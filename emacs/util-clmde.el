@@ -354,11 +354,11 @@ beginning and end, of STRING."
 ;;;
 
 (defsubst blank-string-p (string)
-  "Return non-nil if STRING contains any non-whitespace characters."
+  "Return non-nil if STRING contains no non-whitespace characters."
   (string-match "^[ \t\n]*$" string nil 'inhibit-modify))
 
 (defsubst blank-string-or-nil-p (string-or-nil)
-  "Return non-nil if STRING is nil or contains any non-whitespace characters."
+  "Return non-nil if STRING is nil or contains no non-whitespace characters."
   (or (not string-or-nil)
       (blank-string-p string-or-nil)))
 
