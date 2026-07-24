@@ -60,3 +60,6 @@ __pycache__/
 
 # Rust
 .ruff_cache/
+
+# Background jobs
+nohup.out
