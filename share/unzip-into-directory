@@ -1,6 +1,6 @@
 #!/bin/sh
 
-## Given a zip file foo.zip or foo-jar, creates a directory and
+## Given a zip file foo.zip or foo.jar, creates a directory and
 ## extracts the file into it.  The point is to avoid extracting
 ## multiple files into the current directory.
 

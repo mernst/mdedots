@@ -178,7 +178,7 @@ fi
 # According to the tex man page:
 # In TEXINPUTS, an empty path component will be replaced with the paths
 # defined in the texmf.cnf file.  For example, set TEXINPUTS to
-# ".:/home/usr/tex:"  to prepend the current direcory and
+# ".:/home/usr/tex:"  to prepend the current directory and
 # ``/home/user/tex'' to the standard search path.
 
 ## The "bib" directory that might not exist is causing fits for Emacs 23

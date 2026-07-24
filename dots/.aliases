@@ -509,7 +509,7 @@ xsc() {
   fi
   nohup xterm -T "$1" -e ssh -X mernst@"$1".csail.mit.edu &
 }
-# Do not use use a jump host.  This is for machines accessible outside cs.washington.edu.
+# Do not use a jump host.  This is for machines accessible outside cs.washington.edu.
 xswnoj() {
   if [ "$#" -ne 1 ]; then
     echo "xswnoj: pass one argument; received $*"

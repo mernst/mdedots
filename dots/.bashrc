@@ -107,7 +107,7 @@ export PS1="\h \#% "
 
 # Don't put duplicate lines in the history.
 # export HISTCONTROL=ignoredups
-# Supercedes the above.
+# Supersedes the above.
 export HISTIGNORE="[   ]*:&:bg:fg"
 
 if [ -d /homes/gws/mernst ]; then

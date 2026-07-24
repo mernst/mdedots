@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# This needs to run every day, not just weekdays, because of apparent bug
+# This needs to run every day, not just weekdays, because of an apparent bug
 # that omits Sunday/Monday items from Friday reports.
 
 # I think I must specify the filename directly, because mernst.cron (which

@@ -691,7 +691,7 @@ Man-init-defvars to renew.
 
 nuke-trailing-whitespace.el:
 
-documentation should menton write-file-functions, not write-file-hooks.
+documentation should mention write-file-functions, not write-file-hooks.
 
 ===========================================================================
 
