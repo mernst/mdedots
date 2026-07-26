@@ -174,7 +174,7 @@ def echoautobrowsemaybe(*args: str) -> None:
             print("Nothing to see in " + url, file=MAILBODY)
     else:
         print("Auto-browse to " + url, file=MAILBODY)
-        print(file=MAILBODY)  # add newline, to avoid confusing GMail
+        print(file=MAILBODY)  # add newline, to avoid confusing Gmail
 
     if debug:
         MAILBODY.flush()

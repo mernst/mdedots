@@ -60,7 +60,7 @@ previously exist.  Otherwise, if it did not exist, no action is taken."
                    (insert field ": \n")
                    (backward-char 2)
                    t)))
-        ;; point is not just after the colon and before a space or tab
+        ;; point is now just after the colon and before a space or tab
         (progn
           (forward-char 1)
           (delete-region (point)

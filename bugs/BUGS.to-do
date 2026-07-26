@@ -612,7 +612,7 @@ Another caveat should be added, along these lines:
   instances after the module is reloaded via the `reload' function, because
   the reference to the global BaseClassName will be different than the old
   instance's notion of its base class.  Instances created after reloading
-  will work; only instance existing both before and after the reloading
+  will work; only instances existing both before and after the reloading
   will err when such functions are called.)
 
 ---------------------------------------------------------------------------
@@ -694,7 +694,7 @@ After accepting the changes by clicking "OK", if I exit and re-start
 quicken, then once again the toolbar is not displayed.
 
 As a related problem, even when the above process made the toolbar appear,
-The "Find all" field did not appear with the rest of the toolbar, even
+the "Find all" field did not appear with the rest of the toolbar, even
 though the checkbox in the lower right-hand corner (that should have
 caused it to be displayed) was not checked.
 

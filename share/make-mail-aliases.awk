@@ -11,7 +11,7 @@
 # If there's no alias, use firstname.lastname
 # [If there is an alias, use that also anyway?]
 # All aliases are lowercase.  The advantage of NOT doing this is to
-# make two separate lists in completing-read; but I think that more
+# make two separate lists in completing-read; but I think that is more
 # confusing than helpful.
 
 # Does not work correctly on aliases with names in quotes, eg

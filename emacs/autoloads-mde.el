@@ -248,7 +248,7 @@
 (autoload 'get-latexinfo-node "get-node" "Get help on a LaTeXinfo topic" t)
 ;; (define-key help-map "g" 'get-latexinfo-node)
 (autoload 'latexinfo-format-buffer "latexinfo" "Format a buffer for LaTeXinfo" t)
-(autoload 'latexinfo-mode "latexinfomd" "An editing for LaTeXinfo files" t)
+(autoload 'latexinfo-mode "latexinfomd" "An editing mode for LaTeXinfo files" t)
 (autoload 'nodify-file "nodify" "Create nodes structure for a LaTeXinfo file." t)
 (autoload 'tex-to-latexinfo "tolatexinfo" "Convert a buffer from TeXinfo to LaTeXinfo" t)
 ;; This is like nodify-file, built into LaTeXinfo (but that fails)
@@ -273,8 +273,8 @@
 ;; (autoload 'mc-setversion "mc-setversion" nil t)
 ;; ; writing
 ;; (add-hook 'mail-mode-hook 'mc-install-write-mode)
-;; (setq mc-pgp-comment nil)            ; eliminate gratuituous advertising
-;; (setq mc-pgp50-comment nil)          ; eliminate gratuituous advertising
+;; (setq mc-pgp-comment nil)            ; eliminate gratuitous advertising
+;; (setq mc-pgp50-comment nil)          ; eliminate gratuitous advertising
 ;; ; reading
 ;; (add-hook 'rmail-mode-hook 'mc-install-read-mode)
 ;; (add-hook 'rmail-summary-mode-hook 'mc-install-read-mode)

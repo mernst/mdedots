@@ -302,7 +302,7 @@ The regular expressions are implicitly anchored at the front.")
 (advice-add 'save-some-buffers :after #'save-some-buffers--regenerate-buffer-menu)
 
 (defun save-some-buffers--save-type-break (&optional _arg _pred)
-  "Unconditionally save buffer\".type-break\"."
+  "Unconditionally save buffer \".type-break\"."
   (save-buffer-if-modified (get-buffer ".type-break")))
 (advice-add 'save-some-buffers :before #'save-some-buffers--save-type-break)
 
