@@ -16,3 +16,7 @@
 * It is permissible to use digits, such as “there were 3 blind mice”.
 * A 4-digit number does not require a comma; “2093” is acceptable.
 * Do not place commas within numbers in LaTeX tables.
+
+## Java warning suppressions
+
+* The justification for a Checker-Framework-related type-checking warning suppression must start on the same line as the `@SuppressWarnings` key string, and should ideally be brief enough to fit on that same line.
