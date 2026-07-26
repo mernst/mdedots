@@ -1,11 +1,19 @@
 name: Claude Code Review
 
+# Use "pull_request_target:" rather than "pull_request:".  GitHub withholds
+# secrets and downgrades the GITHUB_TOKEN to read-only for "pull_request:" runs
+# that originate from a fork, so the action cannot obtain an OIDC token and has
+# no API key.  "pull_request_target:" runs in the context of the base
+# repository, which has both.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, ready_for_review, reopened]
 
 jobs:
   claude-review:
+    # "pull_request_target:" exposes the base repository's secrets to a job that
+    # examines pull request code, so run only for trusted authors.
+    if: contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
 
     runs-on: ubuntu-latest
     permissions:
@@ -18,6 +26,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          # "pull_request_target:" checks out the base branch by default; check
+          # out the pull request's code instead, which is what is under review.
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
 
       - name: Run Claude Code Review
