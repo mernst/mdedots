@@ -17,7 +17,10 @@ jobs:
 
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read # Claude cannot push or merge; it can only comment.
+      # To post the review.  Note that on a pull request from a fork, GitHub
+      # issues a read-only token no matter what this block requests, so Claude
+      # cannot post a review on a fork's pull request.
       pull-requests: write
       issues: read
       id-token: write
