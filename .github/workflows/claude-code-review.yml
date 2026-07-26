@@ -5,7 +5,7 @@ name: Claude Code Review
 # that originate from a fork, so the action cannot obtain an OIDC token and has
 # no API key.  "pull_request_target:" runs in the context of the base
 # repository, which has both.
-on:
+"on":
   pull_request_target:
     types: [opened, synchronize, ready_for_review, reopened]
 
@@ -24,7 +24,7 @@ jobs:
       actions: read # Required for Claude to read CI results on PRs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # "pull_request_target:" checks out the base branch by default; check
           # out the pull request's code instead, which is what is under review.
