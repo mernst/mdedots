@@ -1,10 +1,24 @@
 name: Prek checks
 "on": [push, pull_request]
+
+# Only the newest commit on a branch needs linting.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   prek:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # A linter needs no write access.  This matters because prek runs the hooks
+    # that "prek.toml" names, and on a "pull_request:" run those hooks come
+    # from the pull request rather than from the base repository.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: j178/prek-action@v2
         with:
           extra-args: '-q'
