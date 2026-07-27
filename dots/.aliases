@@ -429,6 +429,9 @@ pdfclean() {
 md2html() {
   pandoc --standalone --css "${HOME}"/dots/fullwidth.css < "$1" > "${1%.*}".html
 }
+md2pdf() {
+  pandoc "$1" -o "${1%.*}".pdf -V geometry:margin=1in
+}
 
 ###########################################################################
 ### Java
