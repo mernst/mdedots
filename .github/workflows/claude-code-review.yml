@@ -201,6 +201,23 @@ jobs:
           # line.  What remains is "Bash(gh pr comment:*)", which the note on
           # "--allowedTools" below rejects.  Asking for a top-level comment
           # anyway would lose whatever Claude wrote in one.
+          #
+          # "track_progress: true" would supply the missing channel, at a price
+          # not worth paying.  That input forces tag mode even when "prompt" is
+          # set, and tag mode opens the tracking comment that
+          # "mcp__github_comment__update_claude_comment" needs.  Tag mode also
+          # fetches the pull request's head and checks it out over the
+          # workspace root, so the base repository would no longer be what
+          # surrounds Claude, and the "pr" subdirectory below would be beside
+          # the point.  Inline comments alone keep that separation.
+          #
+          # The prompt also says how to write a path, because
+          # "create_inline_comment" hands its "path" argument to the pull
+          # request review comment API unchanged.  That API wants a path
+          # relative to the repository's root, and Claude reads every file as
+          # "pr/<path>".  A comment on "pr/<path>" fails, and the message that
+          # comes back names the line number before the path, so Claude is apt
+          # to retry the same path on a different line.
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -220,6 +237,11 @@ jobs:
             on the line that best illustrates the observation.  Do not restate
             what the diff does, and do not raise stylistic preferences that the
             repository's linters already enforce.
+
+            A path in an inline comment is relative to the repository's root,
+            as the diff writes it.  Strip the leading "pr/" from the path of
+            every file that you read from the "pr" subdirectory before you
+            pass the path to the inline comment tool.
 
           # Tools for PR review.
           # "gh pr comment" would give a prompt injection channel for this job's secrets.
