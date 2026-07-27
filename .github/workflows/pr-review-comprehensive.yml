@@ -4,6 +4,12 @@ name: PR Review with Progress Tracking
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
 
+# One review at a time per pull request.  Upon a push to a pull request,
+# cancel any running review rather than pay for a review of stale code.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   review-with-tracking:
     runs-on: ubuntu-latest
