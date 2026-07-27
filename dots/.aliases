@@ -597,7 +597,7 @@ alias leviathan=whale
 alias bicycle='xswy bicycle'
 alias bicycley='xswy bicycle'
 alias ebicycle='xew bicycle'
-alias godwit='xswy godwit'
+alias godwit='xswj godwit'
 # "egodwit" is problematic because environment variables like $inv don't
 # get defined.  (Perhaps other commands have this problem too, but I don't
 # recall it as a problem for emangold.)
