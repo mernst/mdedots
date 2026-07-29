@@ -707,6 +707,11 @@ alias git-diff-all="(git diff && git-diff-new)"
 alias gcb=git-checkout-branch
 alias gnb=git-new-branch
 alias rmgob='rm -rf $(git-orphaned-branches)'
+gcbs() {
+  for br in "$@"; do
+    gcb "${br}"
+  done
+}
 
 # shellcheck disable=SC2046 # want argument splitting
 git_log_show() { git show $(git log --format=format:%H "$@"); }
