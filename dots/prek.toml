@@ -113,7 +113,6 @@ hooks = [
   { id = "spotless", name = "spotless formatting", language = "unsupported", entry = "./gradlew spotlessApply", files = "\\.java$", pass_filenames = false },
 ]
 
-
 ## Makefiles
 
 [[repos]]
