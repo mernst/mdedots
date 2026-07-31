@@ -107,7 +107,7 @@ alias bytecomp='emacs -batch -f batch-byte-compile'
 # copytree <src> <dest> # copy files from <src> to <dest>
 copytree() { (cd "$1" && tar cf - .) | (cd "$2" && tar xvfBp -); }
 # findfile <filepat> # finds files matching <filepat> below .
-findfile() { command find . -iname "$@" -print; }
+findfile() { command find . -name "$@" -print; }
 alias findfiles='find . -type f'
 
 alias ag='ag --hidden --follow --search-zip'
@@ -707,6 +707,11 @@ alias git-diff-all="(git diff && git-diff-new)"
 alias gcb=git-checkout-branch
 alias gnb=git-new-branch
 alias rmgob='rm -rf $(git-orphaned-branches)'
+gcbs() {
+  for br in "$@"; do
+    gcb "${br}"
+  done
+}
 
 # shellcheck disable=SC2046 # want argument splitting
 git_log_show() { git show $(git log --format=format:%H "$@"); }
