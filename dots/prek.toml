@@ -2,6 +2,26 @@
 # See https://prek.j178.dev for more information.
 #:schema https://www.schemastore.org/prek.json
 
+exclude = { glob = [
+  "**/*.diff",
+  "**/*.diff3",
+  "**/*.goal",
+  "**/*.graffle",
+  "**/*.ics",
+  "**/*.key",
+  "**/*.patch",
+  "**/*.pdf",
+  "**/*.pdf-*",
+  "**/*.ppt",
+  "**/*.pptx",
+  "**/*.ps",
+  "**/*.ps-*",
+  "**/*.svg",
+  "src/main/resources/specifications/jdk/*",
+  "**/COPYING",
+] }
+
+
 [[repos]]
 repo = "builtin"
 hooks = [
@@ -27,46 +47,21 @@ hooks = [
   { id = "destroyed-symlinks" },
   { id = "detect-private-key" },
   { id = "end-of-file-fixer", exclude = { glob = [
-    "**/*.diff",
-    "**/*.diff3",
-    "**/*.goal",
-    "**/*.ics",
-    "**/*.key",
-    "**/*.patch",
-    "**/*.pdf",
-    "**/*.pdf-*",
-    "**/*.ppt",
-    "**/*.pptx",
-    "**/*.ps",
-    "**/*.ps-*",
-    "**/*.svg",
     "**/.vscode/settings.json",
     "**/expected*",
     "**/native-image/**",
     "**/non-conflicted-file-without-terminator.txt",
     "**/tests/squeeze-blank-lines-test/**",
     "bugs/jikes-patches/*",
+    "src/main/resources/specifications/jdk",
+  ] } },
+  { id = "file-contents-sorter", files = { glob = [
+    "src/systemTest/resources/test-covgoals/**",
   ] } },
   { id = "fix-byte-order-marker" },
   { id = "forbid-new-submodules" },
-  { id = "mixed-line-ending", exclude = { glob = [
-    "**/*.ps",
-    "**/*.ps-*",
-  ] } },
+  { id = "mixed-line-ending" },
   { id = "trailing-whitespace", exclude = { glob = [
-    "**/*.diff",
-    "**/*.diff3",
-    "**/*.goal",
-    "**/*.ics",
-    "**/*.key",
-    "**/*.patch",
-    "**/*.pdf",
-    "**/*.pdf-*",
-    "**/*.ppt",
-    "**/*.pptx",
-    "**/*.ps",
-    "**/*.ps-*",
-    "**/*.svg",
     "**/tests/squeeze-blank-lines-test/**",
     "**/expected*",
     ".aspell.en.prepl",
@@ -168,12 +163,7 @@ hooks = [{ id = "pyupgrade" }]
 [[repos]]
 repo = "https://github.com/gitleaks/gitleaks"
 rev = "v8.24.2"
-hooks = [
-  { id = "gitleaks", exclude = { glob = [
-    "**/AdjacentTest*",
-    "**/*.ps",
-  ] } },
-]
+hooks = [{ id = "gitleaks", exclude = { glob = ["**/AdjacentTest*"] } }]
 
 [[repos]]
 repo = "https://github.com/Yelp/detect-secrets"
