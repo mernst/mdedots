@@ -881,10 +881,9 @@ Returns t if any change was made, nil otherwise."
 
     (cond
 
+     ;; Not visiting a file.
      ((not filename)
       nil)
-
-
 
      ;; No formatting
 
@@ -892,13 +891,17 @@ Returns t if any change was made, nil otherwise."
 
      ;; Perform formatting
 
-     ;; Randoop
-     ((and (string-match-p "/\\(randoop\\)" filename)
-	   (not (string-match-p "CloneVisitor\\.java$" filename))
-	   (not (string-match-p "/src/testinput/" filename)))
+     ((or (string-match-p "/untangling-tools-benchmark" filename)
+	  (and (string-match-p "/AST-Merging-Evaluation" filename)
+	       (not (string-match-p "git-hires-merge" filename)))
+	  (string-match-p "/git-scripts" filename)
+          (string-match-p "/grt-testing" filename)
+	  (string-match-p "/plume-scripts" filename)
+	  (string-match-p "/html-tools" filename)
+          (string-match-p "/prompt-mutation-experiments" filename)
+          (string-match-p "/randoop[^/]/scripts/" filename)
+          )
       t)
-
-
 
      ;; No formatting for all other projects
      (t
@@ -909,7 +912,7 @@ Returns t if any change was made, nil otherwise."
   "Michael Ernst's shell mode hook."
   (setq inleft-string "# ")
   (setq indent-tabs-mode nil)
-  (if (enable-shell-formatting-p)
+  (if (enable-shell-script-formatting-p)
       (progn
         ;; TODO: change for certain files (but I use 2 for my own projects).
         (setq sh-basic-offset 2)
@@ -950,36 +953,6 @@ ARGS are args to pass it.  Buffer file name is provided as last arg."
 	  (pop-to-buffer "*validate*")
 	  (error "Invalid shell script")))))
 
-(defun enable-shell-formatting-p ()
-  "Returns true if the file matches a hard-coded list of directories."
-  (let ((filename (buffer-file-name)))
-
-    (cond
-
-     ;; Not visiting a file.
-     ((not filename)
-      nil)
-
-     ;; No formatting
-
-     ;; ...
-
-     ;; Perform formatting
-
-     ((or (string-match-p "/untangling-tools-benchmark" filename)
-	  (and (string-match-p "/AST-Merging-Evaluation" filename)
-	       (not (string-match-p "git-hires-merge" filename)))
-	  (string-match-p "/git-scripts" filename)
-          (string-match-p "/grt-testing" filename)
-	  (string-match-p "/plume-scripts" filename)
-	  (string-match-p "/html-tools" filename)
-          (string-match-p "/prompt-mutation-experiments" filename)
-          )
-      t)
-
-     ;; No formatting for all other projects
-     (t
-      nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Perl
@@ -1839,8 +1812,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer
-      (list (apply 'call-process program nil (current-buffer) nil args)
-            (buffer-string))))
+    (list (apply 'call-process program nil (current-buffer) nil args)
+          (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
