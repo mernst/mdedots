@@ -139,7 +139,8 @@
 [init]
 	defaultBranch = main
 
-[url "ssh://git@github.com:"]
+# This does not seem to work.
+[url "git@github.com:"]
 	insteadOf = https://github.com/
 
 [rerere]
