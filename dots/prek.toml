@@ -59,7 +59,6 @@ hooks = [
     "**/tests/squeeze-blank-lines-test/**",
     "bugs/jikes-patches/*",
     "java/jtb/**",
-    "src/main/resources/specifications/jdk",
     "tests/kvasir-tests/**",
   ] } },
   { id = "file-contents-sorter", files = { glob = [
@@ -123,7 +122,7 @@ hooks = [
 ## Makefiles
 
 [[repos]]
-repo = "https://github.com/checkmake/checkmake.git"
+repo = "https://github.com/checkmake/checkmake"
 rev = "0.2.2"
 hooks = [
   { id = "checkmake", args = [
@@ -321,6 +320,18 @@ hooks = [
 ]
 
 [[repos]]
-repo = "https://github.com/adrienverge/yamllint.git"
-rev = "v1.29.0"
+repo = "https://github.com/adrienverge/yamllint"
+rev = "v1.38.0"
 hooks = [{ id = "yamllint" }]
+
+[[repos]]
+repo = "https://github.com/rhysd/actionlint"
+rev = "v1.7.12"
+hooks = [{ id = "actionlint" }]
+
+# This doesn't install the tool!  It fails with "Circleci CLI could
+# not be found." unless you have done `sudo snap install circleci`.
+[[repos]]
+repo = "https://github.com/zahorniak/pre-commit-circleci"
+rev = "v1.3.0"
+hooks = [{ id = "circleci_validate" }]
