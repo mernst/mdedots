@@ -21,7 +21,7 @@ import webbrowser
 # google_acct_a = "mernst" + "@" + "cs.washington.edu"
 # google_acct_b = "michael.ernst"
 google_acct_a = "0"
-google_acct_b = "1"
+google_acct_b = "2"
 
 
 def spam_search(search_term: str) -> None:

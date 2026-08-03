@@ -114,5 +114,6 @@
     "mode": "hold"
   },
   "skipDangerousModePermissionPrompt": true,
+  "theme": "auto",
   "voiceEnabled": true
 }
