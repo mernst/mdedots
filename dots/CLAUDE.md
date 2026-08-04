@@ -26,3 +26,7 @@
 ### Code reviews
 
 * In code reviews, do not complain about an empty pull request body.
+
+### Historical comments
+
+* Do not write comments about how the code used to work.  Comments should focus on how it works now, and (occasionally) how it would fail if the implementation were changed.
