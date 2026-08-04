@@ -30,3 +30,7 @@
 ### Historical comments
 
 * Do not write comments about how the code used to work.  Comments should focus on how it works now, and (occasionally) how it would fail if the implementation were changed.
+
+### Tests
+
+* Use ".goal" as a suffix for goal/gold/expected files that show what a test should produce.  Do not use ".out" as a suffix for such files.
