@@ -94,8 +94,15 @@ This is good for modes like Perl, where the parser can get confused."
                          ((boundp 'sh-basic-offset) sh-basic-offset)
                          (t 2)))))
           "-"))
+  (add-to-list 'apheleia-skip-functions #'my-apheleia-skip-conflict-p)
   )
-
+(defun my-apheleia-skip-conflict-p ()
+  "Return t if the buffer contains Git merge conflict markers."
+  (save-excursion
+    (save-restriction
+      (widen)
+      (goto-char (point-min))
+      (re-search-forward "^<<<<<<< " nil t))))
 
 (setq-default indent-tabs-mode nil)
 
@@ -1812,8 +1819,8 @@ How does this differ from whatever is built in?"
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer
-    (list (apply 'call-process program nil (current-buffer) nil args)
-          (buffer-string))))
+      (list (apply 'call-process program nil (current-buffer) nil args)
+            (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
