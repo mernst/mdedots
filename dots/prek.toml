@@ -87,8 +87,10 @@ hooks = [
 
 ## CircleCI
 
-# This doesn't install the tool!  It fails with "Circleci CLI could
-# not be found." unless you have done `sudo snap install circleci`.
+# This doesn't install the tool!  It fails with "Circleci CLI could not be
+# found." unless you have installed the CircleCI CLI.  Using `snap` to install
+# leads to permission problems due to snap confirement.  To install:
+# - run: curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/main/install.sh | sudo bash
 [[repos]]
 repo = "https://github.com/zahorniak/pre-commit-circleci"
 rev = "v1.3.0"
