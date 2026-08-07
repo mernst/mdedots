@@ -70,8 +70,9 @@ This is good for modes like Perl, where the parser can get confused."
 ;; Automatically format buffers when saving them.
 (use-package apheleia)
 ;; For debugging:
-(setq apheleia-log-only-errors nil)
-(setq apheleia-log-debug-info t)
+(when t
+  (setq apheleia-log-only-errors nil)
+  (setq apheleia-log-debug-info t))
 (with-eval-after-load "apheleia"
   (setf (alist-get 'python-mode apheleia-mode-alist)
         '(ruff-isort ruff))
@@ -98,11 +99,14 @@ This is good for modes like Perl, where the parser can get confused."
   )
 (defun my-apheleia-skip-conflict-p ()
   "Return t if the buffer contains Git merge conflict markers."
-  (save-excursion
-    (save-restriction
-      (widen)
-      (goto-char (point-min))
-      (re-search-forward "^<<<<<<< " nil t))))
+  (let ((result
+         (save-excursion
+           (save-restriction
+             (widen)
+             (goto-char (point-min))
+             (re-search-forward "^<<<<<<< " nil t)))))
+    (message "skip %s? %s" (buffer-file-name (current-buffer)) result)
+    result))
 
 (setq-default indent-tabs-mode nil)
 
@@ -311,12 +315,6 @@ if point is not in a function."
 ;; (use-package lsp-java :config (add-hook 'java-mode-hook 'lsp))
 ;; (with-eval-after-load "lsp-mode"
 ;;   (define-key lsp-mode-map (kbd "C-c C-l") lsp-command-map))
-
-
-(use-package apheleia)          ; auto-format code on save
-;; For debugging:
-;; (setq apheleia-log-only-errors nil)
-;; (setq apheleia-log-debug-info t)
 
 
 

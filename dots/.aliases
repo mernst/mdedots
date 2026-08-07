@@ -718,6 +718,8 @@ gcbs() {
 git_log_show() { git show $(git log --format=format:%H "$@"); }
 alias git-log-show=git_log_show
 
+### JSON
+
 # Pretty-print a .json or .jsonl file.
 json_pp() {
   cp "$1" "$1".tmp \
