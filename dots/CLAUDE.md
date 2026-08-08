@@ -3,6 +3,7 @@
 ## Files on disk
 
 * Before responding to a user query, re-read any files that you previously read but have changed since then.
+* When asked to write a file, default to writing it in the current directory, not under `/tmp/`.
 
 ## English text
 
