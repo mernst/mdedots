@@ -115,6 +115,8 @@ hooks = [
     "**/pubs-bytopic-headfoot.html",
     "**/pubs-bytopic-underreview-headfoot.html",
     "google04aaa4eb05fd668b.html",
+    "pubs/*-abstract.html",
+    "pubs/index.html",
     "tests/sources/six170/huffman.html",
     "tools/hierarchical/clustering.html",
   ] } },
