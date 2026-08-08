@@ -54,15 +54,15 @@
   (concat "\\(" regex "\\)"))
 
 (defconst less-than-hunk-start-re
-  "^<<<<<<<\\(?: HEAD\\)\n")
+  "^<<<<<<<\\(?: HEAD\\(?::.*\\)?\\)\n")
 (defconst less-than-hunk-start-grouped
   (grouped less-than-hunk-start-re))
 (defconst vertical-bar-separator-re
-  "|||||||\\(?: [0-9a-f]\\{7,11\\}\\| merged common ancestors\\)?\n")
+  "|||||||\\(?: [0-9a-f]\\{7,11\\}\\(?::.*\\)?\\| merged common ancestors\\)?\n")
 (defconst equal-sign-separator-re
   "=======\n")
 (defconst greater-than-hunk-end-re
-  ">>>>>>>\\(?: [0-9a-f]\\{40\\}\\)?\n")
+  ">>>>>>>\\(?: [0-9a-f]\\{40\\}\\(?::.*\\)?\\)?\n")
 
 (defun lines-without-at-start-re (char)
   "Matches a sequence of lines that do not start with the given character."
