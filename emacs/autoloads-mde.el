@@ -118,6 +118,10 @@
 ;; Work around: Key sequence C-x M-g starts with non-prefix key C-x ESC
 ;; https://gitter.im/magit/magit?at=601c19379fa6765ef8f9eb8d
 (setq magit-define-global-key-bindings nil)
+;; Swap RET and C-RET, so RET goes to editable current version of file.
+(with-eval-after-load "magit-diff"
+  (define-key magit-diff-mode-map (kbd "RET") #'magit-diff-visit-file-worktree)
+  (define-key magit-diff-mode-map (kbd "C-RET") #'magit-diff-visit-file))
 
 (defun pull-request-url ()
   "URL for the pull request on GitHub corresponding to the current branch. Uses Magit."

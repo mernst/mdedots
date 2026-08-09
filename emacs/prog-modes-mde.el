@@ -99,14 +99,11 @@ This is good for modes like Perl, where the parser can get confused."
   )
 (defun my-apheleia-skip-conflict-p ()
   "Return t if the buffer contains Git merge conflict markers."
-  (let ((result
-         (save-excursion
-           (save-restriction
-             (widen)
-             (goto-char (point-min))
-             (re-search-forward "^<<<<<<< " nil t)))))
-    (message "skip %s? %s" (buffer-file-name (current-buffer)) result)
-    result))
+  (save-excursion
+    (save-restriction
+      (widen)
+      (goto-char (point-min))
+      (re-search-forward "^<<<<<<< " nil t))))
 
 (setq-default indent-tabs-mode nil)
 
