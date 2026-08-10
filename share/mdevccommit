@@ -42,7 +42,7 @@ fi
 if [ -n "$VERBOSE" ]; then
   echo "Skipping compilation"
 else
-  cronic make -C "$HOME"/bib test push
+  cronic --permit-stderr make -C "$HOME"/bib test push
   # I'm not sure why this is necessary, given the Git hooks
   cronic make -C ~/bin/src/mdedots
 fi
@@ -93,8 +93,4 @@ done
 # wait shell command) and then return from this only when they are all
 # done.
 
-# It would also be nice to suppress all output from the commands and show
-# it only if there is a problem such as a timeout, especially since
-# compiling mew produces so much output.
-
-make -C ~/bib push
+cronic --permit-stderr make -C ~/bib push
