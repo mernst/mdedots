@@ -178,8 +178,9 @@ Here is an example setting:
 ;;       (setq replacements (cdr replacements))))
 ;;   filename)
 
-(abbreviate-file-name "/home/mernst/research/version-control/LLMerge-paper")
-(Buffer-menu--pretty-file-name "/home/mernst/research/version-control/LLMerge-paper")
+;; Testing
+;; (abbreviate-file-name "/home/mernst/research/version-control/LLMerge-paper")
+;; (Buffer-menu--pretty-file-name "/home/mernst/research/version-control/LLMerge-paper")
 
 ;;;
 ;;; Omit temporary buffers

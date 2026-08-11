@@ -1156,8 +1156,8 @@ After running this, run from the shell:  print-mail bulk." t)
 
 
 (defun anchor-directory (dir)
-  "Return \"^DIR/\"."
-  (concat "^" dir "\\(/\\|$\\)"))
+  "Return \"DIR/\"."
+  (concat dir "\\(/\\|$\\)"))
 
 (defun process-environment-vars-directories-element (elt)
   (if (consp elt)
@@ -1227,8 +1227,6 @@ After running this, run from the shell:  print-mail bulk." t)
 
 (setq buffer-menu-replacement-alist
       (append
-
-
        '(
          ;; Replacement is performed for each element in turn.
          ;; Regexps are anchored to beginning of filename.
@@ -1724,12 +1722,10 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (advice-add 'recenter-top-bottom :after #'recenter-top-bottom--redraw-frame)
 
 
-;; This needs to come first to avoid ":around" clobbering other advice.
-(defun buffer-menu--pop-to-buffer (_buffer-menu-function &optional arg)
-  "Use `pop-to-buffer' instead of `switch-to-buffer'."
-  (pop-to-buffer (list-buffers-noselect arg))
-  (buffer-menu--display-help))
-(advice-add 'buffer-menu :around #'buffer-menu--pop-to-buffer)
+;; `buffer-menu--pop-to-buffer' is defined in buffer-menu-mde.el, which is
+;; loaded by autoloads-mde.el.  Do not add that advice here: re-adding an
+;; existing piece of advice moves it to the outermost position, and this
+;; ":around" advice does not call the rest of the advice chain.
 
 
 (defun strip-line-numbers ()

@@ -12,6 +12,10 @@
 * Retain the fences (three backticks) around fenced code blocks.
 * Use technical writing conventions; for example, punctuation is written inside quotation marks if it belongs to the quote, and punctuation is written outside quotation marks if it belongs to the larger sentence.
 
+### LaTeX
+
+* No `~` is required before `\ref`.
+
 ### Conventions for numbers
 
 * It is permissible to use digits, such as “there were 3 blind mice”.

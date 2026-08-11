@@ -424,6 +424,7 @@ Leaves the rest of the conflict as is."
 ;; (tags-conflict-resolve-reverse " *@SuppressWarnings(.*)" " *@SideEffectsOnly(.*)")
 
 
+(if nil
 (tags-query-replace
  "<<<<<<<.*
     @SuppressWarnings(\"this-escape\")
@@ -437,7 +438,7 @@ Leaves the rest of the conflict as is."
     @SuppressWarnings({\"this-escape\",
            \"purity.not.sideeffectfree.call\"} // initCause affects only the new object
     )
-")
+"))
 
 
 
