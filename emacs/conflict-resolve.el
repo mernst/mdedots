@@ -197,13 +197,31 @@ public\\1 @UsesObjectEquals class \\2
 
 
 ;; This is appropriate only for the Checker Framework annotated JDK.
-(defun move-cf-imports-to-beginning ()
-  ;; Move Checker Framework imports before the hunk.
+(defun move-cf-imports-from-head-to-before ()
+  "Move Checker Framework imports from HEAD to before the hunk."
+  (interactive)
   (tags-query-replace
    (concat less-than-hunk-start-grouped
            "\\(\\(import org.checkerframework..*;\n\\)+\n\\)")
    "\\2\\1")
   )
+;; This is appropriate only for the Checker Framework annotated JDK.
+(defun move-cf-imports-from-other-to-before ()
+  "Move Checker Framework imports from HEAD to before the hunk."
+  (interactive)
+  (tags-query-replace
+   (concat (grouped
+            ;; TODO: UNTESTED.
+            (concat less-than-hunk-start-re
+                    "\n?\\(import .*;\n\\)*" ; left-lines-re
+                    vertical-bar-separator-re
+                    "\n?\\(import .*;\n\\)*" ; base-lines-re
+                    equal-sign-separator-re))
+           "\\(\\(import org.checkerframework..*;\n\\)+\n\\)")
+   "\\2\\1")
+  )
+
+
 
 
 ;; This is superseded by merge-java-imports-driver.sh .
@@ -300,7 +318,8 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 
 
 (defun tags-conflict-resolve-annotation-lines ()
-  "When two annotation groups are the same, resolve those lines."
+  "When two annotation groups are the same, resolve those lines.
+Leaves the rest of the conflict as is."
   (interactive)
 
   ;; HEAD and OTHER are the same.
@@ -383,6 +402,44 @@ written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
            "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
    "\\2\\1")
   )
+
+(defun tags-conflict-resolve-reverse (left right)
+  "If base is empty, and the left and right are as given, swap their order."
+  (interactive)
+  (tags-query-replace
+   (concat "^<<<<<<<.*
+\\(" left "\\)
+|||||||.*
+=======
+\\(" right "\\)
+>>>>>>>.*
+")
+   (concat "\\2
+\\1
+")))
+
+;; (tags-conflict-resolve-reverse " *@Override" " *@Pure")
+;; (tags-conflict-resolve-reverse " *@IntrinsicCandidate" " *@StaticallyExecutable")
+;; (tags-conflict-resolve-reverse " *@Override" " *@SideEffectsOnly(.*)")
+;; (tags-conflict-resolve-reverse " *@SuppressWarnings(.*)" " *@SideEffectsOnly(.*)")
+
+
+(tags-query-replace
+ "<<<<<<<.*
+    @SuppressWarnings(\"this-escape\")
+|||||||.*
+=======
+    @SideEffectFree
+    @SuppressWarnings(\"purity.not.sideeffectfree.call\") // initCause affects only the new object
+>>>>>>>.*
+"
+ "    @SideEffectFree
+    @SuppressWarnings({\"this-escape\",
+           \"purity.not.sideeffectfree.call\"} // initCause affects only the new object
+    )
+")
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Resolve version control conflicts in method signatures
