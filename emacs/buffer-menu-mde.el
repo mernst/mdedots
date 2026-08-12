@@ -116,7 +116,7 @@ Also sets dired buffer modification flags."
 (defvar buffer-menu-replacement-alist nil
   "Association list of directories and their abbreviations for the buffer menu.
 Regular expression replacement is performed for all of these elements in turn.
-Each will be anchored at the front to the beginning of a filename (actually,
+Each will be anchored at the front to the be*ginning of a filename (actually,
 to whitespace).
 
 You need not include a mapping of your home directory to \"~\", as that is
