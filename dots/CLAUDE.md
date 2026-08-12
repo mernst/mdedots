@@ -24,6 +24,12 @@
 
 ## Programming
 
+### Branches
+
+Do not change the branch of any existing git repository or clone or working copy.
+For example, do not run `git switch` or `git checkout [-b] <branch-name>` in any pre-existing directory.
+When creating a new branch, use a new directory or a new clone.
+
 ### Java warning suppressions
 
 * The justification for a Checker-Framework-related type-checking warning suppression must start on the same line as the `@SuppressWarnings` key string, and should ideally be brief enough to fit on that same line.
