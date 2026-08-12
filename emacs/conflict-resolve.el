@@ -421,12 +421,13 @@ Leaves the rest of the conflict as is."
 ;; (tags-conflict-resolve-reverse " *@Override" " *@Pure")
 ;; (tags-conflict-resolve-reverse " *@IntrinsicCandidate" " *@StaticallyExecutable")
 ;; (tags-conflict-resolve-reverse " *@Override" " *@SideEffectsOnly(.*)")
-;; (tags-conflict-resolve-reverse " *@SuppressWarnings(.*)" " *@SideEffectsOnly(.*)")
+;; (tags-conflict-resolve-reverse " *@SuppressWarnings(.*)" " *@\\(SideEffectFree\\|SideEffectsOnly(.*)\\)")
+
 
 
 (if nil
-(tags-query-replace
- "<<<<<<<.*
+    (tags-query-replace
+     "<<<<<<<.*
     @SuppressWarnings(\"this-escape\")
 |||||||.*
 =======
@@ -434,7 +435,7 @@ Leaves the rest of the conflict as is."
     @SuppressWarnings(\"purity.not.sideeffectfree.call\") // initCause affects only the new object
 >>>>>>>.*
 "
- "    @SideEffectFree
+     "    @SideEffectFree
     @SuppressWarnings({\"this-escape\",
            \"purity.not.sideeffectfree.call\"} // initCause affects only the new object
     )
