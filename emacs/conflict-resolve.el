@@ -66,7 +66,7 @@
 
 (defun lines-without-at-start-re (char)
   "Matches a sequence of lines that do not start with the given character."
-  (concat "\\(?:\n\\|[^" char "].*\n\\)*"))
+  (concat "\\(?:[^" char "\n].*\n\\|\n\\)*"))
 
 (defconst left-lines-re
   (lines-without-at-start-re "|"))
@@ -211,13 +211,12 @@ public\\1 @UsesObjectEquals class \\2
   (interactive)
   (tags-query-replace
    (concat (grouped
-            ;; TODO: UNTESTED.
             (concat less-than-hunk-start-re
-                    "\n?\\(import .*;\n\\)*" ; left-lines-re
+                    "\n?\\(?:import .*;\n\\)*" ; left-lines-re
                     vertical-bar-separator-re
-                    "\n?\\(import .*;\n\\)*" ; base-lines-re
+                    "\n?\\(?:import .*;\n\\)*" ; base-lines-re
                     equal-sign-separator-re))
-           "\\(\\(import org.checkerframework..*;\n\\)+\n\\)")
+           "\\(\\(?:import org.checkerframework..*;\n\\)+\n\\)")
    "\\2\\1")
   )
 
