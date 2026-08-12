@@ -16,6 +16,7 @@ suffix=${suffix#jdk-}
 suffix=${suffix#jdk11u-}
 suffix=${suffix#jdk17u-}
 suffix=${suffix#jdk21u-}
+suffix=${suffix#jdk25u-}
 suffix=${suffix#stubparser-}
 # echo "suffix = ${suffix}"
 
@@ -31,4 +32,6 @@ suffix=${suffix#stubparser-}
   if [ -d "jdk-$suffix" ]; then ln -sf "jdk-$suffix" jdk; else ln -sf jdk-branch-master jdk; fi
   cd "$t/libraries" && rm -f jdk21u
   if [ -d "jdk21u-$suffix" ]; then ln -sf "jdk21u-$suffix" jdk21u; else ln -sf jdk21u-branch-master jdk21u; fi
+  cd "$t/libraries" && rm -f jdk25u
+  if [ -d "jdk25u-$suffix" ]; then ln -sf "jdk25u-$suffix" jdk25u; else ln -sf jdk25u-branch-master jdk25u; fi
 )
