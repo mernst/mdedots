@@ -8,8 +8,8 @@ paper's reference list, one reference per line.
 The script locates the "References" heading and the end of the reference list by
 analyzing the text layout that "pdftotext -bbox-layout" produces.  It reads the
 reference list in reading order (down each column of each page), discards running
-heads and page numbers, groups the lines into references, and joins the lines of
-each reference.
+heads, page numbers, and the line numbers of a submission, groups the lines into
+references, and joins the lines of each reference.
 
 A line is recognized as the first line of a reference by its label ("[12]" or "3."),
 or by its indentation, or by the shortness of the line that precedes it.
@@ -19,7 +19,8 @@ Requires the program pdftotext, which is part of poppler.
 
 import argparse
 import collections
-import os
+import itertools
+import pathlib
 import re
 import shutil
 import statistics
@@ -86,6 +87,13 @@ NUMERIC_LABEL_RE = re.compile(r"^([0-9]{1,3})\.(?=\s|$)")
 # Any label at the beginning of a reference, in either style.
 LABEL_RE = re.compile(BRACKETED_LABEL_RE.pattern + "|" + NUMERIC_LABEL_RE.pattern)
 
+# A line that consists of nothing but digits, such as a line number in the margin.
+DIGITS_ONLY_RE = re.compile(r"^[0-9]{1,5}$")
+
+# How many numbers must stand in a vertical row in the margin before they are treated
+# as the line numbers of a submission rather than as text.
+MIN_LINE_NUMBERS = 5
+
 # Ligatures that some PDF files use in place of separate characters.
 LIGATURES = {
     "ﬀ": "ff",
@@ -124,14 +132,17 @@ class Line:
     ymax: float
     text: str
     column: int = 0  # 0-based column index, set by assign_columns()
-    furniture: bool = False  # whether this is a running head or a page number
+    # Whether this is a running head, a page number, or a line number in the margin.
+    furniture: bool = False
 
     @property
     def height(self):
+        """The height of the line, in PostScript points."""
         return self.ymax - self.ymin
 
     @property
     def word_count(self):
+        """The number of words in the line."""
         return len(self.text.split())
 
     def normalized(self):
@@ -139,6 +150,9 @@ class Line:
 
         A word that is set in small capitals is rejoined first, so that the initial
         letter of "R EFERENCES" is not mistaken for a section letter.
+
+        Returns:
+            The text of the line, in lowercase and without a section number.
         """
         text = SMALL_CAPS_WORD_RE.sub(r"\1\2", self.text.strip())
         return SECTION_NUMBER_RE.sub("", text).lower()
@@ -147,6 +161,9 @@ class Line:
         """Return the line's text, lowercased and without spaces or punctuation.
 
         This canonicalizes headings such as "5. REFERENCES" and "R E F E R E N C E S".
+
+        Returns:
+            The text of the line, reduced to its lowercase letters.
         """
         return re.sub(r"[^a-z]", "", self.normalized())
 
@@ -162,35 +179,51 @@ class Page:
     column_boundaries: list = field(default_factory=list)
 
     def content_lines(self):
-        """Return the lines that are neither a running head nor a page number."""
+        """Return the lines that are text of the document rather than furniture.
+
+        Returns:
+            The lines of the page that are not marked as furniture.
+        """
         return [line for line in self.lines if not line.furniture]
 
 
 def die(message) -> NoReturn:
+    """Write the message to standard error and exit with a failure status."""
     print("pdf-references.py: " + message, file=sys.stderr)
     sys.exit(2)
 
 
 def run(command):
-    """Run the command, returning its standard output.  Exit if the command fails."""
-    result = subprocess.run(command, capture_output=True, text=True)
+    """Run the command, returning its standard output.  Exit if the command fails.
+
+    Returns:
+        The standard output of the command.
+    """
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
-        die(
-            "command failed: %s\n%s"
-            % (" ".join(command), result.stderr.strip() or result.stdout.strip())
-        )
+        explanation = result.stderr.strip() or result.stdout.strip()
+        die(f"command failed: {' '.join(command)}\n{explanation}")
     return result.stdout
 
 
 def clean_text(text):
-    """Return the text with ligatures expanded and stray whitespace removed."""
+    """Return the text with ligatures expanded and stray whitespace removed.
+
+    Returns:
+        The text, with each ligature replaced by the characters it stands for and
+        with each run of whitespace replaced by a single space.
+    """
     for ligature, replacement in LIGATURES.items():
         text = text.replace(ligature, replacement)
     return " ".join(text.split())
 
 
 def read_pages(pdf_file):
-    """Return the pages of the PDF file, as a list of Page."""
+    """Return the pages of the PDF file, as a list of Page.
+
+    Returns:
+        The pages of the PDF file, with their furniture and columns marked.
+    """
     if shutil.which("pdftotext") is None:
         die("cannot find program pdftotext, which is part of poppler")
     xml_text = INVALID_XML_CHARACTER_RE.sub(
@@ -199,7 +232,7 @@ def read_pages(pdf_file):
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError as e:
-        die("cannot parse the output of pdftotext for %s: %s" % (pdf_file, e))
+        die(f"cannot parse the output of pdftotext for {pdf_file}: {e}")
     pages = []
     for page_index, page_element in enumerate(root.iter(XHTML + "page")):
         page = Page(
@@ -226,11 +259,12 @@ def read_pages(pdf_file):
             )
         pages.append(page)
     if pages == []:
-        die("%s contains no pages" % pdf_file)
+        die(f"{pdf_file} contains no pages")
     if all(page.lines == [] for page in pages):
-        die("%s contains no text; it may consist of scanned images" % pdf_file)
+        die(f"{pdf_file} contains no text; it may consist of scanned images")
     mark_furniture(pages)
     for page in pages:
+        mark_line_numbers(page)
         assign_columns(page)
     return pages
 
@@ -253,8 +287,58 @@ def mark_furniture(pages):
                 key = (re.sub(r"[0-9]+", "#", line.text), round(line.ymin / 3))
                 candidates[key].append(line)
     for lines in candidates.values():
-        if len(set(line.page for line in lines)) >= 2:
+        if len({line.page for line in lines}) >= 2:
             for line in lines:
+                line.furniture = True
+
+
+def overlapping_groups(lines):
+    """Group the lines into maximal sets whose x coordinates overlap one another.
+
+    Returns:
+        A list of groups of lines, ordered by the leftmost x coordinate of each group.
+    """
+    groups = []
+    for line in sorted(lines, key=lambda line: line.xmin):
+        if groups != [] and line.xmin <= max(other.xmax for other in groups[-1]):
+            groups[-1].append(line)
+        else:
+            groups.append([line])
+    return groups
+
+
+def mark_line_numbers(page):
+    """Mark each line of the page that is a line number in the margin.
+
+    A paper that is under submission is often typeset with a number beside every line
+    of text, or beside every fifth line.  Such a number is recognized by standing in a
+    vertical row of several numbers that increase downward and that lie beside the
+    text rather than within it.
+
+    The numbers of a numbered code listing satisfy this description too, and they are
+    marked as well.  That is harmless, because a code listing is not a reference.
+    """
+    numbers = [line for line in page.lines if DIGITS_ONLY_RE.match(line.text)]
+    others = [line for line in page.lines if not DIGITS_ONLY_RE.match(line.text)]
+    for group in overlapping_groups(numbers):
+        if len(group) < MIN_LINE_NUMBERS:
+            continue
+        group.sort(key=lambda line: line.ymin)
+        values = [int(line.text) for line in group]
+        if values != sorted(set(values)):
+            continue
+        xmin = min(line.xmin for line in group)
+        xmax = max(line.xmax for line in group)
+        ymin = min(line.ymin for line in group)
+        ymax = max(line.ymax for line in group)
+        # Text that shares both rows and columns with the numbers would mean that the
+        # numbers stand within the text:  a column of a table, say.
+        within_text = any(
+            line.xmin < xmax and xmin < line.xmax and line.ymin < ymax and ymin < line.ymax
+            for line in others
+        )
+        if not within_text:
+            for line in group:
                 line.furniture = True
 
 
@@ -270,11 +354,7 @@ def assign_columns(page):
     left = [line for line in lines if line.xmax < middle]
     right = [line for line in lines if line.xmin > middle]
     spanning = [line for line in lines if line.xmin <= middle <= line.xmax]
-    if (
-        len(left) >= 4
-        and len(right) >= 4
-        and len(spanning) <= max(2, 0.15 * len(lines))
-    ):
+    if len(left) >= 4 and len(right) >= 4 and len(spanning) <= max(2, 0.15 * len(lines)):
         page.column_boundaries = [
             (max(line.xmax for line in left) + min(line.xmin for line in right)) / 2
         ]
@@ -286,6 +366,9 @@ def reading_order(pages):
     """Return the content lines of all pages, in reading order.
 
     The reading order is by page, then by column, then down the column.
+
+    Returns:
+        The content lines of all the pages, in reading order.
     """
     result = []
     for page in pages:
@@ -303,6 +386,9 @@ def find_references_heading(lines, use_first, start_page):
 
     If `use_first`, return the first such heading rather than the last one.  If
     `start_page` is not None, consider only headings on that 0-based page.
+
+    Returns:
+        The index of the heading, or None if no heading was found.
     """
     candidates = [
         index
@@ -323,6 +409,9 @@ def find_last_reference_line(lines, heading_index, margins):
     heading is recognized by its text, or by being taller (that is, set in a larger
     font) than a line of the reference list.  `margins` maps a page and column to its
     left and right margin, as computed by column_margins().
+
+    Returns:
+        The index of the last line of the reference list.
     """
     body = lines[heading_index + 1 :]
     if body == []:
@@ -336,10 +425,7 @@ def find_last_reference_line(lines, heading_index, margins):
         # A heading starts at the left margin, whereas an indented line is a
         # continuation of a reference.  A continuation line that contains a URL can be
         # as tall as a heading, because a URL is set in a different font.
-        at_margin = (
-            line.xmin
-            <= margins[(line.page, line.column)][0] + HEADING_MARGIN_TOLERANCE
-        )
+        at_margin = line.xmin <= margins[line.page, line.column][0] + HEADING_MARGIN_TOLERANCE
         is_heading = (
             at_margin
             and not BRACKETED_LABEL_RE.match(line.text)
@@ -359,10 +445,12 @@ def label_starts(lines):
 
     A bare number is accepted as a label only if the numbers of all the references
     are 1, 2, 3, ..., because a line begins with a number for other reasons too.
+
+    Returns:
+        The indices of the labeled lines, or an empty set if the references are
+        not labeled.
     """
-    bracketed = set(
-        index for index, line in enumerate(lines) if BRACKETED_LABEL_RE.match(line.text)
-    )
+    bracketed = {index for index, line in enumerate(lines) if BRACKETED_LABEL_RE.match(line.text)}
     if len(bracketed) >= 2:
         return bracketed
     numbered = []
@@ -372,15 +460,16 @@ def label_starts(lines):
             numbered.append((index, int(match.group(1))))
     numbers = [number for (_, number) in numbered]
     if len(numbered) >= 3 and numbers == list(range(1, len(numbered) + 1)):
-        return set(index for (index, _) in numbered)
+        return {index for (index, _) in numbered}
     return set()
 
 
 def group_entries(lines):
     """Group the lines into references.
 
-    Return a list of lists of Line, and a description of how the beginning of each
-    reference was recognized.
+    Returns:
+        The references, each one a list of Line, and a description of how the
+        beginning of each reference was recognized.
     """
     starts = label_starts(lines)
     method = "labels such as [12]"
@@ -399,7 +488,12 @@ def group_entries(lines):
 
 
 def column_margins(lines):
-    """Return a map from (page, column) to the leftmost and rightmost x coordinate."""
+    """Return a map from (page, column) to the leftmost and rightmost x coordinate.
+
+    Returns:
+        A map from each (page, column) that appears in `lines` to a pair of its
+        leftmost and rightmost x coordinate.
+    """
     margins = {}
     for line in lines:
         key = (line.page, line.column)
@@ -415,12 +509,16 @@ def indentation_starts(lines):
     continuation lines are indented.  In a first-line-indent layout, the opposite
     holds.  The layout with fewer reference starts is the correct interpretation,
     because a reference occupies at least one line.
+
+    Returns:
+        The indices of the lines that start a reference, or an empty set if every
+        line has the same indentation.
     """
     margins = column_margins(lines)
     flush = set()
     indented = set()
     for index, line in enumerate(lines):
-        left = margins[(line.page, line.column)][0]
+        left = margins[line.page, line.column][0]
         if line.xmin <= left + INDENT_TOLERANCE:
             flush.add(index)
         else:
@@ -435,22 +533,23 @@ def short_line_starts(lines):
 
     When the references are neither labeled nor indented, they are separated by
     vertical space, and the last line of a reference is shorter than a full line.
+
+    Returns:
+        The indices of the lines that start a reference.
     """
     margins = column_margins(lines)
     gaps = [
         second.ymin - first.ymax
-        for first, second in zip(lines, lines[1:])
+        for first, second in itertools.pairwise(lines)
         if first.page == second.page and first.column == second.column
     ]
     typical_gap = statistics.median(gaps) if gaps != [] else 0.0
     starts = set()
     for index, line in enumerate(lines[1:], start=1):
         previous = lines[index - 1]
-        left, right = margins[(previous.page, previous.column)]
+        left, right = margins[previous.page, previous.column]
         same_column = previous.page == line.page and previous.column == line.column
-        if previous.xmax < right - 0.08 * (right - left):
-            starts.add(index)
-        elif (
+        if previous.xmax < right - 0.08 * (right - left) or (
             same_column and line.ymin - previous.ymax > typical_gap + 0.5 * line.height
         ):
             starts.add(index)
@@ -458,7 +557,12 @@ def short_line_starts(lines):
 
 
 def is_broken_url(text):
-    """Return true if the text ends with a URL that continues on the next line."""
+    """Return true if the text ends with a URL that continues on the next line.
+
+    Returns:
+        True if the last word of the text is a URL that ends in a character at
+        which a URL is customarily broken.
+    """
     last_word = text.rsplit(None, 1)[-1] if text.split() != [] else ""
     return ("://" in last_word or last_word.startswith("www.")) and re.search(
         r"[/.:~=&?_-]$", last_word
@@ -471,6 +575,9 @@ def join_lines(lines, dehyphenate):
     If `dehyphenate`, a hyphen at the end of a line is removed when the next line
     begins with a lowercase letter.  That is usually right, but it is wrong for a
     word such as "object-oriented" that was broken at its own hyphen.
+
+    Returns:
+        The text of the lines, joined into one line.
     """
     result = ""
     for line in lines:
@@ -480,11 +587,7 @@ def join_lines(lines, dehyphenate):
         elif text.startswith("//") or is_broken_url(result):
             # A hyphen in a URL is part of the URL, not a sign of hyphenation.
             result = result + text
-        elif (
-            dehyphenate
-            and re.search(r"[a-zA-Z]-$", result)
-            and re.match(r"[a-z]", text)
-        ):
+        elif dehyphenate and re.search(r"[a-zA-Z]-$", result) and re.match(r"[a-z]", text):
             result = result[:-1] + text
         else:
             result = result + " " + text
@@ -495,20 +598,22 @@ def formatted(text, width):
     """Return the text of one reference, wrapped to the given width.
 
     A width of 0 means not to wrap:  the reference occupies a single line.
+
+    Returns:
+        The text, with each line after the first indented by 4 spaces.
     """
     if width <= 0:
         return text
     return "\n".join(
-        textwrap.wrap(
-            text, width=width, subsequent_indent="    ", break_on_hyphens=False
-        )
+        textwrap.wrap(text, width=width, subsequent_indent="    ", break_on_hyphens=False)
     )
 
 
 def main():
+    """Write the reference list of the PDF file that is named on the command line."""
     parser = argparse.ArgumentParser(
         description="Write a text file containing only a paper's bibliography, "
-        + "one reference per line.",
+        "one reference per line.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""A PDF file records no boundary between one reference and the next,
 so the output is a best effort; check it before relying on it.  If a heading is not
@@ -519,7 +624,7 @@ found, or the wrong one is, use --first, --start-page, --end-page, or --to-end."
         "-o",
         "--output",
         help='the output file, or "-" for standard output '
-        + '(default: the input file with its extension replaced by "-refs.txt")',
+        '(default: the input file with its extension replaced by "-refs.txt")',
     )
     parser.add_argument(
         "-w",
@@ -547,7 +652,7 @@ found, or the wrong one is, use --first, --start-page, --end-page, or --to-end."
         "--raw",
         action="store_true",
         help="write each line of the PDF file as its own line, "
-        + "rather than joining the lines of a reference",
+        "rather than joining the lines of a reference",
     )
     parser.add_argument(
         "--first",
@@ -563,39 +668,36 @@ found, or the wrong one is, use --first, --start-page, --end-page, or --to-end."
         "--end-page",
         type=int,
         help="the 1-based page on which the reference list ends "
-        + "(default: determined automatically)",
+        "(default: determined automatically)",
     )
     parser.add_argument(
         "--to-end",
         action="store_true",
         help="the reference list extends to the end of the document",
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="print what was detected"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="print what was detected")
     args = parser.parse_args()
 
-    if not os.path.isfile(args.pdf_file):
-        die("no such file: %s" % args.pdf_file)
+    pdf_path = pathlib.Path(args.pdf_file)
+    if not pdf_path.is_file():
+        die(f"no such file: {args.pdf_file}")
     output_file = args.output
     if output_file is None:
-        output_file = os.path.splitext(args.pdf_file)[0] + "-refs.txt"
-    if output_file != "-" and os.path.abspath(output_file) == os.path.abspath(
-        args.pdf_file
-    ):
-        die("the output file is the same as the input file: %s" % output_file)
+        output_file = str(pdf_path.with_name(pdf_path.stem + "-refs.txt"))
+    if output_file != "-" and pathlib.Path(output_file).resolve() == pdf_path.resolve():
+        die(f"the output file is the same as the input file: {output_file}")
 
     pages = read_pages(args.pdf_file)
     lines = reading_order(pages)
 
     start_page = None if args.start_page is None else args.start_page - 1
     if start_page is not None and not 0 <= start_page < len(pages):
-        die("--start-page %d is not in 1..%d" % (args.start_page, len(pages)))
+        die(f"--start-page {args.start_page} is not in 1..{len(pages)}")
     heading_index = find_references_heading(lines, args.first, start_page)
     if heading_index is None:
         die(
-            'found no "References" or "Bibliography" heading in %s' % args.pdf_file
-            + ("" if start_page is None else " on page %d" % args.start_page)
+            f'found no "References" or "Bibliography" heading in {args.pdf_file}'
+            + ("" if start_page is None else f" on page {args.start_page}")
         )
     heading = lines[heading_index]
 
@@ -603,33 +705,27 @@ found, or the wrong one is, use --first, --start-page, --end-page, or --to-end."
         last_index = len(lines) - 1
     elif args.end_page is not None:
         if not 1 <= args.end_page <= len(pages):
-            die("--end-page %d is not in 1..%d" % (args.end_page, len(pages)))
+            die(f"--end-page {args.end_page} is not in 1..{len(pages)}")
         on_end_page = [
             index
             for index, line in enumerate(lines)
             if line.page == args.end_page - 1 and index > heading_index
         ]
         if on_end_page == []:
-            die("page %d contains no text after the heading" % args.end_page)
+            die(f"page {args.end_page} contains no text after the heading")
         last_index = on_end_page[-1]
     else:
-        last_index = find_last_reference_line(
-            lines, heading_index, column_margins(lines)
-        )
+        last_index = find_last_reference_line(lines, heading_index, column_margins(lines))
     last_line = lines[last_index]
     if last_line.page < heading.page:
         die(
-            "the reference list appears to end on page %d, before its heading on "
-            "page %d; use --start-page, --end-page, or --to-end"
-            % (last_line.page + 1, heading.page + 1)
+            f"the reference list appears to end on page {last_line.page + 1}, before its "
+            f"heading on page {heading.page + 1}; use --start-page, --end-page, or --to-end"
         )
 
     reference_lines = lines[heading_index + 1 : last_index + 1]
     if reference_lines == []:
-        die(
-            'nothing follows the "%s" heading on page %d'
-            % (heading.text, heading.page + 1)
-        )
+        die(f'nothing follows the "{heading.text}" heading on page {heading.page + 1}')
     # Messages go to standard error if the references go to standard output.
     message_stream = sys.stderr if output_file == "-" else sys.stdout
     if args.raw:
@@ -639,7 +735,7 @@ found, or the wrong one is, use --first, --start-page, --end-page, or --to-end."
         texts = [join_lines(entry, not args.keep_hyphens) for entry in entries]
         if args.verbose:
             print(
-                "Found the beginning of each reference by %s." % method,
+                f"Found the beginning of each reference by {method}.",
                 file=message_stream,
             )
     if args.strip_labels:
@@ -650,21 +746,15 @@ found, or the wrong one is, use --first, --start-page, --end-page, or --to-end."
     if output_file == "-":
         sys.stdout.write(text)
     else:
-        with open(output_file, "w", encoding="utf-8") as stream:
-            stream.write(text)
+        pathlib.Path(output_file).write_text(text, encoding="utf-8")
     if args.verbose or output_file != "-":
         noun = "line" if args.raw else "reference"
+        if len(texts) != 1:
+            noun = noun + "s"
         print(
-            'Wrote %d %s to %s, from the "%s" heading on page %d through page %d of %s.'
-            % (
-                len(texts),
-                noun if len(texts) == 1 else noun + "s",
-                output_file,
-                heading.text,
-                heading.page + 1,
-                last_line.page + 1,
-                args.pdf_file,
-            ),
+            f"Wrote {len(texts)} {noun} to {output_file}, "
+            f'from the "{heading.text}" heading on page {heading.page + 1} '
+            f"through page {last_line.page + 1} of {args.pdf_file}.",
             file=message_stream,
         )
 
