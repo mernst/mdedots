@@ -39,3 +39,7 @@
 ### Tests
 
 * Use ".goal" as a suffix for goal/gold/expected files that show what a test should produce.  Do not use ".out" as a suffix for such files.
+
+### The Checker Framework
+
+* When running tests on the `checker-framework` repository or its forks (usually found in directories named `$t/checker-framework*`, ignore `slow.typechecking` warnings.
