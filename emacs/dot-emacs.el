@@ -155,6 +155,15 @@ the value of the last one, or nil if there are none."
 (if (not system-site)
     (error "Where am I?  system-site=nil  (system-name)=%s" (system-name)))
 
+(defvar system-is-wsl
+  (and (eq system-type 'gnu/linux)
+       (string-match "-[Mm]icrosoft" (shell-command-to-string "uname -a")
+                     nil 'inhibit-modify)
+       t)
+  "Non-nil if Emacs is running under Windows Subsystem for Linux.
+WSL1 reports \"-Microsoft\" in the output of `uname -a', WSL2 reports
+\"-microsoft-standard\".")
+
 (defmacro cse (&rest body)
   "Execute BODY if running at UW Department of Computer Science & Engineering."
   (declare (indent 0))
@@ -1747,15 +1756,11 @@ This can make comparisons easier."
 ;; Apparently .Xresources is read after the .emacs file is?
 
 
-(if (string-match "Linux.*Microsoft.*Linux"
-                  (shell-command-to-string "uname -a") nil 'inhibit-modify)
-    (progn
-      ;; (setq system-type-specific 'wsl/linux) ;; for later use.
-      (setq
-       browse-url-generic-program  "/mnt/c/Windows/System32/cmd.exe"
-       browse-url-generic-args     '("/c" "start" "")
-       browse-url-browser-function 'browse-url-generic)
-      ))
+(when system-is-wsl
+  (setq
+   browse-url-generic-program  "/mnt/c/Windows/System32/cmd.exe"
+   browse-url-generic-args     '("/c" "start" "")
+   browse-url-browser-function 'browse-url-generic))
 
 (if (eq system-type 'darwin)
     (progn
@@ -1809,8 +1814,7 @@ This can make comparisons easier."
 ;;      (define-key rg-mode-map "\M-p" 'rg-prev-file)  ; was unbound
 ;;      )
 
-(when (string-match "-[Mm]icrosoft" (shell-command-to-string "uname -a") nil 'inhibit-modify)
-  ;; WSL: WSL1 has "-Microsoft", WSL2 has "-microsoft-standard"
+(when system-is-wsl
   (add-to-list 'browse-url-filename-alist
                (cons "^file:///"
                      "file://wsl.localhost/Ubuntu/")
