@@ -40,11 +40,11 @@
 ;;; 5.2 Trigonometric and related functions
 
 (defun signum (x)
-  (cond ((plusp x)
+  (cond ((> x 0)
          1)
         ((zerop x)
          0)
-        ((minusp x)
+        ((< x 0)
          -1)
         (t
          (error "What kind of number is this in signum?"))))
@@ -226,7 +226,7 @@ NEWCHAR and OLDCHAR are characters."
 N defaults to 1.  If LIST has fewer than N elements, NIL is returned."
   (let ((copied-elts (- (length list) (or n 1)))
         result)
-    (while (and list (plusp copied-elts))
+    (while (and list (> copied-elts 0))
       (setq result (cons (car list) result)
             copied-elts (1- copied-elts)
             list (cdr list)))
