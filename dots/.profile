@@ -253,8 +253,7 @@ export PATH="$HOME/bin/install/infer/infer/bin:$PATH"
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/old-lib
 # # Isn't this needed for F15?
 # # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/lib64
-export LD_LIBRARY_PATH=${HOME}/.local/lib/:${LD_LIBRARY_PATH}
-export LD_LIBRARY_PATH=${HOME}/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib:${HOME}/.local/lib
+export LD_LIBRARY_PATH="${HOME}/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib:${HOME}/.local/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
 ###########################################################################
 ### Clean up the path
@@ -271,7 +270,11 @@ if [ -f "$HOME/bin/src/plume-scripts/path-remove" ]; then
     PATH=$TRIMMED_PATH
     export PATH
   fi
-  LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | "$HOME/bin/src/plume-scripts/path-remove")
+  TRIMMED_LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | "$HOME/bin/src/plume-scripts/path-remove")
+  if [ -n "$TRIMMED_LD_LIBRARY_PATH" ]; then
+    LD_LIBRARY_PATH=$TRIMMED_LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+  fi
 fi
 
 if [ "$DEBUGLOGIN" ]; then echo "path = $PATH"; fi
