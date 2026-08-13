@@ -1008,8 +1008,12 @@ After running this, run from the shell:  print-mail bulk." t)
   "Add RET to the search string and search."
   (interactive)
   (isearch-process-search-char ?\C-j))
-(setq isearch 'region) ; change highlighting from unreadable magenta to yellow
-(setq isearch-overlay nil)    ; force it to be recreated, lest it be reused
+;; Change highlighting from unreadable magenta to yellow.
+(set-face-background 'isearch "yellow")
+(set-face-foreground 'isearch "black")
+;; The other matches, which isearch is not currently at, get a paler yellow.
+(set-face-background 'lazy-highlight "khaki")
+(set-face-foreground 'lazy-highlight "black")
 
 
 ;; I press these keys too often, and I rarely use the functions.
