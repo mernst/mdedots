@@ -1122,13 +1122,15 @@ proposal")
 (add-hook 'comint-mode-hook 'mde-comint-mode-hook)
 
 (defun shell-command-buffer (&optional output-buffer)
-  "Return the output buffer for a shell command."
-  (let ((output-buffer-buffer (and output-buffer
-                                   (if (eq output-buffer t)
-                                       (current-buffer)
-                                     (or (get-buffer output-buffer)
-                                         (current-buffer))))))
-    (or output-buffer-buffer (get-buffer shell-command-buffer-name))))
+  "Return the buffer that `shell-command' wrote its output into, or nil.
+OUTPUT-BUFFER is the argument of the same name to `shell-command'.
+Return nil if `shell-command' inserted its output into the current buffer,
+because callers of this function change the major mode of the buffer that
+it returns, which would destroy the state of a buffer the user is editing."
+  (if (or (bufferp output-buffer) (stringp output-buffer))
+      (get-buffer output-buffer)
+    (and (not output-buffer)
+         (get-buffer shell-command-buffer-name))))
 
 (defun shell-command--set-diff-mode (_command &optional output-buffer _error-buffer)
   "Set mode of buffer *Shell Command Output* to diff-mode if appropriate."
