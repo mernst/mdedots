@@ -770,12 +770,34 @@ psgrep() {
 }
 
 # Kill any process that matches the argument.
+# Sends SIGTERM first, then SIGKILL to any process that survives it.
 pskill() {
-  pskill_pid=$(pgrep -f "$1" | awk '{ print $1 }')
-  # shellcheck disable=SC2039
-  printf "killing %s (process %s)..." "$1" "$pskill_pid"
-  kill -9 "$pskill_pid"
-  echo "slaughtered."
+  pskill_pids=$(pgrep -f "$1")
+  if [ -z "$pskill_pids" ]; then
+    echo "pskill: no process matches $1" 1>&2
+    return 1
+  fi
+  # $pskill_pids is unquoted throughout: pgrep prints one PID per line, and
+  # each PID must become a separate word.  The "echo" rejoins them with spaces.
+  # shellcheck disable=SC2086,SC2116
+  printf "killing %s (process %s)..." "$1" "$(echo $pskill_pids)"
+  # shellcheck disable=SC2086
+  kill $pskill_pids 2>/dev/null
+  sleep 1
+  pskill_survivors=""
+  for pskill_pid in $pskill_pids; do
+    if kill -0 "$pskill_pid" 2>/dev/null; then
+      pskill_survivors="$pskill_survivors $pskill_pid"
+    fi
+  done
+  # shellcheck disable=SC2086
+  if [ -z "$pskill_survivors" ] || kill -9 $pskill_survivors 2>/dev/null; then
+    echo "slaughtered."
+    return 0
+  fi
+  # $pskill_survivors starts with a space, which separates it from the colon.
+  echo "pskill: failed to kill process:$pskill_survivors" 1>&2
+  return 1
 }
 
 # Set the X windows window title
