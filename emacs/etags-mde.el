@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
 
-;;; etags-mde.el -- etags.el enhancements:  defaults, related matches, continue
+;;; etags-mde.el -- etags.el enhancements:  defaults, related matches
 
 ;; Author: Michael Ernst <mernst@alum.mit.edu>
 ;; Created: 24 Jun 1993
@@ -11,11 +11,6 @@
 ;; This code improves Emacs 19's etags.el in the following ways.
 
 ;; * Provide defaults for tags-search.
-
-;; * Bind function mde-tags-loop-continue to M-, in place of
-;;   tags-loop-continue.  When the immediately preceding command was find-tag
-;;   (M-.), it continues that search; otherwise, it continues the last
-;;   tags-search or tags-query-replace command, like tags-loop-continue.
 
 ;; * Permit finding related tags after the original find-tag fails.
 ;;   For instance, (find-tag "mystruct-slota"), after failing to find this
@@ -104,15 +99,6 @@ of tag regexps to try if that search fails.")
 
 ;; Could I perhaps have done something similar simply by setting
 ;; find-tag-regexp-tag-order and find-tag-tag-order?
-
-;;; (Very) simplified version of below patch; just sets variable this-command.
-;; I need this because when we read from the minibuffer, then last-command
-;; becomes minibuffer-exit.
-;; Maybe Emacs should do this by default.
-(defadvice find-tag (after set-this-command activate)
-  "Set `this-command' if called interactively."
-  (if (called-interactively-p 'interactive)
-      (setq this-command 'find-tag)))
 
 ;; ;; This needs to be modified for XEmacs.
 ;; ;; And possibly for FSF Emacs 20?
@@ -354,33 +340,6 @@ of tag regexps to try if that search fails.")
       (tags-query-replace from to delimited)
     (user-error nil)))
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; tags-loop-continue
-;;;
-
-(define-key esc-map "," 'mde-tags-loop-continue) ; was tags-loop-continue
-
-;; This modification, plus the setq of this-command in find-tag, makes M-,
-;; continue a M-. as it did in Emacs 18, but only if the M-. was the
-;; immediately preceding command.
-(defun mde-tags-loop-continue (&optional first-time)
-  "Continue last \\[tags-search], \\[tags-query-replace], or \\[find-tag] command.
-A \\[find-tag] command is continued only if it was the previous command.
-Used noninteractively with non-nil argument to begin such a command.
-Two variables control the processing we do on each file:
-the value of `tags-loop-scan' is a form to be executed on each file
-to see if it is interesting (it returns non-nil if so)
-and `tags-loop-operate' is a form to execute to operate on an interesting file
-If the latter returns non-nil, we exit; otherwise we scan the next file."
-  (interactive)
-  (if (and (eq last-command 'find-tag) (not first-time))
-      (progn
-        (setq this-command 'find-tag)
-        (find-tag nil t))
-    (progn
-      (setq this-command 'tags-loop-continue)
-      (tags-loop-continue first-time))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; get-all-tags-files
