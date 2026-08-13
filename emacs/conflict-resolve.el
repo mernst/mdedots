@@ -52,6 +52,12 @@
 (defun grouped (regex)
   "Return a regex that places the given regex in a capturing group."
   (concat "\\(" regex "\\)"))
+(defun alternatives (&rest regexes)
+  "Return a regex that permits any of the given regexes."
+  (concat "\\(?:"
+          (string-join regexes "\\|")
+          "\\)"))
+
 
 (defconst less-than-hunk-start-re
   "^<<<<<<<\\(?: HEAD\\(?::.*\\)?\\)\n")
@@ -200,7 +206,7 @@ public\\1 @UsesObjectEquals class \\2
 (defun move-cf-imports-from-head-to-before ()
   "Move Checker Framework imports from HEAD to before the hunk."
   (interactive)
-  (tags-query-replace
+  (tags-query-replace-noerror
    (concat less-than-hunk-start-grouped
            "\\(\\(import org.checkerframework..*;\n\\)+\n\\)")
    "\\2\\1")
@@ -209,12 +215,12 @@ public\\1 @UsesObjectEquals class \\2
 (defun move-cf-imports-from-other-to-before ()
   "Move Checker Framework imports from HEAD to before the hunk."
   (interactive)
-  (tags-query-replace
+  (tags-query-replace-noerror
    (concat (grouped
             (concat less-than-hunk-start-re
-                    "\n?\\(?:import .*;\n\\)*" ; left-lines-re
+                    "\\(?:\n\\|import .*;\n\\)*" ; left-lines-re
                     vertical-bar-separator-re
-                    "\n?\\(?:import .*;\n\\)*" ; base-lines-re
+                    "\\(?:\n\\|import .*;\n\\)*" ; base-lines-re
                     equal-sign-separator-re))
            "\\(\\(?:import org.checkerframework..*;\n\\)+\n\\)")
    "\\2\\1")
@@ -258,61 +264,75 @@ Two caveats:
 ;;; Resolve version control conflicts in annotations
 ;;;
 
+(defvar annotation-names
+  (list
+   ;; "SuppressWarnings(.*)" intentionally omitted; it should be resolved by hand.
+   "CallerSensitive"
+   "Deprecated.*"
+   "Deserializer(.*)"
+   "ForceInline"
+   "IntrinsicCandidate"
+   "Override"
+
+   ;; CF annotations
+   "AnnotatedFor(.*)"
+   "CFComment(.*)"
+   "Covariant({[0-9]})"
+   "CreatesMustCallFor"
+   "Deterministic"
+   "DoesNotUnrefineReceiver(.*)"
+   "Ensures.*"
+   "EqualsMethod"
+   "ForName"
+   "FormatMethod"
+   "GetClass"
+   "GetConstructor"
+   "GetMethod"
+   "I18nMakeFormat"
+   "InheritableMustCall(.*)"
+   "Invoke"
+   "MayReleaseLocks"
+   "MustCall(.*)"
+   "NewInstance"
+   "NotOwning"
+   "OptionalCreator"
+   "OptionalEliminator"
+   "OptionalPropagator"
+   "PolyUIEffect"
+   "PolyUIType"
+   "Pure"
+   "ReleasesNoLocks"
+   "Requires.*"
+   "SafeEffect"
+   "SideEffectFree"
+   "SideEffectsOnly(.*)"
+   "StaticallyExecutable"
+   "TerminatesExecution"
+   "UIEffect"
+   "UIPackage"
+   "UIType"
+   "UsesObjectEquals"
+   ))
+(defvar annotation-including-suppresswarnings-names
+  (cons "SuppressWarnings(.*)"
+        annotation-names))
+
 (defvar annotation-line-regex nil
+  "A regular expression that matches a declaration annotation (which should be
+written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
+(defvar annotation-including-suppresswarnings-line-regex nil
   "A regular expression that matches a declaration annotation (which should be
 written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
 (setq annotation-line-regex
       (concat
-       " *@\\(?:"
-       (string-join
-        '(
-          ;; "SuppressWarnings(.*)" intentionally omitted; it should be the
-          ;; last annotation textually and should be resolved by hand.
-          "CallerSensitive"
-          "Deprecated.*"
-          "ForceInline"
-          "Override"
-
-          ;; CF annotations
-          "AnnotatedFor(.*)"
-          "CFComment(.*)"
-          "Covariant({[0-9]})"
-          "CreatesMustCallFor"
-          "Deterministic"
-          "Ensures.*"
-          "EqualsMethod"
-          "ForName"
-          "FormatMethod"
-          "GetClass"
-          "GetConstructor"
-          "GetMethod"
-          "I18nMakeFormat"
-          "InheritableMustCall(.*)"
-          "Invoke"
-          "MayReleaseLocks"
-          "MustCall(.*)"
-          "NewInstance"
-          "NotOwning"
-          "OptionalCreator"
-          "OptionalEliminator"
-          "OptionalPropagator"
-          "PolyUIEffect"
-          "PolyUIType"
-          "Pure"
-          "ReleasesNoLocks"
-          "Requires.*"
-          "SafeEffect"
-          "SideEffectFree"
-          "SideEffectsOnly(.*)"
-          "StaticallyExecutable"
-          "TerminatesExecution"
-          "UIEffect"
-          "UIPackage"
-          "UIType"
-          "UsesObjectEquals"
-          )
-        "\\|")
-       "\\)"))
+       " *@"
+       (apply #'alternatives annotation-names)
+       )
+      annotation-including-suppresswarnings-line-regex
+      (concat
+       " *@"
+       (apply #'alternatives annotation-including-suppresswarnings-names)
+       ))
 
 
 
@@ -325,7 +345,7 @@ Leaves the rest of the conflict as is."
   (tags-query-replace-noerror
    (concat
     less-than-hunk-start-grouped
-    (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
+    (concat "\\(\\(?:" annotation-including-suppresswarnings-line-regex "\n\\)+\\)")
     (concat "\\("
             left-lines-re
             vertical-bar-separator-re "\\)")
@@ -344,7 +364,7 @@ Leaves the rest of the conflict as is."
   (tags-query-replace-noerror
    (concat
     less-than-hunk-start-grouped
-    (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
+    (concat "\\(\\(?:" annotation-including-suppresswarnings-line-regex "\n\\)+\\)")
     (concat "\\("
             left-lines-re
             vertical-bar-separator-re "\\)")
@@ -363,11 +383,11 @@ Leaves the rest of the conflict as is."
   (tags-query-replace-noerror
    (concat
     less-than-hunk-start-grouped
-    (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
+    (concat "\\(\\(?:" annotation-line-regex "\n\\)*\\)")
     (concat "\\("
             left-lines-re
             vertical-bar-separator-re "\\)")
-    (concat "\\(\\(?:" annotation-line-regex "\n\\)+\\)")
+    (concat "\\(\\(?:" annotation-including-suppresswarnings-line-regex "\n\\)+\\)")
     (concat "\\("
             base-lines-re
             equal-sign-separator-re "\\)")
@@ -376,7 +396,59 @@ Leaves the rest of the conflict as is."
             right-lines-re
             greater-than-hunk-end-re "\\)")
     )
-   "\\4\\1\\3\\5\\6")
+   "\\2\\1\\3\\5\\6")
+
+  ;; Annotations only in HEAD; no annotations in base or OTHER.
+  (tags-query-replace-noerror
+   (concat
+    less-than-hunk-start-grouped
+    (concat "\\(\\(?:" annotation-including-suppresswarnings-line-regex "\n\\)+\\)")
+    (concat "\\("
+            left-lines-re
+            vertical-bar-separator-re "\\)")
+    (concat "\\("
+            " *[^ @\n]" base-lines-re
+            equal-sign-separator-re "\\)")
+    (concat "\\("
+            " *[^ @\n]" right-lines-re
+            greater-than-hunk-end-re "\\)")
+    )
+   "\\2\\1\\3\\4\\5\\6")
+
+  ;; Annotations only in OTHER; no annotations in base or HEAD.
+  (tags-query-replace-noerror
+   (concat
+    less-than-hunk-start-grouped
+    (concat "\\("
+            " *[^ @\n]"            left-lines-re
+            vertical-bar-separator-re "\\)")
+    (concat "\\("
+            " *[^ @\n]" base-lines-re
+            equal-sign-separator-re "\\)")
+    (concat "\\(\\(?:" annotation-including-suppresswarnings-line-regex "\n\\)+\\)")
+    (concat "\\("
+            right-lines-re
+            greater-than-hunk-end-re "\\)")
+    )
+   "\\4\\1\\2\\3\\5\\6")
+
+  )
+
+(defun tags-conflict-resolve-empty-head ()
+  "If head is empty and both base and other are not, accept empty head.
+Use this with care."
+  (interactive)
+  (tags-query-replace-noerror
+   (concat less-than-hunk-start-re
+           ;; no left lines
+           vertical-bar-separator-re
+           "\\(\n\\|[^=\n].*\n\\)" ;; at least one line
+           base-lines-re
+           equal-sign-separator-re
+           "\\(\n\\|[^>\n].*\n\\)" ;; at least one line
+           right-lines-re
+           greater-than-hunk-end-re)
+   "")
   )
 
 (defun tags-conflict-resolve-annotation-lines-in-head ()
@@ -446,43 +518,65 @@ Leaves the rest of the conflict as is."
 ;;; Resolve version control conflicts in method signatures
 ;;;
 
-
-(defun resolve-method-signature ()
+;; Run this after tags-conflict-resolve-annotation-lines
+(defun tags-conflict-resolve-method-signature ()
+  (interactive)
 
   ;; Resolve the first line of a diff, when HEAD has been edited.
-  ;; This version requires "public" at start of \2 and \4.
-  (tags-query-replace
+  ;; Requires an access modifier at start of \2 and \4.
+  (tags-query-replace-noerror
+   ;; PROBLEM: This matches any signature that differs, not just ones that differ in annotations.
+   ;; So be careful when accepting the replacement.
    (concat
     less-than-hunk-start-grouped
-    "\\( *public .*\n\\)"
+    "\\( *\\(?:public\\|private\\|protected\\).*\\( [a-zA-Z0-9_]+\\(?:<[^>\n]+>\\)?\\(?:\\[\\]\\)* [a-zA-Z0-9_]+(\\).*\n\\)"
     "\\(" "" left-lines-re "" vertical-bar-separator-re "\\)"
-    "\\( *public .*\n\\)"
+    "\\( *\\(?:public\\|private\\|protected\\).*\\3.*\n\\)"
     "\\(" "" base-lines-re "" equal-sign-separator-re "\\)"
-    "\\4")
-   "\\2\\1\\3\\5")
+    "\\5")
+   "\\2\\1\\4\\6")
   ;; The more general version, which I don't seem to need.
   (if nil
-      (tags-query-replace
+      ;; TODO! This does not work.  Debug later.
+      (tags-query-replace-noerror
        (concat
         less-than-hunk-start-grouped
         "\\(.*\n\\)"
-        "" left-lines-re "" vertical-bar-separator-re "\\)"
+        "\\(" left-lines-re "" vertical-bar-separator-re "\\)"
         "\\(.*\n\\)"
-        "" right-lines "" equal-sign-separator-re "\\)"
+        "\\(" right-lines-re "" equal-sign-separator-re "\\)"
         "\\4")
        "\\2\\1\\3\\5"))
 
   ;; Resolve the first line of a diff, when OTHER has been edited.
-  ;; This version requires "public" at start of \2 and \4.
-  (tags-query-replace
+  ;; Requires an access modifier at start of \2 and \4.
+
+  ;; The first version requires "@" in the OTHER line, and is good for added annotations.
+  (tags-query-replace-noerror
+   ;; PROBLEM: This matches any signature that differs, not just ones that differ in annotations.
+   ;; So be careful when accepting the replacement.
    (concat
     less-than-hunk-start-grouped
-    "\\( *public .*\n\\)"
+    "\\( *\\(?:public\\|private\\|protected\\).*\\( [a-zA-Z0-9_]+\\(?:<[^>\n]+>\\)?\\(?:\\[\\]\\)* [a-zA-Z0-9_]+(\\).*\n\\)"
     "\\(" left-lines-re "" vertical-bar-separator-re "\\)"
     "\\2"
     "\\(" base-lines-re "" equal-sign-separator-re "\\)"
-    "\\( *public .*\n\\)")
-   "\\5\\1\\3\\4")
+    "\\( *\\(?:public\\|private\\|protected\\).*\\3.*\n\\)"
+    )
+   "\\6\\1\\4\\5")
+  (if nil
+      (tags-query-replace-noerror
+       ;; PROBLEM: This matches any signature that differs, not just ones that differ in annotations.
+       ;; So be careful when accepting the replacement.
+       (concat
+        less-than-hunk-start-grouped
+        "\\( *\\(?:public\\|private\\|protected\\) .*\n\\)"
+        "\\(" left-lines-re "" vertical-bar-separator-re "\\)"
+        "\\2"
+        "\\(" base-lines-re "" equal-sign-separator-re "\\)"
+        "\\( *\\(?:public\\|private\\|protected\\) .*\n\\)")
+       "\\5\\1\\3\\4")
+    )
   )
 
 
@@ -755,6 +849,21 @@ Leaves the rest of the conflict as is."
 ;;; Special cases
 ;;;
 
+(if nil
+    (tags-query-replace-noerror
+     (concat less-than-hunk-start-grouped
+             (grouped " *@Pure\n *@EnsuresNonNullIf(.*)\n")
+             left-lines-grouped-re
+             (grouped vertical-bar-separator-re)
+             base-lines-grouped-re
+             (grouped equal-sign-separator-re)
+             "\\( *@Override\n\\)"
+             right-lines-grouped-re
+             (grouped greater-than-hunk-end-re))
+     "\\2\\7\\1\\3\\4\\5\\6\\8\\9")
+  )
+
+
 ;; (tags-query-replace (concat less-than-hunk-start-re
 ;; @AnnotatedFor({?\"interning\"}?)
 ;; ||||||| merged common ancestors
@@ -838,8 +947,23 @@ Leaves the rest of the conflict as is."
 ;;
 ;;
 
-(defun resolve-equals-method-conflict ()
-  ;; Special case for the `equals()` method.
+(defun tags-add-nullable-to-equals ()
+  "Add @Nullable to the signature of equals."
+  (interactive)
+  (tags-query-replace-noerror
+   (concat (grouped
+            (concat (alternatives less-than-hunk-start-re
+                                  vertical-bar-separator-re
+                                  equal-sign-separator-re)
+                    "\\(?: *@Override\n\\)?"))
+           "\\( *\\(?:public \\)?boolean equals(\\)\\(Object [a-zA-Z_]+)\\(?:;\\| {\\)\n\\)")
+   "\\1\\2@Nullable \\3")
+  )
+
+;; tags-add-nullable-to-equals eliminates the need for this, probably.
+(defun tags-conflict-resolve-equals-method-conflict ()
+  "Special case for the `equals()` method."
+  (interactive)
   (tags-query-replace
    (concat
     less-than-hunk-start-re
@@ -851,6 +975,7 @@ Leaves the rest of the conflict as is."
     greater-than-hunk-end-re)
    "    public boolean equals(@Nullable Object obj) {\n")
   )
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
