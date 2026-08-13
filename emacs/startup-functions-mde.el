@@ -997,11 +997,11 @@ Not guaranteed to work in all cases."
               (not (string-match "\"" string nil 'inhibit-modify)))
          (setq string (concat "\"" string "\"")))
         ((and (string-match "\"" string nil 'inhibit-modify)
-              (not (string-match "\'" string nil 'inhibit-modify)))
+              (not (string-match "'" string nil 'inhibit-modify)))
          (setq string (concat "'" string "'")))
         ((and (string-match "\"" string nil 'inhibit-modify)
-              (not (string-match "\'" string nil 'inhibit-modify)))
-         (error (concat "cannot quote argument for shell command because string contains both single and double quotes: " string)))
+              (string-match "'" string nil 'inhibit-modify))
+         (error "cannot quote argument for shell command because string contains both single and double quotes: %s" string))
         (t
          string)))
 
