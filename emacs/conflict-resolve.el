@@ -112,25 +112,31 @@ The mode-hook might blow away the match-data, in which case first run
     ;; (message "#1 %s" (match-string 1))
     ;; (message "#2 %s" (match-string 1))
     ;; (message "#3 %s" (match-string 3))
-    (replace-match (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 3))))
+    (replace-match (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 3)))
     (fileloop-continue))
   ;; TODO: does not get run because previous loop throws an exception
   )
 
 (defun merged-annotated-for (annotatedfor-arg-1 annotatedfor-arg-2)
-  "Merge two @AnnotatedFor annotation arguments into one @AnnotatedFor annotation."
+  "Merge two @AnnotatedFor annotation arguments into one @AnnotatedFor annotation.
+Either argument may be nil, meaning that side has no @AnnotatedFor annotation.
+If neither side has one, the result is the empty string."
   (save-match-data
     (let* ((args1 (parse-annotatedfor-argument annotatedfor-arg-1))
 	   (args2 (parse-annotatedfor-argument annotatedfor-arg-2))
 	   (args (sort (delete-dups (append args1 args2)))))
-      (concat "@AnnotatedFor({\""
-	      (mapconcat #'identity args "\", \"")
-	      "\"})\n"))))
+      (if (null args)
+	  ""
+	(concat "@AnnotatedFor({\""
+		(mapconcat #'identity args "\", \"")
+		"\"})\n")))))
 ;; (merged-annotated-for "{\"signature\", \"nullness\" ,\"interning\"}" "{\"propkey\", \"signature\"")
 
 (defun parse-annotatedfor-argument (arg)
-  "Given an argument to @AnnotatedFor, return a list of the string arguments."
-  (split-string arg "\" *, *\"" 'omit-separators "[ {}\"]*"))
+  "Given an argument to @AnnotatedFor, return a list of the string arguments.
+If ARG is nil, meaning there is no @AnnotatedFor annotation, return nil."
+  (and arg
+       (split-string arg "\" *, *\"" 'omit-separators "[ {}\"]*")))
 ;; (cl-assert (equal '("signature") (parse-annotatedfor-argument "{\"signature\"}")))
 ;; (cl-assert (equal '("signature") (parse-annotatedfor-argument " \"signature\"  "))
 ;; (cl-assert (equal '("signature" "nullness" "interning") (parse-annotatedfor-argument "{\"signature\", \"nullness\" ,\"interning\"}")
@@ -158,7 +164,7 @@ The mode-hook might blow away the match-data, in which case first run
     ;; (message "#3 %s" (match-string 3))
     (message "#6 %s" (match-string 6))
     (replace-match
-     (concat (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 5)))
+     (concat (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 5))
 	     (match-string 6)))
     (fileloop-continue))
   ;; TODO: does not get run because previous loop throws an exception
@@ -981,10 +987,6 @@ Use this with care."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Utilities
 ;;;
-
-(defun remove-text-properties-string (s)
-  (set-text-properties 0 (length s) nil s)
-  s)
 
 (put 'with-temp-buffer 'lisp-indent-function 1)
 
