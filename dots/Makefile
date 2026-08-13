@@ -3,10 +3,11 @@
 all: .hunspell_en_US.sorted .enscriptrc .javadoc-index-files .jsr308-demos.properties .mvc-checkouts \
 	.Xresources-cse .Xresources-laptop .Xresources-mac .Xresources-yogaubuntu
 
-# If the .sorted file is up to date, then the main file is sorted.
-# Sorting prevents merge conflicts.
+# Sorting prevents merge conflicts.  The .sorted file is only a timestamp
+# marker: if it is up to date, then .hunspell_en_US is sorted and duplicate-free.
 .hunspell_en_US.sorted: .hunspell_en_US
-	LC_ALL=C sort < $< | uniq > $@ && cp -pf $@ $<
+	LC_ALL=C sort -u -o $< $<
+	touch $@
 
 .enscriptrc: .enscriptrc-template
 	@rm -rf $@
