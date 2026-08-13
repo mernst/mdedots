@@ -414,8 +414,8 @@ FUN should be a funcallable object or nil."
 ;; was maybe-funcall
 (defmacro funcall-or-nil (fun &rest args)
   "If FUN is non-nil, apply it to ARGS.  Otherwise return nil.
-FUN should be a funcallable object or nil.  Compare to `funcall-maybe'."
-  `(funcall-maybe-default nil ,fun ,@args))
+FUN should be a funcallable object or nil.  Compare to `funcall-or-arg'."
+  `(funcall-or-default nil ,fun ,@args))
 (put 'funcall-or-nil 'edebug-form-spec '(function &rest form))
 
 ;; Obviously this could be (easily) generalized to take a list of integers
