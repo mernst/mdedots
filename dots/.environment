@@ -59,7 +59,8 @@ GPG_TTY=$(tty)
 export PROVER_CC_LIMIT=10
 
 # For Git
-export GIT_PAGER=""
+# Do not set GIT_PAGER here: it takes precedence over core.pager and over the
+# per-command `pager.*` settings in .gitconfig, which would disable them all.
 export GIT_MERGE_AUTOEDIT=no
 
 # Per http://askubuntu.com/questions/227515/terminal-warning-when-opening-a-file-in-gedit
