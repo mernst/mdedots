@@ -32,8 +32,8 @@ fi
 #   - auto-completion for the opam binary
 # This section can be safely removed at any time if needed.
 # shellcheck disable=SC1091,SC2015
-test -r '/home/mernst/.opam/opam-init/init.sh' && . '/home/mernst/.opam/opam-init/init.sh' > /dev/null 2> /dev/null || true
+test -r "$HOME/.opam/opam-init/init.sh" && . "$HOME/.opam/opam-init/init.sh" > /dev/null 2> /dev/null || true
 # END opam configuration
 
 # Added by Antigravity CLI installer
-export PATH="/home/mernst/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
