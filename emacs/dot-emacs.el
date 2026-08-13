@@ -707,9 +707,12 @@ After running this, run from the shell:  print-mail bulk." t)
 
 
 ;; Prevent point from entering the prompt.
+;; `plist-put' on a copy, rather than appending, so that re-loading this file
+;; does not add another copy of the property.
 (setq minibuffer-prompt-properties
-      (nconc minibuffer-prompt-properties
-             '(point-entered minibuffer-avoid-prompt)))
+      (plist-put (copy-sequence minibuffer-prompt-properties)
+                 'cursor-intangible t))
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
 ;; Small packages
 
