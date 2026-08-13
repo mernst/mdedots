@@ -518,8 +518,12 @@ Use this with care."
 ;;; Resolve version control conflicts in method signatures
 ;;;
 
-;; Run this after tags-conflict-resolve-annotation-lines
 (defun tags-conflict-resolve-method-signature ()
+  "Resolve conflicts in which the versions differ in a method signature line.
+Operates on the files in the current tags table.
+Run this after `tags-conflict-resolve-annotation-lines'.
+Each replacement is proposed interactively, because a proposal may be wrong:
+the signatures might differ in more than their annotations."
   (interactive)
 
   ;; Resolve the first line of a diff, when HEAD has been edited.
@@ -638,6 +642,8 @@ Use this with care."
    ""))
 
 (defun tags-conflict-resolve-empty ()
+  "Resolve diffs in which at least one of the versions of the text is empty.
+Operates on the files in the current tags table."
   (interactive)
   (apply #'tags-query-replace-noerror empty-diff-regexes)
   (apply #'tags-query-replace-noerror left-base-empty-regexes)
@@ -646,6 +652,8 @@ Use this with care."
   )
 
 (defun conflict-resolve-empty ()
+  "Resolve diffs in which at least one of the versions of the text is empty.
+Operates on the current buffer."
   (interactive)
   (save-excursion
     (goto-char (point-min))
@@ -983,6 +991,7 @@ Use this with care."
 ;;;
 
 (defun remove-text-properties-string (s)
+  "Remove all text properties from string S, destructively.  Return S."
   (set-text-properties 0 (length s) nil s)
   s)
 
