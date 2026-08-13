@@ -268,18 +268,20 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
                (punctuation (buffer-substring punctuation-begin punctuation-end)))
           (change-indicator-char-in-region
            " " indicator-char punctuation-begin punctuation-end)
-          (cond ((equal "+" indicator-char)
-                 (goto-char change1-begin)
-                 (insert punctuation)
-                 (change-indicator-char-in-region
-                  " " "-" change1-begin (+ change1-begin punctuation-length)))
-                ((equal "-" indicator-char)
-                 (goto-char change2-end)
-                 (insert punctuation)
-                 (change-indicator-char-in-region
-                  " " "-" change2-end (+ change2-end punctuation-length)))
-                (t
-                 (error "bad indicator character '%s'" indicator-char)))
+          ;; The copy of the punctuation carries the opposite indicator, so
+          ;; that the version of the file that does not contain the change
+          ;; still contains the punctuation.
+          (let ((other-indicator-char (opposite-indicator-char indicator-char)))
+            (cond ((equal "+" indicator-char)
+                   (goto-char change1-begin)
+                   (insert punctuation)
+                   (change-indicator-char-in-region
+                    " " other-indicator-char change1-begin (+ change1-begin punctuation-length)))
+                  ((equal "-" indicator-char)
+                   (goto-char change2-end)
+                   (insert punctuation)
+                   (change-indicator-char-in-region
+                    " " other-indicator-char change2-end (+ change2-end punctuation-length)))))
           (goto-char change1-begin)
           (forward-line -1))))))
 

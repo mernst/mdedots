@@ -166,22 +166,6 @@ of tag regexps to try if that search fails.")
 ;;            (switch-to-buffer found)
 ;;          (error "No tags containing %s" tagname))))))))
 
-;; Perhaps inline for speed?
-;; This returns false in particular for "rerun etags" and such.
-(defun err-no-tag-p (err)
-  "Return t if error ERR has to do with tag not found in tags table, nil otherwise."
-  (and (eq (car err) 'error)
-       (let ((err-text (car (cdr err))))
-         (and (> (length err-text) 17)
-              (let ((first-seventeen (substring err-text 0 17)))
-                ;; perhaps more efficient than string-match,
-                ;; and doesn't clobber match-data
-                (or (equal first-seventeen "No more tags matc")
-                    (equal first-seventeen "No more tags cont")
-                    (equal first-seventeen "No tags matching ")
-                    (equal first-seventeen "No tags containin")))))))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Finding related tags
 ;;;
