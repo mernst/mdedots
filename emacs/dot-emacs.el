@@ -812,13 +812,8 @@ After running this, run from the shell:  print-mail bulk." t)
 (use-package vterm
   :ensure t
   :commands (vterm vterm-other-window)
-  :general
-  (+general-global-application
-   "t" '(:ignore t :which-key "terminal")
-   "tt" 'vterm-other-window
-   "t." 'vterm)
-  :config
-  (evil-set-initial-state 'vterm-mode 'emacs))
+  :bind (("C-c v" . vterm)
+         ("C-c V" . vterm-other-window)))
 ;;; This block is used for alpaca or straight, not standard use-package.
 ;;   :ensure (vterm :post-build
 ;;                  (progn
@@ -847,11 +842,7 @@ After running this, run from the shell:  print-mail bulk." t)
 
 (use-package atomic-chrome
   :demand t
-  :straight (atomic-chrome
-             :repo "KarimAziev/atomic-chrome"
-             :type git
-             :flavor nil
-             :host github)
+  :vc (:url "https://github.com/KarimAziev/atomic-chrome" :rev :newest)
   :commands (atomic-chrome-start-server)
   :config (atomic-chrome-start-server))
 
