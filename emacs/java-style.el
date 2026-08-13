@@ -98,9 +98,9 @@ statement.  Does replacement in any file in a currently-visited tags table."
 
   ;; Find if/for statements that end with a close paren, which suggests the
   ;; body is on the next line.  Also else statements that end a line.
-  (let ((tags-regex
+  (let ((tags-regexp
          "^ *\\(?:}? else *\\)?\\(\\(if\\|for\\|while\\) (.*)\\|}? else\\( //.*\\)?\\)\\(.*;\\)?$"))
-    (tags-search tags-regex)
+    (tags-search tags-regexp)
     (if java-style-debug
         (message "match-data after tags-search: %s" (match-data)))
     (while t
@@ -122,7 +122,7 @@ statement.  Does replacement in any file in a currently-visited tags table."
         ;; match-data set??  Do looking-at to re-set match-data.
         (beginning-of-line)
         ;; Match might not have started at beginning of line
-        ;; (if (not (looking-at tags-regex))
+        ;; (if (not (looking-at tags-regexp))
         ;;          (error "This can't happen"))
 
         (if java-style-debug
