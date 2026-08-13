@@ -108,13 +108,13 @@ The mode-hook might blow away the match-data, in which case first run
            "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?"
            greater-than-hunk-end-re)
    )
-  (while t
-    ;; (message "#1 %s" (match-string 1))
-    ;; (message "#2 %s" (match-string 1))
-    ;; (message "#3 %s" (match-string 3))
-    (replace-match (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 3))))
-    (fileloop-continue))
-  ;; TODO: does not get run because previous loop throws an exception
+  (ignore-errors
+    (while t
+      ;; (message "#1 %s" (match-string 1))
+      ;; (message "#2 %s" (match-string 1))
+      ;; (message "#3 %s" (match-string 3))
+      (replace-match (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 3))))
+      (fileloop-continue)))
   )
 
 (defun merged-annotated-for (annotatedfor-arg-1 annotatedfor-arg-2)
@@ -152,16 +152,16 @@ The mode-hook might blow away the match-data, in which case first run
            "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?\\(\\2\\(?:@UsesObjectEquals \\|@Interned \\)*class \\3\n\\)"
            greater-than-hunk-end-re
            ))
-  (while t
-    ;; (message "#1 %s" (match-string 1))
-    ;; (message "#2 %s" (match-string 1))
-    ;; (message "#3 %s" (match-string 3))
-    (message "#6 %s" (match-string 6))
-    (replace-match
-     (concat (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 5)))
-	     (match-string 6)))
-    (fileloop-continue))
-  ;; TODO: does not get run because previous loop throws an exception
+  (ignore-errors
+    (while t
+      ;; (message "#1 %s" (match-string 1))
+      ;; (message "#2 %s" (match-string 1))
+      ;; (message "#3 %s" (match-string 3))
+      (message "#6 %s" (match-string 6))
+      (replace-match
+       (concat (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 5)))
+	       (match-string 6)))
+      (fileloop-continue)))
   )
 
 
