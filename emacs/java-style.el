@@ -105,7 +105,7 @@ statement.  Does replacement in any file in a currently-visited tags table."
         (message "match-data after tags-search: %s" (match-data)))
     (while t
       ;; The call to looking-back has an important side effect:  it sets (match-data).
-      (if (not (looking-back tags-regexp nil))
+      (if (not (looking-back tags-regex nil))
 	  (error "This can't happen: not looking-back from %d: %s"
 		 (point) (buffer-substring (max 0 (- (point) 45)) (point))))
       (if java-style-debug
