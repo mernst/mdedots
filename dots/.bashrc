@@ -58,7 +58,7 @@ fi
 
 if [ -n "$DEBUGLOGIN" ]; then echo "Sourcing .aliases"; fi
 if [ -f "$HOME/.aliases" ]; then
-  if ! alias eth0 > /dev/null 2>&1; then
+  if ! [ "$dot_aliases_file_read" ]; then # avoid sourcing .aliases twice
     source "$HOME/.aliases"
   fi
 fi
