@@ -986,13 +986,11 @@ Use this with care."
   (set-text-properties 0 (length s) nil s)
   s)
 
-(put 'with-temp-buffer 'lisp-indent-function 1)
-
 (defun sorted-non-duplicate-lines (lines1 lines2)
   "Return a string consisting of the unique lines in the two input strings.
 In the result, the lines are sorted."
   (save-match-data
-    (with-temp-buffer "*sorted-non-duplicate-lines*"
+    (with-temp-buffer
       (insert lines1)
       (insert lines2)
       (delete-duplicate-lines (point-min) (point-max))
