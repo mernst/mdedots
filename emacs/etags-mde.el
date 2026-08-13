@@ -348,11 +348,17 @@ of tag regexps to try if that search fails.")
 ;; (mit-scheme-tags-find-related-names "source:make-formal")
 
 
+(defconst tags-loop-done-message "All files processed"
+  "The `user-error' message that `fileloop-next-file' signals upon completion.")
+
 (defun tags-query-replace-noerror (from to &optional delimited)
-  "Like `tags-query-replace', but does not throw user-error when done."
-  (condition-case nil
+  "Like `tags-query-replace', but does not throw user-error when done.
+Any other `user-error', such as \"No tags table in use\", is re-signaled."
+  (condition-case err
       (tags-query-replace from to delimited)
-    (user-error nil)))
+    (user-error
+     (unless (equal (cadr err) tags-loop-done-message)
+       (signal (car err) (cdr err))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

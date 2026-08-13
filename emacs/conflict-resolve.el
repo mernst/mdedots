@@ -1001,13 +1001,6 @@ In the result, the lines are sorted."
 ;; (sorted-non-duplicate-lines "a\nc\nd\n" "d\ne\nb\nd\n")
 
 
-(defun tags-query-replace-noerror (from to &optional delimited)
-  "Like `tags-query-replace', but does not throw user-error when done."
-  (condition-case nil
-      (tags-query-replace from to delimited)
-    (user-error nil)))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TAGS tables
 ;;;
