@@ -1554,12 +1554,20 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (defun ediff-hunk ()
   "Ediff the file containing the current hunk."
   (interactive)
-  (goto-char (min (+ (point) 4) (point-max)))
-  (let ((case-fold-search nil))
-    (or (re-search-backward "^diff" nil t)
-        (re-search-backward "^--- ")))
-  (re-search-forward "^--- \\([^\t]*\\).*\n\\+\\+\\+ \\([^\t]*\\)")
-  (ediff-files (match-string 1) (match-string 2)))
+  (let ((files
+         (save-excursion
+           ;; Move past a "diff" or "--- " prefix on the current line, so that the
+           ;; backward search finds this hunk's header rather than the previous one's.
+           (goto-char (min (+ (point) 4) (point-max)))
+           (let ((case-fold-search nil))
+             (unless (or (re-search-backward "^diff" nil t)
+                         (re-search-backward "^--- " nil t))
+               (user-error "No \"diff\" or \"--- \" header before point"))
+             (unless (re-search-forward
+                      "^--- \\([^\t]*\\).*\n\\+\\+\\+ \\([^\t]*\\)" nil t)
+               (user-error "No \"---\"/\"+++\" file names for this hunk")))
+           (list (match-string 1) (match-string 2)))))
+    (ediff-files (car files) (cadr files))))
 
 (setq visible-bell t)
 
