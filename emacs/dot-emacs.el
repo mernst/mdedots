@@ -1525,12 +1525,16 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
   "Refine all hunks (within conflict markers) in the current buffer."
   (if (and (featurep 'smerge-mode) smerge-mode)
       (save-excursion
-	(condition-case nil
-	    (while t
-	      (smerge-next)
-	      (if (not diff-refine)
-		  (smerge-refine)))
-	  (error nil)))))
+	;; `smerge-next' signals `user-error' ("No next conflict") once no
+	;; conflicts remain; that is how this loop terminates.  A failure in
+	;; `smerge-refine' is reported instead of being discarded, but is not
+	;; propagated, so that it does not abort the rest of `find-file-hook'.
+	(while (condition-case nil
+		   (progn (smerge-next) t)
+		 (user-error nil))
+	  (if (not diff-refine)
+	      (with-demoted-errors "Error in smerge-refine-all: %S"
+		(smerge-refine)))))))
 (add-hook 'find-file-hook 'smerge-refine-all t)
 
 
