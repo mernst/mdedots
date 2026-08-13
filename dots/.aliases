@@ -720,18 +720,41 @@ alias git-log-show=git_log_show
 
 ### JSON
 
-# Pretty-print a .json or .jsonl file.
-json_pp() {
-  cp "$1" "$1".tmp \
-    && jq . "$1".tmp > "$1" \
-    && rm "$1".tmp
+# Rewrite a .json or .jsonl file in place, with "jq $2..." as the formatting
+# arguments.  The original file is left untouched unless jq succeeds on it.
+json_rewrite_in_place() {
+  if [ "$#" -lt 1 ] || ! [ -f "$1" ]; then
+    echo "json_rewrite_in_place: pass one file argument; received '$1'"
+    return 1
+  fi
+  json_file="$1"
+  shift
+  # "cp -p" gives the temporary file the same permissions as the original.
+  if cp -p "$json_file" "$json_file".tmp \
+    && jq "$@" . "$json_file" > "$json_file".tmp; then
+    mv -f "$json_file".tmp "$json_file"
+  else
+    rm -f "$json_file".tmp
+    return 1
+  fi
 }
-alias jsonpp=json_pp
-# Compact a .json or .jsonl file.
+
+# Pretty-print a .json file.  Not for .jsonl files: pretty-printing spreads
+# each record over multiple lines, destroying the one-record-per-line invariant.
+json_prettyprint() {
+  case "$1" in
+    *.jsonl)
+      echo "json_prettyprint: refusing to pretty-print JSON Lines file $1"
+      return 1
+      ;;
+  esac
+  json_rewrite_in_place "$1"
+}
+alias jsonpp=json_prettyprint
+# Compact a .json or .jsonl file.  Each record is printed on its own line, so a
+# .jsonl file remains valid JSON Lines.
 json_compact() {
-  cp "$1" "$1".tmp \
-    && jq -c . "$1".tmp > "$1" \
-    && rm "$1".tmp
+  json_rewrite_in_place "$1" -c
 }
 alias jsoncompact=json_compact
 
