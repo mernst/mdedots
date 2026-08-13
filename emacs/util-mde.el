@@ -797,7 +797,7 @@ Optional fifth argument OBJECT is the string or buffer containing the text."
       (if (eq prev-value old-value)
           (if new-value
               (put-text-property start next-change prop new-value object)
-            (remove-text-properties start next-change '(prop 'ignore) object)))
+            (remove-text-properties start next-change (list prop 'ignore) object)))
       (setq start next-change))))
 
 ;; This could easily be made to use a real stack.
