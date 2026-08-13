@@ -39,20 +39,7 @@
 
 ;;; 5.2 Trigonometric and related functions
 
-(defun signum (x)
-  (cond ((plusp x)
-         1)
-        ((zerop x)
-         0)
-        ((minusp x)
-         -1)
-        (t
-         (error "What kind of number is this in signum?"))))
-;; ;; Actually correct implementation (which is probably too expensive) is:
-;; (defun signum (x)
-;;   (if (zerop x)
-;;       x
-;;     (/ x (abs x))))
+;; For the sign of a number, use `cl-signum'.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,17 +130,8 @@ NEWCHAR and OLDCHAR are characters."
 ;;      (setq index (1+ index))))
 ;;     result))
 
-(defun mdecl-position (item sequence)
-  "Return the first index of ITEM in SEQUENCE, or nil; tests with `equal'."
-  (let ((limit (length sequence))
-        result
-        (index 0))
-    (while (< index limit)
-      (if (equal item (elt sequence index))
-          (setq result index
-                index limit)
-        (setq index (1+ index))))
-    result))
+;; For the first index of an item in a sequence, use
+;; `(cl-position item sequence :test #'equal)'.
 
 ;;; Incompatible with cl-lib.el's version, which accepts optional arguments.
 ;; (defun count (item sequence)
@@ -257,27 +235,11 @@ N defaults to 1.  If LIST has fewer than N elements, NIL is returned."
 ;;     result
 ;;     ))
 
-(defun set-difference-equal (list1 list2)
-  "Return an in-order list of elements of LIST1 that do not appear in LIST2.
-Uses equal for the comparison."
-  (let (result)
-    (while list1
-      (if (not (member (car list1) list2))
-          (setq result (cons (car list1) result)))
-      (setq list1 (cdr list1)))
-    (nreverse result)
-    ))
-
-(defun intersection-equal (list1 list2)
-  "Return a list of elements that appear in both LIST1 and LIST2.
-Uses equal for the comparison."
-  (let (result)
-    (while list2
-      (if (member (car list2) list1)
-          (setq result (cons (car list2) result)))
-      (setq list2 (cdr list2)))
-    result
-    ))
+;; For set operations that compare with `equal', use
+;; `(cl-set-difference list1 list2 :test #'equal)' and
+;; `(cl-intersection list1 list2 :test #'equal)'.  Neither promises an
+;; order for its result, so wrap the call in `nreverse' or `sort' if the
+;; order matters.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -325,11 +287,7 @@ beginning and end, of STRING."
   (let ((regexp (chars->regexp charseq)))
     (string-left-trim-regexp regexp (string-right-trim-regexp regexp string))))
 
-;; Perhaps all the string-trim functions should be defined more like this one.
-(defsubst string-trim-whitespace (string)
-  (if (string-match "^\\s *\\(.*[^ \t\n]\\)\\s *$" string)
-      (match-string 1 string)
-    ""))
+;; To trim whitespace from both ends of a string, use `string-trim'.
 
 (defun string-remove (char string)
   "Return a string with CHAR removed, but otherwise like STRING."
@@ -353,14 +311,13 @@ beginning and end, of STRING."
 ;;; Strings
 ;;;
 
-(defsubst blank-string-p (string)
-  "Return non-nil if STRING contains no non-whitespace characters."
-  (string-match "^[ \t\n]*$" string nil 'inhibit-modify))
+;; To test whether a string contains no non-whitespace characters, use
+;; `string-blank-p'.
 
 (defsubst blank-string-or-nil-p (string-or-nil)
-  "Return non-nil if STRING is nil or contains no non-whitespace characters."
+  "Return non-nil if STRING-OR-NIL is nil or contains no non-whitespace characters."
   (or (not string-or-nil)
-      (blank-string-p string-or-nil)))
+      (string-blank-p string-or-nil)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

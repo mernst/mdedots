@@ -368,7 +368,7 @@ after that, its first partial elements appear.  The length of LIST is
 
 (defun random-nth (list)
   "Return a random element of LIST."
-  (nth (% (abs (random)) (length list)) list))
+  (nth (random (length list)) list))
 
 
 (defun swap (LIST el1 el2)

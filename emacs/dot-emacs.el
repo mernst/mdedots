@@ -1311,7 +1311,9 @@ After running this, run from the shell:  print-mail bulk." t)
   "Create TAGS file for all files under current directory."
   (interactive "DDirectory: ")
   (shell-command
-   (format "%s -f TAGS -e -R %s" path-to-ctags (directory-file-name dir-name))))
+   (format "%s -f TAGS -e -R %s"
+           (shell-quote-argument path-to-ctags)
+           (shell-quote-argument (directory-file-name dir-name)))))
 
 (setq grep-command "grep -n -i ")       ; add case-insensitivity
 

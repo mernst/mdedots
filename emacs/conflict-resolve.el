@@ -112,7 +112,7 @@ The mode-hook might blow away the match-data, in which case first run
     ;; (message "#1 %s" (match-string 1))
     ;; (message "#2 %s" (match-string 1))
     ;; (message "#3 %s" (match-string 3))
-    (replace-match (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 3))))
+    (replace-match (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 3)))
     (fileloop-continue))
   ;; TODO: does not get run because previous loop throws an exception
   )
@@ -158,7 +158,7 @@ The mode-hook might blow away the match-data, in which case first run
     ;; (message "#3 %s" (match-string 3))
     (message "#6 %s" (match-string 6))
     (replace-match
-     (concat (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 5)))
+     (concat (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 5))
 	     (match-string 6)))
     (fileloop-continue))
   ;; TODO: does not get run because previous loop throws an exception
@@ -981,10 +981,6 @@ Use this with care."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Utilities
 ;;;
-
-(defun remove-text-properties-string (s)
-  (set-text-properties 0 (length s) nil s)
-  s)
 
 (put 'with-temp-buffer 'lisp-indent-function 1)
 

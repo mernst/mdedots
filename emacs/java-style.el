@@ -939,8 +939,8 @@ Operates on all files in the TAGS table of the current directory."
     (unless tags-files
       (error "No tags table is loaded or it is empty"))
     (dolist (file tags-files)
-      (if (and (s-ends-with-p ".java" file)
-               (not (s-ends-with-p "package-info.java" file)))
+      (if (and (string-suffix-p ".java" file)
+               (not (string-suffix-p "package-info.java" file)))
           (let ((full-path (expand-file-name file dir)))
             (find-file full-path)
             (with-current-buffer (current-buffer)

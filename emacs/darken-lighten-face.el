@@ -97,7 +97,7 @@
 
 (defun rgb-to-hex-string (clist)
   (format "#%04x%04x%04x"
-          (round (cl-first clist)) (round (cl-second clist)) (round (cl-third clist))))
+          (round (nth 0 clist)) (round (nth 1 clist)) (round (nth 2 clist))))
 ;; (rgb-to-hex-string (color-values "purple"))
 ;; (rgb-to-hex-string (color-values "white"))
 ;; (rgb-to-hex-string (color-values "black"))
