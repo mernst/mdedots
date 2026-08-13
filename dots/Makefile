@@ -9,42 +9,42 @@ all: .hunspell_en_US.sorted .enscriptrc .javadoc-index-files .jsr308-demos.prope
 	LC_ALL=C sort < $< | uniq > $@ && cp -pf $@ $<
 
 .enscriptrc: .enscriptrc-template
-	@rm -rf $@
+	@rm -f $@
 	cp $< $@
 	echo "StatesConfigFile: ${HOME}/dots/enscript.st" >> .enscriptrc
 	chmod -w $@
 
 .javadoc-index-files: .javadoc-index-files.env
-	@rm -rf $@
+	@rm -f $@
 	envsubst < $< > $@
 	chmod -w $@
 
 .jsr308-demos.properties: .jsr308-demos.properties.env
-	@rm -rf $@
+	@rm -f $@
 	envsubst < $< > $@
 	chmod -w $@
 
 .mvc-checkouts: .mvc-checkouts.env
-	@rm -rf $@
+	@rm -f $@
 	envsubst < $< > $@
 	chmod -w $@
 
 .Xresources-cse: .Xresources-cpp
-	@rm -rf $@
+	@rm -f $@
 	cpp -P -Dcse $< $@
 	chmod -w $@
 
 .Xresources-laptop: .Xresources-cpp
-	@rm -rf $@
+	@rm -f $@
 	cpp -P -Dlaptop $< $@
 	chmod -w $@
 
 .Xresources-mac: .Xresources-cpp
-	@rm -rf $@
+	@rm -f $@
 	cpp -P -Dlaptop -Dmac $< $@
 	chmod -w $@
 
 .Xresources-yogaubuntu: .Xresources-cpp
-	@rm -rf $@
+	@rm -f $@
 	cpp -P -Dlaptop -Dyogaubuntu $< $@
 	chmod -w $@
