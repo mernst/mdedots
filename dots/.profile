@@ -88,11 +88,17 @@ if [ "$CENTOS_VERSION" = "7" ]; then
   export PATH=${HOME}/bin/install/ActivePerl-5.28/bin:${PATH}
 fi
 
-# "export LC_ALL=en_US.UTF-8" results in dotfiles being sorted by
+# TODO: "export LC_ALL=en_US.UTF-8" results in dotfiles being sorted by
 # their first letter, not all before non-dotfiles.  "LC_ALL=C"
 # prevents that problem, but causes other problems.  So, I need to
 # figure out how to sort the way I want without using LC_ALL.
-export LC_ALL=en_US.UTF-8
+# Setting LC_ALL to a locale that has not been generated makes programs
+# such as perl warn, so set LC_ALL only if the locale is available.
+# "locale -a" writes the locale as "en_US.utf8" on glibc and as
+# "en_US.UTF-8" on macOS.
+if locale -a 2> /dev/null | grep -qiE '^en_US\.utf-?8$'; then
+  export LC_ALL=en_US.UTF-8
+fi
 
 # # These export commands are necessary to avoid Perl warnings; daikon-dev.bashrc
 # # uses perl.  Only set the locale if it is available.  (If it isn't available,
