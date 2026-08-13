@@ -983,27 +983,11 @@ Not guaranteed to work in all cases."
   (shell-command (concat "rolo " (quote-for-shell-command string))))
 
 (defun quote-for-shell-command (arguments)
-  ;; Should split arguments then call quote-word-for-shell-command on each,
-  ;; but only if the string contains zero or one single-quote and zero or
-  ;; one double-quote character.
-  ;; The reason is to respect any quotation marks that the user inserted
-  ;; intentionally.
-  arguments
-  )
-
-;;
-(defun quote-word-for-shell-command (string)
-  (cond ((and (string-match "'" string nil 'inhibit-modify)
-              (not (string-match "\"" string nil 'inhibit-modify)))
-         (setq string (concat "\"" string "\"")))
-        ((and (string-match "\"" string nil 'inhibit-modify)
-              (not (string-match "\'" string nil 'inhibit-modify)))
-         (setq string (concat "'" string "'")))
-        ((and (string-match "\"" string nil 'inhibit-modify)
-              (not (string-match "\'" string nil 'inhibit-modify)))
-         (error (concat "cannot quote argument for shell command because string contains both single and double quotes: " string)))
-        (t
-         string)))
+  "Return ARGUMENTS, a string of shell arguments, quoted for the shell.
+ARGUMENTS is split into words, respecting any quotation marks that the
+user inserted intentionally, and each word is quoted individually.
+Signals an error if the quotation marks in ARGUMENTS are unbalanced."
+  (mapconcat #'shell-quote-argument (split-string-and-unquote arguments) " "))
 
 (defun quotefind (string)
   "Find quotations matching words in STRING."
