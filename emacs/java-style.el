@@ -696,24 +696,25 @@ The description is everything but the block tags (such as @param and @return)."
 ;; this Emacs code moves them to type annotation position.
 ;; I have not tried it within the function, only evaluating each form at the top level.
 
+(defconst modifiers-plus-space-regexp
+  "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)"
+  "Regexp matching one or more Java modifiers, each followed by a space.")
+
 (defun move-nullable-to-type-annotation-position ()
   (interactive)
-
-  (defvar modifers-plus-space-regex)
-  (setq modifers-plus-space-regexp "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)")
 
   ;; This handles @Nullable on its own line
   (tags-query-replace
    (concat "\\(
    *\\)@Nullable\\(\\(?:
    *@\\(?:Override\\|CanIgnoreReturnValue\\|SuppressWarnings([^)]*)\\)\\)*\\)\\(
-   *\\)" modifers-plus-space-regex)
+   *\\)" modifiers-plus-space-regexp)
    "\\2\\3\\4@Nullable ")
 
 
   ;; This handles @Nullable on the same line as other code
   (tags-query-replace
-   (concat "@Nullable " modifers-plus-space-regex)
+   (concat "@Nullable " modifiers-plus-space-regexp)
    "\\1@Nullable ")
 
   ;; Swap order of two declarations, when the @Nullable will stay on its own line
