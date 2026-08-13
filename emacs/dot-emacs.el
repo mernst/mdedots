@@ -1217,10 +1217,10 @@ After running this, run from the shell:  print-mail bulk." t)
 
 
 ;; According to the documentation of `directory-abbrev-alist`, "TO should be an absolute directory name."
-(if nil ; TODO
-    (setq directory-abbrev-alist
-          (mapcar #'process-environment-vars-directories-element
-                  environment-vars-directories)))
+;; TODO: enable this.
+;; (setq directory-abbrev-alist
+;;       (mapcar #'process-environment-vars-directories-element
+;;               environment-vars-directories))
 
 
 
@@ -1292,13 +1292,10 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; (abbreviate-file-name "/homes/gws/mernst/bin/share")
 
 ;; In `abbreviate-file-name`, replacement of the home directory to "~" is done LAST.
-(if nil
-    (progn
-      (cl-assert (string-equal (abbreviate-file-name "~/research/types/") "$t/"))
-      (cl-assert (string-equal (abbreviate-file-name "~/research/types") "$t"))
-      (cl-assert (string-equal (abbreviate-file-name "/home/mernst/research/types/") "$t/"))
-      (cl-assert (string-equal (abbreviate-file-name "/home/mernst/research/types") "$t")))
-  )
+;; (cl-assert (string-equal (abbreviate-file-name "~/research/types/") "$t/"))
+;; (cl-assert (string-equal (abbreviate-file-name "~/research/types") "$t"))
+;; (cl-assert (string-equal (abbreviate-file-name "/home/mernst/research/types/") "$t/"))
+;; (cl-assert (string-equal (abbreviate-file-name "/home/mernst/research/types") "$t"))
 
 
 

@@ -496,21 +496,20 @@ Use this with care."
 
 
 
-(if nil
-    (tags-query-replace
-     "<<<<<<<.*
-    @SuppressWarnings(\"this-escape\")
-|||||||.*
-=======
-    @SideEffectFree
-    @SuppressWarnings(\"purity.not.sideeffectfree.call\") // initCause affects only the new object
->>>>>>>.*
-"
-     "    @SideEffectFree
-    @SuppressWarnings({\"this-escape\",
-           \"purity.not.sideeffectfree.call\"} // initCause affects only the new object
-    )
-"))
+;; (tags-query-replace
+;;  "<<<<<<<.*
+;;     @SuppressWarnings(\"this-escape\")
+;; |||||||.*
+;; =======
+;;     @SideEffectFree
+;;     @SuppressWarnings(\"purity.not.sideeffectfree.call\") // initCause affects only the new object
+;; >>>>>>>.*
+;; "
+;;  "    @SideEffectFree
+;;     @SuppressWarnings({\"this-escape\",
+;;            \"purity.not.sideeffectfree.call\"} // initCause affects only the new object
+;;     )
+;; ")
 
 
 
@@ -536,17 +535,16 @@ Use this with care."
     "\\5")
    "\\2\\1\\4\\6")
   ;; The more general version, which I don't seem to need.
-  (if nil
-      ;; TODO! This does not work.  Debug later.
-      (tags-query-replace-noerror
-       (concat
-        less-than-hunk-start-grouped
-        "\\(.*\n\\)"
-        "\\(" left-lines-re "" vertical-bar-separator-re "\\)"
-        "\\(.*\n\\)"
-        "\\(" right-lines-re "" equal-sign-separator-re "\\)"
-        "\\4")
-       "\\2\\1\\3\\5"))
+  ;; TODO! This does not work.  Debug later.
+  ;; (tags-query-replace-noerror
+  ;;  (concat
+  ;;   less-than-hunk-start-grouped
+  ;;   "\\(.*\n\\)"
+  ;;   "\\(" left-lines-re "" vertical-bar-separator-re "\\)"
+  ;;   "\\(.*\n\\)"
+  ;;   "\\(" right-lines-re "" equal-sign-separator-re "\\)"
+  ;;   "\\4")
+  ;;  "\\2\\1\\3\\5")
 
   ;; Resolve the first line of a diff, when OTHER has been edited.
   ;; Requires an access modifier at start of \2 and \4.
@@ -564,19 +562,18 @@ Use this with care."
     "\\( *\\(?:public\\|private\\|protected\\).*\\3.*\n\\)"
     )
    "\\6\\1\\4\\5")
-  (if nil
-      (tags-query-replace-noerror
-       ;; PROBLEM: This matches any signature that differs, not just ones that differ in annotations.
-       ;; So be careful when accepting the replacement.
-       (concat
-        less-than-hunk-start-grouped
-        "\\( *\\(?:public\\|private\\|protected\\) .*\n\\)"
-        "\\(" left-lines-re "" vertical-bar-separator-re "\\)"
-        "\\2"
-        "\\(" base-lines-re "" equal-sign-separator-re "\\)"
-        "\\( *\\(?:public\\|private\\|protected\\) .*\n\\)")
-       "\\5\\1\\3\\4")
-    )
+  ;; The second version does not require "@", but is currently disabled.
+  ;; (tags-query-replace-noerror
+  ;;  ;; PROBLEM: This matches any signature that differs, not just ones that differ in annotations.
+  ;;  ;; So be careful when accepting the replacement.
+  ;;  (concat
+  ;;   less-than-hunk-start-grouped
+  ;;   "\\( *\\(?:public\\|private\\|protected\\) .*\n\\)"
+  ;;   "\\(" left-lines-re "" vertical-bar-separator-re "\\)"
+  ;;   "\\2"
+  ;;   "\\(" base-lines-re "" equal-sign-separator-re "\\)"
+  ;;   "\\( *\\(?:public\\|private\\|protected\\) .*\n\\)")
+  ;;  "\\5\\1\\3\\4")
   )
 
 
@@ -849,19 +846,17 @@ Use this with care."
 ;;; Special cases
 ;;;
 
-(if nil
-    (tags-query-replace-noerror
-     (concat less-than-hunk-start-grouped
-             (grouped " *@Pure\n *@EnsuresNonNullIf(.*)\n")
-             left-lines-grouped-re
-             (grouped vertical-bar-separator-re)
-             base-lines-grouped-re
-             (grouped equal-sign-separator-re)
-             "\\( *@Override\n\\)"
-             right-lines-grouped-re
-             (grouped greater-than-hunk-end-re))
-     "\\2\\7\\1\\3\\4\\5\\6\\8\\9")
-  )
+;; (tags-query-replace-noerror
+;;  (concat less-than-hunk-start-grouped
+;;          (grouped " *@Pure\n *@EnsuresNonNullIf(.*)\n")
+;;          left-lines-grouped-re
+;;          (grouped vertical-bar-separator-re)
+;;          base-lines-grouped-re
+;;          (grouped equal-sign-separator-re)
+;;          "\\( *@Override\n\\)"
+;;          right-lines-grouped-re
+;;          (grouped greater-than-hunk-end-re))
+;;  "\\2\\7\\1\\3\\4\\5\\6\\8\\9")
 
 
 ;; (tags-query-replace (concat less-than-hunk-start-re

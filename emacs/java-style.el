@@ -406,11 +406,9 @@ for files in the current TAGS tables."
    "\\1.\\2")
 
   ;; Non-capitalized first letter in the main part of the Javadoc:
-  (let ((case-fold-search nil))
-    nil ;; placeholder
-    ;; TODO: implement this
-    ;; (tags-replace-capitalize-2 "\\(/\\*\\*[[:space:]]*\\)\\([a-z]\\)"))
-    )
+  ;; TODO: implement this
+  ;; (let ((case-fold-search nil))
+  ;;   (tags-replace-capitalize-2 "\\(/\\*\\*[[:space:]]*\\)\\([a-z]\\)"))
 
   )
 

@@ -742,12 +742,10 @@ This will not disable any messages from built-in C subroutines."
 ;; Sometimes, use of beginning-of-line-point as a macro causes problems.
 ;; If so, evaluate the below defun, and possibly inline it as:
 ;;   (save-excursion (beginning-of-line) (point))
-(if nil
-    (defun beginning-of-line-point ()
-      "Return the location of the beginning of the line."
-      (point-after
-       (beginning-of-line)))
-  )
+;; (defun beginning-of-line-point ()
+;;   "Return the location of the beginning of the line."
+;;   (point-after
+;;    (beginning-of-line)))
 
 (defun forward-line-wrapping (arg)
   "Like forward-line, but wrap around to the beginning of the buffer if
