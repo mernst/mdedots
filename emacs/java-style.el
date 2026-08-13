@@ -508,24 +508,23 @@ The description is everything but the block tags (such as @param and @return)."
 ;;;
 
 
-(defun fix-java-for-loops ()
-  "Convert uses of iterators into new-style for loops."
-  (interactive)
-  ;; Body copied from tags-query-replace.
-  (setq tags-loop-scan
-	`(find-candidate-old-for-loop)
-	tags-loop-operate `(progn
-			     (message "performing at %s" (point))
-			     (perform-replace old-for-loop-regexp
-					      for-loop-replacement
-					      t t nil)
-			     t))
-  (fileloop-continue t))
-
 (defvar old-for-loop-regexp
   "\\bfor (Iterator<\\(.*\\)> +\\(\\w+\\) *= *\\(.*\\)\\.iterator() *; *\n?.*; *)[ \n]*\\(\\){\n *\\(\\1 .*[^ ]\\) *= *\\2\\.next();")
 (defvar for-loop-replacement
   "for (\\5 : \\3) {")
+
+(defun fix-java-for-loops ()
+  "Convert uses of iterators into new-style for loops."
+  (interactive)
+  (fileloop-initialize
+   (get-all-tags-files)
+   #'find-candidate-old-for-loop
+   (lambda ()
+     (message "performing at %s" (point))
+     (perform-replace old-for-loop-regexp for-loop-replacement t t nil)
+     ;; Non-nil means proceed to the next file rather than rescanning this one.
+     t))
+  (fileloop-continue))
 
 ;; These are for debugging.
 ;; (re-search-forward old-for-loop-regexp)
