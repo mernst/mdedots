@@ -750,8 +750,7 @@ This will not disable any messages from built-in C subroutines."
   )
 
 (defun forward-line-wrapping (arg)
-  "Like forward-line, but wrap around to the beginning of the buffer if
-it encounters the end."
+  "Like `forward-line', but wrap around at the end or beginning of the buffer."
   (interactive "p")
   (let ((to-go (forward-line arg)))
     (cond ((or (cl-plusp to-go) (not (bolp)))

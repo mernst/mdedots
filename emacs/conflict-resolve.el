@@ -318,11 +318,13 @@ Two caveats:
         annotation-names))
 
 (defvar annotation-line-regex nil
-  "A regular expression that matches a declaration annotation (which should be
-written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
+  "A regular expression that matches a declaration annotation.
+The annotation should be written on its own line.  The regexp is
+not anchored by \"^\" or \"$\".")
 (defvar annotation-including-suppresswarnings-line-regex nil
-  "A regular expression that matches a declaration annotation (which should be
-written on its own line).  The regexp is not anchored by \"^\" or \"$\".")
+  "A regular expression that matches a declaration annotation.
+The annotation should be written on its own line.  The regexp is
+not anchored by \"^\" or \"$\".")
 (setq annotation-line-regex
       (concat
        " *@"

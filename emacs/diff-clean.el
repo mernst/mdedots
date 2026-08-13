@@ -46,10 +46,10 @@ only match basenames whereas this handles pathnames.")
 
 ;; TODO: This could perhaps use functions like `diff-hunk-kill'.
 (defun diff-clean (&optional dont-remove-files)
-  "Cleans up a diff to remove uninteresting changes.
-Removes some files entirely (see `diff-clean-removed-files').
-Removes trivial diffs, such as hunks or files with empty/no differences.
-Reduces size of diffs with common prefix or suffix.
+  "Clean up a diff to remove uninteresting changes.
+Remove some files entirely (see `diff-clean-removed-files').
+Remove trivial diffs, such as hunks or files with empty/no differences.
+Reduce size of diffs with common prefix or suffix.
 The latter two changes are semantics-preserving and are useful after
 editing a diff buffer to remove uninteresting changes."
   (interactive)
@@ -241,14 +241,14 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
         (goto-char change-end)))))
 
 (defun diff-concatenate-hunks ()
-  "Merges two hunks that are separated only by punctuation."
+  "Merge two hunks that are separated only by punctuation."
   (diff-concatenate-hunks-with-indicator "+")
   (diff-concatenate-hunks-with-indicator "-")
   )
 
 (defun diff-concatenate-hunks-with-indicator (indicator-char)
-  "Merges two hunks that are separated only by punctuation.
-`indicator-char' is '+' or '-'."
+  "Merge two hunks that are separated only by punctuation.
+INDICATOR-CHAR is \"+\" or \"-\"."
   (save-excursion
     (goto-char (point-min))
     (let ((regex (concat "^[^" indicator-char "].*\n"
@@ -290,10 +290,10 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
 
 
 (defun diff-clean-imports ()
-  "Cleans up a diff to remove changes in import statements.
-Removes some files entirely (see `diff-clean-removed-files').
-Removes trivial diffs, such as hunks or files with empty/no differences.
-Reduces size of diffs with common prefix or suffix.
+  "Clean up a diff to remove changes in import statements.
+Remove some files entirely (see `diff-clean-removed-files').
+Remove trivial diffs, such as hunks or files with empty/no differences.
+Reduce size of diffs with common prefix or suffix.
 The latter two changes are semantics-preserving and are useful after
 editing a diff buffer to remove uninteresting changes."
   (interactive)
@@ -328,7 +328,7 @@ editing a diff buffer to remove uninteresting changes."
 ;;;
 
 (defun file-regexp-to-colon-regexp (regexp)
-  "Change the last slash in `regexp` to \": \"."
+  "Change the last slash in REGEXP to \": \"."
   (let ((result (replace-regexp-in-string "\\(/\\)[^/]*$" ": " regexp nil nil 1)))
     (if (string-suffix-p "/.*" regexp)
 	(let ((additional (file-regexp-to-colon-regexp (substring regexp 0 (- (length regexp) 3)))))
@@ -348,8 +348,8 @@ editing a diff buffer to remove uninteresting changes."
          (error (concat "bad indicator char: " indicator-char)))))
 
 (defun change-indicator-char-in-region (old-indicator new-indicator begin end)
-  "Replaces the indicator character (the character in column 1), in the region.
-Does nothing with lines that do not begin with `old-indicator'."
+  "Replace the indicator character (the character in column 1), in the region.
+Do nothing with lines that do not begin with OLD-INDICATOR."
   (replace-regexp-in-region
    (concat "^[" old-indicator "]")
    new-indicator
@@ -363,8 +363,9 @@ Does nothing with lines that do not begin with `old-indicator'."
 
 ;; This was necessary once in the Checker Framework annotated JDK.
 (defun standardize-array-declarations ()
-  "Converts Java array declarations from \"short a2[]\" to \"short[] a2\" or from
-  \"@PolySigned short a2 @Nullable []\" to \"@PolySigned short @Nullable [] a2\""
+  "Convert Java array declarations to put the brackets on the element type.
+For example, convert \"short a2[]\" to \"short[] a2\", or
+\"@PolySigned short a2 @Nullable []\" to \"@PolySigned short @Nullable [] a2\"."
   (tags-query-replace
    (concat
     "\\([^@]\\)\\b\\([A-Z][a-z][A-Za-z0-9]+\\|byte\\|short\\|int\\|long\\|float\\|double\\|boolean\\|char\\) "
