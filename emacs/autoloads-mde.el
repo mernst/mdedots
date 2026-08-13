@@ -56,9 +56,6 @@
 ;; python-mode is autoloaded from python.el
 
 ;; Scheme coding
-(autoload 'scheme-inspector "scheme-inspector" "Scheme inspector" t)
-(autoload 'si-jump "scheme-inspector" "Scheme inspector" t)
-(autoload 'si-expression "scheme-inspector" "Scheme inspector" t)
 (autoload 'run-big-scheme "scheme-mde" "Scheme with big heap" t)
 (autoload 'chez-scheme-mode "chezscheme" "Chez Scheme mode" t)
 (setq auto-mode-alist
@@ -302,23 +299,6 @@
 
 
 ;;;
-;;; Information
-;;;
-
-;; I mirror this locally every week.  David Jones no longer does at aviary.
-(setq lisp-code-directory "~/emacs/LCD-datafile.gz")
-;; ;; Add slash after colon
-;; (setq lisp-code-directory
-;;       "/anonymous@archive.cis.ohio-state.edu:/pub/gnu/emacs/elisp-archive/LCD-datafile.gz")
-(autoload 'lisp-dir-apropos "lispdir" "Search a database of elisp code" t)
-(autoload 'lisp-dir-retrieve "lispdir" "Retrieve elisp code" t)
-(autoload 'submit-lcd-entry "lispdir" "Submit code for the LCD" t)
-(autoload 'tex-macro-catalogue "tex-macro-catalogue"
-  "TeX macro catalogue browser" t)
-(autoload (function find-faq) "faq"
-  "*Find the archived Usenet NEWSGROUP FAQ file..." t)
-
-;;;
 ;;; Differences
 ;;;
 
@@ -365,18 +345,6 @@
 ;; (advice-add 'browse-url :before #'browse-url--abort-if-empty-string)
 
 
-(autoload 'update-menu-bars "www-mde" nil t)
-(autoload 'extra-html "www-mde" nil t)
-(autoload 'fair-html "www-mde" nil t)
-(autoload 'process-indexees-for-file "www-index" nil t)
-(autoload 'process-indexees-for-directory "www-index" nil t)
-;; (setq top-directory-prefix "/fair@wideopen.igc.apc.org:/c/home2/fair/WWW/")
-(setq top-directory-prefix "/fair@wideopen.igc.apc.org:/d/root.home/fair/WWW/")
-(setq menu-bar-file "/fair@wideopen.igc.apc.org:/d/root.home/fair/WWW/menu-bar-structure")
-(setq index-obarray-file (concat top-directory-prefix "index/raw-index.el"))
-
-
-
 ;;;
 ;;; Miscellaneous
 ;;;
@@ -391,21 +359,10 @@
 (autoload 'dired-jump "dired-x" "Tree dired" t)
 
 
-;; Games, silly and serious.
-(autoload 'games        "games" "Games comint mode." t)
-(autoload 'games-ask    "games" "Games comint mode." t)
-(autoload 'konane-substitute "games-k-exp"
-  "Substitute Konane games into file." t)
-(autoload 'games-defexpectation "games" "Define a new games expectation form.")
-
-(autoload 'madlib "madlib" "Mad Lib game" t)
-(setq madlib-directories "~/random/madlib/")
-
 ;; Wasting time
 ;; ; gnus customizations in gnus-mike-batch.el or gnus-mike.el
 (setq gnus-init-file (expand-file-name "~/emacs/gnus-mike"))
 (autoload 'caesar-region "rnews" "Rot-13 the region." t)
-                                        ;(autoload 'irc "~/emacs/irc-2.0" "Internet Relay Chat" t)
 
 ;; Inleft; Emacs-19 comment-region isn't as versatile.
 ;; This seems to be necessary to get correct behavior from, eg, cecil-mode
@@ -418,10 +375,6 @@
 
 (setq message-buffer-at-end-p t
       message-buffer-timestamp-p nil)
-
-(autoload 'background "background" nil t)
-
-(autoload 'global-replace-lines "globrep" nil t)
 
 ;;; speedbar
 (autoload 'speedbar-frame-mode "speedbar" "Popup a speedbar frame" t)
