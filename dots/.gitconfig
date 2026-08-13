@@ -199,5 +199,7 @@
 	process = git-lfs filter-process
 	required = true
 
-[coderabbit]
-	machineId = cli/3c01479e400e4496a0332660225008d9
+# The CodeRabbit CLI writes a `[coderabbit] machineId` section into the global
+# git configuration, which is this file (~/.gitconfig is a symlink to it).  That
+# identifier names a single machine, but this file is shared by every machine, so
+# delete the section rather than committing it whenever it reappears.
