@@ -16,7 +16,7 @@
 ;; The following cl-lib.el functions are compatibly redefined here:
 ;;   [none]
 ;; The following Emacs built-in functions are compatibly redefined here:
-;;   sort
+;;   [none]
 
 
 (provide 'util-clmde)
@@ -220,17 +220,6 @@ NEWCHAR and OLDCHAR are characters."
 ;;;
 
 ;;; 2. Lists
-
-(defun butlast (list &optional n)
-  "Return a list with the same elements as LIST, excepting the last N elements.
-N defaults to 1.  If LIST has fewer than N elements, NIL is returned."
-  (let ((copied-elts (- (length list) (or n 1)))
-        result)
-    (while (and list (plusp copied-elts))
-      (setq result (cons (car list) result)
-            copied-elts (1- copied-elts)
-            list (cdr list)))
-    (nreverse result)))
 
 ;;; 5. Using lists as sets
 
