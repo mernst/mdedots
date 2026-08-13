@@ -21,6 +21,10 @@ compile: compile-without-mew
 #	emacs -q --batch -l ${HOME}/emacs/init.el --eval "(add-to-list 'load-path \".\")" -f batch-byte-compile $<
 	emacs --batch -L . -L ${HOME}/.emacs.d -l ${HOME}/emacs/init.el -f batch-byte-compile $<
 
+# Load the .el files rather than the .elc files, which might be out of date.
+test:
+	${EMACS} --batch -L . -l replace-paragraphs.el -l replace-paragraphs-tests.el -f ert-run-tests-batch-and-exit
+
 .PHONY: javadoc-index
 javadoc-index:
 	${INV}/scripts/javadoc-index-to-alist > $HOME/.javadoc-index.el
