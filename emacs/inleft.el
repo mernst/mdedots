@@ -55,7 +55,7 @@ moves to end of region.  Not to be called interactively."
       (narrow-to-region (or beg (point-marker))
                         (or end (mark-marker)))
       (goto-char (point-min))
-      (while (and (<= (point-marker) (point-max)) (not (eobp)))
+      (while (and (<= (point) (point-max)) (not (eobp)))
         (beginning-of-line 1)
         (insert-before-markers left-string)
         (forward-line 1)))))
@@ -74,7 +74,7 @@ Prompts for string, and remembers it in the variable `inleft-string'."
     (if (< m p) (let ((thrip m))  ; swap m and p
                   (setq m p p thrip)))
     (goto-char p)
-    (while (and (<= (point-marker) m) (not (eobp)))
+    (while (and (<= (point) m) (not (eobp)))
       (beginning-of-line 1)
       (if (string= inleft-string
                    (buffer-substring (point) (min (point-max) (+ (point) inleft-string-len))))
