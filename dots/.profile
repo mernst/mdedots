@@ -1,5 +1,6 @@
 #!/bin/bash
-# .profile should be compatible with any /bin/sh, including bash, dash, and ksh.
+# .profile requires bash; it uses `shopt` and `${BASH_SOURCE[0]}`.
+# By contrast, .environment is POSIX sh, so that any shell can source it.
 
 # ~/.profile: executed by the command interpreter for login shells.
 # .profile has configuration NOT specifically related to bash,

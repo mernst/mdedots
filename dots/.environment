@@ -3,6 +3,7 @@
 ### Environment variables
 ## This file should not contain anything besides environment variables,
 ## because they are carried over to subshells but (say) aliases aren't.
+## This file is POSIX sh, so that any /bin/sh -- bash, dash, or ksh -- can source it.
 ## Paths ($path or $PATH) are set in .profile .
 
 if [ -n "${dot_environment_file_read}" ]; then
@@ -102,10 +103,6 @@ export BPHOME="$HOME"/bin/src/perl/bibtex2web/lib
 # Avoid message "Picked up JAVA_TOOL_OPTIONS: -javaagent:/usr/share/java/jayatanaag.jar"
 unset JAVA_TOOL_OPTIONS
 
-# Commented out because this file should permit both sh and csh syntax.
-# if ($?DEBUGLOGIN) echo ".environment: java"
-
-# if ($?DEBUGLOGIN) echo ".environment: java (daikon)"
 ## JAVA_HOME needs to be set on CSE, where JDK 8 is the default.
 ## But let's not set it at Amazon.
 # Daikon
