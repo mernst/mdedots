@@ -113,18 +113,22 @@ which case nil is returned."
 ;;     (error "substitute isn't that good yet.")))
 
 (defmacro string-substitute (newchar oldchar string)
-  "Substitute NEWCHAR for instances of OLDCHAR in STRING.
-NEWCHAR and OLDCHAR are characters."
+  "Return a copy of STRING with NEWCHAR substituted for instances of OLDCHAR.
+STRING is not modified.  NEWCHAR and OLDCHAR are characters."
   `(string-substitute-opt ,newchar
                           (regexp-quote (char-to-string ,oldchar))
                           ,string))
 
 ;; Optimized version.  oldchar-regexp should only match one-character strings.
 (defun string-substitute-opt (newchar oldchar-regexp string)
-  (let ((i -1)
+  "Return a copy of STRING with NEWCHAR substituted for matches of OLDCHAR-REGEXP.
+STRING is not modified.  OLDCHAR-REGEXP should only match one-character strings."
+  (let ((result (copy-sequence string))
+        (i -1)
         (case-fold-search nil))
-    (while (setq i (string-match oldchar-regexp string (1+ i) 'inhibit-modify))
-      (aset string i newchar))))
+    (while (setq i (string-match oldchar-regexp result (1+ i) 'inhibit-modify))
+      (aset result i newchar))
+    result))
 
 
 ;;; 4.  Searching sequences for items
