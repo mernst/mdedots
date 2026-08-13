@@ -2,6 +2,11 @@
 
 default: compile-without-mew
 
+all: compile-without-mew
+
+# Byte-compilation is the only check on these files.
+test: compile-without-mew
+
 EMACS ?= emacs
 
 # EL_FILES does not include $(wildcard mew/*.el); use its own Makefile
