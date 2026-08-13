@@ -13,8 +13,6 @@
   (require 'util-mde))
 
 (autoload 'replace-all-occurrrences-iteratively "util-mde")
-(autoload 'offer-to-change-if-read-only "replace-paragraphs"
-  "Offer to make the buffer not read-only.")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
