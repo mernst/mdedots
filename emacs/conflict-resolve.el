@@ -1,5 +1,4 @@
 ;;; -*- lexical-binding: t -*-
-(defconst left-or-right-regexp "")
 
 ;; This file contains functions that resolve merge conflicts.
 ;; Also see file diff-clean.el, which is for diffs (not conflicts).
@@ -86,6 +85,10 @@
   (lines-without-at-start-re "="))
 (defconst base-lines-grouped-re
   (grouped base-lines-re))
+;; Acceptable on either side of the "=======" separator, so it excludes the
+;; terminators of both sides: "|||||||" for the left and ">>>>>>>" for the right.
+(defconst left-or-right-regexp
+  (lines-without-at-start-re "|>"))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -724,7 +727,7 @@ Use this with care."
     ;; (concat "\\(" up-to-5-lines "\\|" base-lines-re "\\)")
     (concat "\\(\\)")
     equal-sign-separator-re
-    (concat "\\(" "\\1" left-or-right-regexp "\\1" "\\)")
+    (concat "\\(" "\\1" left-or-right-regexp "\\)")
     greater-than-hunk-end-re)
    "\\3"))
 
@@ -738,7 +741,7 @@ Use this with care."
     ;; (concat "\\(" up-to-5-lines "\\|" base-lines-re "\\)")
     (concat "\\(\\)")
     equal-sign-separator-re
-    (concat "\\(" left-or-right-regexp "\\1" "\\1" "\\)")
+    (concat "\\(" left-or-right-regexp "\\1" "\\)")
     greater-than-hunk-end-re)
    "\\3"))
 
