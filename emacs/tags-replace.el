@@ -75,15 +75,12 @@ DELIMITED if non-nil means replace only word-delimited matches."
 (defun tags-replace (from to &optional delimited files)
   "Do `replace-regexp' of FROM with TO on files in tags table, without query.
 Third arg DELIMITED (prefix arg) means replace only word-delimited matches.
-If you exit (\\[keyboard-quit], RET or q), you can resume the query replace
+Every match is replaced without asking the user.
+If you exit (\\[keyboard-quit]), you can resume the replacement
 with the command \\[fileloop-continue].
 
-As each match is found, the user must type a character saying
-what to do with it.  Type SPC or `y' to replace the match,
-DEL or `n' to skip and go to the next match.  For more directions,
-type \\[help-command] at that time.
-
-For non-interactive use, this is superseded by `fileloop-initialize-replace'."
+For non-interactive use, this is superseded by
+`fileloop-initialize-replace-noquery'."
   (declare (advertised-calling-convention (from to &optional delimited) "27.1"))
   (interactive (query-replace-read-args "Tags query replace (regexp)" t t))
   (fileloop-initialize-replace-noquery ;; CHANGED

@@ -16,7 +16,9 @@ Maybe this should be enhanced to be once per hour."
 	(sleep-for 1))))
 
 (defun browse-url-once-if-matched (url-regex &optional match-group-number)
-  "Visit every URL that matches URL-REGEX."
+  "Visit every URL that matches URL-REGEX, each URL at most once per session.
+Like `browse-url-if-matched', but skips URLs that were already visited by
+`browse-url-once'."
   (save-excursion
     (while (re-search-forward url-regex nil t)
       (browse-url-once (match-string (or match-group-number 0))))))
@@ -28,7 +30,9 @@ Maybe this should be enhanced to be once per hour."
       (browse-url (match-string (or match-group-number 0))))))
 
 (defun browse-url-once-via-text-properties (anchor-regex &optional match-group-number)
-  "Visit every link with anchor text that matches ANCHOR-REGEX."
+  "Visit every link whose anchor text matches ANCHOR-REGEX, at most once each.
+Like `browse-url-via-text-properties', but skips URLs that were already
+visited by `browse-url-once'."
   (save-excursion
     (while (re-search-forward anchor-regex nil t)
       (browse-url-once
