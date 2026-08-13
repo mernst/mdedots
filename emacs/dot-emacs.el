@@ -1430,18 +1430,9 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 ;; (setq tramp-default-method "ssh")
 (setq tramp-default-method "scp")
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
- '(package-selected-packages nil)
- '(package-vc-selected-packages
-   '((whisper :url "https://github.com/natrys/whisper.el" :branch
-              "master")))
- '(tramp-password-prompt-regexp "^.*\\([pP]assword\\|passphrase\\|Response\\).*:\0? *"))
-
+;; All Custom settings live in the single `custom-set-variables' and
+;; `custom-set-faces' blocks in init.el, which is where Custom writes them
+;; (`custom-file' is unset, so Custom uses `user-init-file').
 
 ;; To debug tramp, do:
 ;; (require 'tramp)
@@ -1584,12 +1575,6 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 ;;   :vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
 ;;   :config (claude-code-mode)
 ;;   :bind-keymap ("C-c c" . claude-code-command-map))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
 (autoload 'claude-code-vterm-mode "claude-code-ui")
 (autoload 'vterm-mode "vterm")
 ;; Claude-code uses projectile
