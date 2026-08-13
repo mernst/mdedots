@@ -257,9 +257,6 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
                          "\\(\\(?:[" indicator-char "].*\n\\)+\\)"
                          "[^" indicator-char "]")))
       (while (re-search-forward regex nil t)
-        ;; These two `goto-char` are for debugging; remove them.
-        (goto-char (match-beginning 0))
-        (goto-char (match-beginning 1))
         (let* ((change1-begin (match-beginning 1))
                (punctuation-begin (match-end 1))
                (punctuation-end (match-beginning 2))
