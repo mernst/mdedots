@@ -203,7 +203,7 @@ the value of the last one, or nil if there are none."
 
 (defun windows-convert-homedir (string)
   (if (and string
-           (string-match "^\\(\$HOME\\|\$(HOME)\\|\${HOME}\\|~\\|~mernst\\)\\($\\|/\\)"
+           (string-match "^\\(\\$HOME\\|\\$(HOME)\\|\\${HOME}\\|~\\|~mernst\\)\\($\\|/\\)"
                          string))
       (concat "e:/home/" (substring string (match-end 0)))
     string))
