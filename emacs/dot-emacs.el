@@ -717,7 +717,7 @@ After running this, run from the shell:  print-mail bulk." t)
 (load "ftp-mde" nil t)
 
 ;; Enhancement of C-x = (what-cursor-position).
-(load "count" nil t)
+(require 'count nil t)
 
 ;; Let shell buffers act like compilation buffers
 (require 'honorary-compile)
