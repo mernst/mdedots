@@ -30,6 +30,9 @@ if [ -n "$DEBUGBASH" ]; then echo "Starting .bashrc"; fi
 
 # /etc/profile is automatically read for login shells, so no need to do that.
 
+# Also set in .profile, which is not read by non-login shells.
+export INSTALLDIR=${HOME}/bin/install
+
 # Source global definitions
 # As of 2023-08-10, at CSE this changes the PATH (putting
 # /usr/lib/java/apache-maven-3.8.6/bin at its beginning, for example).
@@ -37,9 +40,9 @@ if [ -f /etc/bashrc ]; then
   # shellcheck disable=SC1091  # file does not exist on some file systems
   . /etc/bashrc
   unset PROMPT_COMMAND
+  # Restore the precedence of the Maven that .profile puts on PATH.
+  export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
 fi
-export INSTALLDIR=${HOME}/bin/install
-export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
 
 ###########################################################################
 ### Noninteractive shells
@@ -155,10 +158,6 @@ fi
 # source $HOME/bin/install/gradle-completion/gradle-completion.bash
 # source /usr/local/lib/bazel/bin/bazel-complete.bash
 
-# added by travis gem
-# shellcheck disable=SC1091  # file does not exist on some file systems
-[ -f "$HOME/.travis/travis.sh" ] && source "$HOME/.travis/travis.sh"
-
 PATH="/homes/gws/mernst/perl5/bin${PATH:+:${PATH}}"
 export PATH
 PERL5LIB="/homes/gws/mernst/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"
@@ -213,9 +212,6 @@ fi
 if [ -n "$DEBUGLOGIN" ]; then
   echo "Exiting .bashrc"
 fi
-
-# Added by Antigravity CLI installer
-export PATH="/home/mernst/.local/bin:$PATH"
 
 # kimi-code
 export PATH="/homes/gws/mernst/.kimi-code/bin:$PATH"
