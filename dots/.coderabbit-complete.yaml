@@ -1,3 +1,11 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# Reference listing of every CodeRabbit configuration option, with my preferred
+# value for each one.  CodeRabbit never reads this file; the configuration that
+# CodeRabbit uses is `.coderabbit.yaml`, which states only the options whose
+# value differs from CodeRabbit's default.  When CodeRabbit adds, removes, or
+# renames an option, update this file from the schema listed just above.
+
 language: "en-US"
 
 reviews:
