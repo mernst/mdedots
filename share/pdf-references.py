@@ -218,6 +218,25 @@ def clean_text(text):
     return " ".join(text.split())
 
 
+def float_attribute(element, name, pdf_file):
+    """Return the element's named attribute, as a float.  Exit if it is not a number.
+
+    Returns:
+        The value of the named attribute of the element.
+    """
+    value = element.get(name)
+    tag = element.tag.removeprefix(XHTML)
+    if value is None:
+        die(f"pdftotext output for {pdf_file} has a <{tag}> with no {name} attribute")
+    try:
+        return float(value)
+    except ValueError:
+        die(
+            f"pdftotext output for {pdf_file} has a <{tag}> whose {name} attribute"
+            f" is not a number: {value!r}"
+        )
+
+
 def read_pages(pdf_file):
     """Return the pages of the PDF file, as a list of Page.
 
@@ -236,8 +255,8 @@ def read_pages(pdf_file):
     pages = []
     for page_index, page_element in enumerate(root.iter(XHTML + "page")):
         page = Page(
-            width=float(page_element.get("width") or 0),
-            height=float(page_element.get("height") or 0),
+            width=float_attribute(page_element, "width", pdf_file),
+            height=float_attribute(page_element, "height", pdf_file),
         )
         for line_element in page_element.iter(XHTML + "line"):
             words = [
@@ -250,10 +269,10 @@ def read_pages(pdf_file):
             page.lines.append(
                 Line(
                     page=page_index,
-                    xmin=float(line_element.get("xMin") or 0),
-                    ymin=float(line_element.get("yMin") or 0),
-                    xmax=float(line_element.get("xMax") or 0),
-                    ymax=float(line_element.get("yMax") or 0),
+                    xmin=float_attribute(line_element, "xMin", pdf_file),
+                    ymin=float_attribute(line_element, "yMin", pdf_file),
+                    xmax=float_attribute(line_element, "xMax", pdf_file),
+                    ymax=float_attribute(line_element, "yMax", pdf_file),
                     text=text,
                 )
             )
