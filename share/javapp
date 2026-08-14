@@ -7,7 +7,17 @@
 # so that it can take multiple arguments.
 
 while ($#argv)
-    mv -f $argv[1] $argv[1].unpp
-    java -mx192m -classpath $HOME/java/JavaPrinter:$CLASSPATH JavaPP $argv[1].unpp > $argv[1]
+    set f = "$argv[1]"
+    set tmp = "$f.javapp.$$"
+    java -mx192m -classpath $HOME/java/JavaPrinter:$CLASSPATH JavaPP "$f" > "$tmp"
+    if ($status != 0) then
+        echo "javapp: pretty-printing failed for $f" > /dev/stderr
+        rm -f "$tmp"
+        exit 1
+    endif
+    # Keep the first ".unpp" file, which holds the original, never-pretty-printed
+    # text; a later run would otherwise overwrite it with pretty-printed text.
+    if (! -e "$f.unpp") mv -f "$f" "$f.unpp"
+    mv -f "$tmp" "$f"
     shift
 end
