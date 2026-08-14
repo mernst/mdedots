@@ -109,7 +109,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 30 2 * * *	$HOME/bin/share/make-mail-aliases
 # Ignore stderr to ignore "No such file or directory" errors.
 31 2 * * *	$CRONIC find $HOME -name SKIP-REQUIRE-JAVADOC 2>/dev/null
-31 2 * * *	$CRONIC find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name SKIP-REQUIRE-JAVADOC -print0 \) 2>/dev/null
+31 2 * * *	$CRONIC find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name SKIP-REQUIRE-JAVADOC -print \) 2>/dev/null
 # 24 1 * * *	$HOME/bin/share/make-procmailrc-all
 # Comment out at CSE for now:  31 1 * * *	$DAIKONDIR/scripts/buildtest-check
 # 31 1 * * *	$HOME/bin/share/check-for-misdelivered-mail 2>&1 | grep -v "^No remote authentication"
