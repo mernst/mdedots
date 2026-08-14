@@ -131,7 +131,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 02 0 * * *	$CRONIC make -C ${TYPES}/notes all-nostubparser-nopull-fileoutput
 35 0 * * *	cd $HOME/java/plume-lib/bcel-util; $CRONIC ./gradlew build
 40 0 * * *	cd $HOME/java/plume-lib/lookup; $CRONIC ./gradlew build
-45 0 * * *	JAVA_VER=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1 | sed 's/-ea//') && [ "$JAVA_VER" != "8" ] && (cd $HOME/java/plume-lib/options; $CRONIC ./gradlew build javadoc)
+45 0 * * *	JAVA_VER=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1 | sed 's/-ea//'); if [ "$JAVA_VER" != "8" ]; then (cd $HOME/java/plume-lib/options; $CRONIC ./gradlew build javadoc); fi
 00 2 * * *	(uptime && export CHECKERFRAMEWORK=${CHECKERFRAMEWORK} && cd ${CHECKERFRAMEWORK} && uptime && $CRONIC time ${CHECKERFRAMEWORK}/checker/bin-devel/test-daikon.sh && uptime) > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORK")-$(date +\%Y-\%m-\%d).txt
 # 00 2 * * *	export CHECKERFRAMEWORK=${CHECKERFRAMEWORKTIMINGONE} && cd ${CHECKERFRAMEWORKTIMINGONE} && time ${CHECKERFRAMEWORKTIMINGONE}/checker/bin-devel/test-daikon.sh > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORKTIMINGONE")-$(date +\%Y-\%m-\%d).txt
 # 00 3 * * *	export CHECKERFRAMEWORK=${CHECKERFRAMEWORKTIMINGTWO} && cd ${CHECKERFRAMEWORKTIMINGTWO} && time ${CHECKERFRAMEWORKTIMINGTWO}/checker/bin-devel/test-daikon.sh > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORKTIMINGTWO")-$(date +\%Y-\%m-\%d).txt
