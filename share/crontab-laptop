@@ -35,7 +35,10 @@ PATH=.:/homes/gws/mernst/bin/Linux-i686:/homes/gws/mernst/bin/share:/homes/gws/m
 ###
 ### Every minute
 ###
-* * * * *	/bin/bash /path/to/batch/drop_caches.sh >> /var/log/syslog 2>&1
+# Writing /proc/sys/vm/drop_caches requires root, so this entry belongs in
+# root's crontab rather than here.  The script writes its report to stderr,
+# which cron mails.
+# * * * * *	/bin/bash $HOME/bin/share/kswapd-drop-caches
 ###
 ### Hourly
 ###
