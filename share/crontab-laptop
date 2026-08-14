@@ -46,7 +46,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-i686:/homes/gws/mernst/bin/share:/homes/gws/m
 ###
 ### Daily
 ###
-01 21 * * *	$AFS crontab $HOME/bin/share/crontab
+01 21 * * *	$CRONIC crontab $HOME/bin/share/crontab-laptop
 ###
 ### End
 ###

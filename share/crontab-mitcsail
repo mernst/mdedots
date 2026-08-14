@@ -68,7 +68,7 @@ PATH=.:/afs/csail.mit.edu/u/m/mernst/bin/Linux-i686:/afs/csail.mit.edu/u/m/merns
 ###
 ### Daily
 ###
-01 0 * * *	$AFS crontab $HOME/bin/share/crontab
+01 0 * * *	$AFS crontab $HOME/bin/share/crontab-mitcsail
 # Not  /bin/rm `/usr/bin/find $HOME -name core -type f`  because rm might get no args
 # 20 1 * * *	$AFS /usr/bin/find $HOME -path $HOME/.snapshot -prune -o -name core -type f | xargs -r rm
 #CSE# 21 1 * * *	$AFS $HOME/bin/share/mail-checkdates
