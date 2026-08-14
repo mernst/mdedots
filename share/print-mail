@@ -1,4 +1,4 @@
-#! /bin/csh -f
+#! /bin/csh
 # No -f flag to csh because I want my .cshrc read: set path, aliases.
 # Not named "printmail" because that is part of elm.
 # Invoke like this:  "print-mail bulk" or "print-mail -o outfile.ps bulk"
@@ -26,7 +26,7 @@ while ($#argv > 0)
 end
 
 if (! $?dropname) then
-  echo "Error: supplied two drop names"
+  echo "Error: no drop name supplied"
   echo "Usage: $0 [-o outfile.ps] dropname       eg: $0 bulk"
   exit 1
 endif
