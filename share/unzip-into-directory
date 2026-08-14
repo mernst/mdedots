@@ -1,10 +1,12 @@
 #!/bin/sh
 
-## Given a zip file foo.zip or foo.jar, creates a directory and
-## extracts the file into it.  The point is to avoid extracting
+## Given zip files foo.zip or foo.jar, creates a directory for each one
+## and extracts the file into it.  The point is to avoid extracting
 ## multiple files into the current directory.
 
-BASENAME=$(basename "$1" | sed 's/\.zip$//' | sed 's/\.jar/-jar/')
-echo "$BASENAME"
-mkdir -p "$BASENAME"
-unzip -d "$BASENAME" "$1"
+for ZIPFILE in "$@"; do
+  BASENAME=$(basename "$ZIPFILE" | sed -e 's/\.zip$//' -e 's/\.jar$/-jar/')
+  echo "$BASENAME"
+  mkdir -p "$BASENAME"
+  unzip -d "$BASENAME" "$ZIPFILE"
+done
