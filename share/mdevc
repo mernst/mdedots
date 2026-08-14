@@ -72,7 +72,10 @@ fi
 
 ## Run `git prune` where needed.
 
+# `locate`'s database is updated on a schedule, so it can name directories
+# that no longer exist or are no longer git clones.
 for dir in $(locate .git/gc.log | sed 's:/.git/gc.log$::'); do
+  [ -e "$dir/.git" ] || continue
   git -C "$dir" prune
   rm -f "$dir"/.git/gc.log
 done
