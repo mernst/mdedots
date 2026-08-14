@@ -42,7 +42,7 @@ BEGIN { killit = "--kill it--"
 ($1 == "email:") { if ($NF ~ /<.*>/) { $0 = $NF
                sub(/</, "{\\tt ")
                sub(/>/, "}")
-               sub(/%/, "\\%") }
+               gsub(/%/, "\\%") }
       else $0 = killit }
 
 { if (prevprevprevline != killit) { print prevprevprevline }
