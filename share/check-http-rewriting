@@ -4,7 +4,6 @@
 use strict;
 use English;
 $WARNING = 1;
-require util_mde;
 
 if (scalar(@ARGV) != 2) {
   die "call $0 with two arguments";
