@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check a paper's reference list for hallucinated (fabricated) citations.
 
-Usage:  python3 check_references.py refs.txt [output.txt]
+Usage:  python3 references-check.py refs.txt [output.txt]
 
 The input file contains one reference per entry, each entry starting with a
 bracketed number such as "[12]" at the beginning of a line.  Entries may wrap
