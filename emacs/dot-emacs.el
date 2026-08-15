@@ -263,8 +263,10 @@ the value of the last one, or nil if there are none."
   (interactive)
   (shell-command "cd `realpath ..` && createcal")
   ;; Show output if there is any (it will all be error output)
-  (if (bufferp "*Shell Command Output*")
-      (pop-to-buffer "*Shell Command Output*")))
+  (let ((output-buffer (get-buffer "*Shell Command Output*")))
+    (if (and output-buffer
+             (> (buffer-size output-buffer) 0))
+        (pop-to-buffer output-buffer))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
