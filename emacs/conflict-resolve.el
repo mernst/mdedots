@@ -489,7 +489,7 @@ Use this with care."
 
 (defun tags-conflict-resolve-reverse (left right)
   "If base is empty, and the left and right are as given, swap their order."
-  (interactive)
+  (interactive "sLeft regexp: \nsRight regexp: ")
   (tags-query-replace
    (concat "^<<<<<<<.*\n"
            "\\(" left "\\)\n"

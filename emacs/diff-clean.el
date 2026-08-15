@@ -310,7 +310,7 @@ editing a diff buffer to remove uninteresting changes."
 ;; TODO: also define kill-matching-hunks, which can share a lot of code with this.
 (defun kill-non-matching-hunks (regexp)
   "Delete hunks that do not contain a match for the given regexp."
-  (interactive)
+  (interactive "sRegexp: ")
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward "^@@ " nil t)
