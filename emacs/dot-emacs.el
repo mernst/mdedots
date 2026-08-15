@@ -203,7 +203,7 @@ the value of the last one, or nil if there are none."
 
 (defun windows-convert-homedir (string)
   (if (and string
-           (string-match "^\\(\$HOME\\|\$(HOME)\\|\${HOME}\\|~\\|~mernst\\)\\($\\|/\\)"
+           (string-match "^\\(\\$HOME\\|\\$(HOME)\\|\\${HOME}\\|~\\|~mernst\\)\\($\\|/\\)"
                          string))
       (concat "e:/home/" (substring string (match-end 0)))
     string))
@@ -263,8 +263,10 @@ the value of the last one, or nil if there are none."
   (interactive)
   (shell-command "cd `realpath ..` && createcal")
   ;; Show output if there is any (it will all be error output)
-  (if (bufferp "*Shell Command Output*")
-      (pop-to-buffer "*Shell Command Output*")))
+  (let ((output-buffer (get-buffer "*Shell Command Output*")))
+    (if (and output-buffer
+             (> (buffer-size output-buffer) 0))
+        (pop-to-buffer output-buffer))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1322,8 +1324,9 @@ After running this, run from the shell:  print-mail bulk." t)
 
 (defun dont-indent-after-signature (inserted-char)
   (if (and (= ?\n inserted-char)
-           (looking-back "\n *-?Mike\n"
-                         (1- (save-excursion (beginning-of-line) (point)))))
+           ;; The limit must be far enough back to include the newline that
+           ;; precedes the signature line.
+           (looking-back "\n *-?Mike\n" (line-beginning-position -1)))
       'no-indent))
 (add-hook 'electric-indent-functions 'dont-indent-after-signature)
 
