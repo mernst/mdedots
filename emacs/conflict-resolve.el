@@ -100,7 +100,7 @@ The mode-hook might blow away the match-data, in which case first run
   (interactive)
   ;; (read-conflict-files-from-tags-table)
   (tags-search
-   (concat "^" less-than-hunk-start-re
+   (concat less-than-hunk-start-re
            "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?"
            vertical-bar-separator-re
            "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?"
@@ -108,13 +108,14 @@ The mode-hook might blow away the match-data, in which case first run
            "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?"
            greater-than-hunk-end-re)
    )
-  (while t
-    ;; (message "#1 %s" (match-string 1))
-    ;; (message "#2 %s" (match-string 1))
-    ;; (message "#3 %s" (match-string 3))
-    (replace-match (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 3)))
-    (fileloop-continue))
-  ;; TODO: does not get run because previous loop throws an exception
+  (ignore-errors
+    (while t
+      ;; (message "#1 %s" (match-string 1))
+      ;; (message "#2 %s" (match-string 1))
+      ;; (message "#3 %s" (match-string 3))
+      (replace-match (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 3)))
+      (fileloop-continue))
+    )
   )
 
 (defun merged-annotated-for (annotatedfor-arg-1 annotatedfor-arg-2)
@@ -158,16 +159,17 @@ The mode-hook might blow away the match-data, in which case first run
            "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?\\(\\2\\(?:@UsesObjectEquals \\|@Interned \\)*class \\3\n\\)"
            greater-than-hunk-end-re
            ))
-  (while t
-    ;; (message "#1 %s" (match-string 1))
-    ;; (message "#2 %s" (match-string 1))
-    ;; (message "#3 %s" (match-string 3))
-    (message "#6 %s" (match-string 6))
-    (replace-match
-     (concat (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 5))
-	     (match-string 6)))
-    (fileloop-continue))
-  ;; TODO: does not get run because previous loop throws an exception
+  (ignore-errors
+    (while t
+      ;; (message "#1 %s" (match-string 1))
+      ;; (message "#2 %s" (match-string 1))
+      ;; (message "#3 %s" (match-string 3))
+      (message "#6 %s" (match-string 6))
+      (replace-match
+       (concat (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 5))
+	       (match-string 6)))
+      (fileloop-continue))
+    )
   )
 
 
@@ -193,14 +195,16 @@ The mode-hook might blow away the match-data, in which case first run
                    vertical-bar-separator-re
                    "public\\1 class \\2\n"
                    equal-sign-separator-re
-                   "@AnnotatedFor({?%s}?)
-public\\1 class \\2
->>>>>>> e7e1e93d462edbc8326a066d532bae9848222596
-") annotatedfor-arg-1 annotatedfor-arg-2)
+                   "@AnnotatedFor({?%s}?)\n"
+                   "public\\1 class \\2\n"
+                   ">>>>>>> e7e1e93d462edbc8326a066d532bae9848222596\n"
+                   )
+           annotatedfor-arg-1 annotatedfor-arg-2)
    (format
-    "@AnnotatedFor({%s})
-public\\1 @UsesObjectEquals class \\2
-" annotatedfor-arg-combined)))
+    (concat
+     "@AnnotatedFor({%s})\n"
+     "public\\1 @UsesObjectEquals class \\2\n")
+    annotatedfor-arg-combined)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -484,16 +488,13 @@ Use this with care."
   "If base is empty, and the left and right are as given, swap their order."
   (interactive)
   (tags-query-replace
-   (concat "^<<<<<<<.*
-\\(" left "\\)
-|||||||.*
-=======
-\\(" right "\\)
->>>>>>>.*
-")
-   (concat "\\2
-\\1
-")))
+   (concat "^<<<<<<<.*\n"
+           "\\(" left "\\)\n"
+           "|||||||.*\n"
+           "=======\n"
+           "\\(" right "\\)\n"
+           ">>>>>>>.*\n")
+   (concat "\\2\n\\1\n")))
 
 ;; (tags-conflict-resolve-reverse " *@Override" " *@Pure")
 ;; (tags-conflict-resolve-reverse " *@IntrinsicCandidate" " *@StaticallyExecutable")
@@ -504,19 +505,20 @@ Use this with care."
 
 (if nil
     (tags-query-replace
-     "<<<<<<<.*
-    @SuppressWarnings(\"this-escape\")
-|||||||.*
-=======
-    @SideEffectFree
-    @SuppressWarnings(\"purity.not.sideeffectfree.call\") // initCause affects only the new object
->>>>>>>.*
-"
-     "    @SideEffectFree
-    @SuppressWarnings({\"this-escape\",
-           \"purity.not.sideeffectfree.call\"} // initCause affects only the new object
-    )
-"))
+     (concat
+      "<<<<<<<.*\n"
+      "    @SuppressWarnings(\"this-escape\")\n"
+      "|||||||.*\n"
+      "=======\n"
+      "    @SideEffectFree\n"
+      "    @SuppressWarnings(\"purity.not.sideeffectfree.call\") // initCause affects only the new object\n"
+      ">>>>>>>.*\n")
+     (concat
+      "    @SideEffectFree\n"
+      "    @SuppressWarnings({\"this-escape\",\n"
+      "           \"purity.not.sideeffectfree.call\"} // initCause affects only the new object\n"
+      "    )\n"
+      )))
 
 
 
@@ -988,14 +990,12 @@ Use this with care."
 ;;; Utilities
 ;;;
 
-(put 'with-temp-buffer 'lisp-indent-function 1)
-
 (defun sorted-non-duplicate-lines (lines1 lines2)
   "Return a string consisting of the unique lines in the two input strings.
 In the result, the lines are sorted."
   (save-match-data
-    (with-temp-buffer "*sorted-non-duplicate-lines*"
-      (insert lines1)
+    (with-temp-buffer
+        (insert lines1)
       (insert lines2)
       (delete-duplicate-lines (point-min) (point-max))
       (sort-lines nil (point-min) (point-max))
