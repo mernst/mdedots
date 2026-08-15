@@ -9,6 +9,10 @@
 
 ;;; Code:
 
+;; Required at run time, not just at compile time, because `cl-oddp',
+;; `cl-plusp', and `cl-minusp' are inlined only when this file is compiled.
+(require 'cl-lib)			; for `cl-loop', `cl-oddp', `cl-plusp', `cl-minusp'
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Bug fixes

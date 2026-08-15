@@ -387,13 +387,6 @@ If the latter returns non-nil, we exit; otherwise we scan the next file."
 ;;;
 
 
-(defun tags-replace-regexp (from to &optional case-fold)
-  "Do replacement in all files in the TAGS table, without querying or erring."
-  (fileloop-initialize-replace-noquery regexp replacement (get-all-tags-files) case-fold)
-  (fileloop-continue))
-
-
-
 
 (defun get-all-tags-files ()
   "Return a list of all fully qualified file names in the current tags table."
