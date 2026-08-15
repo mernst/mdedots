@@ -87,7 +87,7 @@
   (grouped base-lines-re))
 ;; Acceptable on either side of the "=======" separator, so it excludes the
 ;; terminators of both sides: "|||||||" for the left and ">>>>>>>" for the right.
-(defconst left-or-right-regexp
+(defconst left-or-right-lines-re
   (lines-without-at-start-re "|>"))
 
 
@@ -727,7 +727,7 @@ Use this with care."
     ;; (concat "\\(" up-to-5-lines "\\|" base-lines-re "\\)")
     (concat "\\(\\)")
     equal-sign-separator-re
-    (concat "\\(" "\\1" left-or-right-regexp "\\)")
+    (concat "\\(" "\\1" left-or-right-lines-re "\\)")
     greater-than-hunk-end-re)
    "\\3"))
 
@@ -735,13 +735,13 @@ Use this with care."
   (list
    (concat
     less-than-hunk-start-re
-    (concat "\\(" left-or-right-regexp "\\)")
+    (concat "\\(" left-or-right-lines-re "\\)")
     vertical-bar-separator-re
     ;; For now, permit no ancestor text, but do capture group #2.
     ;; (concat "\\(" up-to-5-lines "\\|" base-lines-re "\\)")
     (concat "\\(\\)")
     equal-sign-separator-re
-    (concat "\\(" left-or-right-regexp "\\1" "\\)")
+    (concat "\\(" left-or-right-lines-re "\\1" "\\)")
     greater-than-hunk-end-re)
    "\\3"))
 
@@ -750,7 +750,7 @@ Use this with care."
   (list
    (concat
     less-than-hunk-start-re
-    (concat "\\(" "\\(" left-or-right-regexp "\\)" "\\(" left-or-right-regexp "\\)" "\\)")
+    (concat "\\(" "\\(" left-or-right-lines-re "\\)" "\\(" left-or-right-lines-re "\\)" "\\)")
     vertical-bar-separator-re
     ;; For now, permit no ancestor text, but do capture group #2.
     ;; (concat "\\(" up-to-5-lines "\\|" base-lines-re "\\)")
@@ -765,7 +765,7 @@ Use this with care."
   (list
    (concat
     less-than-hunk-start-re
-    (concat "\\(" "\\(" left-or-right-regexp "\\)" "\\(" left-or-right-regexp "\\)" "\\)")
+    (concat "\\(" "\\(" left-or-right-lines-re "\\)" "\\(" left-or-right-lines-re "\\)" "\\)")
     vertical-bar-separator-re
     ;; For now, permit no ancestor text, but do capture group #2.
     ;; (concat "\\(" up-to-5-lines "\\|" base-lines-re "\\)")
@@ -994,7 +994,7 @@ Use this with care."
 In the result, the lines are sorted."
   (save-match-data
     (with-temp-buffer
-      (insert lines1)
+        (insert lines1)
       (insert lines2)
       (delete-duplicate-lines (point-min) (point-max))
       (sort-lines nil (point-min) (point-max))
