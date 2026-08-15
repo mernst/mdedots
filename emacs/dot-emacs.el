@@ -1737,8 +1737,7 @@ This can make comparisons easier."
     (replace-regexp-noninteractive "^\\([^ :]+:\\)[0-9]+" "\\1")))
 
 
-;; Speed up redisplay.  Do not set `bidi-display-reordering' to nil; that is
-;; unsupported and can corrupt the display.  These are the supported knobs.
+;; Speed up redisplay by not supporting bidirectional display.
 ;; The cost is that paragraphs of right-to-left text (Arabic, Hebrew) are laid
 ;; out left-to-right, and bracket pairs in bidirectional text may be mirrored
 ;; incorrectly.
