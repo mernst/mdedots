@@ -51,7 +51,6 @@ the value of the last one, or nil if there are none."
   (require 'vc-annotate)
   (require 'smerge-mode)
   (require 'rg-result nil t)
-  (require 'file-comparison)
   (require 'diff-clean)
   (require 'conflict-resolve)
   (require 'dbus)
