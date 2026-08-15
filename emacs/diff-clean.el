@@ -263,7 +263,7 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
         (let* ((change1-begin (match-beginning 1))
                (punctuation-begin (match-end 1))
                (punctuation-end (match-beginning 2))
-               (change2-end (match-end 1))
+               (change2-end (match-end 2))
                (punctuation-length (- punctuation-end punctuation-begin))
                (punctuation (buffer-substring punctuation-begin punctuation-end)))
           (change-indicator-char-in-region
