@@ -329,7 +329,7 @@ The value is actually the element of LIST whose car is (`string-equal' to) ELT."
   (setq elt (downcase elt))
   (let (result)
     (while list
-      (if (string-equal elt (downcase (cdr (car list))))
+      (if (string-equal elt (downcase (car (car list))))
           (setq result (car list)
                 list nil)
         (setq list (cdr list))))
