@@ -100,7 +100,7 @@ The mode-hook might blow away the match-data, in which case first run
   (interactive)
   ;; (read-conflict-files-from-tags-table)
   (tags-search
-   (concat "^" less-than-hunk-start-re
+   (concat less-than-hunk-start-re
            "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?"
            vertical-bar-separator-re
            "\\(?:@AnnotatedFor(\\(.*\\))\n\\)?"
