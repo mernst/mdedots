@@ -1320,8 +1320,9 @@ After running this, run from the shell:  print-mail bulk." t)
 
 (defun dont-indent-after-signature (inserted-char)
   (if (and (= ?\n inserted-char)
-           (looking-back "\n *-?Mike\n"
-                         (1- (save-excursion (beginning-of-line) (point)))))
+           ;; The limit must be far enough back to include the newline that
+           ;; precedes the signature line.
+           (looking-back "\n *-?Mike\n" (line-beginning-position -1)))
       'no-indent))
 (add-hook 'electric-indent-functions 'dont-indent-after-signature)
 
