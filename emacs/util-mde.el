@@ -852,8 +852,7 @@ The old property is returned."
     (if (not (eq old-list t))
         (progn
           (while new-elts
-            (if (not (or (eq old-list t)
-                         (memq prop old-list)))
+            (if (not (memq (car new-elts) new-list))
                 (setq new-list (cons (car new-elts) new-list)))
             (setq new-elts (cdr new-elts)))
           (put-text-property pos (1+ pos) prop new-list object)))
