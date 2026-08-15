@@ -40,11 +40,11 @@
 ;;; 5.2 Trigonometric and related functions
 
 (defun signum (x)
-  (cond ((plusp x)
+  (cond ((> x 0)
          1)
         ((zerop x)
          0)
-        ((minusp x)
+        ((< x 0)
          -1)
         (t
          (error "What kind of number is this in signum?"))))
@@ -218,8 +218,6 @@ NEWCHAR and OLDCHAR are characters."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 15. Lists
 ;;;
-
-;;; 2. Lists
 
 ;;; 5. Using lists as sets
 
