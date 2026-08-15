@@ -263,23 +263,26 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
         (let* ((change1-begin (match-beginning 1))
                (punctuation-begin (match-end 1))
                (punctuation-end (match-beginning 2))
-               (change2-end (match-end 1))
+               (change2-end (match-end 2))
                (punctuation-length (- punctuation-end punctuation-begin))
                (punctuation (buffer-substring punctuation-begin punctuation-end)))
           (change-indicator-char-in-region
            " " indicator-char punctuation-begin punctuation-end)
-          (cond ((equal "+" indicator-char)
-                 (goto-char change1-begin)
-                 (insert punctuation)
-                 (change-indicator-char-in-region
-                  " " "-" change1-begin (+ change1-begin punctuation-length)))
-                ((equal "-" indicator-char)
-                 (goto-char change2-end)
-                 (insert punctuation)
-                 (change-indicator-char-in-region
-                  " " "-" change2-end (+ change2-end punctuation-length)))
-                (t
-                 (error "bad indicator character '%s'" indicator-char)))
+          ;; The punctuation is now part of the change, so it must also appear
+          ;; with the opposite indicator character: before the first change
+          ;; block for "+" (where it belongs to the old text), and after the
+          ;; second change block for "-" (where it belongs to the new text).
+          (let* ((insertion-point (cond ((equal "+" indicator-char)
+                                         change1-begin)
+                                        ((equal "-" indicator-char)
+                                         change2-end)
+                                        (t
+                                         (error "bad indicator character '%s'" indicator-char))))
+                 (new-indicator (opposite-indicator-char indicator-char)))
+            (goto-char insertion-point)
+            (insert punctuation)
+            (change-indicator-char-in-region
+             " " new-indicator insertion-point (+ insertion-point punctuation-length)))
           (goto-char change1-begin)
           (forward-line -1))))))
 
