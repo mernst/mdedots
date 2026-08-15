@@ -116,24 +116,31 @@ The mode-hook might blow away the match-data, in which case first run
       ;; (message "#1 %s" (match-string 1))
       ;; (message "#2 %s" (match-string 1))
       ;; (message "#3 %s" (match-string 3))
-      (replace-match (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 3))))
-      (fileloop-continue)))
+      (replace-match (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 3)))
+      (fileloop-continue))
+    )
   )
 
 (defun merged-annotated-for (annotatedfor-arg-1 annotatedfor-arg-2)
-  "Merge two @AnnotatedFor annotation arguments into one @AnnotatedFor annotation."
+  "Merge two @AnnotatedFor annotation arguments into one @AnnotatedFor annotation.
+Either argument may be nil, meaning that side has no @AnnotatedFor annotation.
+If neither side has one, the result is the empty string."
   (save-match-data
     (let* ((args1 (parse-annotatedfor-argument annotatedfor-arg-1))
 	   (args2 (parse-annotatedfor-argument annotatedfor-arg-2))
 	   (args (sort (delete-dups (append args1 args2)))))
-      (concat "@AnnotatedFor({\""
-	      (mapconcat #'identity args "\", \"")
-	      "\"})\n"))))
+      (if (null args)
+	  ""
+	(concat "@AnnotatedFor({\""
+		(mapconcat #'identity args "\", \"")
+		"\"})\n")))))
 ;; (merged-annotated-for "{\"signature\", \"nullness\" ,\"interning\"}" "{\"propkey\", \"signature\"")
 
 (defun parse-annotatedfor-argument (arg)
-  "Given an argument to @AnnotatedFor, return a list of the string arguments."
-  (split-string arg "\" *, *\"" 'omit-separators "[ {}\"]*"))
+  "Given an argument to @AnnotatedFor, return a list of the string arguments.
+If ARG is nil, meaning there is no @AnnotatedFor annotation, return nil."
+  (and arg
+       (split-string arg "\" *, *\"" 'omit-separators "[ {}\"]*")))
 ;; (cl-assert (equal '("signature") (parse-annotatedfor-argument "{\"signature\"}")))
 ;; (cl-assert (equal '("signature") (parse-annotatedfor-argument " \"signature\"  "))
 ;; (cl-assert (equal '("signature" "nullness" "interning") (parse-annotatedfor-argument "{\"signature\", \"nullness\" ,\"interning\"}")
@@ -162,9 +169,10 @@ The mode-hook might blow away the match-data, in which case first run
       ;; (message "#3 %s" (match-string 3))
       (message "#6 %s" (match-string 6))
       (replace-match
-       (concat (merged-annotated-for (remove-text-properties-string (match-string 1)) (remove-text-properties-string (match-string 5)))
+       (concat (merged-annotated-for (match-string-no-properties 1) (match-string-no-properties 5))
 	       (match-string 6)))
-      (fileloop-continue)))
+      (fileloop-continue))
+    )
   )
 
 
@@ -190,14 +198,16 @@ The mode-hook might blow away the match-data, in which case first run
                    vertical-bar-separator-re
                    "public\\1 class \\2\n"
                    equal-sign-separator-re
-                   "@AnnotatedFor({?%s}?)
-public\\1 class \\2
->>>>>>> e7e1e93d462edbc8326a066d532bae9848222596
-") annotatedfor-arg-1 annotatedfor-arg-2)
+                   "@AnnotatedFor({?%s}?)\n"
+                   "public\\1 class \\2\n"
+                   ">>>>>>> e7e1e93d462edbc8326a066d532bae9848222596\n"
+                   )
+           annotatedfor-arg-1 annotatedfor-arg-2)
    (format
-    "@AnnotatedFor({%s})
-public\\1 @UsesObjectEquals class \\2
-" annotatedfor-arg-combined)))
+    (concat
+     "@AnnotatedFor({%s})\n"
+     "public\\1 @UsesObjectEquals class \\2\n")
+    annotatedfor-arg-combined)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -481,16 +491,13 @@ Use this with care."
   "If base is empty, and the left and right are as given, swap their order."
   (interactive)
   (tags-query-replace
-   (concat "^<<<<<<<.*
-\\(" left "\\)
-|||||||.*
-=======
-\\(" right "\\)
->>>>>>>.*
-")
-   (concat "\\2
-\\1
-")))
+   (concat "^<<<<<<<.*\n"
+           "\\(" left "\\)\n"
+           "|||||||.*\n"
+           "=======\n"
+           "\\(" right "\\)\n"
+           ">>>>>>>.*\n")
+   (concat "\\2\n\\1\n")))
 
 ;; (tags-conflict-resolve-reverse " *@Override" " *@Pure")
 ;; (tags-conflict-resolve-reverse " *@IntrinsicCandidate" " *@StaticallyExecutable")
@@ -501,19 +508,20 @@ Use this with care."
 
 (if nil
     (tags-query-replace
-     "<<<<<<<.*
-    @SuppressWarnings(\"this-escape\")
-|||||||.*
-=======
-    @SideEffectFree
-    @SuppressWarnings(\"purity.not.sideeffectfree.call\") // initCause affects only the new object
->>>>>>>.*
-"
-     "    @SideEffectFree
-    @SuppressWarnings({\"this-escape\",
-           \"purity.not.sideeffectfree.call\"} // initCause affects only the new object
-    )
-"))
+     (concat
+      "<<<<<<<.*\n"
+      "    @SuppressWarnings(\"this-escape\")\n"
+      "|||||||.*\n"
+      "=======\n"
+      "    @SideEffectFree\n"
+      "    @SuppressWarnings(\"purity.not.sideeffectfree.call\") // initCause affects only the new object\n"
+      ">>>>>>>.*\n")
+     (concat
+      "    @SideEffectFree\n"
+      "    @SuppressWarnings({\"this-escape\",\n"
+      "           \"purity.not.sideeffectfree.call\"} // initCause affects only the new object\n"
+      "    )\n"
+      )))
 
 
 
@@ -984,10 +992,6 @@ Use this with care."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Utilities
 ;;;
-
-(defun remove-text-properties-string (s)
-  (set-text-properties 0 (length s) nil s)
-  s)
 
 (defun sorted-non-duplicate-lines (lines1 lines2)
   "Return a string consisting of the unique lines in the two input strings.
