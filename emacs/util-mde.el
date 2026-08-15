@@ -324,12 +324,12 @@ For instance, ((a b) (c) (d (e f) g))) => (a b c d (e f) g)."
 
 (defun string-assoc-ci (elt list)
   "Return non-nil if ELT is the car of an element of LIST.  Comparison is done
-with `equal', and case is ignored.
-The value is actually the element of LIST whose car is (`equal' to) ELT."
+with `string-equal', and case is ignored.
+The value is actually the element of LIST whose car is (`string-equal' to) ELT."
   (setq elt (downcase elt))
   (let (result)
     (while list
-      (if (equal elt (downcase (car (car list))))
+      (if (string-equal elt (downcase (car (car list))))
           (setq result (car list)
                 list nil)
         (setq list (cdr list))))
