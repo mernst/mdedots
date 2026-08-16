@@ -337,13 +337,13 @@ if [ -f "$HOME/.cargo/env" ]; then
 fi
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
-export SDKMAN_DIR="/home/mernst/.sdkman"
+export SDKMAN_DIR="$HOME/.sdkman"
 # shellcheck disable=SC1091  # file does not exist on some file systems
-[ -s "/home/mernst/.sdkman/bin/sdkman-init.sh" ] && . "/home/mernst/.sdkman/bin/sdkman-init.sh"
+[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ] && . "$SDKMAN_DIR/bin/sdkman-init.sh"
 
 # Generated for envman. Do not edit.
 # shellcheck disable=SC1091 # files might not exist
 [ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
 
 # Added by Antigravity CLI installer
-export PATH="/home/mernst/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
