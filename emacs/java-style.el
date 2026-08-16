@@ -480,17 +480,19 @@ The description is everything but the block tags (such as @param and @return)."
 (defun generify-java ()
   "Find Java code that should be made generic."
   (interactive)
-  (let ((case-fold-search nil))
-    (tags-search "^[^\n*/]*[^_.\"]\\b\\(Iterator\\|Collection\\|Set\\|List\\|Enumeration\\) [^=\"+:]"))
-  ;; Look for casts after calling "next() or "getNext()":
-  (tags-search "(.+) *[a-zA-Z0-9_]+\\.\\(getNext\\|next\\|get\\) ?("))
+  (let ((tags-case-fold-search nil))
+    (tags-search
+     (concat
+      "^[^\n*/]*[^_.\"]\\b\\(?:Iterator\\|Collection\\|Set\\|List\\|Enumeration\\) [^=\"+:]"
+      ;; Casts after calling "next()" or "getNext()":
+      "\\|(.+) *[a-zA-Z0-9_]+\\.\\(?:getNext\\|next\\|get\\) ?("))))
 
 
 ;; To find more patterns to add:
 ;; Search for:
 ;; <.*> .* = new .*<.+>
 ;; search for:
-;; new [A-Za-s0-9_]+<.+>
+;; new [A-Za-z0-9_]+<.+>
 (defun use-java-diamond-operator ()
   "Change code to use Java's diamond operator."
   (interactive)
@@ -499,7 +501,7 @@ The description is everything but the block tags (such as @param and @return)."
   (tags-replace-regexp "\\(Set<\\([^>]*\\)> [A-Za-z0-9_]+ = new \\(\\(Linked\\)?Hash\\|Tree\\)Set\\)<\\2>" "\\1<>")
   (tags-replace-regexp "\\(Vector<\\([^>]*\\)> [A-Za-z0-9_]+ = new Vector\\)<\\2>" "\\1<>")
   (tags-replace-regexp "\\b\\(\\([A-Za-z0-9_, ]+\\)\\(<.*>\\) [A-Za-z0-9_]+ = new \\2\\)\\3" "\\1<>")
-  (tags-replace-regexp "\\b\\(new [A-Za-s0-9_, ]+\\)<.+>(" "\\1<>(")
+  (tags-replace-regexp "\\b\\(new [A-Za-z0-9_, ]+\\)<.+>(" "\\1<>(")
   )
 
 
@@ -691,15 +693,15 @@ The description is everything but the block tags (such as @param and @return)."
 ;;; Moving @Nullable annotations from declaration position to type position
 ;;;
 
-;; If @Nullable annotations have been written in declaration position,
-;; this Emacs code moves them to type annotation position.
-;; I have not tried it within the function, only evaluating each form at the top level.
-
 (defconst modifiers-plus-space-regexp
   "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)"
   "Regexp matching one or more Java modifiers, each followed by a space.")
 
 (defun move-nullable-to-type-annotation-position ()
+  "Move @Nullable annotations from declaration position to type position.
+Operates on the files in the current tags table.
+This command has only been exercised by evaluating each of its forms at the
+top level, not by running the command itself."
   (interactive)
 
   ;; This handles @Nullable on its own line
@@ -923,9 +925,14 @@ Write the result to a file named ...Test2.java."
                      ".java" "Test2.java"
                      (buffer-file-name)))))
       (make-directory (file-name-directory outfile) t)
-      (condition-case nil
+      (condition-case err
           (write-file outfile)
-        (t nil)))))
+        (error
+         ;; The buffer's contents have been destructively rewritten, but the
+         ;; buffer still visits the original .java file.  Restore the contents
+         ;; so that a later save cannot destroy the source file.
+         (revert-buffer t t)
+         (error "Could not write %s: %s" outfile (error-message-string err)))))))
 
 (defun java-files-to-test-files ()
   "Convert every Java file into a file of empty tests for the public methods.

@@ -1,3 +1,8 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# Reference listing of every CodeRabbit configuration option.
+# Periodically update this file from the schema listed just above.
+
 language: "en-US"
 
 reviews:
