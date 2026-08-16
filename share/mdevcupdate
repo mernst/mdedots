@@ -40,22 +40,26 @@ update_fork() {
   update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com mernst
 }
 
-# Pull from $org/$repo into $parentdir/$repo-fork-mdernsta
+# Pull from $org/$repo into $parentdir/$localname-fork-mdernsta
+# Arguments are the same as for update_fork.
 update_fork_mdernsta() {
   update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com mdernsta
 }
 
-# Pull from $org/$repo into $parentdir/$repo-fork-typetools
+# Pull from $org/$repo into $parentdir/$localname-fork-typetools
+# Arguments are the same as for update_fork.
 update_fork_typetools() {
   update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com typetools
 }
 
-# Pull from $org/$repo into $parentdir/$repo-fork-kelloggm
+# Pull from $org/$repo into $parentdir/$localname-fork-kelloggm
+# Arguments are the same as for update_fork.
 update_fork_kelloggm() {
   update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com kelloggm
 }
 
-# Pull from $org/$repo into $parentdir/$repo-fork-mernst
+# Pull from bitbucket.org's rjust/$repo into $parentdir/$repo-fork-michaelernst
+# Arguments are $repo $parentdir .
 update_fork_from_rjust_bitbucket() {
   if [ -n "$VERBOSE" ]; then
     echo "update_fork_from_rjust_bitbucket 1=$1 2=$2"
