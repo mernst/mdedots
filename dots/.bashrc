@@ -175,7 +175,9 @@ export PERL_MM_OPT
 # `~/dots/conda-initialize.sh`.  However, running these lines for every shell
 # interferes with ssh-agent.  So, comment them out with a here-document.
 # When using conda, run ~/dots/conda-initialize.sh or run the commands manually.
-true << ENDCONDA
+# The quotes around the here-document delimiter are required: without them, bash
+# expands the body, so the `conda shell.bash hook` command substitution runs.
+true << 'ENDCONDA'
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/mernst/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
