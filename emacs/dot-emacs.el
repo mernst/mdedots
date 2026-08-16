@@ -1226,8 +1226,6 @@ After running this, run from the shell:  print-mail bulk." t)
          ;; Remote directories
          ("/mernst@theory.csail.mit.edu:/u/mernst" . "th:~")
          ("/mernst@theory.csail.mit.edu" . "th")
-         ("/mernst@theory.csail.mit.edu:/u/mernst" . "th:~")
-         ("/mernst@theory.csail.mit.edu" . "th")
 
          ;; Filesystem alternate names
          ("/projects/null" . "/projects")
