@@ -7,6 +7,7 @@
 (autoload 'bdiff-revert-buffer-maybe "bdiff")
 
 (defun update-html-mode-hook ()
+  "Arrange to run `run-html-update-toc' when the current buffer is saved."
   (add-hook 'after-save-hook 'run-html-update-toc nil 'local))
 (add-hook 'html-mode-hook 'update-html-mode-hook)
 
@@ -19,5 +20,6 @@
       (progn
         ;; I would like to avoid the "(Shell command succeeded with no output)"
         ;; message.
-        (shell-command (concat "html-update-toc --quiet " (buffer-file-name)))
+        (shell-command (concat "html-update-toc --quiet "
+                               (shell-quote-argument (buffer-file-name))))
 	(bdiff-revert-buffer-maybe))))

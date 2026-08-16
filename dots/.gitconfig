@@ -14,13 +14,9 @@
 	mergeoptions = --no-edit -Xignore-space-change
 # Speed up commit operations on NFS.
 	preloadindex = true
-
 # Speed up "git status".
-[core]
-        untrackedCache = true
-        fsmonitor = true
-
-[core]
+	untrackedCache = true
+	fsmonitor = true
 	whitespace = trailing-space,space-before-tab
 	attributesfile = ~/.gitattributes
 # Should be "false" unless cloning on Windows system and coding tools depend on native EOL style.
@@ -48,9 +44,9 @@
 	stat = status
 	s = status
 	blamex = !git blame -M -C
-        diffs = !git diff --staged
-        ba = !git branch --all
-        logg = !git log --graph
+	diffs = !git diff --staged
+	ba = !git branch --all
+	logg = !git log --graph
 
 # The parent branch of the current branch.  From
 # https://stackoverflow.com/questions/3161204/find-the-parent-branch-of-a-git-branch/3162929 .
@@ -70,18 +66,18 @@
 # From https://difftastic.wilfred.me.uk/git.html.
 # Use `git difftool` or `git dft` to see current changes with difftastic.
 [diff]
-        tool = difftastic
+	tool = difftastic
 	colorMoved = dimmed-zebra
 [difftool]
-        prompt = false
+	prompt = false
 [difftool "difftastic"]
-        cmd = difft "$LOCAL" "$REMOTE"
+	cmd = difft "$LOCAL" "$REMOTE"
 # Use a pager for large output, just like other git commands.
 [pager]
-        difftool = true
+	difftool = true
 # `git dft` is less to type than `git difftool`.
 [alias]
-        dft = difftool
+	dft = difftool
 	conflicts = !git --no-pager diff --name-only --diff-filter=U --relative
 
 # A .gitattributes file controls which merge driver is used.
@@ -94,27 +90,29 @@
 	tool = merge-java
 
 [mergetool.merge-java]
-        cmd = merge-tool.sh "${BASE}" "${LOCAL}" "${REMOTE}" "${MERGED}"
-        trustExitCode = true
+	cmd = merge-tool.sh "${BASE}" "${LOCAL}" "${REMOTE}" "${MERGED}"
+	trustExitCode = true
 
 [mergetool.getours]
-  cmd = git-checkout --ours ${MERGED}
-  trustExitCode = true
+	cmd = git checkout --ours "${MERGED}"
+	trustExitCode = true
 [mergetool.mergeours]
-  cmd = git-merge-file --ours ${LOCAL} ${BASE} ${REMOTE} -p > ${MERGED}
-  trustExitCode = true
+	cmd = git merge-file --ours "${LOCAL}" "${BASE}" "${REMOTE}" -p > "${MERGED}"
+	trustExitCode = true
+# "sed -i" is not portable between GNU and BSD sed, so filter through a temp file.
+# Redirecting onto ${MERGED} rather than renaming over it preserves the file's mode.
 [mergetool.keepours]
-  cmd = sed -I '' -e '/^<<<<<<</d' -e '/^|||||||/,/^>>>>>>>/d' ${MERGED}
-  trustExitCode = true
+	cmd = cp -p "${MERGED}" "${MERGED}.sedtmp" && sed -e '/^<<<<<<</d' -e '/^|||||||/,/^>>>>>>>/d' "${MERGED}.sedtmp" > "${MERGED}" && rm -f "${MERGED}.sedtmp"
+	trustExitCode = true
 [mergetool.gettheirs]
-  cmd = git-checkout --theirs ${MERGED}
-  trustExitCode = true
+	cmd = git checkout --theirs "${MERGED}"
+	trustExitCode = true
 [mergetool.mergetheirs]
-  cmd = git-merge-file --theirs ${LOCAL} ${BASE} ${REMOTE} -p > ${MERGED}
-  trustExitCode = true
+	cmd = git merge-file --theirs "${LOCAL}" "${BASE}" "${REMOTE}" -p > "${MERGED}"
+	trustExitCode = true
 [mergetool.keeptheirs]
-  cmd = sed -I '' -e '/^<<<<<<</,/^=======/d' -e '/^>>>>>>>/d' ${MERGED}
-  trustExitCode = true
+	cmd = cp -p "${MERGED}" "${MERGED}.sedtmp" && sed -e '/^<<<<<<</,/^=======/d' -e '/^>>>>>>>/d' "${MERGED}.sedtmp" > "${MERGED}" && rm -f "${MERGED}.sedtmp"
+	trustExitCode = true
 
 ###
 ### End of diff and merge
@@ -126,10 +124,13 @@
 
 # For https access
 [credential]
-## 360000 seconds is 100 hours
+## The "cache" helper holds passwords in memory, but only until the timeout
+## expires or the machine reboots.  360000 seconds is 100 hours.
 #	helper = cache --timeout=360000
-## Store keeps passwords forever and is OK for low-security passwords
-## (which are most; I use ssh for high-security projects).
+## The "store" helper keeps passwords forever, in plaintext in
+## ~/.git-credentials (which git creates with mode 600).  That is OK for
+## low-security passwords (which are most; I use ssh for high-security
+## projects), and unlike "cache" it survives a reboot.
 	helper = store
 
 ###
@@ -147,9 +148,12 @@
 	enabled = true
 
 [pager]
-	log = diff-highlight | less
-	show = diff-highlight | less
-	diff = diff-highlight | less
+	# diff-highlight is a git contrib script that some platforms do not install
+	# on the PATH.  Where it is absent, fall back to `cat`; without the fallback,
+	# the pager pipeline produces no output at all.
+	log = "{ command -v diff-highlight > /dev/null && diff-highlight || cat; } | less"
+	show = "{ command -v diff-highlight > /dev/null && diff-highlight || cat; } | less"
+	diff = "{ command -v diff-highlight > /dev/null && diff-highlight || cat; } | less"
 	branch = false
 
 [interactive]
