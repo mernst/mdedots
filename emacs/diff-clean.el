@@ -90,10 +90,13 @@ editing a diff buffer to remove uninteresting changes."
 		      "--- .*\n\\+\\+\\+ " filename-regexp "\\(\t.*\\)?$"
 		      "\\)")
 	      nil t)
-	(let* ((begin (match-beginning 0)))
-	  (re-search-forward "\n[^-+ @]")
-	  (goto-char (match-beginning 0))
-	  (kill-region begin (1+ (point)))))
+	(let* ((begin (match-beginning 0))
+	       ;; The end of the file's diff is the start of the next line that
+	       ;; begins neither a diff line nor a hunk header, or end of buffer.
+	       (end (if (re-search-forward "\n[^-+ @]" nil t)
+			(1+ (match-beginning 0))
+		      (point-max))))
+	  (kill-region begin end)))
 
       (goto-char (point-min))
       (kill-matching-lines (concat "^Only in " filename-regexp "$")))
