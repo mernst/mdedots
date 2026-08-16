@@ -923,9 +923,14 @@ Write the result to a file named ...Test2.java."
                      ".java" "Test2.java"
                      (buffer-file-name)))))
       (make-directory (file-name-directory outfile) t)
-      (condition-case nil
+      (condition-case err
           (write-file outfile)
-        (t nil)))))
+        (error
+         ;; The buffer's contents have been destructively rewritten, but the
+         ;; buffer still visits the original .java file.  Restore the contents
+         ;; so that a later save cannot destroy the source file.
+         (revert-buffer t t)
+         (error "Could not write %s: %s" outfile (error-message-string err)))))))
 
 (defun java-files-to-test-files ()
   "Convert every Java file into a file of empty tests for the public methods.
