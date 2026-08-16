@@ -1794,18 +1794,14 @@ How does this differ from whatever is built in?"
 (defun run-createcal ()
   "Run external program `createcal' in the parent directory."
   (interactive)
-  (let ((bufname "*createcal Output*"))
-    (let ((default-directory (parent-directory default-directory)))
-      (call-process-show-if-error "createcal"))
-    ;; Show output if there is any (it will all be error output)
-    (if (bufferp bufname)
-        (pop-to-buffer bufname))))
+  (let ((default-directory (parent-directory default-directory)))
+    (call-process-show-if-error "createcal")))
 
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
   (with-temp-buffer
-      (list (apply 'call-process program nil (current-buffer) nil args)
-            (buffer-string))))
+    (list (apply 'call-process program nil (current-buffer) nil args)
+          (buffer-string))))
 
 (defun call-process-show-if-error (program &rest args)
   "Run PROGRAM with ARGS and show the output if the exit status is non-zero."
