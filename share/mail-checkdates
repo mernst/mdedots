@@ -10,4 +10,4 @@ export SUBJECT="Checkdates"
 # setenv MAILCOMMAND /usr/bin/mail
 export MAILE="$HOME/bin/src/plume-scripts/mail-e"
 
-${COMMAND} 2>&1 "${MAILE}" -s "${SUBJECT}" mernst@alum.mit.edu scath@alumni.duke.edu
+${COMMAND} 2>&1 | "${MAILE}" -s "${SUBJECT}" mernst@alum.mit.edu scath@alumni.duke.edu

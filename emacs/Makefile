@@ -2,6 +2,11 @@
 
 default: compile-without-mew
 
+all: compile-without-mew
+
+# Byte-compilation is the only check on these files.
+test: compile-without-mew
+
 EMACS ?= emacs
 
 # EL_FILES does not include $(wildcard mew/*.el); use its own Makefile
@@ -18,12 +23,16 @@ compile: compile-without-mew
 	make -C mew
 
 %.elc: %.el
-#	emacs -q --batch -l ${HOME}/emacs/init.el --eval "(add-to-list 'load-path \".\")" -f batch-byte-compile $<
-	emacs --batch -L . -L ${HOME}/.emacs.d -l ${HOME}/emacs/init.el -f batch-byte-compile $<
+#	${EMACS} -q --batch -l ${HOME}/emacs/init.el --eval "(add-to-list 'load-path \".\")" -f batch-byte-compile $<
+	${EMACS} --batch -L . -L ${HOME}/.emacs.d -l ${HOME}/emacs/init.el -f batch-byte-compile $<
+
+# Load the .el files rather than the .elc files, which might be out of date.
+test:
+	${EMACS} --batch -L . -l replace-paragraphs.el -l replace-paragraphs-tests.el -f ert-run-tests-batch-and-exit
 
 .PHONY: javadoc-index
 javadoc-index:
-	${INV}/scripts/javadoc-index-to-alist > $HOME/.javadoc-index.el
+	${INV}/scripts/javadoc-index-to-alist > ${HOME}/.javadoc-index.el
 
 clean:
 	rm -f *.elc

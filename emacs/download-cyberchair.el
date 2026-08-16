@@ -46,6 +46,7 @@
        (my-papers '(21 24 38 58 63 89 113 135 196 206 265 271 273 292 327 393 427 502))
        ;; change this line to choose all-papers or my-papers
        (papers all-papers))
+  (ignore my-papers)                    ; the unselected alternative
   (while papers
     (let ((paper (car papers)))
       ;; All the reviews

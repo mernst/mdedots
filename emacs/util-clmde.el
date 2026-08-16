@@ -16,11 +16,8 @@
 ;; The following cl-lib.el functions are compatibly redefined here:
 ;;   [none]
 ;; The following Emacs built-in functions are compatibly redefined here:
-;;   sort
+;;   [none]
 
-
-(provide 'util-clmde)
-(provide 'util-cl-mde)
 
 (eval-when-compile (require 'cl-lib))
 
@@ -40,11 +37,11 @@
 ;;; 5.2 Trigonometric and related functions
 
 (defun signum (x)
-  (cond ((plusp x)
+  (cond ((> x 0)
          1)
         ((zerop x)
          0)
-        ((minusp x)
+        ((< x 0)
          -1)
         (t
          (error "What kind of number is this in signum?"))))
@@ -112,19 +109,23 @@ which case nil is returned."
 ;;       (string-substitute newitem olditem sequence)
 ;;     (error "substitute isn't that good yet.")))
 
-(defmacro string-substitute (newchar oldchar string)
-  "Substitute NEWCHAR for instances of OLDCHAR in STRING.
-NEWCHAR and OLDCHAR are characters."
+(defmacro string-substitute-char (newchar oldchar string)
+  "Return a copy of STRING with NEWCHAR substituted for instances of OLDCHAR.
+STRING is not modified.  NEWCHAR and OLDCHAR are characters."
   `(string-substitute-opt ,newchar
                           (regexp-quote (char-to-string ,oldchar))
                           ,string))
 
 ;; Optimized version.  oldchar-regexp should only match one-character strings.
-(defun string-substitute-opt (newchar oldchar-regexp string)
-  (let ((i -1)
+(defun string-substitute-char-opt (newchar oldchar-regexp string)
+  "Return a copy of STRING with NEWCHAR substituted for matches of OLDCHAR-REGEXP.
+STRING is not modified.  OLDCHAR-REGEXP should only match one-character strings."
+  (let ((result (copy-sequence string))
+        (i -1)
         (case-fold-search nil))
-    (while (setq i (string-match oldchar-regexp string (1+ i) 'inhibit-modify))
-      (aset string i newchar))))
+    (while (setq i (string-match oldchar-regexp result (1+ i) 'inhibit-modify))
+      (aset result i newchar))
+    result))
 
 
 ;;; 4.  Searching sequences for items
@@ -218,19 +219,6 @@ NEWCHAR and OLDCHAR are characters."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 15. Lists
 ;;;
-
-;;; 2. Lists
-
-(defun butlast (list &optional n)
-  "Return a list with the same elements as LIST, excepting the last N elements.
-N defaults to 1.  If LIST has fewer than N elements, NIL is returned."
-  (let ((copied-elts (- (length list) (or n 1)))
-        result)
-    (while (and list (plusp copied-elts))
-      (setq result (cons (car list) result)
-            copied-elts (1- copied-elts)
-            list (cdr list)))
-    (nreverse result)))
 
 ;;; 5. Using lists as sets
 
@@ -353,10 +341,17 @@ beginning and end, of STRING."
 ;;; Strings
 ;;;
 
+(defsubst string-blank-or-nil-p (string-or-nil)
+  "Return non-nil if STRING is nil or contains no non-whitespace characters."
+  (or (not string-or-nil)
+      (string-blank-p string-or-nil)))
+
+;; to remove
+(make-obsolete 'blank-string-p 'string-blank-p "built-in")
+(make-obsolete 'blank-string-or-nil-p 'string-blank-or-nil-p "built-in")
 (defsubst blank-string-p (string)
   "Return non-nil if STRING contains no non-whitespace characters."
-  (string-match "^[ \t\n]*$" string nil 'inhibit-modify))
-
+  (string-match "\\`[ \t\n]*\\'" string nil 'inhibit-modify))
 (defsubst blank-string-or-nil-p (string-or-nil)
   "Return non-nil if STRING is nil or contains no non-whitespace characters."
   (or (not string-or-nil)
@@ -384,108 +379,5 @@ beginning and end, of STRING."
         (1+ index))))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Structures redux
-;;;
-
-;;; DON'T USE THIS.  Use mechanisms from cl-lib instead.
-
-;;; Simple defstruct originally from BBDB, by Jamie Zawinski <jwz@lucid.com>.
-
-;;; Use it like this:
-;;; (def-mdecl-struct bbdb-phone
-;;;   location area exchange suffix extension)
-;;; (setq this-phone-record (make-vector bbdb-phone-length nil))
-;;; (bbdb-phone-set-exchange this-phone-record 617)
-;;; (bbdb-phone-exchange this-phone-record) ==> 617
-
-;;; Changes by Michael Ernst <mernst@theory.lcs.mit.edu>, March 19, 1992:
-;;;  * added an extra first slot which holds the struct name; this is good
-;;;    for determining a structure's type
-;;;  * added def-mdecl-struct-concatenator to permit greater flexibility in
-;;;    names of accessor functions
-;;;  * added make-foo and foo-p functions
-
-;;; A make- constructor, with default values and overrides, would be nice.
-;;; It might just be best to have the programmer define one by hand, but
-;;; I'm not convinced by that.
-
-;;; Why does it have such a strange name?  Because I want it to start with
-;;; "def", so it shows up in TAGS files, and to end with "struct", so I can
-;;; do M-. struct foo to go to the definition of the foo-bar-baz structure.
-
-(defvar def-mdecl-struct-concatenator "-"
-  "Inserted between the struct and slot names in slot accessors and setters.
-Typical values are \"-\" and \"\".")
-
-;; NAME is a symbol or a list of (symbol (option-name option-value) ...).
-(defmacro def-mdecl-struct (name &rest slots)
-  "Define NAME as a structure type with a slot for each additional argument.
-NAME is a symbol, the name of the new structure, and each slotname is a symbol.
-This macro defines functions `make-NAME', `NAME-p', and `copy-NAME' for the
-structure, and functions `NAME-SLOTNAME' and `NAME-set-SLOTNAME' to access and
-set slots.  It also sets variable  NAME-length  to the number of slots.
-
-NAME may also be a list (struct-name (option-name option-value) ...), where
-each option-name is a keyword symbol in \{:constructor :predicate :copier\}
-and option-value is a symbol, the name that should be used for that
-function instead of the defaults listed above."
-
-  (let ((body '())
-        (i 1)
-        (L (length slots))
-        conc-name options
-        name1 name2 makename predname copyname)
-    (if (listp name)
-        (setq options (cdr name)
-              name (car name)))
-    (setq conc-name (concat (symbol-name name)
-                            def-mdecl-struct-concatenator))
-    (while slots
-      (setq name1 (intern (concat conc-name (symbol-name (car slots))))
-            name2 (intern (concat conc-name "set-" (symbol-name (car slots))))
-            body (nconc body
-                        (list
-                         (list 'defmacro name1 '(vector)
-                               (list 'list ''aref 'vector i))
-                         (list 'defmacro name2 '(vector value)
-                               (list 'list ''aset 'vector i 'value))
-                         (list 'put (list 'quote name1)
-                               ''edebug-form-hook ''(form))
-                         (list 'put (list 'quote name2)
-                               ''edebug-form-hook ''(form form))
-                         ))
-            slots (cdr slots)
-            i (1+ i)))
-    (setq makename (or (car (cdr (assoc ':constructor options)))
-                       (intern (concat "make" def-mdecl-struct-concatenator
-                                       (symbol-name name))))
-          predname (or (car (cdr (assoc ':predicate options)))
-                       (intern (concat conc-name "p")))
-          copyname (or (car (cdr (assoc ':copier options)))
-                       (intern (concat "copy" def-mdecl-struct-concatenator
-                                       (symbol-name name)))))
-    (setq body (nconc body (list (list 'defconst
-                                       (intern (concat conc-name "length"))
-                                       L)
-                                 (list 'defun makename '()
-                                       (list 'let (list (list 'result (list 'make-vector (1+ L) nil)))
-                                             (list 'aset 'result 0
-                                                   (list 'quote name))
-                                             'result))
-                                 (list 'put (list 'quote makename)
-                                       ''edebug-form-hook ''())
-                                 (list 'defmacro copyname '(struct)
-                                       '(list 'copy-sequence struct))
-                                 (list 'put (list 'quote copyname)
-                                       ''edebug-form-hook ''(form))
-                                 (list 'defun predname '(object)
-                                       (concat "T if OBJECT is a "
-                                               (symbol-name name) ".")
-                                       (list 'and
-                                             '(vectorp object)
-                                             (list '= '(length object) (1+ L))
-                                             (list 'eq '(aref object 0)
-                                                   (list 'quote name)))))))
-    (cons 'progn body)))
-(put 'def-mdecl-struct 'edebug-form-spec '(&rest form))
+(provide 'util-clmde)
+(provide 'util-cl-mde)

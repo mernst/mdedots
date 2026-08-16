@@ -3,7 +3,14 @@
 # If the .jar file is "foo.jar", the directory is "foo-jar".
 
 for jarfile in "$@"; do
-  dir=${jarfile/.jar/-jar}
+  case "${jarfile}" in
+    *.jar) ;;
+    *)
+      echo "expand-jar: not a .jar file: ${jarfile}" >&2
+      exit 1
+      ;;
+  esac
+  dir="${jarfile%.jar}-jar"
   rm -rf "${dir}"
   mkdir "${dir}"
   cp -p "${jarfile}" "${dir}"

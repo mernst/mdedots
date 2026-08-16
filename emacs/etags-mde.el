@@ -12,7 +12,7 @@
 
 ;; * Provide defaults for tags-search.
 
-;; * Bind function mde-tags-loop-continue to M-, in place of
+;; * Provide function mde-tags-loop-continue, to be bound to M-, in place of
 ;;   tags-loop-continue.  When the immediately preceding command was find-tag
 ;;   (M-.), it continues that search; otherwise, it continues the last
 ;;   tags-search or tags-query-replace command, like tags-loop-continue.
@@ -30,6 +30,7 @@
 
 ;; Use this code by placing
 ;;   (with-eval-after-load "etags" (load "etags-mde" nil t))
+;;   (define-key esc-map "," 'mde-tags-loop-continue) ; was tags-loop-continue
 ;; in your .emacs file.
 
 
@@ -96,8 +97,12 @@ pay to try to merge them."
 ;; I should also try setting search-caps-disable-folding to nil, in case
 ;; the tag wasn't found because of a case mismatch (a la Lisp).
 
+;; These functions assume (possibly incorrectly) that the tag name is a
+;; string, not a regexp.
 (defvar tags-find-related-names-functions
-  '()
+  '(lisp-tags-find-related-names
+    mit-scheme-tags-find-related-names
+    perl-tags-find-related-names)
   "A list of related-names functions.
 Each function takes one argument, a TAGNAME, and returns a list
 of tag regexps to try if that search fails.")
@@ -192,13 +197,6 @@ of tag regexps to try if that search fails.")
 ;;         '(mit-scheme-tags-find-related-names))
 ;; I need to separate it into independent parts:  MIT Scheme, and Zaphod.
 
-
-;; These functions assume (possibly incorrectly) that the tag name is a
-;; string, not a regexp.
-(setq tags-find-related-names-functions
-      '(lisp-tags-find-related-names
-        mit-scheme-tags-find-related-names
-        perl-tags-find-related-names))
 
 (defun perl-tags-find-related-names (tagname)
   "Find `@TAGNAME' or `%TAGNAME' definition based on a `$TAGNAME' use."
@@ -348,18 +346,27 @@ of tag regexps to try if that search fails.")
 ;; (mit-scheme-tags-find-related-names "source:make-formal")
 
 
+(defconst tags-loop-done-message "All files processed"
+  "The `user-error' message that `fileloop-next-file' signals upon completion.")
+
 (defun tags-query-replace-noerror (from to &optional delimited)
-  "Like `tags-query-replace', but does not throw user-error when done."
-  (condition-case nil
+  "Like `tags-query-replace', but does not throw user-error when done.
+Any other `user-error', such as \"No tags table in use\", is re-signaled."
+  (condition-case err
       (tags-query-replace from to delimited)
-    (user-error nil)))
+    (user-error
+     (unless (equal (cadr err) tags-loop-done-message)
+       (signal (car err) (cdr err))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; tags-loop-continue
 ;;;
 
-(define-key esc-map "," 'mde-tags-loop-continue) ; was tags-loop-continue
+;; This file defines no key bindings; it is a library, and loading it should
+;; not change the global keymap.  To use `mde-tags-loop-continue', put this
+;; in your .emacs:
+;;   (define-key esc-map "," 'mde-tags-loop-continue) ; was tags-loop-continue
 
 ;; This modification, plus the setq of this-command in find-tag, makes M-,
 ;; continue a M-. as it did in Emacs 18, but only if the M-. was the
@@ -385,13 +392,6 @@ If the latter returns non-nil, we exit; otherwise we scan the next file."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; get-all-tags-files
 ;;;
-
-
-(defun tags-replace-regexp (from to &optional case-fold)
-  "Do replacement in all files in the TAGS table, without querying or erring."
-  (fileloop-initialize-replace-noquery regexp replacement (get-all-tags-files) case-fold)
-  (fileloop-continue))
-
 
 
 

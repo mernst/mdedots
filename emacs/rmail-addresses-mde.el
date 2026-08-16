@@ -1761,8 +1761,7 @@
 ;; (which are dynamically bound).
 (defun addr-info-to-rmail (addr-info)
   (let ((addr (cl-first addr-info))
-	(output-file (cl-second addr-info))
-	(from-addr (cl-third addr-info)))
+	(output-file (cl-second addr-info)))
     (if output-file
 	(push
 	 (cons
@@ -1786,8 +1785,7 @@
 
 (defun addr-info-to-vm (addr-info)
   (let ((addr (cl-first addr-info))
-	(output-file (cl-second addr-info))
-	(from-addr (cl-third addr-info)))
+	(output-file (cl-second addr-info)))
     (if output-file
 	(let ((addr-file-pair (cons addr output-file)))
 	  (progn
@@ -1802,7 +1800,6 @@
 
 (defun addr-info-to-sendmail (addr-info)
   (let ((addr (cl-first addr-info))
-	(output-file (cl-second addr-info))
 	(from-addr (cl-third addr-info)))
     (if from-addr
 	(push

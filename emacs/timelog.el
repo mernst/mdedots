@@ -56,6 +56,8 @@
   (message (current-time-string)))
 
 (defun timelog-get-date ()
+  "Return the date of the last entry in the timelog, in the form \"1/5\".
+Visits `timelog-file'."
   (find-file timelog-file)
   (save-excursion
     (goto-char (point-max))

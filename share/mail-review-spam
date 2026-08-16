@@ -125,11 +125,11 @@ spam_search(
     "("
     + " OR ".join(  # ruff:ignore[static-join-to-f-string]
         [
-            '("Geschäft"',
+            '"Geschäft"',
             '"Sehr geehrter"',
             '"und mit"',
             '"nur vom"',
-            '""haben Sie"',
+            '"haben Sie"',
             '"wie geht es dir"',
             '"mit der"',
             '"Herzlichen"',
@@ -143,7 +143,7 @@ spam_search(
             '"spende"',
             '"wir uns"',
             '("Ihre" AND "ist")',
-            'Gutschein or "kannst du"',
+            '(Gutschein OR "kannst du")',
             '("hallo" AND "ist")',
             '("Rückfrage" AND "zu")',
         ]

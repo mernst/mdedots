@@ -48,7 +48,21 @@ use util_daikon;
 
 
 ###########################################################################
+### Subroutines
 ###
+
+sub read_file ( $ ) {
+  my ($file) = check_args(1, @_);
+  open (RF, "<", $file) or die "Couldn't open $file: $!";
+  local $INPUT_RECORD_SEPARATOR;
+  my $content = <RF>;
+  close RF;
+  return $content;
+}
+
+
+###########################################################################
+### Create an "issigned" file per review whose body names its reviewer
 ###
 
 my @bodyfiles = glob("*-*-body.txt");
@@ -57,14 +71,14 @@ for my $bodyfile (@bodyfiles) {
   $basefile =~ s/-body\.txt$//;
   my $corevfile = "$basefile-coreviewer.txt";
   my $headerfile = "$basefile-header.txt";
-  my $header = `cat $headerfile`;
+  my $header = read_file($headerfile);
   if ($header !~ /^\|\|Reviewer_*\|(.*?)[_| ]*$/m) {
     die "No reviewer in file $headerfile (contents appear below).\n$header\n";
     }
   my $reviewer = $1;
   $reviewer =~ s/_/ /g;
 
-  my $coreviewer = `cat $corevfile`;
+  my $coreviewer = read_file($corevfile);
   if ($coreviewer !~ /Not_filled_in/) {
     $coreviewer =~ s/\|//g;
     $coreviewer =~ s/__+//g;
@@ -74,12 +88,17 @@ for my $bodyfile (@bodyfiles) {
     $reviewer .= " $coreviewer";
     }
   my @reviewernames = split(/ +/, $reviewer);
-  my $body = `cat $bodyfile`;
+  my $body = read_file($bodyfile);
   my $issignedfile = "$basefile-issigned.txt";
-  for my $reviewername (@reviewernames) {
-    if ($body =~ /\b\Q$reviewername\E\b/) {
-      open (FOO, ">>$issignedfile");
-      print FOO "Found $reviewername\n";
+  my @found = grep { $body =~ /\b\Q$_\E\b/ } @reviewernames;
+  # Create the file only if some reviewer was found, because cyberchair-stats
+  # tests for its existence.  Truncate rather than append, so that re-running
+  # this script does not accumulate duplicate lines.
+  if (scalar(@found) > 0) {
+    open (ISSIGNED, ">", $issignedfile) or die "Couldn't open $issignedfile: $!";
+    for my $reviewername (@found) {
+      print ISSIGNED "Found $reviewername\n";
       }
+    close ISSIGNED or die "Couldn't close $issignedfile: $!";
     }
 }

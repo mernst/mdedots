@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 
 use MIME::Base64;
-$text = <>;
+undef $/;
+$text = <>;  # slurp whole file
 print decode_base64($text);

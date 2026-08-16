@@ -33,8 +33,6 @@ CHECKERFRAMEWORKTIMINGONE=/scratch/mernst/clones/types/checker-framework-branch-
 CHECKERFRAMEWORKTIMINGTWO=/scratch/mernst/clones/types/checker-framework-branch-YYY
 CRONIC=/homes/gws/mernst/bin/src/plume-scripts/cronic
 DAIKONDIR=/scratch/mernst/clones/invariants/daikon
-EMAIL=mernst@cs.washington.edu
-EMAILPERSONAL=michael.ernst@gmail.com
 INV=/scratch/mernst/clones/invariants
 JAVA=/homes/gws/mernst/java/jdk/bin/java -ea
 JAVA_HOME=/homes/gws/mernst/java/jdk
@@ -109,7 +107,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 30 2 * * *	$HOME/bin/share/make-mail-aliases
 # Ignore stderr to ignore "No such file or directory" errors.
 31 2 * * *	$CRONIC find $HOME -name SKIP-REQUIRE-JAVADOC 2>/dev/null
-31 2 * * *	$CRONIC find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name SKIP-REQUIRE-JAVADOC -print0 \) 2>/dev/null
+31 2 * * *	$CRONIC find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name SKIP-REQUIRE-JAVADOC -print \) 2>/dev/null
 # 24 1 * * *	$HOME/bin/share/make-procmailrc-all
 # Comment out at CSE for now:  31 1 * * *	$DAIKONDIR/scripts/buildtest-check
 # 31 1 * * *	$HOME/bin/share/check-for-misdelivered-mail 2>&1 | grep -v "^No remote authentication"
@@ -131,7 +129,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 02 0 * * *	$CRONIC make -C ${TYPES}/notes all-nostubparser-nopull-fileoutput
 35 0 * * *	cd $HOME/java/plume-lib/bcel-util; $CRONIC ./gradlew build
 40 0 * * *	cd $HOME/java/plume-lib/lookup; $CRONIC ./gradlew build
-45 0 * * *	JAVA_VER=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1 | sed 's/-ea//') && [ "$JAVA_VER" != "8" ] && (cd $HOME/java/plume-lib/options; $CRONIC ./gradlew build javadoc)
+45 0 * * *	JAVA_VER=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1 | sed 's/-ea//'); if [ "$JAVA_VER" != "8" ]; then (cd $HOME/java/plume-lib/options; $CRONIC ./gradlew build javadoc); fi
 00 2 * * *	(uptime && export CHECKERFRAMEWORK=${CHECKERFRAMEWORK} && cd ${CHECKERFRAMEWORK} && uptime && $CRONIC time ${CHECKERFRAMEWORK}/checker/bin-devel/test-daikon.sh && uptime) > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORK")-$(date +\%Y-\%m-\%d).txt
 # 00 2 * * *	export CHECKERFRAMEWORK=${CHECKERFRAMEWORKTIMINGONE} && cd ${CHECKERFRAMEWORKTIMINGONE} && time ${CHECKERFRAMEWORKTIMINGONE}/checker/bin-devel/test-daikon.sh > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORKTIMINGONE")-$(date +\%Y-\%m-\%d).txt
 # 00 3 * * *	export CHECKERFRAMEWORK=${CHECKERFRAMEWORKTIMINGTWO} && cd ${CHECKERFRAMEWORKTIMINGTWO} && time ${CHECKERFRAMEWORKTIMINGTWO}/checker/bin-devel/test-daikon.sh > /scratch/mernst/cf-timing/$(basename -- "$CHECKERFRAMEWORKTIMINGTWO")-$(date +\%Y-\%m-\%d).txt
@@ -229,8 +227,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 00 6 27 * *	cd $HOME/java/plume-lib/bcel-util && $CRONIC ./gradlew javadoc
 # 01 6 27 * *	cd $TYPES/cf-case-studies/joda-time-fork-mernst-branch-check-index && mvn -B javadoc:javadoc
 02 6 27 * *	cd $TYPES/checker-framework-branch-master && $CRONIC ./gradlew javadoc
-30 6 27 * *	$AFS
-# This won't work because applies to the first command but not the redirection.
+# The command below makes its own backup, in ~/.javadoc-index.el-OLD.
 # 31 6 27 * *	sh -c "java -cp $HOME/java/plume-lib/javadoc-lookup/build/libs/javadoc-lookup-all.jar org.plumelib.javadoclookup.CreateJavadocIndex > ~/.javadoc-index.el-NEW && mv ~/.javadoc-index.el ~/.javadoc-index.el-OLD && mv ~/.javadoc-index.el-NEW ~/.javadoc-index.el"
 01 02 03 * *     echo -e "Auto-browse to http://egauge6444.egaug.es/ \n If trouble, see https://artisanelectricinc.com/troubleshoot-monitoring-system/" | $MAILCOMMAND -s "Is solar working?" $EMAILPERSONAL
 02 02 03 * *     echo -e "Merge contacts; instructions in ~/private/contacts/google-contacts/google-contacts-notes.txt" | $MAILCOMMAND -s "Merge contacts" $EMAILPERSONAL

@@ -5,7 +5,12 @@ if (! $?PAGHOST) then
   setenv PAGHOST manioc.csail.mit.edu
 endif
 
-if (! ($site == "csail")) then
+# This test is separate from the one below because csh substitutes variables
+# before evaluating an expression:  writing the two tests as a single
+# expression would still abort with "site: Undefined variable".
+if (! $?site) set site = ""
+
+if ("$site" != "csail") then
   ping -q -c 1 -w 1 ${PAGHOST} > /dev/null
   if (! ($status)) setenv remote 1
 endif
