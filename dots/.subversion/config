@@ -13,7 +13,10 @@
 ###   kwallet              (Unix-like systems)
 ###   keychain             (Mac OS X)
 ###   windows-cryptoapi    (Windows)
-# password-stores = gnome-keyring,kwallet
+###   gpg-agent            (Unix-like systems)
+# A store that is not available on this machine, or that is not compiled into
+# this Subversion, is skipped; so one list works on every machine.
+password-stores = gnome-keyring,kwallet,keychain,gpg-agent
 ###
 ### The rest of this section in this file has been deprecated.
 ### Both 'store-passwords' and 'store-auth-creds' can now be
@@ -28,11 +31,12 @@
 ### Note that this option only prevents saving of *new* passwords;
 ### it doesn't invalidate existing passwords.  (To do that, remove
 ### the cache files by hand as described in the Subversion book.)
-# Yes, this is dangerous; it causes passwords to be stored in files in
-# ~/.subversion/auth/svn.simple/ .
+# Passwords are cached in ~/.subversion/auth/svn.simple/, encrypted by one of
+# the password stores configured above.
 # I only use subversion passwords for remote https servers.  I much prefer
 # to use svn+ssh, and then kerberos or ssh-agent.
-store-passwords = yes # pragma: allowlist secret
+# Subversion ignores only whole-line comments, so no trailing comment here.
+store-passwords = yes
 ### Set store-auth-creds to 'no' to avoid storing any subversion
 ### credentials in the auth/ area of your config directory.
 ### It defaults to 'yes'.  Note that this option only prevents
