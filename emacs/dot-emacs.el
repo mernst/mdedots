@@ -586,31 +586,37 @@ WSL1 reports \"-Microsoft\" in the output of `uname -a', WSL2 reports
 	    )))
 (advice-add 'timelog-summarize :after #'timelog-summarize--add-to-dos)
 
+(defun timelog-previous-count (regexp)
+  "Return the count most recently recorded before point, as a string.
+REGEXP should contain one group, which matches the count.
+Return \"unknown\" if REGEXP does not match earlier in the buffer."
+  (or (save-excursion
+        (and (re-search-backward regexp nil t)
+             (match-string 1)))
+      "unknown"))
+
 (defun timelog-inbox-threads-summary ()
-  (let* ((previous-messages (save-excursion
-                              (re-search-backward "^\\([0-9]+\\) threads in my inbox" nil t)
-                              (match-string 1)))
-         (message-summary (concat
-                           " threads in my inbox (previously "
-                           previous-messages
-                           ")\n")))
-    message-summary))
+  "Return a line stating how many threads are in my inbox.
+No Emacs mail client knows the thread count, so prompt for it."
+  (let ((previous-threads (timelog-previous-count
+                           "^\\([0-9]+\\) threads in my inbox"))
+        (threads (read-number "Threads in my inbox: ")))
+    (concat (int-to-string threads)
+            " threads in my inbox (previously "
+            previous-threads
+            ")\n")))
 
 (defun timelog-mew-messages-summary ()
-  (let* ((previous-messages (save-excursion
-                              (re-search-backward "^\\([0-9]+\\) messages in my inbox" nil t)
-                              (match-string 1)))
-         (message-summary (concat (int-to-string (mew-messages))
-                                  " messages in my inbox (previously "
-                                  previous-messages
-                                  ")\n")))
-    message-summary))
+  (let ((previous-messages (timelog-previous-count
+                            "^\\([0-9]+\\) messages in my inbox")))
+    (concat (int-to-string (mew-messages))
+            " messages in my inbox (previously "
+            previous-messages
+            ")\n")))
 
 
 (defun timelog-to-dos-summary ()
-  (let* ((previous-to-dos (save-excursion
-                            (re-search-backward "^\\([0-9]+\\) to-do items" nil t)
-                            (match-string 1)))
+  (let* ((previous-to-dos (timelog-previous-count "^\\([0-9]+\\) to-do items"))
          (to-dos (save-window-excursion
                    (edit-to-do)
                    (save-excursion
