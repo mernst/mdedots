@@ -1,5 +1,4 @@
 #!/bin/bash
-# Uses bash-only syntax: (( )), [[ ]], and ${line:offset:len}.
 
 # From http://askubuntu.com/questions/259739/kswapd0-is-taking-a-lot-of-cpu
 
