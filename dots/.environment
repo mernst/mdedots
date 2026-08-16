@@ -121,8 +121,18 @@ else
   # Perl doesn't work here on CentOS 8, though that may be because the path isn't set yet??
   # (Not all versions of `which` support `--skip-alias`, so don't include it.)
   # Shellcheck demands that the assignment and "export" are on different lines.
-  JAVA_HOME="$(dirname "$(dirname "$(realpath "$(/usr/bin/which javac)")")")"
-  export JAVA_HOME
+  # Leave JAVA_HOME unset if `javac` is not on the path.  Without these guards,
+  # `which` and `realpath` print nothing and `dirname` turns that into ".", so
+  # JAVA_HOME would be the relative path "." and ./bin would be added to PATH.
+  javac_path="$(/usr/bin/which javac 2> /dev/null)"
+  if [ -n "$javac_path" ]; then
+    javac_path="$(realpath "$javac_path" 2> /dev/null)"
+  fi
+  if [ -n "$javac_path" ]; then
+    JAVA_HOME="$(dirname "$(dirname "$javac_path")")"
+    export JAVA_HOME
+  fi
+  unset javac_path
 fi
 export GRAALVM_HOME
 # TODO: This isn't working; GRAALVM_HOME is empty.  Why?
