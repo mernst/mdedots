@@ -70,9 +70,9 @@ the value of the last one, or nil if there are none."
   (package-native-compile t)
   ;; Putting melpa-stable before built-in because magit needs the latest transient.
   (package-archives '(
-                      ("melpa-stable" . "http://stable.melpa.org/packages/")
+                      ("melpa-stable" . "https://stable.melpa.org/packages/")
                       ("melpa"        . "https://melpa.org/packages/")
-                      ("gnu"          . "http://elpa.gnu.org/packages/")
+                      ("gnu"          . "https://elpa.gnu.org/packages/")
                       ("nongnu"       . "https://elpa.nongnu.org/nongnu/")
                       )))
 ;; To fix bug with magit and transient.
