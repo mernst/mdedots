@@ -35,7 +35,8 @@
               tree-sitter-langs treemacs treesit-auto verilog-mode
               which-key whisper window-tool-bar yaml-mode yasnippet))
  '(package-vc-selected-packages
-   '((eglot-booster :vc-backend Git :url
+   '((atomic-chrome :url "https://github.com/KarimAziev/atomic-chrome")
+     (eglot-booster :vc-backend Git :url
                     "https://github.com/jdtsmith/eglot-booster")
      (whisper :url "https://github.com/natrys/whisper.el" :branch
               "master")))

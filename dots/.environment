@@ -59,20 +59,22 @@ GPG_TTY=$(tty)
 export PROVER_CC_LIMIT=10
 
 # For Git
-export GIT_PAGER=""
+# Do not set GIT_PAGER here: it takes precedence over core.pager and over the
+# per-command `pager.*` settings in .gitconfig, which would disable them all.
 export GIT_MERGE_AUTOEDIT=no
 
 # Per http://askubuntu.com/questions/227515/terminal-warning-when-opening-a-file-in-gedit
 export NO_AT_BRIDGE=1
 
-if [ -f /scratch/mernst ]; then
+if [ -d /scratch/mernst ]; then
   export GRADLE_USER_HOME=/scratch/mernst/.gradle
 fi
 
 export RIPGREP_CONFIG_PATH="$HOME"/.ripgreprc
 
 # Needed by Emacs on WSL, apparently??  Maybe I need to rebuild Emacs with system's tree-sitter.
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}":"${HOME}"/.local/lib
+# The `:+` avoids an empty leading component, which would mean "the current directory".
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${HOME}/.local/lib"
 
 ###
 ### Shell
@@ -120,8 +122,18 @@ else
   # Perl doesn't work here on CentOS 8, though that may be because the path isn't set yet??
   # (Not all versions of `which` support `--skip-alias`, so don't include it.)
   # Shellcheck demands that the assignment and "export" are on different lines.
-  JAVA_HOME="$(dirname "$(dirname "$(realpath "$(/usr/bin/which javac)")")")"
-  export JAVA_HOME
+  # Leave JAVA_HOME unset if `javac` is not on the path.  Without these guards,
+  # `which` and `realpath` print nothing and `dirname` turns that into ".", so
+  # JAVA_HOME would be the relative path "." and ./bin would be added to PATH.
+  javac_path="$(/usr/bin/which javac 2> /dev/null)"
+  if [ -n "$javac_path" ]; then
+    javac_path="$(realpath "$javac_path" 2> /dev/null)"
+  fi
+  if [ -n "$javac_path" ]; then
+    JAVA_HOME="$(dirname "$(dirname "$javac_path")")"
+    export JAVA_HOME
+  fi
+  unset javac_path
 fi
 export GRAALVM_HOME
 # TODO: This isn't working; GRAALVM_HOME is empty.  Why?
@@ -197,9 +209,6 @@ export TEXINPUTS=.:"$HOME"/tex/sty:"$HOME"/tex:"$INSTALLDIR"/hevea-2.00:"$INSTAL
 #  1 to print to stderr(3)
 #  2 to abort immediately
 # export MALLOC_CHECK_=1
-
-export BINTRAY_USER=mernst
-export BINTRAY_API_KEY=4f8445bd90c64ca1bb367f2210dc0c8969c16705
 
 ###
 ### Debian/Ubuntu packaging tools
