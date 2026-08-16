@@ -94,22 +94,24 @@
 	trustExitCode = true
 
 [mergetool.getours]
-	cmd = git-checkout --ours ${MERGED}
+	cmd = git checkout --ours "${MERGED}"
 	trustExitCode = true
 [mergetool.mergeours]
-	cmd = git-merge-file --ours ${LOCAL} ${BASE} ${REMOTE} -p > ${MERGED}
+	cmd = git merge-file --ours "${LOCAL}" "${BASE}" "${REMOTE}" -p > "${MERGED}"
 	trustExitCode = true
+# "sed -i" is not portable between GNU and BSD sed, so filter through a temp file.
+# Redirecting onto ${MERGED} rather than renaming over it preserves the file's mode.
 [mergetool.keepours]
-	cmd = sed -I '' -e '/^<<<<<<</d' -e '/^|||||||/,/^>>>>>>>/d' ${MERGED}
+	cmd = cp -p "${MERGED}" "${MERGED}.sedtmp" && sed -e '/^<<<<<<</d' -e '/^|||||||/,/^>>>>>>>/d' "${MERGED}.sedtmp" > "${MERGED}" && rm -f "${MERGED}.sedtmp"
 	trustExitCode = true
 [mergetool.gettheirs]
-	cmd = git-checkout --theirs ${MERGED}
+	cmd = git checkout --theirs "${MERGED}"
 	trustExitCode = true
 [mergetool.mergetheirs]
-	cmd = git-merge-file --theirs ${LOCAL} ${BASE} ${REMOTE} -p > ${MERGED}
+	cmd = git merge-file --theirs "${LOCAL}" "${BASE}" "${REMOTE}" -p > "${MERGED}"
 	trustExitCode = true
 [mergetool.keeptheirs]
-	cmd = sed -I '' -e '/^<<<<<<</,/^=======/d' -e '/^>>>>>>>/d' ${MERGED}
+	cmd = cp -p "${MERGED}" "${MERGED}.sedtmp" && sed -e '/^<<<<<<</,/^=======/d' -e '/^>>>>>>>/d' "${MERGED}.sedtmp" > "${MERGED}" && rm -f "${MERGED}.sedtmp"
 	trustExitCode = true
 
 ###
@@ -143,9 +145,12 @@
 	enabled = true
 
 [pager]
-	log = diff-highlight | less
-	show = diff-highlight | less
-	diff = diff-highlight | less
+	# diff-highlight is a git contrib script that some platforms do not install
+	# on the PATH.  Where it is absent, fall back to `cat`; without the fallback,
+	# the pager pipeline produces no output at all.
+	log = "{ command -v diff-highlight > /dev/null && diff-highlight || cat; } | less"
+	show = "{ command -v diff-highlight > /dev/null && diff-highlight || cat; } | less"
+	diff = "{ command -v diff-highlight > /dev/null && diff-highlight || cat; } | less"
 	branch = false
 
 [interactive]
