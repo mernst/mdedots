@@ -412,7 +412,7 @@
 (make-variable-buffer-local 'inleft-string)
 (autoload 'inleft "~/emacs/inleft" "Comment-out-like utility." t)
 (autoload 'inleft-internal "~/emacs/inleft" "Comment-out-like utility." t)
-(autoload 'uncomment-region "~/emacs/inleft" "Uncomment-out-like utility." t)
+(autoload 'inleft-remove "~/emacs/inleft" "Uncomment-out-like utility." t)
 
 (autoload 'pages-directory "page-ext" "Page handling extensions" t)
 

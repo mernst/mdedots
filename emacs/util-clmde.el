@@ -16,7 +16,7 @@
 ;; The following cl-lib.el functions are compatibly redefined here:
 ;;   [none]
 ;; The following Emacs built-in functions are compatibly redefined here:
-;;   sort
+;;   [none]
 
 
 (provide 'util-clmde)
@@ -40,11 +40,11 @@
 ;;; 5.2 Trigonometric and related functions
 
 (defun signum (x)
-  (cond ((plusp x)
+  (cond ((> x 0)
          1)
         ((zerop x)
          0)
-        ((minusp x)
+        ((< x 0)
          -1)
         (t
          (error "What kind of number is this in signum?"))))
@@ -222,19 +222,6 @@ STRING is not modified.  OLDCHAR-REGEXP should only match one-character strings.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 15. Lists
 ;;;
-
-;;; 2. Lists
-
-(defun butlast (list &optional n)
-  "Return a list with the same elements as LIST, excepting the last N elements.
-N defaults to 1.  If LIST has fewer than N elements, NIL is returned."
-  (let ((copied-elts (- (length list) (or n 1)))
-        result)
-    (while (and list (plusp copied-elts))
-      (setq result (cons (car list) result)
-            copied-elts (1- copied-elts)
-            list (cdr list)))
-    (nreverse result)))
 
 ;;; 5. Using lists as sets
 
