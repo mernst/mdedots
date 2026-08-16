@@ -622,8 +622,8 @@ alias serverload='for server in recycle bicycle tricycle bam boom tern ; do echo
 alias c331tst1='xterm -T c331tst1 -e ssh -X c331tst1@attu.cs.washington.edu &'
 alias c331tst2='xterm -T c331tst2 -e ssh -X c331tst2@attu.cs.washington.edu &'
 clone331() {
-  dir331=~/class/331/cse331-18au-"$1" && git --depth=1 clone git@gitlab.cs.washington.edu:cse331-18au-students/cse331-18au-"$1".git "$dir331"
-  cd "$dir331" || (echo "$dir331 does not exist" && return 1)
+  dir331=~/class/331/cse331-18au-"$1" && git clone --depth=1 git@gitlab.cs.washington.edu:cse331-18au-students/cse331-18au-"$1".git "$dir331"
+  cd "$dir331" || { echo "$dir331 does not exist"; return 1; }
 }
 
 # "daikonuser" has PAG-specific customizations (like old daikongroupmember).
