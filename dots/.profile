@@ -239,7 +239,7 @@ export PATH="$HOME/bin:$PATH"
 
 export PATH="$HOME/bin/install/infer/infer/bin:$PATH"
 
-. "$HOME/.cargo/env"
+# "$HOME/.cargo/env" is sourced, guarded by a test for its existence, below.
 
 ###########################################################################
 ### Library path
