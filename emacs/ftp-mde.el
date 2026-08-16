@@ -48,8 +48,6 @@
 
 (eval-when-compile (require 'browse-url))
 
-(setq browse-url-netscape-program "firefox")
-
 (defun web-query-quote (phrase)
   (setq phrase (replace-regexp-in-string "\"" "%22" phrase))
   (setq phrase (replace-regexp-in-string "#" "%23" phrase))
@@ -105,7 +103,7 @@
   "Call wget on the URL, downloading the file to the current directory.
 Second argument is ignored but permits use of `browse-url-interactive-arg'."
   (interactive (browse-url-interactive-arg "wget URL: "))
-  (shell-command (concat "wget '" url "'")))
+  (shell-command (concat "wget " (shell-quote-argument url))))
 
 
 (provide 'ftp-mde)

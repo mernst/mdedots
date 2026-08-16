@@ -67,6 +67,7 @@ for my $bodyfile (@bodyfiles) {
   if (($score < 0) || ($score > 3)) {
     die "Bad score $score in $bodyfile:\n$body\n";
     }
+  $reviewertotalscore{$reviewer} += $score;
 
   if (-e "$basefile-issigned.txt") {
     $signedlength += $length;
@@ -85,11 +86,17 @@ for my $reviewer (keys %reviewerpapers) {
   print "length: $reviewertotallength{$reviewer}\n";
   my $avglen = int($reviewertotallength{$reviewer}/$reviewerpapers{$reviewer});
   print "avg length: $avglen\n";
+  my $avgscore = int(100*$reviewertotalscore{$reviewer}/$reviewerpapers{$reviewer})/100;
+  print "avg score: $avgscore\n";
 }
 
 print "Signed: $signedcount reviews\n";
-print "  length: " . int($signedlength/$signedcount) . "\n";
-print "  score: " . (int(100*$signedscore/$signedcount)/100) . "\n";
+if ($signedcount > 0) {
+  print "  length: " . int($signedlength/$signedcount) . "\n";
+  print "  score: " . (int(100*$signedscore/$signedcount)/100) . "\n";
+}
 print "Unsigned: $unsignedcount reviews\n";
-print "  length: " . int($unsignedlength/$unsignedcount) . "\n";
-print "  score: " . (int(100*$unsignedscore/$unsignedcount)/100) . "\n";
+if ($unsignedcount > 0) {
+  print "  length: " . int($unsignedlength/$unsignedcount) . "\n";
+  print "  score: " . (int(100*$unsignedscore/$unsignedcount)/100) . "\n";
+}

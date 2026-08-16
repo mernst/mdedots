@@ -44,6 +44,10 @@ for my $filehtml (@htmlfiles) {
   my @parts = split(/^ _*$|^\| _+ *\|$|\|\|6 - Co-reviewer\(s\): *\| *\|$/m, $text);
   # print "" . scalar(@parts) . " parts\n";
 
+  # Each review contributes 4 parts, and 3 parts surround the reviews.
+  if ((scalar(@parts)-3) % 4 != 0) {
+    die "Unexpected number of parts (" . scalar(@parts) . ") in $filehtml";
+    }
   my $numreviews = (scalar(@parts)-3)/4;
   for my $review (1..$numreviews) {
     write_to_file("$filebase-$review-header.txt", $parts[$review*4-2]);

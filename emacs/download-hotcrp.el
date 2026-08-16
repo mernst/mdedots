@@ -60,6 +60,7 @@
        (my-papers '(62 74 83 161 166 202 209 228 248 302))
        ;; change this line to choose all-papers or my-papers
        (papers (shuffle all-papers)))
+  (ignore my-papers)                    ; the unselected alternative
   (while papers
     (let ((paper (car papers)))
       ;; All the reviews

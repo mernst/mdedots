@@ -78,7 +78,7 @@ share/wikify.py
 /.plume-scripts
 /.pymarkdown
 
-syntax: regexp
-# Not a glob because it starts with # which looks like a comment.
-(.*/)?\#[^/]*\#$
-(.*/)?\.\#.*
+# Emacs auto-save and lock files.
+# The leading "#" is backslash-escaped so git does not read the line as a comment.
+\#*#
+.#*

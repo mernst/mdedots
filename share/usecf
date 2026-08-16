@@ -21,17 +21,18 @@ suffix=${suffix#stubparser-}
 # echo "suffix = ${suffix}"
 
 (
-  cd "${t:?}" \
-    && rm -f checker-framework
+  cd "${t:?}" || exit
+  rm -f checker-framework
   if [ -d "checker-framework-$suffix" ]; then ln -sf "checker-framework-$suffix" checker-framework; else ln -sf checker-framework-branch-master checker-framework; fi
   rm -f demos
   if [ -d "demos-$suffix" ]; then ln -sf "demos-$suffix" demos; else ln -sf demos-branch-master demos; fi
   rm -f stubparser
   if [ -d "stubparser-$suffix" ]; then ln -sf "stubparser-$suffix" stubparser; else ln -sf stubparser-branch-master stubparser; fi
-  cd "$t/libraries" && rm -f jdk
+  cd "${t}/libraries" || exit
+  rm -f jdk
   if [ -d "jdk-$suffix" ]; then ln -sf "jdk-$suffix" jdk; else ln -sf jdk-branch-master jdk; fi
-  cd "$t/libraries" && rm -f jdk21u
+  rm -f jdk21u
   if [ -d "jdk21u-$suffix" ]; then ln -sf "jdk21u-$suffix" jdk21u; else ln -sf jdk21u-branch-master jdk21u; fi
-  cd "$t/libraries" && rm -f jdk25u
+  rm -f jdk25u
   if [ -d "jdk25u-$suffix" ]; then ln -sf "jdk25u-$suffix" jdk25u; else ln -sf jdk25u-branch-master jdk25u; fi
 )

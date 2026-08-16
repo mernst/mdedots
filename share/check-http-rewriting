@@ -12,10 +12,10 @@ if (scalar(@ARGV) != 2) {
 
 my ($url, $goal) = @ARGV;
 
-if ($url !~ /http:\/\//) {
+if ($url !~ m{^https?://}) {
   $url = "http://$url";
 }
-if ($goal !~ /http:\/\//) {
+if ($goal !~ m{^https?://}) {
   $goal = "http://$goal";
 }
 
@@ -25,7 +25,7 @@ if ($url eq $goal) {
 
 my $wget_output = `wget --spider $url 2>&1`;
 
-if ($wget_output !~ /.*\nLocation: $goal \[following\]\n/m) {
+if ($wget_output !~ /.*\nLocation: \Q$goal\E \[following\]\n/m) {
   print STDERR "Failed command: $0 $url $goal\nFailed rewriting:\n  $url\ndoes not rewrite to\n  $goal\n$wget_output";
   exit 1;
 }
