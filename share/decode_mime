@@ -66,28 +66,42 @@ if (!defined($mode)) {
 }
 
 if (defined($filename)) {
+  # The filename comes from the message being decoded, so it is untrusted.
+  # Write only into the current directory.
+  if ($filename =~ m{/}) {
+    print STDERR "File \"$filename\" is not a plain file name, using stdout instead.\n";
+    undef $filename;
+  }
+}
+
+if (defined($filename)) {
   if (-e $filename) {
     print STDERR "File \"$filename\" already exists, not over-writing, using stdout instead.\n";
     undef $filename;
   }
 }
 
+my $out;
 if (defined($filename)) {
-  open(OUT,">$filename");
+  open($out, '>', $filename) or die "Cannot write \"$filename\": $!";
   print STDERR "Outputting to \"$filename\".\n" if $fVerbose;
 } else {
-  open(OUT,">-");
+  $out = \*STDOUT;
   print STDERR "Outputting to stdout.\n" if $fVerbose;
 }
 
 if ($mode eq "quoted") {
-  print OUT decode_qp($text);
+  print $out decode_qp($text);
 } elsif ($mode eq "base64") {
-  print OUT decode_base64($text);
+  print $out decode_base64($text);
 } elsif ($mode eq "text/plain") {
-  print OUT $text;
+  print $out $text;
 } else {
   die "Unrecognized mode $mode";
+}
+
+if (defined($filename)) {
+  close($out) or die "Error writing \"$filename\": $!";
 }
 
 sub simplify_filename ( $ ) {
