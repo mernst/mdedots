@@ -13,8 +13,6 @@
   (require 'util-mde))
 
 (autoload 'replace-all-occurrrences-iteratively "util-mde")
-(autoload 'offer-to-change-if-read-only "replace-paragraphs"
-  "Offer to make the buffer not read-only.")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -35,9 +33,10 @@ Do not use anchoring characters ^ and $.
 In many cases, using diff's --exclude or --exclude-from is better, but those
 only match basenames whereas this handles pathnames.")
 
-;; [@BIO\ncd] is what can start a line at the end of a hunk
-(defvar empty-diff-hunk-regexp-1 "^@.*@\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BIO\ncd]\\|\\'\\|--- \\)")
-(defvar empty-diff-hunk-regexp-2 "^@@ .* @@ .*\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BIO\ncd]\\|\\'\\|--- \\)")
+;; The header of a hunk is either a line ending in "@" (as in "@@ -1,2 +1,2 @@")
+;; or a line of the form "@@ ... @@ ..." whose trailing text names the enclosing
+;; function.  [@BIO\ncd] is what can start a line at the end of a hunk.
+(defvar empty-diff-hunk-regexp "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BIO\ncd]\\|\\'\\|--- \\)")
 ;; It is important to set case-fold-search to nil when using `empty-diff-filesection-regexp'.
 (defvar empty-diff-filesection-regexp
   (concat
@@ -54,7 +53,6 @@ The latter two changes are semantics-preserving and are useful after
 editing a diff buffer to remove uninteresting changes."
   (interactive)
 
-  (setq buffer-read-only nil)
   (let ((inhibit-read-only t))
 
     (if (not dont-remove-files)
@@ -69,51 +67,57 @@ editing a diff buffer to remove uninteresting changes."
 ;;;
 
 (defun diff-clean-files (remove-regexes)
-  "Delete files whose pathname matches any of the regexes."
-  (save-excursion
+  "Delete files whose pathname matches any of the regexes.
+Does nothing if REMOVE-REGEXES is nil, because an empty alternation
+matches every filename."
+  (when remove-regexes
+    (save-excursion
 
-    ;; (goto-char (point-min))
-    ;; (delete-matching-lines "^\\\\ No newline at end of file$")
+      ;; (goto-char (point-min))
+      ;; (delete-matching-lines "^\\\\ No newline at end of file$")
 
-    ;; Remove certain files
-    (goto-char (point-min))
-    (let ((filename-regexp
-	   (concat "\\("
-		   (mapconcat #'(lambda (r) (concat "\\(" r "\\)"))
-			      remove-regexes
-			      "\\|")
-		   "\\)")))
-      (while (re-search-forward
-	      (concat "^diff .*\n\\(new file mode .*\nindex .*\n\\)?\\("
-		      "--- " filename-regexp "\\(\t.*\\)?\n\\+\\+\\+ .*$"
-		      "\\|"
-		      "--- .*\n\\+\\+\\+ " filename-regexp "\\(\t.*\\)?$"
-		      "\\)")
-	      nil t)
-	(let* ((begin (match-beginning 0)))
-	  (re-search-forward "\n[^-+ @]")
-	  (goto-char (match-beginning 0))
-	  (kill-region begin (1+ (point)))))
-
+      ;; Remove certain files
       (goto-char (point-min))
-      (kill-matching-lines (concat "^Only in " filename-regexp "$")))
+      (let ((filename-regexp
+	     (concat "\\("
+		     (mapconcat #'(lambda (r) (concat "\\(" r "\\)"))
+				remove-regexes
+				"\\|")
+		     "\\)")))
+	(while (re-search-forward
+		(concat "^diff .*\n\\(new file mode .*\nindex .*\n\\)?\\("
+			"--- " filename-regexp "\\(\t.*\\)?\n\\+\\+\\+ .*$"
+			"\\|"
+			"--- .*\n\\+\\+\\+ " filename-regexp "\\(\t.*\\)?$"
+			"\\)")
+		nil t)
+          (let* ((begin (match-beginning 0))
+                 ;; The end of the file's diff is the start of the next line that
+                 ;; begins neither a diff line nor a hunk header, or end of buffer.
+	         (end (if (re-search-forward "\n[^-+ @]" nil t)
+			  (1+ (match-beginning 0))
+		        (point-max))))
+	    (kill-region begin end)))
 
-    ;; Remove lines starting "Only in " for certain files.
-    ;; The "Only in " lines put ": " in place of the last "/"
-    ;; directory separator, so regexp `remove-regexes'
-    ;; does not match them.
-    (goto-char (point-min))
-    (let ((onlyin-regexp
-	   (concat "^Only in \\("
-		   (mapconcat #'(lambda (r) (concat "\\(" (file-regexp-to-colon-regexp r) "\\)"))
-			      remove-regexes
-			      "\\|")
-		   "\\)")))
-      (kill-matching-lines onlyin-regexp))
+	(goto-char (point-min))
+	(kill-matching-lines (concat "^Only in " filename-regexp "$")))
 
-    ;; TODO: Remove "Binary files XXX and YYY differ" lines
+      ;; Remove lines starting "Only in " for certain files.
+      ;; The "Only in " lines put ": " in place of the last "/"
+      ;; directory separator, so regexp `remove-regexes'
+      ;; does not match them.
+      (goto-char (point-min))
+      (let ((onlyin-regexp
+	     (concat "^Only in \\("
+		     (mapconcat #'(lambda (r) (concat "\\(" (file-regexp-to-colon-regexp r) "\\)"))
+				remove-regexes
+				"\\|")
+		     "\\)")))
+	(kill-matching-lines onlyin-regexp))
 
-    ))
+      ;; TODO: Remove "Binary files XXX and YYY differ" lines
+
+      )))
 
 ;; These names may need to be changed, so that completing "diff-clean" is easier to do.
 
@@ -210,8 +214,7 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
 (defun diff-clean-empty-parts ()
   "Remove empty parts of the file: empty hunks and empty file sections."
   (interactive)
-  (replace-all-occurrrences-iteratively empty-diff-hunk-regexp-1 "\\2")
-  (replace-all-occurrrences-iteratively empty-diff-hunk-regexp-2 "\\2")
+  (replace-all-occurrrences-iteratively empty-diff-hunk-regexp "\\2")
   (replace-all-occurrrences-iteratively empty-diff-filesection-regexp "\\1"))
 
 
@@ -259,29 +262,29 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
                          "\\(\\(?:[" indicator-char "].*\n\\)+\\)"
                          "[^" indicator-char "]")))
       (while (re-search-forward regex nil t)
-        ;; These two `goto-char` are for debugging; remove them.
-        (goto-char (match-beginning 0))
-        (goto-char (match-beginning 1))
         (let* ((change1-begin (match-beginning 1))
                (punctuation-begin (match-end 1))
                (punctuation-end (match-beginning 2))
-               (change2-end (match-end 1))
+               (change2-end (match-end 2))
                (punctuation-length (- punctuation-end punctuation-begin))
                (punctuation (buffer-substring punctuation-begin punctuation-end)))
           (change-indicator-char-in-region
            " " indicator-char punctuation-begin punctuation-end)
-          (cond ((equal "+" indicator-char)
-                 (goto-char change1-begin)
-                 (insert punctuation)
-                 (change-indicator-char-in-region
-                  " " "-" change1-begin (+ change1-begin punctuation-length)))
-                ((equal "-" indicator-char)
-                 (goto-char change2-end)
-                 (insert punctuation)
-                 (change-indicator-char-in-region
-                  " " "-" change2-end (+ change2-end punctuation-length)))
-                (t
-                 (error "bad indicator character '%s'" indicator-char)))
+          ;; The punctuation is now part of the change, so it must also appear
+          ;; with the opposite indicator character: before the first change
+          ;; block for "+" (where it belongs to the old text), and after the
+          ;; second change block for "-" (where it belongs to the new text).
+          (let* ((insertion-point (cond ((equal "+" indicator-char)
+                                         change1-begin)
+                                        ((equal "-" indicator-char)
+                                         change2-end)
+                                        (t
+                                         (error "bad indicator character '%s'" indicator-char))))
+                 (new-indicator (opposite-indicator-char indicator-char)))
+            (goto-char insertion-point)
+            (insert punctuation)
+            (change-indicator-char-in-region
+             " " new-indicator insertion-point (+ insertion-point punctuation-length)))
           (goto-char change1-begin)
           (forward-line -1))))))
 
@@ -310,7 +313,7 @@ This change is not semantics-preserving."
 ;; TODO: also define kill-matching-hunks, which can share a lot of code with this.
 (defun kill-non-matching-hunks (regexp)
   "Delete hunks that do not contain a match for the given regexp."
-  (interactive)
+  (interactive "sRegexp: ")
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward "^@@ " nil t)

@@ -8,7 +8,7 @@
 ;;; Last changed by Michael Ernst, mernst@theory.lcs.mit.edu, 2/6/91.
 ;;; Next-line changed to forward-line, 10/6/94.
 
-;; This file defines two commands, `inleft' and `uncomment-region'.
+;; This file defines two commands, `inleft' and `inleft-remove'.
 
 ;; Another way to do inleft is C-x n M-x replace-regexp RET ^ RET > RET C-x w
 ;; (narrow to region, replace beginning of line by >, widen), but I can never
@@ -18,7 +18,7 @@
 ;;   (make-variable-buffer-local 'inleft-string)
 ;;   (autoload 'inleft "~/emacs/inleft" "Comment-out-like utility." t)
 ;;   (autoload 'inleft-internal "~/emacs/inleft" "Comment-out-like utility." t)
-;;   (autoload 'uncomment-region "~/emacs/inleft" "Uncomment-out-like utility." t)
+;;   (autoload 'inleft-remove "~/emacs/inleft" "Uncomment-out-like utility." t)
 
 ;; You may want to set inleft-string in TeX-mode-hook, LaTeX-mode-hook,
 ;; texinfo-mode-hook, lisp-mode-hook, and elsewhere that "> " is not the
@@ -55,15 +55,14 @@ moves to end of region.  Not to be called interactively."
       (narrow-to-region (or beg (point-marker))
                         (or end (mark-marker)))
       (goto-char (point-min))
-      (while (and (<= (point-marker) (point-max)) (not (eobp)))
+      (while (and (<= (point) (point-max)) (not (eobp)))
         (beginning-of-line 1)
         (insert-before-markers left-string)
         (forward-line 1)))))
 
-;; Perhaps outleft would be a better name.
 ;; This is nicer than kill-rectangle in that it checks what it's deleting.
 ;; Bug: this advances point by one line.
-(defun uncomment-region ()
+(defun inleft-remove ()
   "Deletes a string from the beginning of each line in the region.
 Prompts for string, and remembers it in the variable `inleft-string'."
   (interactive)
@@ -74,7 +73,7 @@ Prompts for string, and remembers it in the variable `inleft-string'."
     (if (< m p) (let ((thrip m))  ; swap m and p
                   (setq m p p thrip)))
     (goto-char p)
-    (while (and (<= (point-marker) m) (not (eobp)))
+    (while (and (<= (point) m) (not (eobp)))
       (beginning-of-line 1)
       (if (string= inleft-string
                    (buffer-substring (point) (min (point-max) (+ (point) inleft-string-len))))
@@ -117,7 +116,7 @@ Prompts for string, and remembers it in the variable `inleft-string'."
 ;;     (goto-char (point-min))
 ;;     (perform-replace "^" inleft-string nil t nil)))
 ;;
-;; (defun uncomment-region (beg end)
+;; (defun inleft-remove (beg end)
 ;;    "Deletes a string from the beginning of each line in the region.
 ;; Prompts for string, remembers it in the buffer-local variable inleft-string."
 ;;   (interactive "r")
