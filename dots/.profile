@@ -322,11 +322,21 @@ if [ "$DEBUGLOGIN" ]; then command -v javac; fi
 ### Processes
 ###
 
-# At UW CSE (that is, when directory /homes/gws/mernst exists), only run syncthing on tricycle.cs.
-if [ ! -d /homes/gws/mernst ] || [ "$(hostname)" = "tricycle.cs.washington.edu" ]; then
-  if ! (curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' > /dev/null 2>&1); then
-    # syncthing is not running
-    nohup syncthing > "$HOME"/tmp/syncthing.log 2>&1 &
+# At UW CSE (that is, when directory /homes/gws/mernst exists), only run syncthing on bicycle.cs.
+if [ ! -d /homes/gws/mernst ] || [ "$(hostname -s)" = "bicycle" ]; then
+  if command -v syncthing > /dev/null 2>&1; then
+    syncthing_running=1
+    # Prefer syncthing's REST API, which also detects a process that exists but is unresponsive.
+    if command -v curl > /dev/null 2>&1; then
+      curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' > /dev/null 2>&1 || syncthing_running=0
+    else
+      pgrep -x syncthing > /dev/null 2>&1 || syncthing_running=0
+    fi
+    if [ "$syncthing_running" = 0 ]; then
+      mkdir -p "$HOME"/tmp
+      nohup syncthing > "$HOME"/tmp/syncthing.log 2>&1 &
+    fi
+    unset syncthing_running
   fi
 fi
 
