@@ -98,9 +98,9 @@ statement.  Does replacement in any file in a currently-visited tags table."
 
   ;; Find if/for statements that end with a close paren, which suggests the
   ;; body is on the next line.  Also else statements that end a line.
-  (let ((tags-regex
+  (let ((tags-regexp
          "^ *\\(?:}? else *\\)?\\(\\(if\\|for\\|while\\) (.*)\\|}? else\\( //.*\\)?\\)\\(.*;\\)?$"))
-    (tags-search tags-regex)
+    (tags-search tags-regexp)
     (if java-style-debug
         (message "match-data after tags-search: %s" (match-data)))
     (while t
@@ -122,7 +122,7 @@ statement.  Does replacement in any file in a currently-visited tags table."
         ;; match-data set??  Do looking-at to re-set match-data.
         (beginning-of-line)
         ;; Match might not have started at beginning of line
-        ;; (if (not (looking-at tags-regex))
+        ;; (if (not (looking-at tags-regexp))
         ;;          (error "This can't happen"))
 
         (if java-style-debug
@@ -508,24 +508,23 @@ The description is everything but the block tags (such as @param and @return)."
 ;;;
 
 
-(defun fix-java-for-loops ()
-  "Convert uses of iterators into new-style for loops."
-  (interactive)
-  ;; Body copied from tags-query-replace.
-  (setq tags-loop-scan
-	`(find-candidate-old-for-loop)
-	tags-loop-operate `(progn
-			     (message "performing at %s" (point))
-			     (perform-replace old-for-loop-regexp
-					      for-loop-replacement
-					      t t nil)
-			     t))
-  (fileloop-continue t))
-
 (defvar old-for-loop-regexp
   "\\bfor (Iterator<\\(.*\\)> +\\(\\w+\\) *= *\\(.*\\)\\.iterator() *; *\n?.*; *)[ \n]*\\(\\){\n *\\(\\1 .*[^ ]\\) *= *\\2\\.next();")
 (defvar for-loop-replacement
   "for (\\5 : \\3) {")
+
+(defun fix-java-for-loops ()
+  "Convert uses of iterators into new-style for loops."
+  (interactive)
+  (fileloop-initialize
+   (get-all-tags-files)
+   #'find-candidate-old-for-loop
+   (lambda ()
+     (message "performing at %s" (point))
+     (perform-replace old-for-loop-regexp for-loop-replacement t t nil)
+     ;; Non-nil means proceed to the next file rather than rescanning this one.
+     t))
+  (fileloop-continue))
 
 ;; These are for debugging.
 ;; (re-search-forward old-for-loop-regexp)
@@ -696,24 +695,25 @@ The description is everything but the block tags (such as @param and @return)."
 ;; this Emacs code moves them to type annotation position.
 ;; I have not tried it within the function, only evaluating each form at the top level.
 
+(defconst modifiers-plus-space-regexp
+  "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)"
+  "Regexp matching one or more Java modifiers, each followed by a space.")
+
 (defun move-nullable-to-type-annotation-position ()
   (interactive)
-
-  (defvar modifers-plus-space-regex)
-  (setq modifers-plus-space-regexp "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)")
 
   ;; This handles @Nullable on its own line
   (tags-query-replace
    (concat "\\(
    *\\)@Nullable\\(\\(?:
    *@\\(?:Override\\|CanIgnoreReturnValue\\|SuppressWarnings([^)]*)\\)\\)*\\)\\(
-   *\\)" modifers-plus-space-regex)
+   *\\)" modifiers-plus-space-regexp)
    "\\2\\3\\4@Nullable ")
 
 
   ;; This handles @Nullable on the same line as other code
   (tags-query-replace
-   (concat "@Nullable " modifers-plus-space-regex)
+   (concat "@Nullable " modifiers-plus-space-regexp)
    "\\1@Nullable ")
 
   ;; Swap order of two declarations, when the @Nullable will stay on its own line
