@@ -12,6 +12,8 @@
 ;; Now run as many of the following as desired.
 ;; (tags-conflict-resolve)
 ;; (tags-conflict-resolve-annotation-lines)
+;; (tags-conflict-resolve-method-signature)
+;; (tags-conflict-resolve-equals-method-conflict)
 
 ;; When not using a tags table:
 ;; (conflict-resolve)
@@ -19,9 +21,7 @@
 ;; (resolve-annotatedfor-conflicts)
 ;; (move-cf-imports-to-beginning)
 ;; (resolve-import-conflicts)
-;; (resolve-method-signature)
 ;; (conflict-resolve-empty)
-;; (resolve-equals-method-conflict)
 
 
 ;; Most useful for pulling remote into annotated code, such as the
