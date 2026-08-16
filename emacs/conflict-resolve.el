@@ -225,7 +225,9 @@ The mode-hook might blow away the match-data, in which case first run
   )
 ;; This is appropriate only for the Checker Framework annotated JDK.
 (defun move-cf-imports-from-other-to-before ()
-  "Move Checker Framework imports from HEAD to before the hunk."
+  "Move Checker Framework imports from the other side to before the hunk.
+The other side is the one after the `=======' separator; see
+`move-cf-imports-from-head-to-before' for the HEAD side."
   (interactive)
   (tags-query-replace-noerror
    (concat (grouped
