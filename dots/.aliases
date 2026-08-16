@@ -11,6 +11,16 @@
 
 # shellcheck shell=sh
 
+## Guard against sourcing this file twice in one shell.  Unlike
+## dot_environment_file_read, this variable is deliberately not exported: a
+## child shell inherits no aliases, so a child shell must source this file
+## again.
+if [ -n "${dot_aliases_file_read}" ]; then
+  return
+else
+  dot_aliases_file_read=1
+fi
+
 ###########################################################################
 ### Miscellaneous (categorization appears below)
 ###
@@ -89,6 +99,7 @@ uue() {
 }
 alias whihc='which'
 
+# Get "ps" output for the argument.
 # I get a warning message from ps about bad syntax, which I don't understand.
 psgrep() { command ps auxwwww | grep "$1" | grep -v "grep $1"; }
 
@@ -118,7 +129,7 @@ alias printdates='(cd && checkdates p \!*; latex adates > /dev/null; lpr -d adat
 alias psaddresses3col='(cd ~/private && \rm -f addr.tex; addrfilter < addresses.tex > addr.tex; latex \\batchmode \\input rolo3col > /dev/null; dvips -o addresses.ps rolo3col.dvi; \rm rolo3col.dvi rolo3col.aux rolo3col.log addr.tex)'
 alias psaddresses4col='(cd ~/private && \rm -f addr.tex; addrfilter < addresses.tex > addr.tex; latex \\batchmode \\input rolo4col > /dev/null; dvips -o addresses.ps rolo4col.dvi; \rm rolo4col.dvi rolo4col.aux rolo4col.log addr.tex)'
 alias psaddresses='psaddresses4col'
-alias printaddresses='(cd ~/random && psaddresses; lpr addresses.ps; \rm -f addresses.ps)'
+alias printaddresses='(cd ~/private && psaddresses && lpr addresses.ps && \rm -f addresses.ps)'
 
 ## Old versions, but now I can directly give the size.
 ## For presentations (and x60s)
@@ -224,12 +235,12 @@ alias ens1cr='ens1csmall -r'
 alias ens1dr='ens1dsmall -r'
 alias ens1ir='ens1ismall -r'
 alias ens1r='ens1dr'
-alias ens1diff='ens1 --color -Ediffu'
+alias ens1diff='ens1d --color -Ediffu'
 # Output to PDF file.  i means inconsolata.
 # For no header, add:  -b ""
 ens1() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
-    echo "ens11: pass one file argument; received $*"
+    echo "ens1: pass one file argument; received $*"
     return 1
   fi
   b="$(basename "$1")"
@@ -302,22 +313,14 @@ ens1fr() {
   rm -f "$1".ps
 }
 # Same as ens1f
-ensf() {
-  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
-    echo "ensf: pass one file argument; received $*"
-    return 1
-  fi
-  ens1 -o "$1".ps "$1"
-  ps2pdf "$1".ps "$1".pdf
-  rm -f "$1".ps
-}
+ensf() { ens1f "$@"; }
 # With line numbers
 ens100fc() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
     echo "ens100fc: pass one file argument; received $*"
     return 1
   fi
-  ens100 -C -o "$1".ps "$1"
+  ens1small -C -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
   rm -f "$1".ps
 }
@@ -360,7 +363,7 @@ alias enswide='enscript -f Inconsolata7 -r'
 alias ensw='enswide'
 # ASCII input, 4up: a2ps -4 | lpr
 # no burst page
-alias ens1h='ens1 -h'
+alias ens1h='ens1d -h'
 alias ens2h='ens2 -h'
 
 # Problem: enscript does not properly handle unicode/UTF-8.
@@ -406,7 +409,6 @@ ced() { ced1f "$@"; }
 ced2f() {
   file="$1"
   ced1 "$@"
-  psnup -2 -d "$file".ps "$file"-2up.ps
   pdfjam --nup 2x1 --landscape --suffix nup "$file".pdf
 }
 ced2() { ced2f "$@"; }
@@ -451,8 +453,6 @@ alias usejdk24='(cd ~/java && rm -f jdk && ln -s jdk24 jdk)'
 alias usejdk25='(cd ~/java && rm -f jdk && ln -s jdk25 jdk)'
 alias usejdk26='(cd ~/java && rm -f jdk && ln -s jdk26 jdk)'
 alias usejdk27='(cd ~/java && rm -f jdk && ln -s jdk27 jdk)'
-TMP=$(mktemp -t .aliases-trap.XXXXXX)
-trap 'rm $TMP* 2>/dev/null' EXIT
 # shellcheck disable=SC2154  # $t is defined
 usenocf() { (cd "$t" && rm -f checker-framework stubparser libraries/jdk libraries/jdk11u checker-framework-inference); }
 
@@ -486,7 +486,19 @@ alias nncheckold='javac -g -processor org.checkerframework.checker.nullness.Null
 ### ssh/rlogin
 ###
 
-alias sshadd='eval $(ssh-agent); ssh-add'
+# Add keys to the ssh-agent, starting an agent only if none is reachable.
+# Starting an agent unconditionally would orphan the previous agent, which
+# would keep its loaded keys in memory.
+sshadd() {
+  # "ssh-add -l" exits with status 2 if no agent is reachable, 1 if the agent
+  # is reachable but holds no keys, and 0 if the agent holds keys.
+  ssh-add -l > /dev/null 2>&1
+  sshadd_status=$?
+  if [ "$sshadd_status" -eq 2 ]; then
+    eval "$(ssh-agent)"
+  fi
+  ssh-add "$@"
+}
 
 ## If adding new domains, don't forget to edit /etc/ssh/ssh_config to set
 ## "ForwardX11 yes" for those domains.  (Otherwise:  I have to pass the
@@ -633,8 +645,8 @@ alias serverload='for server in recycle bicycle tricycle bam boom tern ; do echo
 alias c331tst1='xterm -T c331tst1 -e ssh -X c331tst1@attu.cs.washington.edu &'
 alias c331tst2='xterm -T c331tst2 -e ssh -X c331tst2@attu.cs.washington.edu &'
 clone331() {
-  dir331=~/class/331/cse331-18au-"$1" && git --depth=1 clone git@gitlab.cs.washington.edu:cse331-18au-students/cse331-18au-"$1".git "$dir331"
-  cd "$dir331" || (echo "$dir331 does not exist" && return 1)
+  dir331=~/class/331/cse331-18au-"$1" && git clone --depth=1 git@gitlab.cs.washington.edu:cse331-18au-students/cse331-18au-"$1".git "$dir331"
+  cd "$dir331" || { echo "$dir331 does not exist"; return 1; }
 }
 
 # "daikonuser" has PAG-specific customizations (like old daikongroupmember).
@@ -720,18 +732,41 @@ alias git-log-show=git_log_show
 
 ### JSON
 
-# Pretty-print a .json or .jsonl file.
-json_pp() {
-  cp "$1" "$1".tmp \
-    && jq . "$1".tmp > "$1" \
-    && rm "$1".tmp
+# Rewrite a .json or .jsonl file in place, with "jq $2..." as the formatting
+# arguments.  The original file is left untouched unless jq succeeds on it.
+json_rewrite_in_place() {
+  if [ "$#" -lt 1 ] || ! [ -f "$1" ]; then
+    echo "json_rewrite_in_place: pass one file argument; received '$1'"
+    return 1
+  fi
+  json_file="$1"
+  shift
+  # "cp -p" gives the temporary file the same permissions as the original.
+  if cp -p "$json_file" "$json_file".tmp \
+    && jq "$@" . "$json_file" > "$json_file".tmp; then
+    mv -f "$json_file".tmp "$json_file"
+  else
+    rm -f "$json_file".tmp
+    return 1
+  fi
 }
-alias jsonpp=json_pp
-# Compact a .json or .jsonl file.
+
+# Pretty-print a .json file.  Not for .jsonl files: pretty-printing spreads
+# each record over multiple lines, destroying the one-record-per-line invariant.
+json_prettyprint() {
+  case "$1" in
+    *.jsonl)
+      echo "json_prettyprint: refusing to pretty-print JSON Lines file $1"
+      return 1
+      ;;
+  esac
+  json_rewrite_in_place "$1"
+}
+alias jsonpp=json_prettyprint
+# Compact a .json or .jsonl file.  Each record is printed on its own line, so a
+# .jsonl file remains valid JSON Lines.
 json_compact() {
-  cp "$1" "$1".tmp \
-    && jq -c . "$1".tmp > "$1" \
-    && rm "$1".tmp
+  json_rewrite_in_place "$1" -c
 }
 alias jsoncompact=json_compact
 
@@ -764,18 +799,35 @@ esac
 
 ### Bash-specific functions
 
-# Get "ps" output for the argument
-psgrep() {
-  pgrep "$1"
-}
-
 # Kill any process that matches the argument.
+# Sends SIGTERM first, then SIGKILL to any process that survives it.
 pskill() {
-  pskill_pid=$(pgrep -f "$1" | awk '{ print $1 }')
-  # shellcheck disable=SC2039
-  printf "killing %s (process %s)..." "$1" "$pskill_pid"
-  kill -9 "$pskill_pid"
-  echo "slaughtered."
+  pskill_pids=$(pgrep -f "$1")
+  if [ -z "$pskill_pids" ]; then
+    echo "pskill: no process matches $1" 1>&2
+    return 1
+  fi
+  # $pskill_pids is unquoted throughout: pgrep prints one PID per line, and
+  # each PID must become a separate word.  The "echo" rejoins them with spaces.
+  # shellcheck disable=SC2086,SC2116
+  printf "killing %s (process %s)..." "$1" "$(echo $pskill_pids)"
+  # shellcheck disable=SC2086
+  kill $pskill_pids 2>/dev/null
+  sleep 1
+  pskill_survivors=""
+  for pskill_pid in $pskill_pids; do
+    if kill -0 "$pskill_pid" 2>/dev/null; then
+      pskill_survivors="$pskill_survivors $pskill_pid"
+    fi
+  done
+  # shellcheck disable=SC2086
+  if [ -z "$pskill_survivors" ] || kill -9 $pskill_survivors 2>/dev/null; then
+    echo "slaughtered."
+    return 0
+  fi
+  # $pskill_survivors starts with a space, which separates it from the colon.
+  echo "pskill: failed to kill process:$pskill_survivors" 1>&2
+  return 1
 }
 
 # Set the X windows window title

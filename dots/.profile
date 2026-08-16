@@ -1,5 +1,6 @@
 #!/bin/bash
-# .profile should be compatible with any /bin/sh, including bash, dash, and ksh.
+# .profile requires bash; it uses `shopt` and `${BASH_SOURCE[0]}`.
+# By contrast, .environment is POSIX sh, so that any shell can source it.
 
 # ~/.profile: executed by the command interpreter for login shells.
 # .profile has configuration NOT specifically related to bash,
@@ -88,11 +89,17 @@ if [ "$CENTOS_VERSION" = "7" ]; then
   export PATH=${HOME}/bin/install/ActivePerl-5.28/bin:${PATH}
 fi
 
-# "export LC_ALL=en_US.UTF-8" results in dotfiles being sorted by
+# TODO: "export LC_ALL=en_US.UTF-8" results in dotfiles being sorted by
 # their first letter, not all before non-dotfiles.  "LC_ALL=C"
 # prevents that problem, but causes other problems.  So, I need to
 # figure out how to sort the way I want without using LC_ALL.
-export LC_ALL=en_US.UTF-8
+# Setting LC_ALL to a locale that has not been generated makes programs
+# such as perl warn, so set LC_ALL only if the locale is available.
+# "locale -a" writes the locale as "en_US.utf8" on glibc and as
+# "en_US.UTF-8" on macOS.
+if locale -a 2> /dev/null | grep -qiE '^en_US\.utf-?8$'; then
+  export LC_ALL=en_US.UTF-8
+fi
 
 # # These export commands are necessary to avoid Perl warnings; daikon-dev.bashrc
 # # uses perl.  Only set the locale if it is available.  (If it isn't available,
@@ -128,11 +135,8 @@ export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
 # For Snap
 export PATH=/snap/bin:${PATH}
 
-# Java
-# Make PATH consistent with JAVA_HOME
-if [ -n "${JAVA_HOME}" ]; then
-  export PATH=${JAVA_HOME}/bin:${PATH}
-fi
+# PATH entries that depend on variables set in .environment (such as
+# JAVA_HOME and $sdi) appear after .environment is sourced, below.
 
 # Environment variables are inherited by child shells (as are the
 # environment variables like PATH and CLASSPATH that are set based on
@@ -160,7 +164,6 @@ export PATH=$PATH:$HOME/gocode/bin
 export PATH=$PATH:$HOME/go/bin
 
 export PATH=$HOME/class/331/CurrentQtr/staff/bin:$HOME/class/331/CurrentQtr/courseware:$HOME/class/331/CurrentQtr/courseware/common:${PATH}
-export PATH="${PATH}:$sdi/staff/bin:$sdi/courseware:$sdi/courseware/common"
 
 # Mew (Emacs mail reader)
 export PATH=$HOME/emacs/mew/bin:$PATH
@@ -231,7 +234,7 @@ if [ -n "$CENTOS_VERSION" ]; then
   export PATH=${BINCENTOS}:$PATH
 fi
 if [ "$DEBUGLOGIN" ]; then echo "system-specific path: $PATH"; fi
-export PATH=$HOME/bin/share:$HOME/bin/src/run-google-java-format:$HOME/bin/src/checklink:$HOME/bin/src/html-tools:$HOME/bin/src/git-scripts:$HOME/bin/src/manage-git-branches:$HOME/bin/src/plume-scripts:$HOME/java/plume-lib/merging/src/main/sh:${PATH}:.
+export PATH=$HOME/bin/share:$HOME/bin/src/run-google-java-format:$HOME/bin/src/checklink:$HOME/bin/src/html-tools:$HOME/bin/src/git-scripts:$HOME/bin/src/manage-git-branches:$HOME/bin/src/plume-scripts:$HOME/java/plume-lib/merging/src/main/sh:${PATH}
 
 export PATH=$HOME/.cargo/bin:$PATH
 
@@ -243,7 +246,7 @@ export PATH="$HOME/bin:$PATH"
 
 export PATH="$HOME/bin/install/infer/infer/bin:$PATH"
 
-. "$HOME/.cargo/env"
+# "$HOME/.cargo/env" is sourced, guarded by a test for its existence, below.
 
 ###########################################################################
 ### Library path
@@ -253,8 +256,40 @@ export PATH="$HOME/bin/install/infer/infer/bin:$PATH"
 # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${INSTALLDIR}/old-lib
 # # Isn't this needed for F15?
 # # export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/lib64
-export LD_LIBRARY_PATH=${HOME}/.local/lib/:${LD_LIBRARY_PATH}
-export LD_LIBRARY_PATH=${HOME}/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib:${HOME}/.local/lib
+export LD_LIBRARY_PATH="${HOME}/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib:${HOME}/.local/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+
+###########################################################################
+### Environment and functions
+###
+
+### Shell-independent customizations
+
+# .environment is sourced here, before the path cleanup below, because
+# .environment defines variables (such as JAVA_HOME and $sdi) that the
+# remaining PATH entries use.
+
+if [ "$DEBUGLOGIN" ]; then echo "Sourcing .environment"; fi
+if ! [ "$dot_environment_file_read" ]; then # avoid sourcing .environment twice
+  . "$(dirname "${BASH_SOURCE[0]}")/.environment"
+fi
+if [ "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
+
+# Site-specific environment variables (such as PRINTER) are in .bashrc.
+
+###########################################################################
+### Paths that depend on variables set in .environment
+###
+
+# Java
+# Make PATH consistent with JAVA_HOME
+if [ -n "${JAVA_HOME}" ]; then
+  export PATH=${JAVA_HOME}/bin:${PATH}
+fi
+
+# sdi stands for "Software Design and Implementation"; .environment sets it.
+if [ -n "${sdi}" ]; then
+  export PATH="${PATH}:$sdi/staff/bin:$sdi/courseware:$sdi/courseware/common"
+fi
 
 ###########################################################################
 ### Clean up the path
@@ -271,27 +306,17 @@ if [ -f "$HOME/bin/src/plume-scripts/path-remove" ]; then
     PATH=$TRIMMED_PATH
     export PATH
   fi
-  LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | "$HOME/bin/src/plume-scripts/path-remove")
+  TRIMMED_LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | "$HOME/bin/src/plume-scripts/path-remove")
+  if [ -n "$TRIMMED_LD_LIBRARY_PATH" ]; then
+    LD_LIBRARY_PATH=$TRIMMED_LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+  fi
 fi
 
 if [ "$DEBUGLOGIN" ]; then echo "path = $PATH"; fi
 if [ "$DEBUGLOGIN" ]; then command -v javac; fi
 
 # LD_LIBRARY_PATH is set in ~/.environment .
-
-###########################################################################
-### Environment and functions
-###
-
-### Shell-independent customizations
-
-if [ "$DEBUGLOGIN" ]; then echo "Sourcing .environment"; fi
-if ! [ "$dot_environment_file_read" ]; then # avoid sourcing .environment twice
-  . "$(dirname "${BASH_SOURCE[0]}")/.environment"
-fi
-if [ "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
-
-# Site-specific environment variables (such as PRINTER) are in .bashrc.
 
 ###########################################################################
 ### Processes
