@@ -9,7 +9,7 @@
 
 # Watch out for aliases with pipes; writing a shell script may be superior.
 
-# shellcheck shell=sh
+# shellcheck shell=bash
 
 ## Guard against sourcing this file twice in one shell.  Unlike
 ## dot_environment_file_read, this variable is deliberately not exported: a
@@ -709,7 +709,6 @@ alias mdeapps='mdevccommit; emacs & mvc update &'
 ### they work for Emacs's `shell-command' function.
 # By default, aliases are not expanded in a non-interactive shell
 # (even if the alias is defined).
-# shellcheck disable=SC3044  # shopt is not defined in POSIX sh
 shopt -s expand_aliases
 
 # `git diff` creates a patch for only the changes, not newly-created untracked files.
@@ -833,7 +832,6 @@ pskill() {
 
 # Set the X windows window title
 xtitle() {
-  # shellcheck disable=SC2039 disable=SC3037
   echo -n -e "\033]0;$*\007"
 }
 
