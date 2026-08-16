@@ -89,6 +89,7 @@ uue() {
 }
 alias whihc='which'
 
+# Get "ps" output for the argument.
 # I get a warning message from ps about bad syntax, which I don't understand.
 psgrep() { command ps auxwwww | grep "$1" | grep -v "grep $1"; }
 
@@ -752,11 +753,6 @@ esac
 # alias git=git-auto-invoke-mergetool.sh
 
 ### Bash-specific functions
-
-# Get "ps" output for the argument
-psgrep() {
-  pgrep "$1"
-}
 
 # Kill any process that matches the argument.
 # Sends SIGTERM first, then SIGKILL to any process that survives it.
