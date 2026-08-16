@@ -36,7 +36,7 @@ When creating a new branch, use a new directory or a new clone.
 
 ### Code reviews
 
-* In code reviews, do not complain about an empty pull request body.
+* In code reviews, do not complain about an empty pull request description.
 
 ### Historical comments
 
