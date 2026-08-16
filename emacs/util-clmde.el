@@ -340,10 +340,17 @@ beginning and end, of STRING."
 ;;; Strings
 ;;;
 
+(defsubst string-blank-or-nil-p (string-or-nil)
+  "Return non-nil if STRING is nil or contains no non-whitespace characters."
+  (or (not string-or-nil)
+      (string-blank-p string-or-nil)))
+
+;; to remove
+(make-obsolete 'blank-string-p 'string-blank-p "built-in")
+(make-obsolete 'blank-string-or-nil-p 'string-blank-or-nil-p "built-in")
 (defsubst blank-string-p (string)
   "Return non-nil if STRING contains no non-whitespace characters."
   (string-match "\\`[ \t\n]*\\'" string nil 'inhibit-modify))
-
 (defsubst blank-string-or-nil-p (string-or-nil)
   "Return non-nil if STRING is nil or contains no non-whitespace characters."
   (or (not string-or-nil)
