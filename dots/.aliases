@@ -224,12 +224,12 @@ alias ens1cr='ens1csmall -r'
 alias ens1dr='ens1dsmall -r'
 alias ens1ir='ens1ismall -r'
 alias ens1r='ens1dr'
-alias ens1diff='ens1 --color -Ediffu'
+alias ens1diff='ens1d --color -Ediffu'
 # Output to PDF file.  i means inconsolata.
 # For no header, add:  -b ""
 ens1() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
-    echo "ens11: pass one file argument; received $*"
+    echo "ens1: pass one file argument; received $*"
     return 1
   fi
   b="$(basename "$1")"
@@ -302,22 +302,14 @@ ens1fr() {
   rm -f "$1".ps
 }
 # Same as ens1f
-ensf() {
-  if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
-    echo "ensf: pass one file argument; received $*"
-    return 1
-  fi
-  ens1 -o "$1".ps "$1"
-  ps2pdf "$1".ps "$1".pdf
-  rm -f "$1".ps
-}
+ensf() { ens1f "$@"; }
 # With line numbers
 ens100fc() {
   if [ "$#" -ne 1 ] || ! [ -f "$1" ]; then
     echo "ens100fc: pass one file argument; received $*"
     return 1
   fi
-  ens100 -C -o "$1".ps "$1"
+  ens1small -C -o "$1".ps "$1"
   ps2pdf "$1".ps "$1".pdf
   rm -f "$1".ps
 }
@@ -360,7 +352,7 @@ alias enswide='enscript -f Inconsolata7 -r'
 alias ensw='enswide'
 # ASCII input, 4up: a2ps -4 | lpr
 # no burst page
-alias ens1h='ens1 -h'
+alias ens1h='ens1d -h'
 alias ens2h='ens2 -h'
 
 # Problem: enscript does not properly handle unicode/UTF-8.
