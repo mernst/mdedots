@@ -2,6 +2,11 @@
 # machineUp: redo commands in .xsession and myxloads that refer to the machine
 #    With second argument, just display the commands, don't execute them.
 
+if [ "$#" -eq 0 ]; then
+  echo "Usage: $0 machine [show]       eg: $0 godwit" 1>&2
+  exit 1
+fi
+
 if [ "$#" -gt 1 ]; then
   grep "$1" ~/.xsession
   myxloads --show 48 45 0 0 100 300 | grep "$1"
