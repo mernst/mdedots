@@ -48,8 +48,6 @@
 
 (eval-when-compile (require 'browse-url))
 
-(setq browse-url-netscape-program "firefox")
-
 (defun web-query-quote (phrase)
   (setq phrase (replace-regexp-in-string "\"" "%22" phrase))
   (setq phrase (replace-regexp-in-string "#" "%23" phrase))

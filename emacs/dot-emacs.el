@@ -727,7 +727,8 @@ After running this, run from the shell:  print-mail bulk." t)
 (load "ftp-mde" nil t)
 
 ;; Enhancement of C-x = (what-cursor-position).
-(require 'count nil t)
+(when (require 'count nil t)
+  (define-key ctl-x-map "=" #'what-cursor-position-and-line))
 
 ;; Let shell buffers act like compilation buffers
 (require 'honorary-compile)
@@ -736,6 +737,25 @@ After running this, run from the shell:  print-mail bulk." t)
   "Like `replace-string', but doesn't modify mark or the mark ring.")
 (autoload 'replace-regexp-noninteractive "util-mde"
   "Like `replace-regexp', but doesn't modify mark or the mark ring.")
+
+;; Mark some standard Emacs functions as obsolete.  This is global policy, so
+;; it belongs here rather than in a library that other code may `require'.
+
+;; String-equal permits symbols, whose print names are used instead.  One
+;; would hope that it would err when passed nil, or at least that it
+;; wouldn't return t for (string-equal () "nil").  Therefore, it should be
+;; avoided.
+;; However, sometimes it's really the right thing to use, if we know that one
+;; or both arguments aren't symbols.  How does the byte-compiler treat it,
+;; compared to equal?  (That is, which is more efficient?  Probably equal.)
+(make-obsolete 'string-equal 'equal "string-equal does surprising conversions")
+
+;; You usually want forward-line, not next-line.
+(make-obsolete
+ 'next-line 'forward-line "forward-line is easier to use and more reliable than next-line")
+
+(make-obsolete 'replace-string 'replace-string-noninteractive "Don't call replace-string interactively")
+(make-obsolete 'replace-regexp 'replace-regexp-noninteractive "Don't call replace-regexp interactively")
 
 
 
@@ -909,6 +929,9 @@ After running this, run from the shell:  print-mail bulk." t)
 
 (global-set-key "\C-hn" nil)            ; was view-emacs-news
 (global-set-key "\C-\\" nil)            ; was toggle-input-method
+
+;; Inleft; see the autoloads in autoloads-mde.el.
+(global-set-key "\C-c>" 'inleft)        ; was undefined
 
 (defun edit-to-do ()
   "Edit ~/private/to-do."

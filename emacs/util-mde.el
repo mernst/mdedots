@@ -14,23 +14,10 @@
 (require 'cl-lib)			; for `cl-loop', `cl-oddp', `cl-plusp', `cl-minusp'
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Bug fixes
-;;;
-
-;; String-equal permits symbols, whose print names are used instead.  One
-;; would hope that it would err when passed nil, or at least that it
-;; wouldn't return t for (string-equal () "nil").  Therefore, it should be
-;; avoided.
-;; However, sometimes it's really the right thing to use, if we know that one
-;; or both arguments aren't symbols.  How does the byte-compiler treat it,
-;; compared to equal?  (That is, which is more efficient?  Probably equal.)
-(make-obsolete 'string-equal 'equal "string-equal does surprising conversions")
-
-
-;; You usually want forward-line, not next-line.
-(make-obsolete
- 'next-line 'forward-line "forward-line is easier to use and more reliable than next-line")
+;; This file marks no standard Emacs function as obsolete; it is a library,
+;; and a `require' of it should not change how the rest of Emacs behaves.
+;; The `make-obsolete' calls for `string-equal', `next-line',
+;; `replace-string', and `replace-regexp' are in dot-emacs.el.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1382,7 +1369,6 @@ If optional arg COUNT is specified, return the COUNTth occurrence from the end."
   "Like `replace-string', but doesn't modify mark or the mark ring."
   (while (search-forward from-string nil t)
     (replace-match to-string nil t)))
-(make-obsolete 'replace-string 'replace-string-noninteractive "Don't call replace-string interactively")
 
 (defun replace-regexp-noninteractive (regexp replacement &optional delimited)
   "Like `replace-regexp', but doesn't modify mark or the mark ring."
@@ -1390,7 +1376,6 @@ If optional arg COUNT is specified, return the COUNTth occurrence from the end."
       (setq regexp (concat "\\\\<" regexp "\\\\>")))
   (while (re-search-forward regexp nil t)
     (replace-match replacement)))
-(make-obsolete 'replace-regexp 'replace-regexp-noninteractive "Don't call replace-regexp interactively")
 
 ;;; Are these actually necessary?
 ;; (defun delete-all-matching-lines (regexp)

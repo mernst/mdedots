@@ -19,6 +19,7 @@
 ;;   (autoload 'inleft "~/emacs/inleft" "Comment-out-like utility." t)
 ;;   (autoload 'inleft-internal "~/emacs/inleft" "Comment-out-like utility." t)
 ;;   (autoload 'inleft-remove "~/emacs/inleft" "Uncomment-out-like utility." t)
+;;   (global-set-key "\C-c>" 'inleft)
 
 ;; You may want to set inleft-string in TeX-mode-hook, LaTeX-mode-hook,
 ;; texinfo-mode-hook, lisp-mode-hook, and elsewhere that "> " is not the
@@ -28,10 +29,6 @@
 (defvar inleft-string "> " "Default string for inleft.")
 (make-variable-buffer-local 'inleft-string)
 (setq-default inleft-string "> ")
-
-(provide 'inleft)
-
-(global-set-key "\C-c>" 'inleft)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,3 +124,5 @@ Prompt for the string, and remember it in the variable `inleft-string'."
 ;;                       end)
 ;;     (goto-char (point-min))
 ;;     (perform-replace (concat "^" (regexp-quote inleft-string)) "" nil t nil)))
+
+(provide 'inleft)
