@@ -30,6 +30,9 @@ if [ -n "$DEBUGBASH" ]; then echo "Starting .bashrc"; fi
 
 # /etc/profile is automatically read for login shells, so no need to do that.
 
+# Also set in .profile, which is not read by non-login shells.
+export INSTALLDIR=${HOME}/bin/install
+
 # Source global definitions
 # As of 2023-08-10, at CSE this changes the PATH (putting
 # /usr/lib/java/apache-maven-3.8.6/bin at its beginning, for example).
@@ -37,9 +40,9 @@ if [ -f /etc/bashrc ]; then
   # shellcheck disable=SC1091  # file does not exist on some file systems
   . /etc/bashrc
   unset PROMPT_COMMAND
+  # Restore the precedence of the Maven that .profile puts on PATH.
+  export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
 fi
-export INSTALLDIR=${HOME}/bin/install
-export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
 
 ###########################################################################
 ### Noninteractive shells
@@ -58,7 +61,7 @@ fi
 
 if [ -n "$DEBUGLOGIN" ]; then echo "Sourcing .aliases"; fi
 if [ -f "$HOME/.aliases" ]; then
-  if ! alias eth0 > /dev/null 2>&1; then
+  if ! [ "$dot_aliases_file_read" ]; then # avoid sourcing .aliases twice
     source "$HOME/.aliases"
   fi
 fi
@@ -155,10 +158,6 @@ fi
 # source $HOME/bin/install/gradle-completion/gradle-completion.bash
 # source /usr/local/lib/bazel/bin/bazel-complete.bash
 
-# added by travis gem
-# shellcheck disable=SC1091  # file does not exist on some file systems
-[ -f "$HOME/.travis/travis.sh" ] && source "$HOME/.travis/travis.sh"
-
 # Perl modules installed by local::lib, which exist only on some machines.
 if [ -d "$HOME/perl5" ]; then
   PATH="$HOME/perl5/bin${PATH:+:${PATH}}"
@@ -178,7 +177,9 @@ fi
 # `~/dots/conda-initialize.sh`.  However, running these lines for every shell
 # interferes with ssh-agent.  So, comment them out with a here-document.
 # When using conda, run ~/dots/conda-initialize.sh or run the commands manually.
-true << ENDCONDA
+# The quotes around the here-document delimiter are required: without them, bash
+# expands the body, so the `conda shell.bash hook` command substitution runs.
+true << 'ENDCONDA'
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$("$HOME/miniconda3/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
@@ -216,9 +217,6 @@ fi
 if [ -n "$DEBUGLOGIN" ]; then
   echo "Exiting .bashrc"
 fi
-
-# Added by Antigravity CLI installer
-export PATH="$HOME/.local/bin:$PATH"
 
 # kimi-code, which is installed only on some machines.
 if [ -d "$HOME/.kimi-code/bin" ]; then

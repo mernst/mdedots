@@ -34,6 +34,3 @@ fi
 # shellcheck disable=SC1091,SC2015
 test -r "$HOME/.opam/opam-init/init.sh" && . "$HOME/.opam/opam-init/init.sh" > /dev/null 2> /dev/null || true
 # END opam configuration
-
-# Added by Antigravity CLI installer
-export PATH="$HOME/.local/bin:$PATH"
