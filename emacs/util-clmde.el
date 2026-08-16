@@ -19,9 +19,6 @@
 ;;   [none]
 
 
-(provide 'util-clmde)
-(provide 'util-cl-mde)
-
 (eval-when-compile (require 'cl-lib))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -380,3 +377,7 @@ beginning and end, of STRING."
                            (get structurename ':structure-indices)))))
     (if index
         (1+ index))))
+
+
+(provide 'util-clmde)
+(provide 'util-cl-mde)

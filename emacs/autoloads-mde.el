@@ -9,10 +9,10 @@
 
 (require 'transient)
 
+;; Do not use `use-package' here: inside `eval-when-compile' it actually
+;; loads the package at compile time, which fails when magit is absent.
 (eval-when-compile
-  (use-package transient)
-  (use-package magit
-    :after transient))
+  (require 'magit nil t))
 (eval-when-compile
   (require 'edebug))
 (eval-when-compile
@@ -98,6 +98,10 @@
 (autoload 'magit-status "magit")
 (global-set-key "\C-cg" 'magit-status)
 ;; disable Magit warning messages
+;; These are set before magit is loaded, so declare them special to avoid
+;; "assignment to free variable" warnings (which would hide a typo).
+(defvar magit-last-seen-setup-instructions)
+(defvar magit-push-always-verify)
 (setq magit-last-seen-setup-instructions "1.4.0"
       magit-push-always-verify nil)
 ;; Don't show recently-pushed commits.  In other words, if the git status
@@ -114,6 +118,9 @@
                "~/emacs/magit/Documentation/"))
 ;; Work around: Key sequence C-x M-g starts with non-prefix key C-x ESC
 ;; https://gitter.im/magit/magit?at=601c19379fa6765ef8f9eb8d
+;; This must be set before magit is loaded, so it cannot go in
+;; `with-eval-after-load'.
+(defvar magit-define-global-key-bindings)
 (setq magit-define-global-key-bindings nil)
 ;; Swap RET and C-RET, so RET goes to editable current version of file.
 (with-eval-after-load "magit-diff"
@@ -121,7 +128,8 @@
   (define-key magit-diff-mode-map (kbd "C-RET") #'magit-diff-visit-file))
 
 (defun pull-request-url ()
-  "URL for the pull request on GitHub corresponding to the current branch. Uses Magit."
+  "Return the GitHub pull request URL for the current branch.
+Uses Magit."
   (interactive)
   (format "%s/compare/%s"
           (replace-regexp-in-string
@@ -307,6 +315,10 @@
 (define-key Buffer-menu-mode-map "=" 'Buffer-menu-bdiff)
 (define-key Buffer-menu-mode-map "R" 'Buffer-menu-revert)
 (define-key Buffer-menu-mode-map "r" 'Buffer-menu-revert-select)
+;; These are set before bdiff.el is loaded; its `defvar's will not override
+;; the values set here.
+(defvar bdiff-context-lines)
+(defvar bdiff-ignore-whitespace)
 (setq bdiff-context-lines 'unidiff)     ; default 1; 2 is better; 'unidiff best
 (setq bdiff-ignore-whitespace 'compare-whitespace-equal)
 ;; (setq bdiff-extra-flags "u")         ; default "a"
@@ -334,10 +346,6 @@
 ;;; World Wide Web
 ;;;
 
-(autoload 'browse-url-netscape "browse-url" "Invoke Netscape on URL" t)
-(defalias 'netscape-browse-url 'browse-url-netscape)
-(defalias 'mozilla-browse-url 'browse-url-netscape)
-
 ;; (defun browse-url--abort-if-empty-string (s)
 ;;   "Abort if the given string is empty."
 ;;   (if (equal s "")
@@ -361,6 +369,7 @@
 
 ;; Wasting time
 ;; ; gnus customizations in gnus-mike-batch.el or gnus-mike.el
+(defvar gnus-init-file)                 ; set before gnus is loaded
 (setq gnus-init-file (expand-file-name "~/emacs/gnus-mike"))
 (autoload 'caesar-region "rnews" "Rot-13 the region." t)
 
@@ -373,6 +382,9 @@
 
 (autoload 'pages-directory "page-ext" "Page handling extensions" t)
 
+;; Set before the message-buffer package is loaded.
+(defvar message-buffer-at-end-p)
+(defvar message-buffer-timestamp-p)
 (setq message-buffer-at-end-p t
       message-buffer-timestamp-p nil)
 

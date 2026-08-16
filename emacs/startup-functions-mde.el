@@ -9,6 +9,7 @@
 
 (eval-when-compile
   (require 'cl-lib)			; for `cl-assert'
+  (require 'etags)			; for `tags-revert-without-query'
   (require 'thingatpt)
   (require 'man)
   )
@@ -1168,6 +1169,7 @@ If called interactively, prompt for which index."
 ;; (autoload 'tags-replace "tags-replace"
 ;;   "Do `replace-regexp' of FROM with TO on all files listed in tags table." t)
 ;; (define-key esc-map "," 'mde-tags-loop-continue) ; was tags-loop-continue
+(defvar tags-find-related-names-functions) ; defined in etags-mde.el
 (setq tags-find-related-names-functions '(mit-scheme-tags-find-related-names))
 (setq tags-revert-without-query t)
 (setq tags-add-tables nil)              ; always use just one TAGS table at a time
