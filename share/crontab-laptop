@@ -1,5 +1,5 @@
 # crontab file -- to install, just do  "crontab <filename>"
-# This runs on godwit.cs.washington.edu.
+# This runs on my laptop.
 # Blank lines in this file cause problems on some systems.
 # Columns stand for minute, hour, day of month, month, day of week.
 # Percent signs get converted to newlines unless backslash-quoted.
