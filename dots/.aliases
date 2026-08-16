@@ -486,7 +486,19 @@ alias nncheckold='javac -g -processor org.checkerframework.checker.nullness.Null
 ### ssh/rlogin
 ###
 
-alias sshadd='eval $(ssh-agent); ssh-add'
+# Add keys to the ssh-agent, starting an agent only if none is reachable.
+# Starting an agent unconditionally would orphan the previous agent, which
+# would keep its loaded keys in memory.
+sshadd() {
+  # "ssh-add -l" exits with status 2 if no agent is reachable, 1 if the agent
+  # is reachable but holds no keys, and 0 if the agent holds keys.
+  ssh-add -l > /dev/null 2>&1
+  sshadd_status=$?
+  if [ "$sshadd_status" -eq 2 ]; then
+    eval "$(ssh-agent)"
+  fi
+  ssh-add "$@"
+}
 
 ## If adding new domains, don't forget to edit /etc/ssh/ssh_config to set
 ## "ForwardX11 yes" for those domains.  (Otherwise:  I have to pass the
