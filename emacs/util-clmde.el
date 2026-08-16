@@ -112,7 +112,7 @@ which case nil is returned."
 ;;       (string-substitute newitem olditem sequence)
 ;;     (error "substitute isn't that good yet.")))
 
-(defmacro string-substitute (newchar oldchar string)
+(defmacro string-substitute-char (newchar oldchar string)
   "Return a copy of STRING with NEWCHAR substituted for instances of OLDCHAR.
 STRING is not modified.  NEWCHAR and OLDCHAR are characters."
   `(string-substitute-opt ,newchar
@@ -120,7 +120,7 @@ STRING is not modified.  NEWCHAR and OLDCHAR are characters."
                           ,string))
 
 ;; Optimized version.  oldchar-regexp should only match one-character strings.
-(defun string-substitute-opt (newchar oldchar-regexp string)
+(defun string-substitute-char-opt (newchar oldchar-regexp string)
   "Return a copy of STRING with NEWCHAR substituted for matches of OLDCHAR-REGEXP.
 STRING is not modified.  OLDCHAR-REGEXP should only match one-character strings."
   (let ((result (copy-sequence string))
