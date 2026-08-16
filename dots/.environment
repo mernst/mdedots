@@ -198,9 +198,6 @@ export TEXINPUTS=.:"$HOME"/tex/sty:"$HOME"/tex:"$INSTALLDIR"/hevea-2.00:"$INSTAL
 #  2 to abort immediately
 # export MALLOC_CHECK_=1
 
-export BINTRAY_USER=mernst
-export BINTRAY_API_KEY=4f8445bd90c64ca1bb367f2210dc0c8969c16705
-
 ###
 ### Debian/Ubuntu packaging tools
 ###
