@@ -13,8 +13,6 @@
   (require 'util-mde))
 
 (autoload 'replace-all-occurrrences-iteratively "util-mde")
-(autoload 'offer-to-change-if-read-only "replace-paragraphs"
-  "Offer to make the buffer not read-only.")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -54,7 +52,6 @@ The latter two changes are semantics-preserving and are useful after
 editing a diff buffer to remove uninteresting changes."
   (interactive)
 
-  (setq buffer-read-only nil)
   (let ((inhibit-read-only t))
 
     (if (not dont-remove-files)
