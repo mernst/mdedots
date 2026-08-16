@@ -25,7 +25,7 @@ Prompt with PROMPT.  The match group number is the prefix argument, if any."
 	(and current-prefix-arg (prefix-numeric-value current-prefix-arg))))
 
 (defun browse-url-once-if-matched (url-regex &optional match-group-number)
-  "Visit every URL that matches URL-REGEX.
+  "Visit every URL that matches URL-REGEX, each URL at most once per session.
 MATCH-GROUP-NUMBER is the group of URL-REGEX that is the URL; it defaults to 0."
   (interactive (browse-url-regex-args "URL regexp"))
   (save-excursion
@@ -41,7 +41,7 @@ MATCH-GROUP-NUMBER is the group of URL-REGEX that is the URL; it defaults to 0."
       (browse-url (match-string (or match-group-number 0))))))
 
 (defun browse-url-once-via-text-properties (anchor-regex &optional match-group-number)
-  "Visit every link with anchor text that matches ANCHOR-REGEX.
+  "Visit every link whose anchor text matches ANCHOR-REGEX, at most once each.
 MATCH-GROUP-NUMBER is the group of ANCHOR-REGEX that is the anchor text;
 it defaults to 0.  Matches that are not links are skipped."
   (interactive (browse-url-regex-args "Anchor text regexp"))

@@ -12,6 +12,8 @@
 ;; Now run as many of the following as desired.
 ;; (tags-conflict-resolve)
 ;; (tags-conflict-resolve-annotation-lines)
+;; (tags-conflict-resolve-method-signature)
+;; (tags-conflict-resolve-equals-method-conflict)
 
 ;; When not using a tags table:
 ;; (conflict-resolve)
@@ -19,9 +21,7 @@
 ;; (resolve-annotatedfor-conflicts)
 ;; (move-cf-imports-to-beginning)
 ;; (resolve-import-conflicts)
-;; (resolve-method-signature)
 ;; (conflict-resolve-empty)
-;; (resolve-equals-method-conflict)
 
 
 ;; Most useful for pulling remote into annotated code, such as the
@@ -225,7 +225,9 @@ The mode-hook might blow away the match-data, in which case first run
   )
 ;; This is appropriate only for the Checker Framework annotated JDK.
 (defun move-cf-imports-from-other-to-before ()
-  "Move Checker Framework imports from HEAD to before the hunk."
+  "Move Checker Framework imports from the other side to before the hunk.
+The other side is the one after the `=======' separator; see
+`move-cf-imports-from-head-to-before' for the HEAD side."
   (interactive)
   (tags-query-replace-noerror
    (concat (grouped
@@ -276,7 +278,7 @@ Two caveats:
 ;;; Resolve version control conflicts in annotations
 ;;;
 
-(defvar annotation-names
+(defconst annotation-names
   (list
    ;; "SuppressWarnings(.*)" intentionally omitted; it should be resolved by hand.
    "CallerSensitive"
@@ -325,7 +327,7 @@ Two caveats:
    "UIType"
    "UsesObjectEquals"
    ))
-(defvar annotation-including-suppresswarnings-names
+(defconst annotation-including-suppresswarnings-names
   (cons "SuppressWarnings(.*)"
         annotation-names))
 

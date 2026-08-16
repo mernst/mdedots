@@ -129,7 +129,9 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
   (diff-clean))
 
 (defun diff-clean-only-files (regex)
-  "Like `diff-clean', but only does the specified files.
+  "Like `diff-clean', but removes only the specified files.
+Removes the files that match the regex; unlike `diff-clean', does not remove
+the files listed in `diff-clean-removed-files'.
 The regex matches the whole filename. It must not start with ^ nor end with $."
   (interactive "sRegex for whole filename (no ^$): ")
   (diff-clean-files (list regex))
@@ -294,11 +296,9 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
 
 (defun diff-clean-imports ()
   "Cleans up a diff to remove changes in import statements.
-Removes some files entirely (see `diff-clean-removed-files').
-Removes trivial diffs, such as hunks or files with empty/no differences.
-Reduces size of diffs with common prefix or suffix.
-The latter two changes are semantics-preserving and are useful after
-editing a diff buffer to remove uninteresting changes."
+Deletes every added or removed line that is a Java or Python import
+statement, then runs `diff-clean'.
+This change is not semantics-preserving."
   (interactive)
   (let ((inhibit-read-only t))
     (save-excursion
