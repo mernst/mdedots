@@ -16,7 +16,7 @@
 ;; The following cl-lib.el functions are compatibly redefined here:
 ;;   [none]
 ;; The following Emacs built-in functions are compatibly redefined here:
-;;   sort
+;;   [none]
 
 
 (provide 'util-clmde)
@@ -40,11 +40,11 @@
 ;;; 5.2 Trigonometric and related functions
 
 (defun signum (x)
-  (cond ((plusp x)
+  (cond ((> x 0)
          1)
         ((zerop x)
          0)
-        ((minusp x)
+        ((< x 0)
          -1)
         (t
          (error "What kind of number is this in signum?"))))
@@ -112,19 +112,23 @@ which case nil is returned."
 ;;       (string-substitute newitem olditem sequence)
 ;;     (error "substitute isn't that good yet.")))
 
-(defmacro string-substitute (newchar oldchar string)
-  "Substitute NEWCHAR for instances of OLDCHAR in STRING.
-NEWCHAR and OLDCHAR are characters."
+(defmacro string-substitute-char (newchar oldchar string)
+  "Return a copy of STRING with NEWCHAR substituted for instances of OLDCHAR.
+STRING is not modified.  NEWCHAR and OLDCHAR are characters."
   `(string-substitute-opt ,newchar
                           (regexp-quote (char-to-string ,oldchar))
                           ,string))
 
 ;; Optimized version.  oldchar-regexp should only match one-character strings.
-(defun string-substitute-opt (newchar oldchar-regexp string)
-  (let ((i -1)
+(defun string-substitute-char-opt (newchar oldchar-regexp string)
+  "Return a copy of STRING with NEWCHAR substituted for matches of OLDCHAR-REGEXP.
+STRING is not modified.  OLDCHAR-REGEXP should only match one-character strings."
+  (let ((result (copy-sequence string))
+        (i -1)
         (case-fold-search nil))
-    (while (setq i (string-match oldchar-regexp string (1+ i) 'inhibit-modify))
-      (aset string i newchar))))
+    (while (setq i (string-match oldchar-regexp result (1+ i) 'inhibit-modify))
+      (aset result i newchar))
+    result))
 
 
 ;;; 4.  Searching sequences for items
@@ -218,19 +222,6 @@ NEWCHAR and OLDCHAR are characters."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 15. Lists
 ;;;
-
-;;; 2. Lists
-
-(defun butlast (list &optional n)
-  "Return a list with the same elements as LIST, excepting the last N elements.
-N defaults to 1.  If LIST has fewer than N elements, NIL is returned."
-  (let ((copied-elts (- (length list) (or n 1)))
-        result)
-    (while (and list (plusp copied-elts))
-      (setq result (cons (car list) result)
-            copied-elts (1- copied-elts)
-            list (cdr list)))
-    (nreverse result)))
 
 ;;; 5. Using lists as sets
 
@@ -353,10 +344,17 @@ beginning and end, of STRING."
 ;;; Strings
 ;;;
 
+(defsubst string-blank-or-nil-p (string-or-nil)
+  "Return non-nil if STRING is nil or contains no non-whitespace characters."
+  (or (not string-or-nil)
+      (string-blank-p string-or-nil)))
+
+;; to remove
+(make-obsolete 'blank-string-p 'string-blank-p "built-in")
+(make-obsolete 'blank-string-or-nil-p 'string-blank-or-nil-p "built-in")
 (defsubst blank-string-p (string)
   "Return non-nil if STRING contains no non-whitespace characters."
-  (string-match "^[ \t\n]*$" string nil 'inhibit-modify))
-
+  (string-match "\\`[ \t\n]*\\'" string nil 'inhibit-modify))
 (defsubst blank-string-or-nil-p (string-or-nil)
   "Return non-nil if STRING is nil or contains no non-whitespace characters."
   (or (not string-or-nil)

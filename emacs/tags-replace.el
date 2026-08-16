@@ -46,24 +46,13 @@ DELIMITED if non-nil means replace only word-delimited matches."
                           (point-max)))))))
 
 (defun tags-replace-regexp (from to &optional case-fold)
-  "Do replacement in all files in the TAGS table, without querying or erring."
+  "Do replacement in all files in the TAGS table, without querying or erring.
+Replace regexp FROM with TO.  CASE-FOLD is as in
+`fileloop-initialize-replace-noquery'; interactively, it is `default',
+which means to obey `case-fold-search'."
   (interactive
-   (let ((common
-	  (query-replace-read-args
-	   (concat "Query replace"
-		   (if current-prefix-arg
-		       (if (eq current-prefix-arg '-) " backward" " word")
-		     "")
-		   " regexp"
-		   (if (use-region-p) " in region" ""))
-	   t)))
-     (list (nth 0 common) (nth 1 common) (nth 2 common)
-	   ;; These are done separately here
-	   ;; so that command-history will record these expressions
-	   ;; rather than the values they had this time.
-	   (use-region-beginning) (use-region-end)
-	   (nth 3 common)
-	   (use-region-noncontiguous-p))))
+   (let ((common (query-replace-read-args "Tags replace regexp" t t)))
+     (list (nth 0 common) (nth 1 common) 'default)))
   (fileloop-initialize-replace-noquery from to (get-all-tags-files) case-fold)
   (condition-case nil
       (fileloop-continue)

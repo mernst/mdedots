@@ -29,9 +29,9 @@
   (package-refresh-contents)
   (dolist (package-name package-activated-list)
     (when (package-installed-p package-name)
-      (unless (ignore-errors                   ;some packages may fail to install
-                (package-reinstall package-name))
-        (warn "Package %s failed to reinstall" package-name)))))
+      (condition-case err                      ;some packages may fail to install
+          (package-reinstall package-name)
+        (error (warn "Package %s failed to reinstall: %s" package-name err))))))
 ;; Running this finally did the trick!
 ;; (package-reinstall-all-activated-packages)
 
@@ -412,7 +412,7 @@
 (make-variable-buffer-local 'inleft-string)
 (autoload 'inleft "~/emacs/inleft" "Comment-out-like utility." t)
 (autoload 'inleft-internal "~/emacs/inleft" "Comment-out-like utility." t)
-(autoload 'uncomment-region "~/emacs/inleft" "Uncomment-out-like utility." t)
+(autoload 'inleft-remove "~/emacs/inleft" "Uncomment-out-like utility." t)
 
 (autoload 'pages-directory "page-ext" "Page handling extensions" t)
 

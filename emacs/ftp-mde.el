@@ -105,7 +105,7 @@
   "Call wget on the URL, downloading the file to the current directory.
 Second argument is ignored but permits use of `browse-url-interactive-arg'."
   (interactive (browse-url-interactive-arg "wget URL: "))
-  (shell-command (concat "wget '" url "'")))
+  (shell-command (concat "wget " (shell-quote-argument url))))
 
 
 (provide 'ftp-mde)
