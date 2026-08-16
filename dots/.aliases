@@ -11,6 +11,16 @@
 
 # shellcheck shell=sh
 
+## Guard against sourcing this file twice in one shell.  Unlike
+## dot_environment_file_read, this variable is deliberately not exported: a
+## child shell inherits no aliases, so a child shell must source this file
+## again.
+if [ -n "${dot_aliases_file_read}" ]; then
+  return
+else
+  dot_aliases_file_read=1
+fi
+
 ###########################################################################
 ### Miscellaneous (categorization appears below)
 ###
