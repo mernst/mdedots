@@ -20,15 +20,17 @@ afs4athena() {
 
   function get_tokens() {
 
-    KRB5CCNAME="/tmp/krb5cc_$UID"
+    # KRB5CCNAME must be exported; kinit and aklog read it from the environment.
+    export KRB5CCNAME="/tmp/krb5cc_$UID"
     kinit -5 "$USER@CSAIL.MIT.EDU"
     aklog -cell csail.mit.edu
 
-    KRB5CCNAME="/tmp/krb5cc_$UID.athena"
+    export KRB5CCNAME="/tmp/krb5cc_$UID.athena"
     kinit -5 "$ATHENA_NAME@ATHENA.MIT.EDU"
     aklog -cell athena
 
-    KRB5CCNAME=/tmp/krb5cc_$UID
+    # Leave the shell using the CSAIL cache, as the help text states.
+    export KRB5CCNAME="/tmp/krb5cc_$UID"
 
   }
 
