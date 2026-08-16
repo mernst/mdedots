@@ -175,8 +175,6 @@ class Page:
     width: float
     height: float
     lines: list = field(default_factory=list)
-    # x coordinates that separate the columns; empty for a single-column page.
-    column_boundaries: list = field(default_factory=list)
 
     def content_lines(self):
         """Return the lines that are text of the document rather than furniture.
@@ -355,11 +353,10 @@ def assign_columns(page):
     right = [line for line in lines if line.xmin > middle]
     spanning = [line for line in lines if line.xmin <= middle <= line.xmax]
     if len(left) >= 4 and len(right) >= 4 and len(spanning) <= max(2, 0.15 * len(lines)):
-        page.column_boundaries = [
-            (max(line.xmax for line in left) + min(line.xmin for line in right)) / 2
-        ]
+        # The x coordinate that separates the two columns.
+        boundary = (max(line.xmax for line in left) + min(line.xmin for line in right)) / 2
         for line in page.lines:
-            line.column = 1 if line.xmin > page.column_boundaries[0] else 0
+            line.column = 1 if line.xmin > boundary else 0
 
 
 def reading_order(pages):
