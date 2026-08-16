@@ -278,7 +278,7 @@ Two caveats:
 ;;; Resolve version control conflicts in annotations
 ;;;
 
-(defvar annotation-names
+(defconst annotation-names
   (list
    ;; "SuppressWarnings(.*)" intentionally omitted; it should be resolved by hand.
    "CallerSensitive"
@@ -327,7 +327,7 @@ Two caveats:
    "UIType"
    "UsesObjectEquals"
    ))
-(defvar annotation-including-suppresswarnings-names
+(defconst annotation-including-suppresswarnings-names
   (cons "SuppressWarnings(.*)"
         annotation-names))
 
