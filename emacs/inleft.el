@@ -38,16 +38,16 @@
 ;; Implementation 1
 
 (defun inleft (&optional beg end)
-  "Inserts a string at the beginning of each line in the region, and
-moves to end of region.  Prompts for string, and remembers it in
+  "Insert a string at the beginning of each line in the region.
+Move to end of region.  Prompt for the string, and remember it in
 the buffer-local variable `inleft-string'."
   (interactive "r")
   (setq inleft-string (read-string "Inleft String:" inleft-string))
   (inleft-internal inleft-string beg end))
 
 (defun inleft-internal (left-string &optional beg end)
-  "Inserts LEFT-STRING at the beginning of each line in the region, and
-moves to end of region.  Not to be called interactively."
+  "Insert LEFT-STRING at the beginning of each line in the region.
+Move to end of region.  Not to be called interactively."
   (save-excursion
     (save-restriction
       ;; Should I instead use the beginning of the line containing beg,
@@ -63,8 +63,8 @@ moves to end of region.  Not to be called interactively."
 ;; This is nicer than kill-rectangle in that it checks what it's deleting.
 ;; Bug: this advances point by one line.
 (defun inleft-remove ()
-  "Deletes a string from the beginning of each line in the region.
-Prompts for string, and remembers it in the variable `inleft-string'."
+  "Delete a string from the beginning of each line in the region.
+Prompt for the string, and remember it in the variable `inleft-string'."
   (interactive)
   (setq inleft-string (read-string "Uncomment String:" inleft-string))
   (let ((inleft-string-len (length inleft-string))
