@@ -3,6 +3,10 @@
 
 # check-http-rewriting URL1 URL2 ensures that URL1 rewrites to URL2
 
+use strict;
+use English;
+$WARNING = 1;
+
 my $goal = "http://homes.cs.washington.edu/~mernst/";
 for my $base ("people.csail.mit.edu/people/mernst",
               "people.csail.mit.edu/~mernst",
