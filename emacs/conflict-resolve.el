@@ -998,19 +998,12 @@ Use this with care."
 In the result, the lines are sorted."
   (save-match-data
     (with-temp-buffer
-        (insert lines1)
+      (insert lines1)
       (insert lines2)
       (delete-duplicate-lines (point-min) (point-max))
       (sort-lines nil (point-min) (point-max))
       (buffer-string))))
 ;; (sorted-non-duplicate-lines "a\nc\nd\n" "d\ne\nb\nd\n")
-
-
-(defun tags-query-replace-noerror (from to &optional delimited)
-  "Like `tags-query-replace', but does not throw user-error when done."
-  (condition-case nil
-      (tags-query-replace from to delimited)
-    (user-error nil)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

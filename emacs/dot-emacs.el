@@ -254,28 +254,6 @@ WSL1 reports \"-Microsoft\" in the output of `uname -a', WSL2 reports
   ;; (substitute-in-file-name "${HOME}/foo")
   )
 
-;; UW CSE-specific
-(defun update-conf-mode-hook ()
-  "Run the createcal program after its input files have been edited."
-  ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
-  (let ((filename (and buffer-file-name (file-truename buffer-file-name))))
-    (if (and filename
-             (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename nil 'inhibit-modify)
-             (not (string-match "/503/17sp/" filename nil 'inhibit-modify)))
-        (add-hook 'after-save-hook 'run-createcal nil 'local))))
-;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
-(add-hook 'conf-mode-hook 'update-conf-mode-hook)
-
-(defun run-createcal ()
-  "Run external program createcal in the parent directory."
-  (interactive)
-  (shell-command "cd `realpath ..` && createcal")
-  ;; Show output if there is any (it will all be error output)
-  (let ((output-buffer (get-buffer "*Shell Command Output*")))
-    (if (and output-buffer
-             (> (buffer-size output-buffer) 0))
-        (pop-to-buffer output-buffer))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Path
