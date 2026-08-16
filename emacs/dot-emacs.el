@@ -51,7 +51,6 @@ the value of the last one, or nil if there are none."
   (require 'vc-annotate)
   (require 'smerge-mode)
   (require 'rg-result nil t)
-  (require 'file-comparison)
   (require 'diff-clean)
   (require 'conflict-resolve)
   (require 'dbus)
@@ -203,7 +202,7 @@ the value of the last one, or nil if there are none."
 
 (defun windows-convert-homedir (string)
   (if (and string
-           (string-match "^\\(\$HOME\\|\$(HOME)\\|\${HOME}\\|~\\|~mernst\\)\\($\\|/\\)"
+           (string-match "^\\(\\$HOME\\|\\$(HOME)\\|\\${HOME}\\|~\\|~mernst\\)\\($\\|/\\)"
                          string))
       (concat "e:/home/" (substring string (match-end 0)))
     string))
@@ -263,8 +262,10 @@ the value of the last one, or nil if there are none."
   (interactive)
   (shell-command "cd `realpath ..` && createcal")
   ;; Show output if there is any (it will all be error output)
-  (if (bufferp "*Shell Command Output*")
-      (pop-to-buffer "*Shell Command Output*")))
+  (let ((output-buffer (get-buffer "*Shell Command Output*")))
+    (if (and output-buffer
+             (> (buffer-size output-buffer) 0))
+        (pop-to-buffer output-buffer))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -707,9 +708,12 @@ After running this, run from the shell:  print-mail bulk." t)
 
 
 ;; Prevent point from entering the prompt.
+;; `plist-put' on a copy, rather than appending, so that re-loading this file
+;; does not add another copy of the property.
 (setq minibuffer-prompt-properties
-      (nconc minibuffer-prompt-properties
-             '(point-entered minibuffer-avoid-prompt)))
+      (plist-put (copy-sequence minibuffer-prompt-properties)
+                 'cursor-intangible t))
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
 ;; Small packages
 
@@ -1008,8 +1012,12 @@ After running this, run from the shell:  print-mail bulk." t)
   "Add RET to the search string and search."
   (interactive)
   (isearch-process-search-char ?\C-j))
-(setq isearch 'region) ; change highlighting from unreadable magenta to yellow
-(setq isearch-overlay nil)    ; force it to be recreated, lest it be reused
+;; Change highlighting from unreadable magenta to yellow.
+(set-face-background 'isearch "yellow")
+(set-face-foreground 'isearch "black")
+;; The other matches, which isearch is not currently at, get a paler yellow.
+(set-face-background 'lazy-highlight "khaki")
+(set-face-foreground 'lazy-highlight "black")
 
 
 ;; I press these keys too often, and I rarely use the functions.
@@ -1311,15 +1319,18 @@ After running this, run from the shell:  print-mail bulk." t)
   "Create TAGS file for all files under current directory."
   (interactive "DDirectory: ")
   (shell-command
-   (format "%s -f TAGS -e -R %s" path-to-ctags (directory-file-name dir-name))))
+   (format "%s -f TAGS -e -R %s"
+           path-to-ctags
+           (shell-quote-argument (directory-file-name dir-name)))))
 
 (setq grep-command "grep -n -i ")       ; add case-insensitivity
 
 
 (defun dont-indent-after-signature (inserted-char)
   (if (and (= ?\n inserted-char)
-           (looking-back "\n *-?Mike\n"
-                         (1- (save-excursion (beginning-of-line) (point)))))
+           ;; The limit must be far enough back to include the newline that
+           ;; precedes the signature line.
+           (looking-back "\n *-?Mike\n" (line-beginning-position -1)))
       'no-indent))
 (add-hook 'electric-indent-functions 'dont-indent-after-signature)
 
@@ -1737,8 +1748,12 @@ This can make comparisons easier."
     (replace-regexp-noninteractive "^\\([^ :]+:\\)[0-9]+" "\\1")))
 
 
-;; Dramatically improve performance in Emacs 24
-(setq-default bidi-display-reordering nil)
+;; Speed up redisplay by not supporting bidirectional display.
+;; The cost is that paragraphs of right-to-left text (Arabic, Hebrew) are laid
+;; out left-to-right, and bracket pairs in bidirectional text may be mirrored
+;; incorrectly.
+(setq-default bidi-paragraph-direction 'left-to-right)
+(setq-default bidi-inhibit-bpa t)
 
 
 ;; Set fonts in .Xresources, not here.  A form such as

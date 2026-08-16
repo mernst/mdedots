@@ -266,7 +266,7 @@ it is being applied to the file under point."
 
 (defun find-grep-dired-and-replace (dir old-re new)
   "Run `find-grep-dired' then `dired-do-query-replace-regexp'."
-  (interactive)
+  (interactive "DFind-grep in directory: \nsSearch for regexp: \nsReplace with: ")
   (find-grep-dired dir old-re)
   ;; Need to wait for find-grep-dired to complete
   (y-or-n-p "Wait until find-grep completes, then press y ")
