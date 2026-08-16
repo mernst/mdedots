@@ -35,7 +35,7 @@ PATH=.:/homes/gws/mernst/bin/Linux-i686:/homes/gws/mernst/bin/share:/homes/gws/m
 ###
 ### Every minute
 ###
-* * * * *	/bin/bash /path/to/batch/drop_caches.sh >> /var/log/syslog 2>&1
+# * * * * *	/bin/bash $HOME/bin/share/kswapd-drop-caches
 ###
 ### Hourly
 ###
