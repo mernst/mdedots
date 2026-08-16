@@ -9,6 +9,10 @@
 
 ;;; Code:
 
+;; Required at run time, not just at compile time, because `cl-oddp',
+;; `cl-plusp', and `cl-minusp' are inlined only when this file is compiled.
+(require 'cl-lib)			; for `cl-loop', `cl-oddp', `cl-plusp', `cl-minusp'
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Bug fixes
@@ -325,7 +329,7 @@ The value is actually the element of LIST whose car is (`string-equal' to) ELT."
   (setq elt (downcase elt))
   (let (result)
     (while list
-      (if (string-equal elt (downcase (cdr (car list))))
+      (if (string-equal elt (downcase (car (car list))))
           (setq result (car list)
                 list nil)
         (setq list (cdr list))))
@@ -414,8 +418,8 @@ FUN should be a funcallable object or nil."
 ;; was maybe-funcall
 (defmacro funcall-or-nil (fun &rest args)
   "If FUN is non-nil, apply it to ARGS.  Otherwise return nil.
-FUN should be a funcallable object or nil.  Compare to `funcall-maybe'."
-  `(funcall-maybe-default nil ,fun ,@args))
+FUN should be a funcallable object or nil.  Compare to `funcall-or-arg'."
+  `(funcall-or-default nil ,fun ,@args))
 (put 'funcall-or-nil 'edebug-form-spec '(function &rest form))
 
 ;; Obviously this could be (easily) generalized to take a list of integers
@@ -796,7 +800,7 @@ Optional fifth argument OBJECT is the string or buffer containing the text."
       (if (eq prev-value old-value)
           (if new-value
               (put-text-property start next-change prop new-value object)
-            (remove-text-properties start next-change '(prop 'ignore) object)))
+            (remove-text-properties start next-change (list prop 'ignore) object)))
       (setq start next-change))))
 
 ;; This could easily be made to use a real stack.
@@ -847,8 +851,7 @@ The old property is returned."
     (if (not (eq old-list t))
         (progn
           (while new-elts
-            (if (not (or (eq old-list t)
-                         (memq prop old-list)))
+            (if (not (memq (car new-elts) new-list))
                 (setq new-list (cons (car new-elts) new-list)))
             (setq new-elts (cdr new-elts)))
           (put-text-property pos (1+ pos) prop new-list object)))

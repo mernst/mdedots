@@ -1064,22 +1064,14 @@
 ;;    (mew-summary-delete-one 'nodisplay))
 ;; Unfortunately, mew-summary-mark-regexp reads the regex interactively; it is not passed as an argument.  (After that, I would have run mew-summary-mark-delete.)
 
-;; no need to `set-buffer` if this is called from mew-message-hook.
-(defun view-it-on-github ()
-  "If the message contains \"view it on GitHub\", go to the linked URL."
-  (interactive)
-  (save-excursion
-    (browse-url-once-via-text-properties "view it on GitHub")))
-;; TO USE automatically:  (add-hook 'mew-message-hook #'view-it-on-github)
-
-
 (defun view-it-on-github ()
   "Browse to a link with anchor text \"view it on GitHub\"."
   (interactive)
   (mew-summary-msg-or-part
    (save-excursion
      (set-buffer (mew-buffer-message))
-     (browse-url-via-text-properties "view it on GitHub"))))
+     (browse-url-once-via-text-properties "view it on GitHub"))))
+;; TO USE automatically:  (add-hook 'mew-message-hook #'view-it-on-github)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
