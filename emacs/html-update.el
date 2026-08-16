@@ -7,6 +7,7 @@
 (autoload 'bdiff-revert-buffer-maybe "bdiff")
 
 (defun update-html-mode-hook ()
+  "Arrange to run `run-html-update-toc' when the current buffer is saved."
   (add-hook 'after-save-hook 'run-html-update-toc nil 'local))
 (add-hook 'html-mode-hook 'update-html-mode-hook)
 

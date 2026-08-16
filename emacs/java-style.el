@@ -693,15 +693,15 @@ The description is everything but the block tags (such as @param and @return)."
 ;;; Moving @Nullable annotations from declaration position to type position
 ;;;
 
-;; If @Nullable annotations have been written in declaration position,
-;; this Emacs code moves them to type annotation position.
-;; I have not tried it within the function, only evaluating each form at the top level.
-
 (defconst modifiers-plus-space-regexp
   "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)"
   "Regexp matching one or more Java modifiers, each followed by a space.")
 
 (defun move-nullable-to-type-annotation-position ()
+  "Move @Nullable annotations from declaration position to type position.
+Operates on the files in the current tags table.
+This command has only been exercised by evaluating each of its forms at the
+top level, not by running the command itself."
   (interactive)
 
   ;; This handles @Nullable on its own line

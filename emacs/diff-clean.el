@@ -219,6 +219,11 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
 
 
 (defun diff-realign-hunks ()
+  "Shift a run of added or deleted lines earlier in the diff, when possible.
+A run may be shifted when it contains a blank line and its lines after that
+blank line are identical to the context lines that precede the run.  The
+shifted run ends at the blank line, which groups the changed lines more
+meaningfully.  Operates on the current buffer."
   ;; TODO: also do the reverse, moving lines from beginning to end of hunk.
   (save-excursion
     (goto-char (point-min))
