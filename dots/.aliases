@@ -118,7 +118,7 @@ alias printdates='(cd && checkdates p \!*; latex adates > /dev/null; lpr -d adat
 alias psaddresses3col='(cd ~/private && \rm -f addr.tex; addrfilter < addresses.tex > addr.tex; latex \\batchmode \\input rolo3col > /dev/null; dvips -o addresses.ps rolo3col.dvi; \rm rolo3col.dvi rolo3col.aux rolo3col.log addr.tex)'
 alias psaddresses4col='(cd ~/private && \rm -f addr.tex; addrfilter < addresses.tex > addr.tex; latex \\batchmode \\input rolo4col > /dev/null; dvips -o addresses.ps rolo4col.dvi; \rm rolo4col.dvi rolo4col.aux rolo4col.log addr.tex)'
 alias psaddresses='psaddresses4col'
-alias printaddresses='(cd ~/random && psaddresses; lpr addresses.ps; \rm -f addresses.ps)'
+alias printaddresses='(cd ~/private && psaddresses && lpr addresses.ps && \rm -f addresses.ps)'
 
 ## Old versions, but now I can directly give the size.
 ## For presentations (and x60s)
