@@ -398,7 +398,6 @@ ced() { ced1f "$@"; }
 ced2f() {
   file="$1"
   ced1 "$@"
-  psnup -2 -d "$file".ps "$file"-2up.ps
   pdfjam --nup 2x1 --landscape --suffix nup "$file".pdf
 }
 ced2() { ced2f "$@"; }
