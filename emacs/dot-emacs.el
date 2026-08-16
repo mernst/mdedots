@@ -1588,9 +1588,12 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 
 
 ;; Garbage-collect whenever switching away from Emacs.
+(defun after-focus-change-function--garbage-collect ()
+  "Garbage-collect when no frame has focus."
+  (unless (frame-focus-state) (garbage-collect)))
 (add-function :after
               after-focus-change-function
-              #'(lambda () (unless (frame-focus-state) (garbage-collect))))
+              #'after-focus-change-function--garbage-collect)
 
 
 ;; Default nil, which means never wait.
