@@ -322,8 +322,8 @@ if [ "$DEBUGLOGIN" ]; then command -v javac; fi
 ### Processes
 ###
 
-# At UW CSE (that is, when directory /homes/gws/mernst exists), only run syncthing on tricycle.cs.
-if [ ! -d /homes/gws/mernst ] || [ "$(hostname -s)" = "tricycle" ]; then
+# At UW CSE (that is, when directory /homes/gws/mernst exists), only run syncthing on bicycle.cs.
+if [ ! -d /homes/gws/mernst ] || [ "$(hostname -s)" = "bicycle" ]; then
   if command -v syncthing > /dev/null 2>&1; then
     syncthing_running=1
     # Prefer syncthing's REST API, which also detects a process that exists but is unresponsive.
