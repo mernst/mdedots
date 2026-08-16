@@ -9,6 +9,7 @@
 
 (eval-when-compile
   (require 'cl-lib)			; for `cl-assert'
+  (require 'etags)			; for `tags-revert-without-query'
   (require 'thingatpt)
   (require 'man)
   )
@@ -345,9 +346,10 @@ With just C-u prefix argument, prompt for starting date and days."
                                         ical-business-hours))))))
     (let ((old-point (point)))
       ;; (message "java %s" (cons "plume.ICalAvailable" ical-args))
-      (insert (apply #'call-process "java" nil t nil (append (list "-cp" (substitute-in-file-name "$HOME/java/plume-lib/icalavailable/build/libs/icalavailable-all.jar") "-Dical4j.parsing.relaxed=true" "-Dical4j.parsing.relaxed=true" "org.plumelib.icalavailable.ICalAvailable") ical-args)))
-      (if (or (= (char-before) 0) (= (char-before) 1) (= (char-before) 255))
-          (delete-char -1))
+      ;; DESTINATION is t, so the subprocess output is inserted at point.
+      (let ((status (apply #'call-process "java" nil t nil (append (list "-cp" (substitute-in-file-name "$HOME/java/plume-lib/icalavailable/build/libs/icalavailable-all.jar") "-Dical4j.parsing.relaxed=true" "-Dical4j.parsing.relaxed=true" "org.plumelib.icalavailable.ICalAvailable") ical-args))))
+        (if (not (equal status 0))
+            (message "ICalAvailable exited with status %s" status)))
       ;; Clean up an irritating warning message.
       (save-excursion
         (goto-char old-point)
@@ -983,27 +985,11 @@ Not guaranteed to work in all cases."
   (shell-command (concat "rolo " (quote-for-shell-command string))))
 
 (defun quote-for-shell-command (arguments)
-  ;; Should split arguments then call quote-word-for-shell-command on each,
-  ;; but only if the string contains zero or one single-quote and zero or
-  ;; one double-quote character.
-  ;; The reason is to respect any quotation marks that the user inserted
-  ;; intentionally.
-  arguments
-  )
-
-;;
-(defun quote-word-for-shell-command (string)
-  (cond ((and (string-match "'" string nil 'inhibit-modify)
-              (not (string-match "\"" string nil 'inhibit-modify)))
-         (setq string (concat "\"" string "\"")))
-        ((and (string-match "\"" string nil 'inhibit-modify)
-              (not (string-match "\'" string nil 'inhibit-modify)))
-         (setq string (concat "'" string "'")))
-        ((and (string-match "\"" string nil 'inhibit-modify)
-              (not (string-match "\'" string nil 'inhibit-modify)))
-         (error (concat "cannot quote argument for shell command because string contains both single and double quotes: " string)))
-        (t
-         string)))
+  "Return ARGUMENTS, a string of shell arguments, quoted for the shell.
+ARGUMENTS is split into words, respecting any quotation marks that the
+user inserted intentionally, and each word is quoted individually.
+Signals an error if the quotation marks in ARGUMENTS are unbalanced."
+  (mapconcat #'shell-quote-argument (split-string-and-unquote arguments) " "))
 
 (defun quotefind (string)
   "Find quotations matching words in STRING."
@@ -1183,6 +1169,7 @@ If called interactively, prompt for which index."
 ;; (autoload 'tags-replace "tags-replace"
 ;;   "Do `replace-regexp' of FROM with TO on all files listed in tags table." t)
 ;; (define-key esc-map "," 'mde-tags-loop-continue) ; was tags-loop-continue
+(defvar tags-find-related-names-functions) ; defined in etags-mde.el
 (setq tags-find-related-names-functions '(mit-scheme-tags-find-related-names))
 (setq tags-revert-without-query t)
 (setq tags-add-tables nil)              ; always use just one TAGS table at a time

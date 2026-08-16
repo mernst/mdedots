@@ -9,24 +9,15 @@
 
 ;;; Code:
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Bug fixes
-;;;
-
-;; String-equal permits symbols, whose print names are used instead.  One
-;; would hope that it would err when passed nil, or at least that it
-;; wouldn't return t for (string-equal () "nil").  Therefore, it should be
-;; avoided.
-;; However, sometimes it's really the right thing to use, if we know that one
-;; or both arguments aren't symbols.  How does the byte-compiler treat it,
-;; compared to equal?  (That is, which is more efficient?  Probably equal.)
-(make-obsolete 'string-equal 'equal "string-equal does surprising conversions")
+;; Required at run time, not just at compile time, because `cl-oddp',
+;; `cl-plusp', and `cl-minusp' are inlined only when this file is compiled.
+(require 'cl-lib)			; for `cl-loop', `cl-oddp', `cl-plusp', `cl-minusp'
 
 
-;; You usually want forward-line, not next-line.
-(make-obsolete
- 'next-line 'forward-line "forward-line is easier to use and more reliable than next-line")
+;; This file marks no standard Emacs function as obsolete; it is a library,
+;; and a `require' of it should not change how the rest of Emacs behaves.
+;; The `make-obsolete' calls for `string-equal', `next-line',
+;; `replace-string', and `replace-regexp' are in dot-emacs.el.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -325,7 +316,7 @@ The value is actually the element of LIST whose car is (`string-equal' to) ELT."
   (setq elt (downcase elt))
   (let (result)
     (while list
-      (if (string-equal elt (downcase (cdr (car list))))
+      (if (string-equal elt (downcase (car (car list))))
           (setq result (car list)
                 list nil)
         (setq list (cdr list))))
@@ -414,8 +405,8 @@ FUN should be a funcallable object or nil."
 ;; was maybe-funcall
 (defmacro funcall-or-nil (fun &rest args)
   "If FUN is non-nil, apply it to ARGS.  Otherwise return nil.
-FUN should be a funcallable object or nil.  Compare to `funcall-maybe'."
-  `(funcall-maybe-default nil ,fun ,@args))
+FUN should be a funcallable object or nil.  Compare to `funcall-or-arg'."
+  `(funcall-or-default nil ,fun ,@args))
 (put 'funcall-or-nil 'edebug-form-spec '(function &rest form))
 
 ;; Obviously this could be (easily) generalized to take a list of integers
@@ -750,8 +741,7 @@ This will not disable any messages from built-in C subroutines."
   )
 
 (defun forward-line-wrapping (arg)
-  "Like forward-line, but wrap around to the beginning of the buffer if
-it encounters the end."
+  "Like `forward-line', but wrap around at the end or beginning of the buffer."
   (interactive "p")
   (let ((to-go (forward-line arg)))
     (cond ((or (cl-plusp to-go) (not (bolp)))
@@ -797,7 +787,7 @@ Optional fifth argument OBJECT is the string or buffer containing the text."
       (if (eq prev-value old-value)
           (if new-value
               (put-text-property start next-change prop new-value object)
-            (remove-text-properties start next-change '(prop 'ignore) object)))
+            (remove-text-properties start next-change (list prop 'ignore) object)))
       (setq start next-change))))
 
 ;; This could easily be made to use a real stack.
@@ -848,8 +838,7 @@ The old property is returned."
     (if (not (eq old-list t))
         (progn
           (while new-elts
-            (if (not (or (eq old-list t)
-                         (memq prop old-list)))
+            (if (not (memq (car new-elts) new-list))
                 (setq new-list (cons (car new-elts) new-list)))
             (setq new-elts (cdr new-elts)))
           (put-text-property pos (1+ pos) prop new-list object)))
@@ -1380,7 +1369,6 @@ If optional arg COUNT is specified, return the COUNTth occurrence from the end."
   "Like `replace-string', but doesn't modify mark or the mark ring."
   (while (search-forward from-string nil t)
     (replace-match to-string nil t)))
-(make-obsolete 'replace-string 'replace-string-noninteractive "Don't call replace-string interactively")
 
 (defun replace-regexp-noninteractive (regexp replacement &optional delimited)
   "Like `replace-regexp', but doesn't modify mark or the mark ring."
@@ -1388,7 +1376,6 @@ If optional arg COUNT is specified, return the COUNTth occurrence from the end."
       (setq regexp (concat "\\\\<" regexp "\\\\>")))
   (while (re-search-forward regexp nil t)
     (replace-match replacement)))
-(make-obsolete 'replace-regexp 'replace-regexp-noninteractive "Don't call replace-regexp interactively")
 
 ;;; Are these actually necessary?
 ;; (defun delete-all-matching-lines (regexp)
