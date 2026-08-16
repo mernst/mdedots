@@ -23,7 +23,7 @@ compile: compile-without-mew
 
 .PHONY: javadoc-index
 javadoc-index:
-	${INV}/scripts/javadoc-index-to-alist > $HOME/.javadoc-index.el
+	${INV}/scripts/javadoc-index-to-alist > ${HOME}/.javadoc-index.el
 
 clean:
 	rm -f *.elc
