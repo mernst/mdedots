@@ -490,7 +490,7 @@ The description is everything but the block tags (such as @param and @return)."
 ;; Search for:
 ;; <.*> .* = new .*<.+>
 ;; search for:
-;; new [A-Za-s0-9_]+<.+>
+;; new [A-Za-z0-9_]+<.+>
 (defun use-java-diamond-operator ()
   "Change code to use Java's diamond operator."
   (interactive)
@@ -499,7 +499,7 @@ The description is everything but the block tags (such as @param and @return)."
   (tags-replace-regexp "\\(Set<\\([^>]*\\)> [A-Za-z0-9_]+ = new \\(\\(Linked\\)?Hash\\|Tree\\)Set\\)<\\2>" "\\1<>")
   (tags-replace-regexp "\\(Vector<\\([^>]*\\)> [A-Za-z0-9_]+ = new Vector\\)<\\2>" "\\1<>")
   (tags-replace-regexp "\\b\\(\\([A-Za-z0-9_, ]+\\)\\(<.*>\\) [A-Za-z0-9_]+ = new \\2\\)\\3" "\\1<>")
-  (tags-replace-regexp "\\b\\(new [A-Za-s0-9_, ]+\\)<.+>(" "\\1<>(")
+  (tags-replace-regexp "\\b\\(new [A-Za-z0-9_, ]+\\)<.+>(" "\\1<>(")
   )
 
 
