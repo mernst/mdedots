@@ -33,9 +33,10 @@ Do not use anchoring characters ^ and $.
 In many cases, using diff's --exclude or --exclude-from is better, but those
 only match basenames whereas this handles pathnames.")
 
-;; [@BIO\ncd] is what can start a line at the end of a hunk
-(defvar empty-diff-hunk-regexp-1 "^@.*@\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BIO\ncd]\\|\\'\\|--- \\)")
-(defvar empty-diff-hunk-regexp-2 "^@@ .* @@ .*\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BIO\ncd]\\|\\'\\|--- \\)")
+;; The header of a hunk is either a line ending in "@" (as in "@@ -1,2 +1,2 @@")
+;; or a line of the form "@@ ... @@ ..." whose trailing text names the enclosing
+;; function.  [@BIO\ncd] is what can start a line at the end of a hunk.
+(defvar empty-diff-hunk-regexp "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BIO\ncd]\\|\\'\\|--- \\)")
 ;; It is important to set case-fold-search to nil when using `empty-diff-filesection-regexp'.
 (defvar empty-diff-filesection-regexp
   (concat
@@ -211,8 +212,7 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
 (defun diff-clean-empty-parts ()
   "Remove empty parts of the file: empty hunks and empty file sections."
   (interactive)
-  (replace-all-occurrrences-iteratively empty-diff-hunk-regexp-1 "\\2")
-  (replace-all-occurrrences-iteratively empty-diff-hunk-regexp-2 "\\2")
+  (replace-all-occurrrences-iteratively empty-diff-hunk-regexp "\\2")
   (replace-all-occurrrences-iteratively empty-diff-filesection-regexp "\\1"))
 
 
