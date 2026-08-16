@@ -480,11 +480,6 @@ The description is everything but the block tags (such as @param and @return)."
 (defun generify-java ()
   "Find Java code that should be made generic."
   (interactive)
-  ;; All the patterns must be alternatives of a single regexp: each call to
-  ;; `tags-search' discards any file loop that a previous call set up, so only
-  ;; the last call would be usable.
-  ;; Binding `case-fold-search' would have no effect; `tags-search' passes
-  ;; `tags-case-fold-search' to `fileloop-initialize-search'.
   (let ((tags-case-fold-search nil))
     (tags-search
      (concat
