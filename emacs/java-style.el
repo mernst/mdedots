@@ -98,9 +98,9 @@ statement.  Does replacement in any file in a currently-visited tags table."
 
   ;; Find if/for statements that end with a close paren, which suggests the
   ;; body is on the next line.  Also else statements that end a line.
-  (let ((tags-regex
+  (let ((tags-regexp
          "^ *\\(?:}? else *\\)?\\(\\(if\\|for\\|while\\) (.*)\\|}? else\\( //.*\\)?\\)\\(.*;\\)?$"))
-    (tags-search tags-regex)
+    (tags-search tags-regexp)
     (if java-style-debug
         (message "match-data after tags-search: %s" (match-data)))
     (while t
@@ -122,7 +122,7 @@ statement.  Does replacement in any file in a currently-visited tags table."
         ;; match-data set??  Do looking-at to re-set match-data.
         (beginning-of-line)
         ;; Match might not have started at beginning of line
-        ;; (if (not (looking-at tags-regex))
+        ;; (if (not (looking-at tags-regexp))
         ;;          (error "This can't happen"))
 
         (if java-style-debug
@@ -480,17 +480,19 @@ The description is everything but the block tags (such as @param and @return)."
 (defun generify-java ()
   "Find Java code that should be made generic."
   (interactive)
-  (let ((case-fold-search nil))
-    (tags-search "^[^\n*/]*[^_.\"]\\b\\(Iterator\\|Collection\\|Set\\|List\\|Enumeration\\) [^=\"+:]"))
-  ;; Look for casts after calling "next() or "getNext()":
-  (tags-search "(.+) *[a-zA-Z0-9_]+\\.\\(getNext\\|next\\|get\\) ?("))
+  (let ((tags-case-fold-search nil))
+    (tags-search
+     (concat
+      "^[^\n*/]*[^_.\"]\\b\\(?:Iterator\\|Collection\\|Set\\|List\\|Enumeration\\) [^=\"+:]"
+      ;; Casts after calling "next()" or "getNext()":
+      "\\|(.+) *[a-zA-Z0-9_]+\\.\\(?:getNext\\|next\\|get\\) ?("))))
 
 
 ;; To find more patterns to add:
 ;; Search for:
 ;; <.*> .* = new .*<.+>
 ;; search for:
-;; new [A-Za-s0-9_]+<.+>
+;; new [A-Za-z0-9_]+<.+>
 (defun use-java-diamond-operator ()
   "Change code to use Java's diamond operator."
   (interactive)
@@ -499,7 +501,7 @@ The description is everything but the block tags (such as @param and @return)."
   (tags-replace-regexp "\\(Set<\\([^>]*\\)> [A-Za-z0-9_]+ = new \\(\\(Linked\\)?Hash\\|Tree\\)Set\\)<\\2>" "\\1<>")
   (tags-replace-regexp "\\(Vector<\\([^>]*\\)> [A-Za-z0-9_]+ = new Vector\\)<\\2>" "\\1<>")
   (tags-replace-regexp "\\b\\(\\([A-Za-z0-9_, ]+\\)\\(<.*>\\) [A-Za-z0-9_]+ = new \\2\\)\\3" "\\1<>")
-  (tags-replace-regexp "\\b\\(new [A-Za-s0-9_, ]+\\)<.+>(" "\\1<>(")
+  (tags-replace-regexp "\\b\\(new [A-Za-z0-9_, ]+\\)<.+>(" "\\1<>(")
   )
 
 
@@ -508,24 +510,23 @@ The description is everything but the block tags (such as @param and @return)."
 ;;;
 
 
-(defun fix-java-for-loops ()
-  "Convert uses of iterators into new-style for loops."
-  (interactive)
-  ;; Body copied from tags-query-replace.
-  (setq tags-loop-scan
-	`(find-candidate-old-for-loop)
-	tags-loop-operate `(progn
-			     (message "performing at %s" (point))
-			     (perform-replace old-for-loop-regexp
-					      for-loop-replacement
-					      t t nil)
-			     t))
-  (fileloop-continue t))
-
 (defvar old-for-loop-regexp
   "\\bfor (Iterator<\\(.*\\)> +\\(\\w+\\) *= *\\(.*\\)\\.iterator() *; *\n?.*; *)[ \n]*\\(\\){\n *\\(\\1 .*[^ ]\\) *= *\\2\\.next();")
 (defvar for-loop-replacement
   "for (\\5 : \\3) {")
+
+(defun fix-java-for-loops ()
+  "Convert uses of iterators into new-style for loops."
+  (interactive)
+  (fileloop-initialize
+   (get-all-tags-files)
+   #'find-candidate-old-for-loop
+   (lambda ()
+     (message "performing at %s" (point))
+     (perform-replace old-for-loop-regexp for-loop-replacement t t nil)
+     ;; Non-nil means proceed to the next file rather than rescanning this one.
+     t))
+  (fileloop-continue))
 
 ;; These are for debugging.
 ;; (re-search-forward old-for-loop-regexp)
@@ -692,6 +693,10 @@ The description is everything but the block tags (such as @param and @return)."
 ;;; Moving @Nullable annotations from declaration position to type position
 ;;;
 
+(defconst modifiers-plus-space-regexp
+  "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)"
+  "Regexp matching one or more Java modifiers, each followed by a space.")
+
 (defun move-nullable-to-type-annotation-position ()
   "Move @Nullable annotations from declaration position to type position.
 Operates on the files in the current tags table.
@@ -699,21 +704,18 @@ This command has only been exercised by evaluating each of its forms at the
 top level, not by running the command itself."
   (interactive)
 
-  (defvar modifers-plus-space-regex)
-  (setq modifers-plus-space-regexp "\\(\\(?:abstract \\|final \\|private \\|protected \\|public \\|static \\|transient \\|volatile \\|<[^>]*> \\)+\\)")
-
   ;; This handles @Nullable on its own line
   (tags-query-replace
    (concat "\\(
    *\\)@Nullable\\(\\(?:
    *@\\(?:Override\\|CanIgnoreReturnValue\\|SuppressWarnings([^)]*)\\)\\)*\\)\\(
-   *\\)" modifers-plus-space-regex)
+   *\\)" modifiers-plus-space-regexp)
    "\\2\\3\\4@Nullable ")
 
 
   ;; This handles @Nullable on the same line as other code
   (tags-query-replace
-   (concat "@Nullable " modifers-plus-space-regex)
+   (concat "@Nullable " modifiers-plus-space-regexp)
    "\\1@Nullable ")
 
   ;; Swap order of two declarations, when the @Nullable will stay on its own line
@@ -923,9 +925,14 @@ Write the result to a file named ...Test2.java."
                      ".java" "Test2.java"
                      (buffer-file-name)))))
       (make-directory (file-name-directory outfile) t)
-      (condition-case nil
+      (condition-case err
           (write-file outfile)
-        (t nil)))))
+        (error
+         ;; The buffer's contents have been destructively rewritten, but the
+         ;; buffer still visits the original .java file.  Restore the contents
+         ;; so that a later save cannot destroy the source file.
+         (revert-buffer t t)
+         (error "Could not write %s: %s" outfile (error-message-string err)))))))
 
 (defun java-files-to-test-files ()
   "Convert every Java file into a file of empty tests for the public methods.

@@ -20,5 +20,6 @@
       (progn
         ;; I would like to avoid the "(Shell command succeeded with no output)"
         ;; message.
-        (shell-command (concat "html-update-toc --quiet " (buffer-file-name)))
+        (shell-command (concat "html-update-toc --quiet "
+                               (shell-quote-argument (buffer-file-name))))
 	(bdiff-revert-buffer-maybe))))
