@@ -72,7 +72,8 @@ fi
 export RIPGREP_CONFIG_PATH="$HOME"/.ripgreprc
 
 # Needed by Emacs on WSL, apparently??  Maybe I need to rebuild Emacs with system's tree-sitter.
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}":"${HOME}"/.local/lib
+# The `:+` avoids an empty leading component, which would mean "the current directory".
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${HOME}/.local/lib"
 
 ###
 ### Shell
