@@ -128,11 +128,8 @@ export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
 # For Snap
 export PATH=/snap/bin:${PATH}
 
-# Java
-# Make PATH consistent with JAVA_HOME
-if [ -n "${JAVA_HOME}" ]; then
-  export PATH=${JAVA_HOME}/bin:${PATH}
-fi
+# PATH entries that depend on variables set in .environment (such as
+# JAVA_HOME and $sdi) appear after .environment is sourced, below.
 
 # Environment variables are inherited by child shells (as are the
 # environment variables like PATH and CLASSPATH that are set based on
@@ -160,7 +157,6 @@ export PATH=$PATH:$HOME/gocode/bin
 export PATH=$PATH:$HOME/go/bin
 
 export PATH=$HOME/class/331/CurrentQtr/staff/bin:$HOME/class/331/CurrentQtr/courseware:$HOME/class/331/CurrentQtr/courseware/common:${PATH}
-export PATH="${PATH}:$sdi/staff/bin:$sdi/courseware:$sdi/courseware/common"
 
 # Mew (Emacs mail reader)
 export PATH=$HOME/emacs/mew/bin:$PATH
@@ -257,6 +253,39 @@ export LD_LIBRARY_PATH=${HOME}/.local/lib/:${LD_LIBRARY_PATH}
 export LD_LIBRARY_PATH=${HOME}/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib:${HOME}/.local/lib
 
 ###########################################################################
+### Environment and functions
+###
+
+### Shell-independent customizations
+
+# .environment is sourced here, before the path cleanup below, because
+# .environment defines variables (such as JAVA_HOME and $sdi) that the
+# remaining PATH entries use.
+
+if [ "$DEBUGLOGIN" ]; then echo "Sourcing .environment"; fi
+if ! [ "$dot_environment_file_read" ]; then # avoid sourcing .environment twice
+  . "$(dirname "${BASH_SOURCE[0]}")/.environment"
+fi
+if [ "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
+
+# Site-specific environment variables (such as PRINTER) are in .bashrc.
+
+###########################################################################
+### Paths that depend on variables set in .environment
+###
+
+# Java
+# Make PATH consistent with JAVA_HOME
+if [ -n "${JAVA_HOME}" ]; then
+  export PATH=${JAVA_HOME}/bin:${PATH}
+fi
+
+# sdi stands for "Software Design and Implementation"; .environment sets it.
+if [ -n "${sdi}" ]; then
+  export PATH="${PATH}:$sdi/staff/bin:$sdi/courseware:$sdi/courseware/common"
+fi
+
+###########################################################################
 ### Clean up the path
 ###
 
@@ -278,20 +307,6 @@ if [ "$DEBUGLOGIN" ]; then echo "path = $PATH"; fi
 if [ "$DEBUGLOGIN" ]; then command -v javac; fi
 
 # LD_LIBRARY_PATH is set in ~/.environment .
-
-###########################################################################
-### Environment and functions
-###
-
-### Shell-independent customizations
-
-if [ "$DEBUGLOGIN" ]; then echo "Sourcing .environment"; fi
-if ! [ "$dot_environment_file_read" ]; then # avoid sourcing .environment twice
-  . "$(dirname "${BASH_SOURCE[0]}")/.environment"
-fi
-if [ "$DEBUGLOGIN" ]; then echo "Sourced .environment"; fi
-
-# Site-specific environment variables (such as PRINTER) are in .bashrc.
 
 ###########################################################################
 ### Processes
