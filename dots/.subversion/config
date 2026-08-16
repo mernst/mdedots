@@ -32,9 +32,7 @@ password-stores = gnome-keyring,kwallet,keychain,gpg-agent
 ### it doesn't invalidate existing passwords.  (To do that, remove
 ### the cache files by hand as described in the Subversion book.)
 # Passwords are cached in ~/.subversion/auth/svn.simple/, encrypted by one of
-# the password stores configured above.  When no password store is available,
-# `store-plaintext-passwords = no` in the `servers` file keeps Subversion from
-# falling back to a cleartext cache, so Subversion prompts instead.
+# the password stores configured above.
 # I only use subversion passwords for remote https servers.  I much prefer
 # to use svn+ssh, and then kerberos or ssh-agent.
 # Subversion ignores only whole-line comments, so no trailing comment here.
