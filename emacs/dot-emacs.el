@@ -381,7 +381,7 @@ WSL1 reports \"-Microsoft\" in the output of `uname -a', WSL2 reports
 
 ;; This appears early so that even if there's an error elsewhere in
 ;; this init file, the autoloaded functions still get defined.
-(load "autoloads-mde.el" nil t)
+(load "autoloads-mde" nil t)
 
 ;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
