@@ -1398,7 +1398,7 @@ After running this, run from the shell:  print-mail bulk." t)
 
 ;; Version control
 
-(defalias 'vc-dired 'vc-directory)
+(defalias 'vc-dired 'vc-dir)
 
 (setq vc-follow-symlinks t)
 
