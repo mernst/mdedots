@@ -1147,11 +1147,6 @@ proposal")
 (advice-add 'shell-command :after #'shell-command--set-diff-mode)
 
 
-(defvar shell-command-auto-browse t
-  "If non-nil, `shell-command' browses to pull request URLs in its output.
-Only text that the shell command itself produced is scanned; see
-`shell-command-only-output-buffer'.")
-
 (defun shell-command-only-output-buffer (&optional output-buffer)
   "Return the buffer whose entire contents are a shell command's output.
 OUTPUT-BUFFER is the second argument of `shell-command'.
@@ -1169,8 +1164,7 @@ text the shell command did not produce, as `(shell-command CMD t)' does."
 
 (defun shell-command--auto-browse (_command &optional output-buffer _error-buffer)
   "Visit any pull request URL that a shell command printed."
-  (let ((buffer (and shell-command-auto-browse
-		     (shell-command-only-output-buffer output-buffer))))
+  (let ((buffer (shell-command-only-output-buffer output-buffer)))
     (if buffer
 	(with-current-buffer buffer
 	  (save-excursion
