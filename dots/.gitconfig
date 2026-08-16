@@ -128,10 +128,13 @@
 
 # For https access
 [credential]
-## 360000 seconds is 100 hours
+## The "cache" helper holds passwords in memory, but only until the timeout
+## expires or the machine reboots.  360000 seconds is 100 hours.
 #	helper = cache --timeout=360000
-## Store keeps passwords forever and is OK for low-security passwords
-## (which are most; I use ssh for high-security projects).
+## The "store" helper keeps passwords forever, in plaintext in
+## ~/.git-credentials (which git creates with mode 600).  That is OK for
+## low-security passwords (which are most; I use ssh for high-security
+## projects), and unlike "cache" it survives a reboot.
 	helper = store
 
 ###
