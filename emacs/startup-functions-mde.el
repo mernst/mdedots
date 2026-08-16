@@ -345,9 +345,10 @@ With just C-u prefix argument, prompt for starting date and days."
                                         ical-business-hours))))))
     (let ((old-point (point)))
       ;; (message "java %s" (cons "plume.ICalAvailable" ical-args))
-      (insert (apply #'call-process "java" nil t nil (append (list "-cp" (substitute-in-file-name "$HOME/java/plume-lib/icalavailable/build/libs/icalavailable-all.jar") "-Dical4j.parsing.relaxed=true" "-Dical4j.parsing.relaxed=true" "org.plumelib.icalavailable.ICalAvailable") ical-args)))
-      (if (or (= (char-before) 0) (= (char-before) 1) (= (char-before) 255))
-          (delete-char -1))
+      ;; DESTINATION is t, so the subprocess output is inserted at point.
+      (let ((status (apply #'call-process "java" nil t nil (append (list "-cp" (substitute-in-file-name "$HOME/java/plume-lib/icalavailable/build/libs/icalavailable-all.jar") "-Dical4j.parsing.relaxed=true" "-Dical4j.parsing.relaxed=true" "org.plumelib.icalavailable.ICalAvailable") ical-args))))
+        (if (not (equal status 0))
+            (message "ICalAvailable exited with status %s" status)))
       ;; Clean up an irritating warning message.
       (save-excursion
         (goto-char old-point)
