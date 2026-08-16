@@ -686,10 +686,9 @@ Eliminate the question, \"A command is running - kill it?\""
 If this is nil, I should never load or see VM.
 This variable must get defined before file \"rmail-mde\" is
 loaded, or it's as if the value is nil.")
-(setq auto-mode-alist
-      (cons '("\\.e?mail\\(-[0-9]*\\)?$" . vm-mode) auto-mode-alist))
-(setq auto-mode-alist                   ; e.g., "INBOX-20080902-to-do"
-      (cons '("\\(^\\|/\\)INBOX-[0-9]*\\(-to-do\\)?$" . vm-mode) auto-mode-alist))
+(add-to-list 'auto-mode-alist '("\\.e?mail\\(-[0-9]*\\)?$" . vm-mode))
+                                        ; e.g., "INBOX-20080902-to-do"
+(add-to-list 'auto-mode-alist '("\\(^\\|/\\)INBOX-[0-9]*\\(-to-do\\)?$" . vm-mode))
 (with-eval-after-load "rmail" (require 'rmail-mde))
 (with-eval-after-load "vm" (require 'rmail-mde))
 (with-eval-after-load "vm-startup" (require 'rmail-mde)) ; necessary?
@@ -1047,7 +1046,7 @@ After running this, run from the shell:  print-mail bulk." t)
 ;; (require 'warnings)
 (if (not (boundp 'warning-suppress-types))
     (setq warning-suppress-types nil))
-(push '(undo discard-info) warning-suppress-types)
+(add-to-list 'warning-suppress-types '(undo discard-info))
 
 (cse
   (setq user-mail-address "mernst@cs.washington.edu"))
@@ -1068,14 +1067,15 @@ After running this, run from the shell:  print-mail bulk." t)
 (put 'narrow-to-page 'disabled nil)
 (put 'erase-buffer 'disabled nil)
 
-(setq completion-ignored-extensions
-      (append '(".otl")
-              '(".KILL")                 ; newsreader kill files
-              '(".bak")                  ; backup files
-              '(".bci" ".bif" ".com" ".so" ".ext") ; scheme object files
-              '(".gfasl42" ".sfasl42" ".sparcf") ; Common Lisp object files
-              ;; '(".pdf" ".PDF")                ; Adobe Portable Document Format files
-              completion-ignored-extensions))
+;; Iterate in reverse so the extensions end up in the order listed.
+(dolist (ext (reverse '(".otl"
+                        ".KILL"          ; newsreader kill files
+                        ".bak"           ; backup files
+                        ".bci" ".bif" ".com" ".so" ".ext" ; scheme object files
+                        ".gfasl42" ".sfasl42" ".sparcf" ; Common Lisp object files
+                        ;; ".pdf" ".PDF" ; Adobe Portable Document Format files
+                        )))
+  (add-to-list 'completion-ignored-extensions ext))
 (setq completion-ignored-extensions
       (delete ".pdf" completion-ignored-extensions))
 
@@ -1129,9 +1129,7 @@ After running this, run from the shell:  print-mail bulk." t)
 (mapc (function (lambda (sym) (put sym 'safe-local-variable 'integerp)))
       '(time-stamp-count time-stamp-line-limit))
 ;; Watch out; forms automatically added in ~/.emacs could override this.
-(setq safe-local-variable-values
-      (append safe-local-variable-values
-              '((auto-fill-function . nil))))
+(add-to-list 'safe-local-variable-values '(auto-fill-function . nil) t)
 
 (setq version-control t)                ; turn on numeric backups
 (setq kept-new-versions 3)              ; default 2
@@ -1486,7 +1484,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
              'browse-url-generic)
             (t
              'w3m-browse-url)))
-(setq exec-path (append exec-path (list (substitute-in-file-name "$HOME/bin/Linux-i686"))))
+(add-to-list 'exec-path (substitute-in-file-name "$HOME/bin/Linux-i686") t)
 
 (setq ediff-window-setup-function 'ediff-setup-windows-plain) ; no multiframe
 (setq-default ediff-ignore-similar-regions t)   ; ignore whitespace differences
