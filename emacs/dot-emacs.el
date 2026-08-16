@@ -51,7 +51,6 @@ the value of the last one, or nil if there are none."
   (require 'vc-annotate)
   (require 'smerge-mode)
   (require 'rg-result nil t)
-  (require 'file-comparison)
   (require 'diff-clean)
   (require 'conflict-resolve)
   (require 'dbus)
@@ -71,9 +70,9 @@ the value of the last one, or nil if there are none."
   (package-native-compile t)
   ;; Putting melpa-stable before built-in because magit needs the latest transient.
   (package-archives '(
-                      ("melpa-stable" . "http://stable.melpa.org/packages/")
+                      ("melpa-stable" . "https://stable.melpa.org/packages/")
                       ("melpa"        . "https://melpa.org/packages/")
-                      ("gnu"          . "http://elpa.gnu.org/packages/")
+                      ("gnu"          . "https://elpa.gnu.org/packages/")
                       ("nongnu"       . "https://elpa.nongnu.org/nongnu/")
                       )))
 ;; To fix bug with magit and transient.
@@ -101,97 +100,120 @@ the value of the last one, or nil if there are none."
 ;;; Site-specific
 
 (defvar system-site
-  (cond ((or (equal "pag-me" (system-name))
-             (equal "mernst-laptop" (system-name))
-             (equal "mernst-ubuntu" (system-name))
-             (equal "mdelap" (system-name))
-             (equal "mdet430s" (system-name))
-             (equal "MDEX300" (system-name))
-             (equal "mdex300" (system-name))
-             (equal "mdex61" (system-name))
-             (equal "mernst-vmu" (system-name))
-             (equal "localhost.localdomain" (system-name))
-             (equal "x1-6-00-d0-59-b7-4e-5f" (system-name))
-             (equal "UWCSE-TP0IB0O91" (system-name))
-             (string-match "24-6-[0-9]+" (system-name) nil 'inhibit-modify)
-             (equal "Vigor31" (system-name))
-             (equal "JHR" (system-name))
-             (string-match "\\.dagstuhl\\.de$" (system-name) nil 'inhibit-modify)
-             (equal "ubuntu" (system-name))
-             (equal "yoga-ubuntu" (system-name))
-             (equal "mdet1700" (system-name))
-             (equal "op7010" (system-name))
-             (equal "xps8940" (system-name))
-             ;; Actually WSL Ubuntu
-             (equal "sb2" (system-name))
-             (equal "sb2.localdomain" (system-name))
-             (equal "sl7" (system-name))
-             (equal "sl7.localdomain" (system-name))
-             ;; Generally for machines not connected to a university-managed
-             ;; file system.
-             (equal "warfa.cs.washington.edu" (system-name))
-             )
-         ;; might also be my home machine; in any event, not a CSE-supported machine
-         'laptop)
-        ((string-match "\\(\\.\\|^\\)cs\\.washington\\.edu$" (system-name) nil 'inhibit-modify)
-         'cse)
-        ((equal "uwplse.org" (system-name))
-         'uwplse)
-        ((equal "u51c281961efd55.ant.amazon.com" (system-name))
-         'amazon)
-        ((or (equal "VMWXP" (system-name))
-             (equal "MDE-X60S" (system-name)))
-         'windows)
-        ((equal 'darwin system-type)
-         'mac)
-        ((equal "software.imdea.org" (system-name))
-         'imdea)
-        ((string-match "^dhcp-.*\\.imdea$" (system-name) nil 'inhibit-modify)
-         'mac)
-        ((string-match "\\.\\(csail\\|lcs\\)\\.mit\\.edu$" (system-name) nil 'inhibit-modify)
-         'csail)
-        )
+  (let ((host (system-name)))
+    (cond ((or (equal "pag-me" host)
+               (equal "mernst-laptop" host)
+               (equal "mernst-ubuntu" host)
+               (equal "mdelap" host)
+               (equal "mdet430s" host)
+               (equal "MDEX300" host)
+               (equal "mdex300" host)
+               (equal "mdex61" host)
+               (equal "mernst-vmu" host)
+               (equal "localhost.localdomain" host)
+               (equal "x1-6-00-d0-59-b7-4e-5f" host)
+               (equal "UWCSE-TP0IB0O91" host)
+               (string-match "24-6-[0-9]+" host nil 'inhibit-modify)
+               (equal "Vigor31" host)
+               (equal "JHR" host)
+               (string-match "\\.dagstuhl\\.de$" host nil 'inhibit-modify)
+               (equal "ubuntu" host)
+               (equal "yoga-ubuntu" host)
+               (equal "mdet1700" host)
+               (equal "op7010" host)
+               (equal "xps8940" host)
+               ;; Actually WSL Ubuntu
+               (equal "sb2" host)
+               (equal "sb2.localdomain" host)
+               (equal "sl7" host)
+               (equal "sl7.localdomain" host)
+               ;; Generally for machines not connected to a university-managed
+               ;; file system.
+               (equal "warfa.cs.washington.edu" host)
+               )
+           ;; might also be my home machine; in any event, not a CSE-supported machine
+           'laptop)
+          ((string-match "\\(\\.\\|^\\)cs\\.washington\\.edu$" host nil 'inhibit-modify)
+           'cse)
+          ((equal "uwplse.org" host)
+           'uwplse)
+          ((equal "u51c281961efd55.ant.amazon.com" host)
+           'amazon)
+          ((or (equal "VMWXP" host)
+               (equal "MDE-X60S" host))
+           'windows)
+          ((equal 'darwin system-type)
+           'mac)
+          ((equal "software.imdea.org" host)
+           'imdea)
+          ((string-match "^dhcp-.*\\.imdea$" host nil 'inhibit-modify)
+           'mac)
+          ((string-match "\\.\\(csail\\|lcs\\)\\.mit\\.edu$" host nil 'inhibit-modify)
+           'csail)
+          ))
   "Symbol representing the site at which Emacs is running.")
 (if (not system-site)
     (error "Where am I?  system-site=nil  (system-name)=%s" (system-name)))
 
+(defvar system-is-wsl
+  (and (eq system-type 'gnu/linux)
+       (string-match "-[Mm]icrosoft" (shell-command-to-string "uname -a")
+                     nil 'inhibit-modify)
+       t)
+  "Non-nil if Emacs is running under Windows Subsystem for Linux.
+WSL1 reports \"-Microsoft\" in the output of `uname -a', WSL2 reports
+\"-microsoft-standard\".")
+
+(defmacro laptop (&rest body)
+  "Execute BODY if running on one of my personal machines."
+  (declare (indent 0))
+  `(if (eq system-site 'laptop)
+       (progn ,@body)))
 (defmacro cse (&rest body)
   "Execute BODY if running at UW Department of Computer Science & Engineering."
   (declare (indent 0))
   `(if (eq system-site 'cse)
        (progn ,@body)))
-(put 'cse 'lisp-indent-function 0)
 (defmacro uwplse (&rest body)
   "Execute BODY if running on uwplse.org."
   (declare (indent 0))
   `(if (eq system-site 'uwplse)
        (progn ,@body)))
-(put 'uwplse 'lisp-indent-function 0)
+(defmacro amazon (&rest body)
+  "Execute BODY if running on an Amazon machine."
+  (declare (indent 0))
+  `(if (eq system-site 'amazon)
+       (progn ,@body)))
 (defmacro windows (&rest body)
   "Execute BODY if running on Windows PC."
   (declare (indent 0))
   `(if (eq system-site 'windows)
        (progn ,@body)))
-(put 'windows 'lisp-indent-function 0)
 (defmacro mac (&rest body)
   "Execute BODY if running on Mac OSX."
   (declare (indent 0))
   `(if (eq system-site 'mac)
        (progn ,@body)))
-(put 'mac 'lisp-indent-function 0)
+(defmacro imdea (&rest body)
+  "Execute BODY if running at IMDEA Software Institute."
+  (declare (indent 0))
+  `(if (eq system-site 'imdea)
+       (progn ,@body)))
 (defmacro csail (&rest body)
   "Execute BODY if running at MIT Computer Science & Artificial Intelligence Lab."
   (declare (indent 0))
   `(if (eq system-site 'csail)
        (progn ,@body)))
-(put 'csail 'lisp-indent-function 0)
 
 
 (with-eval-after-load "edebug"
+  (def-edebug-spec laptop (body))
   (def-edebug-spec cse (body))
   (def-edebug-spec uwplse (body))
+  (def-edebug-spec amazon (body))
   (def-edebug-spec windows (body))
   (def-edebug-spec mac (body))
+  (def-edebug-spec imdea (body))
   (def-edebug-spec csail (body))
   )
 (if (or (eq system-site 'laptop)
@@ -203,7 +225,7 @@ the value of the last one, or nil if there are none."
 
 (defun windows-convert-homedir (string)
   (if (and string
-           (string-match "^\\(\$HOME\\|\$(HOME)\\|\${HOME}\\|~\\|~mernst\\)\\($\\|/\\)"
+           (string-match "^\\(\\$HOME\\|\\$(HOME)\\|\\${HOME}\\|~\\|~mernst\\)\\($\\|/\\)"
                          string))
       (concat "e:/home/" (substring string (match-end 0)))
     string))
@@ -245,26 +267,6 @@ the value of the last one, or nil if there are none."
   ;; (expand-file-name "foo" "~/")
   ;; (substitute-in-file-name "${HOME}/foo")
   )
-
-;; UW CSE-specific
-(defun update-conf-mode-hook ()
-  "Run the createcal program after its input files have been edited."
-  ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
-  (let ((filename (and buffer-file-name (file-truename buffer-file-name))))
-    (if (and filename
-             (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename nil 'inhibit-modify)
-             (not (string-match "/503/17sp/" filename nil 'inhibit-modify)))
-        (add-hook 'after-save-hook 'run-createcal nil 'local))))
-;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
-(add-hook 'conf-mode-hook 'update-conf-mode-hook)
-
-(defun run-createcal ()
-  "Run external program createcal in the parent directory."
-  (interactive)
-  (shell-command "cd `realpath ..` && createcal")
-  ;; Show output if there is any (it will all be error output)
-  (if (bufferp "*Shell Command Output*")
-      (pop-to-buffer "*Shell Command Output*")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -371,7 +373,7 @@ the value of the last one, or nil if there are none."
 
 ;; This appears early so that even if there's an error elsewhere in
 ;; this init file, the autoloaded functions still get defined.
-(load "autoloads-mde.el" nil t)
+(load "autoloads-mde" nil t)
 
 ;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -576,31 +578,37 @@ the value of the last one, or nil if there are none."
 	    )))
 (advice-add 'timelog-summarize :after #'timelog-summarize--add-to-dos)
 
+(defun timelog-previous-count (regexp)
+  "Return the count most recently recorded before point, as a string.
+REGEXP should contain one group, which matches the count.
+Return \"unknown\" if REGEXP does not match earlier in the buffer."
+  (or (save-excursion
+        (and (re-search-backward regexp nil t)
+             (match-string 1)))
+      "unknown"))
+
 (defun timelog-inbox-threads-summary ()
-  (let* ((previous-messages (save-excursion
-                              (re-search-backward "^\\([0-9]+\\) threads in my inbox" nil t)
-                              (match-string 1)))
-         (message-summary (concat
-                           " threads in my inbox (previously "
-                           previous-messages
-                           ")\n")))
-    message-summary))
+  "Return a line stating how many threads are in my inbox.
+No Emacs mail client knows the thread count, so prompt for it."
+  (let ((previous-threads (timelog-previous-count
+                           "^\\([0-9]+\\) threads in my inbox"))
+        (threads (read-number "Threads in my inbox: ")))
+    (concat (int-to-string threads)
+            " threads in my inbox (previously "
+            previous-threads
+            ")\n")))
 
 (defun timelog-mew-messages-summary ()
-  (let* ((previous-messages (save-excursion
-                              (re-search-backward "^\\([0-9]+\\) messages in my inbox" nil t)
-                              (match-string 1)))
-         (message-summary (concat (int-to-string (mew-messages))
-                                  " messages in my inbox (previously "
-                                  previous-messages
-                                  ")\n")))
-    message-summary))
+  (let ((previous-messages (timelog-previous-count
+                            "^\\([0-9]+\\) messages in my inbox")))
+    (concat (int-to-string (mew-messages))
+            " messages in my inbox (previously "
+            previous-messages
+            ")\n")))
 
 
 (defun timelog-to-dos-summary ()
-  (let* ((previous-to-dos (save-excursion
-                            (re-search-backward "^\\([0-9]+\\) to-do items" nil t)
-                            (match-string 1)))
+  (let* ((previous-to-dos (timelog-previous-count "^\\([0-9]+\\) to-do items"))
          (to-dos (save-window-excursion
                    (edit-to-do)
                    (save-excursion
@@ -706,9 +714,12 @@ After running this, run from the shell:  print-mail bulk." t)
 
 
 ;; Prevent point from entering the prompt.
+;; `plist-put' on a copy, rather than appending, so that re-loading this file
+;; does not add another copy of the property.
 (setq minibuffer-prompt-properties
       (plist-put (copy-sequence minibuffer-prompt-properties)
-                 'point-entered 'minibuffer-avoid-prompt))
+                 'cursor-intangible t))
+(add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
 ;; Small packages
 
@@ -716,7 +727,7 @@ After running this, run from the shell:  print-mail bulk." t)
 (load "ftp-mde" nil t)
 
 ;; Enhancement of C-x = (what-cursor-position).
-(load "count" nil t)
+(require 'count nil t)
 
 ;; Let shell buffers act like compilation buffers
 (require 'honorary-compile)
@@ -811,13 +822,8 @@ After running this, run from the shell:  print-mail bulk." t)
 (use-package vterm
   :ensure t
   :commands (vterm vterm-other-window)
-  :general
-  (+general-global-application
-   "t" '(:ignore t :which-key "terminal")
-   "tt" 'vterm-other-window
-   "t." 'vterm)
-  :config
-  (evil-set-initial-state 'vterm-mode 'emacs))
+  :bind (("C-c v" . vterm)
+         ("C-c V" . vterm-other-window)))
 ;;; This block is used for alpaca or straight, not standard use-package.
 ;;   :ensure (vterm :post-build
 ;;                  (progn
@@ -846,11 +852,7 @@ After running this, run from the shell:  print-mail bulk." t)
 
 (use-package atomic-chrome
   :demand t
-  :straight (atomic-chrome
-             :repo "KarimAziev/atomic-chrome"
-             :type git
-             :flavor nil
-             :host github)
+  :vc (:url "https://github.com/KarimAziev/atomic-chrome" :rev :newest)
   :commands (atomic-chrome-start-server)
   :config (atomic-chrome-start-server))
 
@@ -1007,8 +1009,12 @@ After running this, run from the shell:  print-mail bulk." t)
   "Add RET to the search string and search."
   (interactive)
   (isearch-process-search-char ?\C-j))
-(setq isearch 'region) ; change highlighting from unreadable magenta to yellow
-(setq isearch-overlay nil)    ; force it to be recreated, lest it be reused
+;; Change highlighting from unreadable magenta to yellow.
+(set-face-background 'isearch "yellow")
+(set-face-foreground 'isearch "black")
+;; The other matches, which isearch is not currently at, get a paler yellow.
+(set-face-background 'lazy-highlight "khaki")
+(set-face-foreground 'lazy-highlight "black")
 
 
 ;; I press these keys too often, and I rarely use the functions.
@@ -1232,8 +1238,6 @@ After running this, run from the shell:  print-mail bulk." t)
          ;; Remote directories
          ("/mernst@theory.csail.mit.edu:/u/mernst" . "th:~")
          ("/mernst@theory.csail.mit.edu" . "th")
-         ("/mernst@theory.csail.mit.edu:/u/mernst" . "th:~")
-         ("/mernst@theory.csail.mit.edu" . "th")
 
          ;; Filesystem alternate names
          ("/projects/null" . "/projects")
@@ -1309,15 +1313,18 @@ After running this, run from the shell:  print-mail bulk." t)
   "Create TAGS file for all files under current directory."
   (interactive "DDirectory: ")
   (shell-command
-   (format "%s -f TAGS -e -R %s" path-to-ctags (directory-file-name dir-name))))
+   (format "%s -f TAGS -e -R %s"
+           path-to-ctags
+           (shell-quote-argument (directory-file-name dir-name)))))
 
 (setq grep-command "grep -n -i ")       ; add case-insensitivity
 
 
 (defun dont-indent-after-signature (inserted-char)
   (if (and (= ?\n inserted-char)
-           (looking-back "\n *-?Mike\n"
-                         (1- (save-excursion (beginning-of-line) (point)))))
+           ;; The limit must be far enough back to include the newline that
+           ;; precedes the signature line.
+           (looking-back "\n *-?Mike\n" (line-beginning-position -1)))
       'no-indent))
 (add-hook 'electric-indent-functions 'dont-indent-after-signature)
 
@@ -1379,7 +1386,7 @@ After running this, run from the shell:  print-mail bulk." t)
 
 ;; Version control
 
-(defalias 'vc-dired 'vc-directory)
+(defalias 'vc-dired 'vc-dir)
 
 (setq vc-follow-symlinks t)
 
@@ -1428,18 +1435,9 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 ;; (setq tramp-default-method "ssh")
 (setq tramp-default-method "scp")
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
- '(package-selected-packages nil)
- '(package-vc-selected-packages
-   '((whisper :url "https://github.com/natrys/whisper.el" :branch
-              "master")))
- '(tramp-password-prompt-regexp "^.*\\([pP]assword\\|passphrase\\|Response\\).*:\0? *"))
-
+;; All Custom settings live in the single `custom-set-variables' and
+;; `custom-set-faces' blocks in init.el, which is where Custom writes them
+;; (`custom-file' is unset, so Custom uses `user-init-file').
 
 ;; To debug tramp, do:
 ;; (require 'tramp)
@@ -1523,12 +1521,16 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
   "Refine all hunks (within conflict markers) in the current buffer."
   (if (and (featurep 'smerge-mode) smerge-mode)
       (save-excursion
-	(condition-case nil
-	    (while t
-	      (smerge-next)
-	      (if (not diff-refine)
-		  (smerge-refine)))
-	  (error nil)))))
+	;; `smerge-next' signals `user-error' ("No next conflict") once no
+	;; conflicts remain; that is how this loop terminates.  A failure in
+	;; `smerge-refine' is reported instead of being discarded, but is not
+	;; propagated, so that it does not abort the rest of `find-file-hook'.
+	(while (condition-case nil
+		   (progn (smerge-next) t)
+		 (user-error nil))
+	  (if (not diff-refine)
+	      (with-demoted-errors "Error in smerge-refine-all: %S"
+		(smerge-refine)))))))
 (add-hook 'find-file-hook 'smerge-refine-all t)
 
 
@@ -1552,20 +1554,31 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (defun ediff-hunk ()
   "Ediff the file containing the current hunk."
   (interactive)
-  (goto-char (min (+ (point) 4) (point-max)))
-  (let ((case-fold-search nil))
-    (or (re-search-backward "^diff" nil t)
-        (re-search-backward "^--- ")))
-  (re-search-forward "^--- \\([^\t]*\\).*\n\\+\\+\\+ \\([^\t]*\\)")
-  (ediff-files (match-string 1) (match-string 2)))
+  (let ((files
+         (save-excursion
+           ;; Move past a "diff" or "--- " prefix on the current line, so that the
+           ;; backward search finds this hunk's header rather than the previous one's.
+           (goto-char (min (+ (point) 4) (point-max)))
+           (let ((case-fold-search nil))
+             (unless (or (re-search-backward "^diff" nil t)
+                         (re-search-backward "^--- " nil t))
+               (user-error "No \"diff\" or \"--- \" header before point"))
+             (unless (re-search-forward
+                      "^--- \\([^\t]*\\).*\n\\+\\+\\+ \\([^\t]*\\)" nil t)
+               (user-error "No \"---\"/\"+++\" file names for this hunk")))
+           (list (match-string 1) (match-string 2)))))
+    (ediff-files (car files) (cadr files))))
 
 (setq visible-bell t)
 
 
 ;; Garbage-collect whenever switching away from Emacs.
+(defun after-focus-change-function--garbage-collect ()
+  "Garbage-collect when no frame has focus."
+  (unless (frame-focus-state) (garbage-collect)))
 (add-function :after
               after-focus-change-function
-              #'(lambda () (unless (frame-focus-state) (garbage-collect))))
+              #'after-focus-change-function--garbage-collect)
 
 
 ;; Default nil, which means never wait.
@@ -1582,12 +1595,6 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 ;;   :vc (:url "https://github.com/stevemolitor/claude-code.el" :rev :newest)
 ;;   :config (claude-code-mode)
 ;;   :bind-keymap ("C-c c" . claude-code-command-map))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
 (autoload 'claude-code-vterm-mode "claude-code-ui")
 (autoload 'vterm-mode "vterm")
 ;; Claude-code uses projectile
@@ -1735,8 +1742,12 @@ This can make comparisons easier."
     (replace-regexp-noninteractive "^\\([^ :]+:\\)[0-9]+" "\\1")))
 
 
-;; Dramatically improve performance in Emacs 24
-(setq-default bidi-display-reordering nil)
+;; Speed up redisplay by not supporting bidirectional display.
+;; The cost is that paragraphs of right-to-left text (Arabic, Hebrew) are laid
+;; out left-to-right, and bracket pairs in bidirectional text may be mirrored
+;; incorrectly.
+(setq-default bidi-paragraph-direction 'left-to-right)
+(setq-default bidi-inhibit-bpa t)
 
 
 ;; Set fonts in .Xresources, not here.  A form such as
@@ -1745,15 +1756,11 @@ This can make comparisons easier."
 ;; Apparently .Xresources is read after the .emacs file is?
 
 
-(if (string-match "Linux.*Microsoft.*Linux"
-                  (shell-command-to-string "uname -a") nil 'inhibit-modify)
-    (progn
-      ;; (setq system-type-specific 'wsl/linux) ;; for later use.
-      (setq
-       browse-url-generic-program  "/mnt/c/Windows/System32/cmd.exe"
-       browse-url-generic-args     '("/c" "start" "")
-       browse-url-browser-function 'browse-url-generic)
-      ))
+(when system-is-wsl
+  (setq
+   browse-url-generic-program  "/mnt/c/Windows/System32/cmd.exe"
+   browse-url-generic-args     '("/c" "start" "")
+   browse-url-browser-function 'browse-url-generic))
 
 (if (eq system-type 'darwin)
     (progn
@@ -1807,8 +1814,7 @@ This can make comparisons easier."
 ;;      (define-key rg-mode-map "\M-p" 'rg-prev-file)  ; was unbound
 ;;      )
 
-(when (string-match "-[Mm]icrosoft" (shell-command-to-string "uname -a") nil 'inhibit-modify)
-  ;; WSL: WSL1 has "-Microsoft", WSL2 has "-microsoft-standard"
+(when system-is-wsl
   (add-to-list 'browse-url-filename-alist
                (cons "^file:///"
                      "file://wsl.localhost/Ubuntu/")
