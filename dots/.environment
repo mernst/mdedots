@@ -65,7 +65,7 @@ export GIT_MERGE_AUTOEDIT=no
 # Per http://askubuntu.com/questions/227515/terminal-warning-when-opening-a-file-in-gedit
 export NO_AT_BRIDGE=1
 
-if [ -f /scratch/mernst ]; then
+if [ -d /scratch/mernst ]; then
   export GRADLE_USER_HOME=/scratch/mernst/.gradle
 fi
 
