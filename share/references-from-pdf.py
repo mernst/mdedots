@@ -175,8 +175,6 @@ class Page:
     width: float
     height: float
     lines: list = field(default_factory=list)
-    # x coordinates that separate the columns; empty for a single-column page.
-    column_boundaries: list = field(default_factory=list)
 
     def content_lines(self):
         """Return the lines that are text of the document rather than furniture.
@@ -218,6 +216,25 @@ def clean_text(text):
     return " ".join(text.split())
 
 
+def float_attribute(element, name, pdf_file):
+    """Return the element's named attribute, as a float.  Exit if it is not a number.
+
+    Returns:
+        The value of the named attribute of the element.
+    """
+    value = element.get(name)
+    tag = element.tag.removeprefix(XHTML)
+    if value is None:
+        die(f"pdftotext output for {pdf_file} has a <{tag}> with no {name} attribute")
+    try:
+        return float(value)
+    except ValueError:
+        die(
+            f"pdftotext output for {pdf_file} has a <{tag}> whose {name} attribute"
+            f" is not a number: {value!r}"
+        )
+
+
 def read_pages(pdf_file):
     """Return the pages of the PDF file, as a list of Page.
 
@@ -236,8 +253,8 @@ def read_pages(pdf_file):
     pages = []
     for page_index, page_element in enumerate(root.iter(XHTML + "page")):
         page = Page(
-            width=float(page_element.get("width") or 0),
-            height=float(page_element.get("height") or 0),
+            width=float_attribute(page_element, "width", pdf_file),
+            height=float_attribute(page_element, "height", pdf_file),
         )
         for line_element in page_element.iter(XHTML + "line"):
             words = [
@@ -250,10 +267,10 @@ def read_pages(pdf_file):
             page.lines.append(
                 Line(
                     page=page_index,
-                    xmin=float(line_element.get("xMin") or 0),
-                    ymin=float(line_element.get("yMin") or 0),
-                    xmax=float(line_element.get("xMax") or 0),
-                    ymax=float(line_element.get("yMax") or 0),
+                    xmin=float_attribute(line_element, "xMin", pdf_file),
+                    ymin=float_attribute(line_element, "yMin", pdf_file),
+                    xmax=float_attribute(line_element, "xMax", pdf_file),
+                    ymax=float_attribute(line_element, "yMax", pdf_file),
                     text=text,
                 )
             )
@@ -355,11 +372,10 @@ def assign_columns(page):
     right = [line for line in lines if line.xmin > middle]
     spanning = [line for line in lines if line.xmin <= middle <= line.xmax]
     if len(left) >= 4 and len(right) >= 4 and len(spanning) <= max(2, 0.15 * len(lines)):
-        page.column_boundaries = [
-            (max(line.xmax for line in left) + min(line.xmin for line in right)) / 2
-        ]
+        # The x coordinate that separates the two columns.
+        boundary = (max(line.xmax for line in left) + min(line.xmin for line in right)) / 2
         for line in page.lines:
-            line.column = 1 if line.xmin > page.column_boundaries[0] else 0
+            line.column = 1 if line.xmin > boundary else 0
 
 
 def reading_order(pages):

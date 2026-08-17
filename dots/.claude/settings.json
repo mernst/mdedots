@@ -70,7 +70,6 @@
       "Bash(which:*)",
       "Bash(xargs cat:*)",
       "Edit(*)",
-      "Edit(./**)",
       "Glob(*)",
       "Grep(*)",
       "NotebookEdit(*)",
@@ -81,8 +80,7 @@
       "Skill(*)",
       "TaskCreate(*)",
       "TaskUpdate(*)",
-      "WebFetch(*)",
-      "WebFetch(domain:checkerframework.org)",
+      "WebFetch(domain:*)",
       "WebSearch(*)",
       "Write(*)"
     ],

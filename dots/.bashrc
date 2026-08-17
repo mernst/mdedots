@@ -30,6 +30,9 @@ if [ -n "$DEBUGBASH" ]; then echo "Starting .bashrc"; fi
 
 # /etc/profile is automatically read for login shells, so no need to do that.
 
+# Also set in .profile, which is not read by non-login shells.
+export INSTALLDIR=${HOME}/bin/install
+
 # Source global definitions
 # As of 2023-08-10, at CSE this changes the PATH (putting
 # /usr/lib/java/apache-maven-3.8.6/bin at its beginning, for example).
@@ -37,9 +40,9 @@ if [ -f /etc/bashrc ]; then
   # shellcheck disable=SC1091  # file does not exist on some file systems
   . /etc/bashrc
   unset PROMPT_COMMAND
+  # Restore the precedence of the Maven that .profile puts on PATH.
+  export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
 fi
-export INSTALLDIR=${HOME}/bin/install
-export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
 
 ###########################################################################
 ### Noninteractive shells
@@ -58,7 +61,7 @@ fi
 
 if [ -n "$DEBUGLOGIN" ]; then echo "Sourcing .aliases"; fi
 if [ -f "$HOME/.aliases" ]; then
-  if ! alias eth0 > /dev/null 2>&1; then
+  if ! [ "$dot_aliases_file_read" ]; then # avoid sourcing .aliases twice
     source "$HOME/.aliases"
   fi
 fi
@@ -155,37 +158,38 @@ fi
 # source $HOME/bin/install/gradle-completion/gradle-completion.bash
 # source /usr/local/lib/bazel/bin/bazel-complete.bash
 
-# added by travis gem
-# shellcheck disable=SC1091  # file does not exist on some file systems
-[ -f "$HOME/.travis/travis.sh" ] && source "$HOME/.travis/travis.sh"
-
-PATH="/homes/gws/mernst/perl5/bin${PATH:+:${PATH}}"
-export PATH
-PERL5LIB="/homes/gws/mernst/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"
-export PERL5LIB
-PERL_LOCAL_LIB_ROOT="/homes/gws/mernst/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"
-export PERL_LOCAL_LIB_ROOT
-PERL_MB_OPT="--install_base /homes/gws/mernst/perl5"
-export PERL_MB_OPT
-PERL_MM_OPT="INSTALL_BASE=/homes/gws/mernst/perl5"
-export PERL_MM_OPT
+# Perl modules installed by local::lib, which exist only on some machines.
+if [ -d "$HOME/perl5" ]; then
+  PATH="$HOME/perl5/bin${PATH:+:${PATH}}"
+  export PATH
+  PERL5LIB="$HOME/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"
+  export PERL5LIB
+  PERL_LOCAL_LIB_ROOT="$HOME/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"
+  export PERL_LOCAL_LIB_ROOT
+  PERL_MB_OPT="--install_base $HOME/perl5"
+  export PERL_MB_OPT
+  PERL_MM_OPT="INSTALL_BASE=$HOME/perl5"
+  export PERL_MM_OPT
+fi
 
 # `conda activate` won't run unless these lines appear in my .bashrc file --
 # even if the lines have already been run, say by running
 # `~/dots/conda-initialize.sh`.  However, running these lines for every shell
 # interferes with ssh-agent.  So, comment them out with a here-document.
 # When using conda, run ~/dots/conda-initialize.sh or run the commands manually.
-true << ENDCONDA
+# The quotes around the here-document delimiter are required: without them, bash
+# expands the body, so the `conda shell.bash hook` command substitution runs.
+true << 'ENDCONDA'
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/mernst/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$("$HOME/miniconda3/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
 if [ $? -eq 0 ]; then
   eval "$__conda_setup"
 else
-  if [ -f "/home/mernst/miniconda3/etc/profile.d/conda.sh" ]; then
-    . "/home/mernst/miniconda3/etc/profile.d/conda.sh"
+  if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
+    . "$HOME/miniconda3/etc/profile.d/conda.sh"
   else
-    export PATH="/home/mernst/miniconda3/bin:$PATH"
+    export PATH="$HOME/miniconda3/bin:$PATH"
   fi
 fi
 unset __conda_setup
@@ -194,11 +198,11 @@ ENDCONDA
 
 # The next line updates PATH for the Google Cloud SDK.
 # shellcheck disable=SC1091
-if [ -f '/home/mernst/bin/install/google-cloud-sdk/path.bash.inc' ]; then . '/home/mernst/bin/install/google-cloud-sdk/path.bash.inc'; fi
+if [ -f "$INSTALLDIR/google-cloud-sdk/path.bash.inc" ]; then . "$INSTALLDIR/google-cloud-sdk/path.bash.inc"; fi
 
 # The next line enables shell command completion for gcloud.
 # shellcheck disable=SC1091
-if [ -f '/home/mernst/bin/install/google-cloud-sdk/completion.bash.inc' ]; then . '/home/mernst/bin/install/google-cloud-sdk/completion.bash.inc'; fi
+if [ -f "$INSTALLDIR/google-cloud-sdk/completion.bash.inc" ]; then . "$INSTALLDIR/google-cloud-sdk/completion.bash.inc"; fi
 
 # Generated for envman. Do not edit.
 # shellcheck disable=SC1091 # files might not exist
@@ -214,8 +218,7 @@ if [ -n "$DEBUGLOGIN" ]; then
   echo "Exiting .bashrc"
 fi
 
-# Added by Antigravity CLI installer
-export PATH="/home/mernst/.local/bin:$PATH"
-
-# kimi-code
-export PATH="/homes/gws/mernst/.kimi-code/bin:$PATH"
+# kimi-code, which is installed only on some machines.
+if [ -d "$HOME/.kimi-code/bin" ]; then
+  export PATH="$HOME/.kimi-code/bin:$PATH"
+fi

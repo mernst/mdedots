@@ -9,10 +9,10 @@
 
 (require 'transient)
 
+;; Do not use `use-package' here: inside `eval-when-compile' it actually
+;; loads the package at compile time, which fails when magit is absent.
 (eval-when-compile
-  (use-package transient)
-  (use-package magit
-    :after transient))
+  (require 'magit nil t))
 (eval-when-compile
   (require 'edebug))
 (eval-when-compile
@@ -29,9 +29,9 @@
   (package-refresh-contents)
   (dolist (package-name package-activated-list)
     (when (package-installed-p package-name)
-      (unless (ignore-errors                   ;some packages may fail to install
-                (package-reinstall package-name))
-        (warn "Package %s failed to reinstall" package-name)))))
+      (condition-case err                      ;some packages may fail to install
+          (package-reinstall package-name)
+        (error (warn "Package %s failed to reinstall: %s" package-name err))))))
 ;; Running this finally did the trick!
 ;; (package-reinstall-all-activated-packages)
 
@@ -56,9 +56,6 @@
 ;; python-mode is autoloaded from python.el
 
 ;; Scheme coding
-(autoload 'scheme-inspector "scheme-inspector" "Scheme inspector" t)
-(autoload 'si-jump "scheme-inspector" "Scheme inspector" t)
-(autoload 'si-expression "scheme-inspector" "Scheme inspector" t)
 (autoload 'run-big-scheme "scheme-mde" "Scheme with big heap" t)
 (autoload 'chez-scheme-mode "chezscheme" "Chez Scheme mode" t)
 (setq auto-mode-alist
@@ -101,6 +98,10 @@
 (autoload 'magit-status "magit")
 (global-set-key "\C-cg" 'magit-status)
 ;; disable Magit warning messages
+;; These are set before magit is loaded, so declare them special to avoid
+;; "assignment to free variable" warnings (which would hide a typo).
+(defvar magit-last-seen-setup-instructions)
+(defvar magit-push-always-verify)
 (setq magit-last-seen-setup-instructions "1.4.0"
       magit-push-always-verify nil)
 ;; Don't show recently-pushed commits.  In other words, if the git status
@@ -117,6 +118,9 @@
                "~/emacs/magit/Documentation/"))
 ;; Work around: Key sequence C-x M-g starts with non-prefix key C-x ESC
 ;; https://gitter.im/magit/magit?at=601c19379fa6765ef8f9eb8d
+;; This must be set before magit is loaded, so it cannot go in
+;; `with-eval-after-load'.
+(defvar magit-define-global-key-bindings)
 (setq magit-define-global-key-bindings nil)
 ;; Swap RET and C-RET, so RET goes to editable current version of file.
 (with-eval-after-load "magit-diff"
@@ -124,7 +128,8 @@
   (define-key magit-diff-mode-map (kbd "C-RET") #'magit-diff-visit-file))
 
 (defun pull-request-url ()
-  "URL for the pull request on GitHub corresponding to the current branch. Uses Magit."
+  "Return the GitHub pull request URL for the current branch.
+Uses Magit."
   (interactive)
   (format "%s/compare/%s"
           (replace-regexp-in-string
@@ -302,23 +307,6 @@
 
 
 ;;;
-;;; Information
-;;;
-
-;; I mirror this locally every week.  David Jones no longer does at aviary.
-(setq lisp-code-directory "~/emacs/LCD-datafile.gz")
-;; ;; Add slash after colon
-;; (setq lisp-code-directory
-;;       "/anonymous@archive.cis.ohio-state.edu:/pub/gnu/emacs/elisp-archive/LCD-datafile.gz")
-(autoload 'lisp-dir-apropos "lispdir" "Search a database of elisp code" t)
-(autoload 'lisp-dir-retrieve "lispdir" "Retrieve elisp code" t)
-(autoload 'submit-lcd-entry "lispdir" "Submit code for the LCD" t)
-(autoload 'tex-macro-catalogue "tex-macro-catalogue"
-  "TeX macro catalogue browser" t)
-(autoload (function find-faq) "faq"
-  "*Find the archived Usenet NEWSGROUP FAQ file..." t)
-
-;;;
 ;;; Differences
 ;;;
 
@@ -327,6 +315,10 @@
 (define-key Buffer-menu-mode-map "=" 'Buffer-menu-bdiff)
 (define-key Buffer-menu-mode-map "R" 'Buffer-menu-revert)
 (define-key Buffer-menu-mode-map "r" 'Buffer-menu-revert-select)
+;; These are set before bdiff.el is loaded; its `defvar's will not override
+;; the values set here.
+(defvar bdiff-context-lines)
+(defvar bdiff-ignore-whitespace)
 (setq bdiff-context-lines 'unidiff)     ; default 1; 2 is better; 'unidiff best
 (setq bdiff-ignore-whitespace 'compare-whitespace-equal)
 ;; (setq bdiff-extra-flags "u")         ; default "a"
@@ -354,27 +346,11 @@
 ;;; World Wide Web
 ;;;
 
-(autoload 'browse-url-netscape "browse-url" "Invoke Netscape on URL" t)
-(defalias 'netscape-browse-url 'browse-url-netscape)
-(defalias 'mozilla-browse-url 'browse-url-netscape)
-
 ;; (defun browse-url--abort-if-empty-string (s)
 ;;   "Abort if the given string is empty."
 ;;   (if (equal s "")
 ;;       (error "Empty URL")))
 ;; (advice-add 'browse-url :before #'browse-url--abort-if-empty-string)
-
-
-(autoload 'update-menu-bars "www-mde" nil t)
-(autoload 'extra-html "www-mde" nil t)
-(autoload 'fair-html "www-mde" nil t)
-(autoload 'process-indexees-for-file "www-index" nil t)
-(autoload 'process-indexees-for-directory "www-index" nil t)
-;; (setq top-directory-prefix "/fair@wideopen.igc.apc.org:/c/home2/fair/WWW/")
-(setq top-directory-prefix "/fair@wideopen.igc.apc.org:/d/root.home/fair/WWW/")
-(setq menu-bar-file "/fair@wideopen.igc.apc.org:/d/root.home/fair/WWW/menu-bar-structure")
-(setq index-obarray-file (concat top-directory-prefix "index/raw-index.el"))
-
 
 
 ;;;
@@ -391,37 +367,26 @@
 (autoload 'dired-jump "dired-x" "Tree dired" t)
 
 
-;; Games, silly and serious.
-(autoload 'games        "games" "Games comint mode." t)
-(autoload 'games-ask    "games" "Games comint mode." t)
-(autoload 'konane-substitute "games-k-exp"
-  "Substitute Konane games into file." t)
-(autoload 'games-defexpectation "games" "Define a new games expectation form.")
-
-(autoload 'madlib "madlib" "Mad Lib game" t)
-(setq madlib-directories "~/random/madlib/")
-
 ;; Wasting time
 ;; ; gnus customizations in gnus-mike-batch.el or gnus-mike.el
+(defvar gnus-init-file)                 ; set before gnus is loaded
 (setq gnus-init-file (expand-file-name "~/emacs/gnus-mike"))
 (autoload 'caesar-region "rnews" "Rot-13 the region." t)
-                                        ;(autoload 'irc "~/emacs/irc-2.0" "Internet Relay Chat" t)
 
 ;; Inleft; Emacs-19 comment-region isn't as versatile.
 ;; This seems to be necessary to get correct behavior from, eg, cecil-mode
 (make-variable-buffer-local 'inleft-string)
 (autoload 'inleft "~/emacs/inleft" "Comment-out-like utility." t)
 (autoload 'inleft-internal "~/emacs/inleft" "Comment-out-like utility." t)
-(autoload 'uncomment-region "~/emacs/inleft" "Uncomment-out-like utility." t)
+(autoload 'inleft-remove "~/emacs/inleft" "Uncomment-out-like utility." t)
 
 (autoload 'pages-directory "page-ext" "Page handling extensions" t)
 
+;; Set before the message-buffer package is loaded.
+(defvar message-buffer-at-end-p)
+(defvar message-buffer-timestamp-p)
 (setq message-buffer-at-end-p t
       message-buffer-timestamp-p nil)
-
-(autoload 'background "background" nil t)
-
-(autoload 'global-replace-lines "globrep" nil t)
 
 ;;; speedbar
 (autoload 'speedbar-frame-mode "speedbar" "Popup a speedbar frame" t)
