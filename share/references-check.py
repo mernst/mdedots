@@ -93,7 +93,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-MAILTO = "michael.ernst@gmail.com"
+MAILTO = "michael.ernst" + "@" + "gmail.com"
 UA = f"ref-checker/1.0 (mailto:{MAILTO})"
 
 # The errors that a fetch can fail with: a timeout, a DNS failure, or a reset

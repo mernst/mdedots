@@ -10,4 +10,7 @@ export SUBJECT="Checkdates"
 # setenv MAILCOMMAND /usr/bin/mail
 export MAILE="$HOME/bin/src/plume-scripts/mail-e"
 
-${COMMAND} 2>&1 | "${MAILE}" -s "${SUBJECT}" mernst@alum.mit.edu scath@alumni.duke.edu
+# The recipients are written with the "@" separated out, to hinder address harvesters.
+at="@"
+
+${COMMAND} 2>&1 | "${MAILE}" -s "${SUBJECT}" "mernst${at}alum.mit.edu" "scath${at}alumni.duke.edu"
