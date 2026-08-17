@@ -283,6 +283,9 @@ spam_search("subject:urgent")
 spam_search("CFP AND (Scopus OR subject:journal)")
 spam_search("Scopus OR subject:journal")
 
+spam_search('"nick hellen"')
+spam_search('"michael duwayne"')
+
 input("Press ENTER")
 
 print("Frequent topics 2")
@@ -303,8 +306,6 @@ print("Frequent topics 2")
 
 spam_search('"sam%27s club"')
 
-spam_search('"nick hellen"')
-spam_search('"michael duwayne"')
 spam_search('"tractor supply"')
 spam_search('"Sky Devialet Soundbox"')
 spam_search("diabetes")
