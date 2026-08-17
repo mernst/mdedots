@@ -26,9 +26,9 @@
  '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
  '(large-file-warning-threshold nil)
  '(package-selected-packages
-   '(0blayout adaptive-wrap aidermacs apheleia auto-compile cargo
-              claude-code compat dtrt-indent eat editorconfig eglot
-              eglot-booster erc faceup flycheck ggtags
+   '(0blayout adaptive-wrap aidermacs apheleia atomic-chrome auto-compile
+              cargo claude-code compat dtrt-indent eat editorconfig
+              eglot eglot-booster erc faceup flycheck ggtags
               gnu-elpa-keyring-update gptel groovy-mode idlwave magit
               org peg python python-mode recompile-on-save rg rustic
               string-inflection track-changes tramp transient
