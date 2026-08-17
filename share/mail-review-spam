@@ -146,12 +146,16 @@ spam_search(
             '(Gutschein OR "kannst du")',
             '("hallo" AND "ist")',
             '("Rückfrage" AND "zu")',
+            '("Ihr Konto")',
+            '("ich bin")',
+            '("ich habe")',
+            "(Nachricht)",
+            "(kurze Frage)",
+            "(anfrage zu)",
+            "(frage zu)",
         ]
     )
     + ")"
-)
-spam_search(
-    "(Ihr Konto) OR (ich bin) OR (ich habe) OR (Nachricht) OR (kurze Frage) OR (anfrage zu)"
 )
 # Portuguese
 spam_search(
