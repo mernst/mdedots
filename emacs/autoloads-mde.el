@@ -43,10 +43,11 @@
 (setq-default compile-command "make -k -j ")    ; default: "make -k "
 
 ;; Coding
-                                        ; GNU boilerplate
-(push '("is free software; you can redistribute it" .
-        "Boston, MA 02111-1307, USA\\.\\|Cambridge, MA 02139, USA\\.")
-      elide-head-headers-to-hide)
+;; GNU boilerplate
+(with-eval-after-load "elide-head"
+  (push '("is free software; you can redistribute it" .
+          "Boston, MA 02111-1307, USA\\.\\|Cambridge, MA 02139, USA\\.")
+        elide-head-headers-to-hide))
 
 
 (autoload 'symbol-at-point "thingatpt" nil nil)

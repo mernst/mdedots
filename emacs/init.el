@@ -29,11 +29,12 @@
    '(0blayout adaptive-wrap aidermacs apheleia atomic-chrome auto-compile
               cargo claude-code compat dtrt-indent eat editorconfig
               eglot eglot-booster erc faceup flycheck ggtags
-              gnu-elpa-keyring-update gptel groovy-mode idlwave magit
-              org peg python python-mode recompile-on-save rg rustic
-              string-inflection track-changes tramp transient
-              tree-sitter-langs treemacs treesit-auto verilog-mode
-              which-key whisper window-tool-bar yaml-mode yasnippet))
+              gnu-elpa-keyring-update gptel groovy-mode idlwave
+              kotlin-mode magit org peg python python-mode
+              recompile-on-save rg rustic string-inflection
+              track-changes tramp transient tree-sitter-langs treemacs
+              treesit-auto verilog-mode which-key whisper
+              window-tool-bar yaml-mode yasnippet))
  '(package-vc-selected-packages
    '((atomic-chrome :url "https://github.com/KarimAziev/atomic-chrome")
      (eglot-booster :vc-backend Git :url

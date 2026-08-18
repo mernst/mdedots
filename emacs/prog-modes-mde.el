@@ -859,6 +859,10 @@ Returns t if any change was made, nil otherwise."
 (add-to-list 'ispell-skip-region-alist '("</?li>"))
 
 
+(use-package kotlin-mode
+  :ensure t
+  :mode "\\.kt\\'")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Makefiles and shell scripts
