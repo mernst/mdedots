@@ -316,12 +316,6 @@ Intended to run after `visual-line-mode' runs."
     ;; One, not two, spaces at end of sentences
     (goto-char (point-min))
     (replace-regexp-noninteractive "\\(\\w[\"`'()]*[:.?!][\"`'():.?!]*\\)  \\([\"`'()]*\\w\\)" "\\1 \\2")
-    ;; Change possessives of words ending in s (this introduces a typo).
-    (goto-char (point-min))
-    (replace-regexp-noninteractive "\\(\\ws'\\)s\\b" "\\1")
-    ;; Move punctuation within quote marks (this introduces a typo).
-    (goto-char (point-min))
-    (replace-regexp-noninteractive "\\([\"\)]\\)\\([,.]\\)" "\\2\\1")
     ;; Remove double spaces after punctuation.
     (goto-char (point-min))
     (replace-regexp-noninteractive "\\([,.]\\)\\([\"\)]\\)?  +" "\\1\\2 ")
@@ -331,6 +325,15 @@ Intended to run after `visual-line-mode' runs."
     (while (re-search-forward "\\b\\(figure\\|section\\) \\([0-9]\\)" nil t)
       (replace-match (concat (capitalize (match-string 1)) " " (match-string 2))))
     )
+
+  ;; ;; Change possessives of words ending in s (this introduces a typo).
+  ;; (goto-char (point-min))
+  ;; (replace-regexp-noninteractive "\\(\\ws'\\)s\\b" "\\1")
+  ;; ;; Move punctuation within quote marks (this introduces a typo).
+  ;; (goto-char (point-min))
+  ;; (replace-regexp-noninteractive "\\([\"\)]\\)\\([,.]\\)" "\\2\\1")
+
+
   ;; Must return nil or else the file is considered already written.
   nil)
 

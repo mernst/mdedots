@@ -7,7 +7,7 @@
 
 ## English text
 
-* Never replace concrete nouns by pronouns.  (But don't necessarily replace pronouns by nouns.)
+* Never replace concrete nouns by pronouns.  (But you do not have to replace every pronouns by a noun.)
 * Do not expand contractions, but do not introduce them either.
 * Retain the fences (three backticks) around fenced code blocks.
 * Use technical writing conventions; for example, punctuation is written inside quotation marks if it belongs to the quote, and punctuation is written outside quotation marks if it belongs to the larger sentence.
