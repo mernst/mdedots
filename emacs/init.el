@@ -22,6 +22,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '((atomic-chrome :url "https://github.com/KarimAziev/atomic-chrome"))
  '(ignored-local-variable-values '((TeX-master . "dataflow")))
  '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
  '(large-file-warning-threshold nil)
