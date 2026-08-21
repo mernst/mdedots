@@ -523,19 +523,26 @@ Use this with care."
 (if nil
     (tags-query-replace
      (concat
-      "<<<<<<<.*\n"
-      "    @SuppressWarnings(\"this-escape\")\n"
-      "|||||||.*\n"
-      "=======\n"
-      "    @SideEffectFree\n"
-      "    @SuppressWarnings(\"purity.not.sideeffectfree.call\") // initCause affects only the new object\n"
-      ">>>>>>>.*\n")
+      (concat
+       "\\("
+       "<<<<<<<.*\n"
+       ".*"
+       ;; "    @SuppressWarnings(\"this-escape\")\n"
+       "|||||||.*\n"
+       "=======\n"
+       "\\)")
+      "\\( *@\\(?:SideEffectFree\\|Pure\\)\n\\)"
+      (concat
+       "\\("
+       ".*"
+       ">>>>>>>.*\n"
+       "\\)"))
      (concat
-      "    @SideEffectFree\n"
-      "    @SuppressWarnings({\"this-escape\",\n"
-      "           \"purity.not.sideeffectfree.call\"} // initCause affects only the new object\n"
-      "    )\n"
-      )))
+      "\\2"
+      "\\1"
+      "\\3"
+      ))
+  )
 
 
 

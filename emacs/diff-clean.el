@@ -97,7 +97,8 @@ matches every filename."
 	         (end (if (re-search-forward "\n[^-+ @]" nil t)
 			  (1+ (match-beginning 0))
 		        (point-max))))
-	    (kill-region begin end)))
+	    (kill-region begin end)
+            (beginning-of-line 0)))
 
 	(goto-char (point-min))
 	(kill-matching-lines (concat "^Only in " filename-regexp "$")))
