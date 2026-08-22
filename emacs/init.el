@@ -22,39 +22,12 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '((atomic-chrome :url "https://github.com/KarimAziev/atomic-chrome"))
- '(ignored-local-variable-values '((TeX-master . "dataflow")))
  '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
- '(large-file-warning-threshold nil)
- '(package-selected-packages
-   '(0blayout adaptive-wrap aidermacs apheleia atomic-chrome auto-compile
-              cargo claude-code compat dtrt-indent eat editorconfig
-              eglot eglot-booster erc faceup flycheck ggtags
-              gnu-elpa-keyring-update gptel groovy-mode idlwave
-              kotlin-mode magit org peg python python-mode
-              recompile-on-save rg rustic string-inflection
-              track-changes tramp transient tree-sitter-langs treemacs
-              treesit-auto verilog-mode which-key whisper
-              window-tool-bar yaml-mode yasnippet))
  '(package-vc-selected-packages
-   '((atomic-chrome :url "https://github.com/KarimAziev/atomic-chrome")
-     (eglot-booster :vc-backend Git :url
-                    "https://github.com/jdtsmith/eglot-booster")
-     (whisper :url "https://github.com/natrys/whisper.el" :branch
-              "master")))
- '(safe-local-variable-values
-   '((checkdoc-allow-quoting-nil-and-t . t) (TeX-master . "../main")
-     (TeX-master . "main") (auto-fill-mode)
-     (require-final-newline . t) (mangle-whitespace . t)
-     (TeX-command-default . "PDF") (TeX-master . t)
-     (inleft-string . "% ") (major-mode . text-mode)
-     (auto-fill-function)))
- '(tramp-password-prompt-regexp "^.*\\([pP]assword\\|passphrase\\|Response\\).*:\0? *")
- '(visual-line-fringe-indicators '(left-curly-arrow nil))
- '(warning-suppress-types '((comp) (undo discard-info))))
+   '((atomic-chrome :url "https://github.com/KarimAziev/atomic-chrome"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(claude-code-repl-face ((t (:family "JuliaMono"))) t))
+ )
