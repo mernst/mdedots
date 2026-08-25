@@ -678,6 +678,8 @@ alias uwplse='xterm -T uwplse -e ssh -X mernst@uwplse.org &'
 
 alias pingmangold='pinghost mangold.csail.mit.edu'
 alias mangolddate='datehost mernst@mangold.csail.mit.edu'
+alias pingbicycle='pinghost bicycle.cs.washington.edu'
+alias bicycledate='datehost mernst@bicycle.cs.washington.edu'
 alias pingrecycle='pinghost recycle.cs.washington.edu'
 alias recycledate='datehost mernst@recycle.cs.washington.edu'
 alias pinggodwit='pinghost godwit.cs.washington.edu'
