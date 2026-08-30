@@ -3,6 +3,7 @@
          xmlns="http://sourceforge.net"
          xmlns:xsi="http://w3.org"
          xsi:schemaLocation="http://sourceforge.net https://sourceforge.net">
+  <description>MDE PMD Java rules</description>
 
     <!-- 1. Best Practices: Enforces generally accepted best practices -->
     <rule ref="category/java/bestpractices.xml" />
@@ -19,7 +20,14 @@
     <rule ref="category/java/documentation.xml" />
 
     <!-- 5. Error Prone: Detects constructs that are broken, confusing, or runtime-error prone -->
-    <rule ref="category/java/errorprone.xml" />
+    <rule ref="category/java/errorprone.xml">
+    </rule>
+    <rule ref="category/java/errorprone.xml/AssignmentInOperand">
+        <properties>
+            <property name="allowIncrementDecrement" value="true" />
+              <!-- permit "i++" -->
+        </properties>
+    </rule>
 
     <!-- 6. Multithreading: Flags issues when dealing with multiple threads of execution -->
     <rule ref="category/java/multithreading.xml" />
