@@ -34,7 +34,7 @@ java -ea -cp "${HOME}"/java/plume-lib/multi-version-control/build/libs/multi-ver
 
 # Pull from $org/$repo into $parentdir/$localname-fork-mernst
 # Only permit fast-forward pulls: no merges are allowed.
-# Arguments are $org $repo $parentdir $localname .
+# Arguments are $org $repo $parentdir $localname.
 # If $localname is omitted or blank, it defaults to $repo.
 update_fork() {
   update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com mernst
@@ -56,6 +56,18 @@ update_fork_typetools() {
 # Arguments are the same as for update_fork.
 update_fork_kelloggm() {
   update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com kelloggm
+}
+
+# Pull from $org/$repo into $parentdir/$localname-fork-smillst
+# Arguments are the same as for update_fork.
+update_fork_smillst() {
+  update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com smillst
+}
+
+# Pull from $org/$repo into $parentdir/$localname-fork-yukiyang31
+# Arguments are the same as for update_fork.
+update_fork_yukiyang31() {
+  update_fork_with_hosting_and_userid "$1" "$2" "$3" "$4" github.com yukiyang31
 }
 
 # Pull from bitbucket.org's rjust/$repo into $parentdir/$repo-fork-michaelernst
@@ -92,21 +104,32 @@ update_fork_with_hosting_and_userid() {
     exit 2
   fi
   if [ -d "$parentdir/$localname-fork-$userid" ]; then
+    dir="$parentdir/$localname-fork-$userid"
+  elif [ -d "$parentdir/$localname-fork-$userid-branch-main" ]; then
+    dir="$parentdir/$localname-fork-$userid-branch-main"
+  elif [ -d "$parentdir/$localname-fork-$userid-branch-master" ]; then
+    dir="$parentdir/$localname-fork-$userid-branch-master"
+  else
+    dir=""
+  fi
+
+  if [ -n "$dir" ]; then
     git_pull_command="git pull -q --ff-only git@${hosting}:$org/$repo --tags"
     if [ -n "$VERBOSE" ]; then
-      echo "cd $parentdir/$localname-fork-$userid && $git_pull_command"
+      echo "cd $dir && $git_pull_command"
     fi
     # Doesn't use `git -C` because multiple git commands will be run in the directory.
     if [ -n "$DEBUG" ]; then
       # Run in the foreground.
-      ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command")
+      ( (cd "$dir" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $dir, perhaps in the command: $git_pull_command")
     else
       # Run in the background.
-      ( (cd "$parentdir/$localname-fork-$userid" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $parentdir/$localname-fork-$userid, perhaps in the command: $git_pull_command") &
+      ( (cd "$dir" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $dir, perhaps in the command: $git_pull_command") &
     fi
   fi
 }
 
+# Use this for non-github repositories.
 update_from() {
   upstream=$1
   dir=$2
@@ -204,6 +227,28 @@ update_fork_kelloggm typetools jdk ~/research/types/libraries
 update_fork_kelloggm typetools jdk /scratch/mernst/clones/types/libraries
 update_fork_kelloggm typetools jdk21u ~/research/types/libraries
 update_fork_kelloggm typetools jdk21u /scratch/mernst/clones/types/libraries
+
+update_fork_smillst typetools annotation-tools ~/research/types
+update_fork_smillst typetools annotation-tools /scratch/mernst/clones/types
+update_fork_smillst typetools checker-framework ~/research/types
+update_fork_smillst typetools checker-framework /scratch/mernst/clones/types
+update_fork_smillst typetools stubparser ~/research/types
+update_fork_smillst typetools stubparser /scratch/mernst/clones/types
+update_fork_smillst typetools jdk ~/research/types/libraries
+update_fork_smillst typetools jdk /scratch/mernst/clones/types/libraries
+update_fork_smillst typetools jdk21u ~/research/types/libraries
+update_fork_smillst typetools jdk21u /scratch/mernst/clones/types/libraries
+
+update_fork_yukiyang31 typetools annotation-tools ~/research/types
+update_fork_yukiyang31 typetools annotation-tools /scratch/mernst/clones/types
+update_fork_yukiyang31 typetools checker-framework ~/research/types
+update_fork_yukiyang31 typetools checker-framework /scratch/mernst/clones/types
+update_fork_yukiyang31 typetools stubparser ~/research/types
+update_fork_yukiyang31 typetools stubparser /scratch/mernst/clones/types
+update_fork_yukiyang31 typetools jdk ~/research/types/libraries
+update_fork_yukiyang31 typetools jdk /scratch/mernst/clones/types/libraries
+update_fork_yukiyang31 typetools jdk21u ~/research/types/libraries
+update_fork_yukiyang31 typetools jdk21u /scratch/mernst/clones/types/libraries
 
 update_fork jonathan-m-phillips ASHE_Automated-Software-Hardening-for-Entrypoints ~/research/types
 update_fork jonathan-m-phillips ASHE_Automated-Software-Hardening-for-Entrypoints /scratch/mernst/clones/types
@@ -324,9 +369,6 @@ if [ -d $dir ]; then
 fi
 
 ### Update from a non-GitHub upstream
-
-## Using `update_fork` does not work because the repository is at gitlab.ow2.org, not github,
-## and it uses a https: rather than a git: URL.
 
 update_from https://gitlab.ow2.org/asm/asm.git ~/java/asm-fork-mernst
 # shellcheck disable=SC2154 # $t should be defined.
