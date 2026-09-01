@@ -1059,5 +1059,66 @@ This takes up a ridiculous amount of Emacs memory, for large TAGS tables."
       (fileloop-continue))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Write multiple versions of a file
+;;;
+
+(defun conflict-write-versions ()
+  "Write three versions of the file in the current buffer."
+  (interactive)
+  (if (not buffer-file-name)
+      (error "Buffer is not visiting a file."))
+  (if (buffer-modified-p)
+      (error "Buffer is not saved."))
+  (let* ((sans-extension (file-name-sans-extension buffer-file-name))
+         (extension (file-name-extension buffer-file-name 'period))
+         (file-a (concat sans-extension "A" extension))
+         (file-b (concat sans-extension "B" extension))
+         (file-base (concat sans-extension "Base" extension)))
+    (if (file-exists-p file-a)
+        (error "File exists: %s" file-a))
+    (if (file-exists-p file-b)
+        (error "File exists: %s" file-b))
+    (if (file-exists-p file-base)
+        (error "File exists: %s" file-base))
+    (copy-file buffer-file-name file-a)
+    (copy-file buffer-file-name file-b)
+    (copy-file buffer-file-name file-base)
+
+    (let ((file-buffer (find-file-noselect file-a)))
+      (with-current-buffer file-buffer
+        (save-excursion
+          (goto-char (point-min))
+          (smerge-mode 1)
+          (while (condition-case nil (progn (smerge-next) t)
+                   (error nil))
+            (smerge-keep-upper))
+          (save-buffer)
+          )))
+
+    (let ((file-buffer (find-file-noselect file-b)))
+      (with-current-buffer file-buffer
+        (save-excursion
+          (goto-char (point-min))
+          (smerge-mode 1)
+          (while (condition-case nil (progn (smerge-next) t)
+                   (error nil))
+            (smerge-keep-lower))
+          (save-buffer))))
+    (let ((file-buffer (find-file-noselect file-base)))
+      (with-current-buffer file-buffer
+        (save-excursion
+          (goto-char (point-min))
+          (smerge-mode 1)
+          (while (condition-case nil (progn (smerge-next) t)
+                   (error nil))
+            (smerge-keep-base))
+          (save-buffer))))
+    ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; End of conflict-resolve.el
+;;;
 
 (provide 'conflict-resolve)
