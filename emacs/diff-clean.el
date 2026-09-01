@@ -70,55 +70,57 @@ editing a diff buffer to remove uninteresting changes."
   "Delete files whose pathname matches any of the regexes.
 Does nothing if REMOVE-REGEXES is nil, because an empty alternation
 matches every filename."
-  (when remove-regexes
-    (save-excursion
+  (let ((inhibit-read-only t))
 
-      ;; (goto-char (point-min))
-      ;; (delete-matching-lines "^\\\\ No newline at end of file$")
+    (when remove-regexes
+      (save-excursion
 
-      ;; Remove certain files
-      (goto-char (point-min))
-      (let ((filename-regexp
-	     (concat "\\("
-		     (mapconcat #'(lambda (r) (concat "\\(" r "\\)"))
-				remove-regexes
-				"\\|")
-		     "\\)")))
-	(while (re-search-forward
-		(concat "^diff .*\n\\(new file mode .*\nindex .*\n\\)?\\("
-			"--- " filename-regexp "\\(\t.*\\)?\n\\+\\+\\+ .*$"
-			"\\|"
-			"--- .*\n\\+\\+\\+ " filename-regexp "\\(\t.*\\)?$"
-			"\\)")
-		nil t)
-          (let* ((begin (match-beginning 0))
-                 ;; The end of the file's diff is the start of the next line that
-                 ;; begins neither a diff line nor a hunk header, or end of buffer.
-	         (end (if (re-search-forward "\n[^-+ @]" nil t)
-			  (1+ (match-beginning 0))
-		        (point-max))))
-	    (kill-region begin end)
-            (beginning-of-line 0)))
+        ;; (goto-char (point-min))
+        ;; (delete-matching-lines "^\\\\ No newline at end of file$")
 
-	(goto-char (point-min))
-	(kill-matching-lines (concat "^Only in " filename-regexp "$")))
+        ;; Remove certain files
+        (goto-char (point-min))
+        (let ((filename-regexp
+	       (concat "\\("
+		       (mapconcat #'(lambda (r) (concat "\\(" r "\\)"))
+				  remove-regexes
+				  "\\|")
+		       "\\)")))
+	  (while (re-search-forward
+		  (concat "^diff .*\n\\(new file mode .*\nindex .*\n\\)?\\("
+			  "--- " filename-regexp "\\(\t.*\\)?\n\\+\\+\\+ .*$"
+			  "\\|"
+			  "--- .*\n\\+\\+\\+ " filename-regexp "\\(\t.*\\)?$"
+			  "\\)")
+		  nil t)
+            (let* ((begin (match-beginning 0))
+                   ;; The end of the file's diff is the start of the next line that
+                   ;; begins neither a diff line nor a hunk header, or end of buffer.
+	           (end (if (re-search-forward "\n[^-+ @]" nil t)
+			    (1+ (match-beginning 0))
+		          (point-max))))
+	      (kill-region begin end)
+              (beginning-of-line 0)))
 
-      ;; Remove lines starting "Only in " for certain files.
-      ;; The "Only in " lines put ": " in place of the last "/"
-      ;; directory separator, so regexp `remove-regexes'
-      ;; does not match them.
-      (goto-char (point-min))
-      (let ((onlyin-regexp
-	     (concat "^Only in \\("
-		     (mapconcat #'(lambda (r) (concat "\\(" (file-regexp-to-colon-regexp r) "\\)"))
-				remove-regexes
-				"\\|")
-		     "\\)")))
-	(kill-matching-lines onlyin-regexp))
+	  (goto-char (point-min))
+	  (kill-matching-lines (concat "^Only in " filename-regexp "$")))
 
-      ;; TODO: Remove "Binary files XXX and YYY differ" lines
+        ;; Remove lines starting "Only in " for certain files.
+        ;; The "Only in " lines put ": " in place of the last "/"
+        ;; directory separator, so regexp `remove-regexes'
+        ;; does not match them.
+        (goto-char (point-min))
+        (let ((onlyin-regexp
+	       (concat "^Only in \\("
+		       (mapconcat #'(lambda (r) (concat "\\(" (file-regexp-to-colon-regexp r) "\\)"))
+				  remove-regexes
+				  "\\|")
+		       "\\)")))
+	  (kill-matching-lines onlyin-regexp))
 
-      )))
+        ;; TODO: Remove "Binary files XXX and YYY differ" lines
+
+        ))))
 
 ;; These names may need to be changed, so that completing "diff-clean" is easier to do.
 
