@@ -37,6 +37,9 @@ When creating a new branch, use a new directory or a new clone.
 ### Code reviews
 
 * In code reviews, do not complain about an empty pull request description.
+* When addressing a code review comment from GitHub:
+  * If the code review comment is valid and you take action on it, do not reply, but merely click "resolved".
+  * If the code review comment is flawed in some way and you do not take action on it, then reply.
 
 ### Historical comments
 

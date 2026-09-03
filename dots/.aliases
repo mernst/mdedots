@@ -120,6 +120,7 @@ copytree() { (cd "$1" && tar cf - .) | (cd "$2" && tar xvfBp -); }
 # findfile <filepat> # finds files matching <filepat> below .
 findfile() { command find . -name "$@" -print; }
 alias findfiles='find . -type f'
+alias findsod='find . \( -type d -exec echo {}/ \; \) -o -print | sort-directory-order'
 
 alias ag='ag --hidden --follow --search-zip'
 
