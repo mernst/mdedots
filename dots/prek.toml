@@ -306,7 +306,7 @@ hooks = [
 #     { id = "codespell", exclude = { glob = [ "en_US_apostrophe.dic", ".ssh/known_hosts", "enscript.st" ] } },
 # ]
 
-# proselint does not understand fenced code blocks in markdown files.
+# proselint does not understand fenced code blocks in Markdown files.
 # [[repos]]
 # repo = "https://github.com/amperser/proselint"
 # rev = "v0.16.0"
