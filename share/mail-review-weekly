@@ -21,10 +21,10 @@ def mail_search(search_term: str) -> None:
         time.sleep(0.3)
 
 
-def mail_label(search_term: str) -> None:
+def mail_label(label_name: str) -> None:
     """Search for a label in both of my inboxes."""
     for username in usernames:
-        webbrowser.open("https://mail.google.com/mail/u/" + username + "/#label/" + search_term)
+        webbrowser.open("https://mail.google.com/mail/u/" + username + "/#label/" + label_name)
         time.sleep(0.3)
 
 
@@ -61,7 +61,7 @@ for username in usernames:
         "https://mail.google.com/mail/u/" + username + "/#search/label%3Adelay-weekly+ecoop-info"
     )
 mail_search("label%3Adelay-junk+%22micheal%22")
-mail_search("to:it-fmeurope-events")
+mail_search("to%3Ait-fmeurope-events")
 
 input("Press ENTER")
 print("Part 3")
@@ -81,6 +81,7 @@ print("Part 4")
 mail_search("category%3Apromotions+label%3Ainbox")
 mail_search("category%3Asocial+label%3Ainbox")
 mail_search("category%3Aupdates+label%3Ainbox+label%3Acommerce")
+input("Press ENTER")
 mail_search("category%3Aupdates+label%3Ainbox")
 mail_search("to%3Aprogress-reports%40cs.washington.edu+label%3Ainbox")
 mail_search("category%3Aforums+label%3Ainbox")

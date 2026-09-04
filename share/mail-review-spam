@@ -85,9 +85,9 @@ spam_search("from:spl.org")
 spam_search("from:trenduw" + "@" + "uw.edu")
 spam_search("from:uw.edu")
 spam_search("from:washington.edu")
-spam_search('from:"Google%20Calendar"')
+spam_search('from:"Google Calendar"')
 spam_search('from:"Mail Delivery System"')
-spam_search('from:"Mail%20Delivery@20Subsystem"')
+spam_search('from:"Mail Delivery Subsystem"')
 input("Press ENTER")
 
 print("Likely false positives (other than by sender)")
@@ -180,7 +180,6 @@ spam_search("重要")
 # NOTE: Most of these aren't a problem because the email subject sorts
 # at the end when I review the email in Emacs Mew.
 # spam_search("К")  # ruff:ignore[ambiguous-unicode-character-comment]
-# spam_search("и")
 # spam_search("в")
 # spam_search("я")
 # spam_search("في")
@@ -193,13 +192,13 @@ print("Suspicious senders, part 1")
 ## Too broad
 # spam_search("from:mail")
 ## Had no search results for 3 months
-# spam_search('from:"Mustafa%20Ayvaz"')
-# spam_search('from:"Ted's%20Wood%20Working"')
-# spam_search('from:"ZEISS%20Microscopy"')
+# spam_search('from:"Mustafa Ayvaz"')
+# spam_search('from:"Ted\'s Wood Working"')
+# spam_search('from:"ZEISS Microscopy"')
 # spam_search("from:GreenNewDealNetwork.org")
 # spam_search("from:Plantronics")
 # spam_search("from:isualum" + "@" + "mail.iastate.edu")
-# spam_search('"Scoop+News"') # nothing on 8/3/2022, 9/5/2022
+# spam_search('"Scoop News"') # nothing on 8/3/2022, 9/5/2022
 # spam_search("CyberScoop") # nothing on 8/3/2022, 9/5/2022
 # spam_search("EdScoop") # nothing on 8/3/2022, 9/5/2022
 # spam_search("FedScoop") # nothing on 8/3/2022, 9/5/2022
@@ -212,13 +211,13 @@ print("Suspicious senders, part 1")
 
 spam_search("(from:dr OR from:mr OR from:mrs OR from:ms)")
 
-spam_search('from:"Anand%20Raghavan"')  # nothing on 9/5/2022 # nothing on 8/3/2023
-spam_search('from:"Cooling%20Bra%20Pro"')  # nothing on 9/5/2022
+spam_search('from:"Anand Raghavan"')  # nothing on 9/5/2022 # nothing on 8/3/2023
+spam_search('from:"Cooling Bra Pro"')  # nothing on 9/5/2022
 spam_search('from:"EMILYs List"')  # nothing on 8/3/2023
 spam_search('from:"Fluke Corporation"')  # nothing on 8/3/2023
 spam_search('from:"Harbor Freight"')  # nothing on 8/3/2023
 spam_search('from:"IKA Works"')
-spam_search('from:"Innovation%20News%20Network"')
+spam_search('from:"Innovation News Network"')
 spam_search('from:"Mend The Marriage"')  # nothing on 8/3/2023
 spam_search('from:"Michael Weber"')
 spam_search('from:"Survival Ops Tactical"')  # nothing on 8/3/2023
@@ -261,7 +260,7 @@ spam_search("from:email")
 spam_search("(from:bytesize OR from:nfina)")
 spam_search('(from:"Klaus Richter" OR from:"Manfred Böhm" OR from:"Manfred Schmitz")')
 # These do not include "from:" in the search
-spam_search('("golf+wire" OR Speechelo OR Syxsense OR labelbox OR techwatch)')
+spam_search('("golf wire" OR Speechelo OR Syxsense OR labelbox OR techwatch)')
 spam_search("bara" + "@" + "kolliers.com")
 input("Press ENTER")
 
@@ -277,14 +276,12 @@ spam_search("from:journal")
 spam_search("keynote")
 spam_search("anyworkanywhere")
 spam_search("from:team")
-spam_search("from:trump")
 spam_search("from:noreply" + "@" + "reply.kik-textilien.eu")
 input("Press ENTER")
 
 print("Frequent topics 1")
 
 spam_search("subject:urgent")
-spam_search("CFP AND (Scopus OR subject:journal)")
 spam_search("Scopus OR subject:journal")
 
 spam_search('"nick hellen"')
@@ -310,7 +307,7 @@ print("Frequent topics 2")
 
 spam_search("singles")
 
-spam_search('"sam%27s club"')
+spam_search('"sam\'s club"')
 
 spam_search('"tractor supply"')
 spam_search('"Sky Devialet Soundbox"')
