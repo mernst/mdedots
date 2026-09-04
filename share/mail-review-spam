@@ -1,355 +1,773 @@
-#! /usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "browser-cookie3",
+#   "google-api-python-client",
+#   "google-auth",
+#   "google-auth-oauthlib",
+#   "requests",
+# ]
+# ///
 
 """Review spam mail in Gmail.
 
 Usage: mail-review-spam
+
+The Gmail API must be enabled for the project represented by
+~/private/googleusercontent-oauth-client-secret.json.  On the first run, the
+script asks the user to authorize each account; later runs use separate token
+caches in ~/private.
 """
 
-# I would prefer not to display tabs containing "No messages matched your search."
-# However, I don't see how to obtain the content of the page.
-# This doesn't seem to work:  it doesn't get my cookies and shows the login page.
-#   google-chrome --headless=new --user-data-dir --enable-logging --disable-gpu \
-#     --dump-dom \
-#     https://mail.google.com/mail/u/mernst@cs.washington.edu/#search/in%3Aspam+from%3A8x8 \
-#     > out.html
-# I guess I could do the culling within Emacs...
+from __future__ import annotations
 
+import base64
+import binascii
+import contextlib
+import tempfile
 import time
 import webbrowser
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+from urllib.parse import quote
 
-## Sometimes these names work, sometimes they don't and I have to use the numbers just below.
-# google_acct_a = "mernst" + "@" + "cs.washington.edu"
-# google_acct_b = "michael.ernst"
-google_acct_a = "0"
-google_acct_b = "2"
-
-
-def spam_search(search_term: str) -> None:
-    """Search for a term in spam mail."""
-    webbrowser.open(
-        "https://mail.google.com/mail/u/" + google_acct_a + "/#search/in:spam+" + search_term
-    )
-    time.sleep(0.3)
-    webbrowser.open(
-        "https://mail.google.com/mail/u/" + google_acct_b + "/#search/in:spam+" + search_term
-    )
-    time.sleep(0.3)
-
-
-# To avoid "Showing related results", double-quote the term.
-
-print("Stop and re-start Chrome; probably requires `killall chrome` on the command line")
-input("Press ENTER")
-
-print("My username or name in the subject line")
-spam_search('(subject:"michaelernst" OR subject:"mernst" OR subject:"cs.washington.edu")')
-# also catches "Michael Ernst"
-spam_search('(subject:"michael.ernst" OR subject:"Michael D Ernst")')
-input("Press ENTER")
-
-print("Mail forged to be from me")
-spam_search("(from:michaelernst OR from:michael.ernst OR from:mernst)")
-input("Press ENTER")
-
-print('Misspelled "Micheal"')
-spam_search('"Micheal"')
-input("Press ENTER")
-
-print('"Michael" in the subject line or "Hi Michael"')
-spam_search("subject:Michael")
-spam_search('"Hi Michael"')
-input("Press ENTER")
-
-print("Likely false positives (by sender, part 1)")
-spam_search("from:amazon.com")
-spam_search("from:auto-reply" + "@" + "usps.com")
-spam_search("from:builds" + "@" + "circleci.com")
-spam_search("from:centurylink.com")
-spam_search("from:checker-framework-dev")
-spam_search("from:cs.washington.edu")
-spam_search("from:fredhutch.org")
-spam_search("from:hallowelltodaro.com")
-spam_search("from:info" + "@" + "mountaineers.org")
-spam_search("from:jsagarin" + "@" + "verizon.net")
-spam_search("from:lincolnseattleptsa.org")
-spam_search("from:lls.org")
-input("Press ENTER")
-
-print("Likely false positives (by sender, part 2)")
-spam_search("from:mygoodtogo.com")
-spam_search("from:newyorktimes.com")
-spam_search("from:noreply" + "@" + "steampowered.com")
-spam_search("from:pnc.com")
-spam_search("from:seattlecca.org")
-spam_search("from:spl.org")
-spam_search("from:trenduw" + "@" + "uw.edu")
-spam_search("from:uw.edu")
-spam_search("from:washington.edu")
-spam_search('from:"Google Calendar"')
-spam_search('from:"Mail Delivery System"')
-spam_search('from:"Mail Delivery Subsystem"')
-input("Press ENTER")
-
-print("Likely false positives (other than by sender)")
-
-spam_search('subject:"security alert for"')
-spam_search("subject:seajug")
-spam_search("subject:seworld")
-spam_search("subject:typetools")
-spam_search("to:drool" + "@" + "mit.edu")
-spam_search("to:eit" + "@" + "mit.edu")
-spam_search("to:mit1989" + "@" + "mailman-alum.mit.edu")
-# spam_search("to:sgcyouth" + "@" + "googlegroups.com")
-
-spam_search('"Allen School"')
-spam_search("ecoop-info")
-spam_search("lombok")
-spam_search("maeveahowell" + "@" + "gmail.com")
-spam_search('"plse"')
-spam_search("uw-security-research")
-input("Press ENTER")
-
-print("Possible false positive")
-spam_search("subject:invitation")
-input("Press ENTER")
-
-print('Foreign languages (watch out for "Showing related results")')
-
-## These emoji searches do not work; the search matches all emails.
-# spam_search("💋")
-# spam_search("❤")
-# spam_search("💘")
-## It works if I abut it with a word, like this:
-## spam_search("🔥H0T")
-
-# German
-# This does not seem to work; at least, a "Herzlichen Glückwunsch" email remained
-spam_search(
-    "("
-    + " OR ".join(  # ruff:ignore[static-join-to-f-string]
-        [
-            '"Geschäft"',
-            '"Sehr geehrter"',
-            '"und mit"',
-            '"nur vom"',
-            '"haben Sie"',
-            '"wie geht es dir"',
-            '"mit der"',
-            '"Herzlichen"',
-            '"Glückwunsch"',
-            "ich",
-            '("wir" AND "die")',
-            '("ab" AND "im")',
-            '("und" AND "von")',
-            '("ist" AND "diese")',
-            '"guten tag"',
-            '"spende"',
-            '"wir uns"',
-            '("Ihre" AND "ist")',
-            '(Gutschein OR "kannst du")',
-            '("hallo" AND "ist")',
-            '("Rückfrage" AND "zu")',
-            '("Ihr Konto")',
-            '("ich bin")',
-            '("ich habe")',
-            "(Nachricht)",
-            "(kurze Frage)",
-            "(anfrage zu)",
-            "(frage zu)",
-        ]
-    )
-    + ")"
+GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
+CLIENT_SECRET_PATH = Path.home() / "private/googleusercontent-oauth-client-secret.json"
+LIST_ACCOUNTS_URL = (
+    "https://accounts.google.com/ListAccounts"
+    "?gpsia=1&source=ChromiumBrowser&json=standard&laf=b64bin"
 )
-# Portuguese
-spam_search(
-    '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR '
-    "reclamação OR eletrônica OR curriculo OR Investigação"
+DISCOVERY_FAILURE = (
+    "Google browser-account discovery no longer works; mail-review-spam must be rewritten"
 )
-# Spanish
-spam_search('(mejor AND opción) OR ("en su")')
-# Russian
-spam_search("и")
-# Polish
-spam_search("Proszę OR Słowa OR Dzień OR związku OR Wsparcie OR programistyczne OR spotkania")
-# Italian
-spam_search("Fattura OR pagata OR guardare OR signora OR uomo")
-# Chinese
-spam_search("様")
-spam_search("重要")
 
-# NOTE: Most of these aren't a problem because the email subject sorts
-# at the end when I review the email in Emacs Mew.
-# spam_search("К")  # ruff:ignore[ambiguous-unicode-character-comment]
-# spam_search("в")
-# spam_search("я")
-# spam_search("في")
-# spam_search("مارس")
 
-input("Press ENTER")
+@dataclass(frozen=True)
+class AccountConfig:
+    """A Gmail identity and its OAuth token cache."""
 
-print("Suspicious senders, part 1")
+    email: str
+    token_path: Path
 
-## Too broad
-# spam_search("from:mail")
-## Had no search results for 3 months
-# spam_search('from:"Mustafa Ayvaz"')
-# spam_search('from:"Ted\'s Wood Working"')
-# spam_search('from:"ZEISS Microscopy"')
-# spam_search("from:GreenNewDealNetwork.org")
-# spam_search("from:Plantronics")
-# spam_search("from:isualum" + "@" + "mail.iastate.edu")
-# spam_search('"Scoop News"') # nothing on 8/3/2022, 9/5/2022
-# spam_search("CyberScoop") # nothing on 8/3/2022, 9/5/2022
-# spam_search("EdScoop") # nothing on 8/3/2022, 9/5/2022
-# spam_search("FedScoop") # nothing on 8/3/2022, 9/5/2022
-# spam_search("StateScoop") # nothing on 8/3/2022, 9/5/2022
-# spam_search("Fluke") # nothing on 8/3/2022, 9/5/2022
-# spam_search("Pluralsight") # nothing on 8/3/2022, 9/5/2022
-# spam_search("TeaParty.org") # nothing on 8/3/2022, 9/5/2022
-# spam_search("angi") # nothing on 8/3/2022, 9/5/2022
-# spam_search("cyberweek") # nothing on 8/3/2022, 9/5/2022
 
-spam_search("(from:dr OR from:mr OR from:mrs OR from:ms)")
+@dataclass(frozen=True)
+class AccountSession:
+    """An account configuration paired with an authenticated Gmail service."""
 
-spam_search('from:"Anand Raghavan"')  # nothing on 9/5/2022 # nothing on 8/3/2023
-spam_search('from:"Cooling Bra Pro"')  # nothing on 9/5/2022
-spam_search('from:"EMILYs List"')  # nothing on 8/3/2023
-spam_search('from:"Fluke Corporation"')  # nothing on 8/3/2023
-spam_search('from:"Harbor Freight"')  # nothing on 8/3/2023
-spam_search('from:"IKA Works"')
-spam_search('from:"Innovation News Network"')
-spam_search('from:"Mend The Marriage"')  # nothing on 8/3/2023
-spam_search('from:"Michael Weber"')
-spam_search('from:"Survival Ops Tactical"')  # nothing on 8/3/2023
-spam_search('from:"TPC Training"')  # nothing on 8/3/2023
-spam_search('from:"Team OutSystems"')  # nothing on 8/3/2023
-spam_search('from:"Tracy Zettinig"')  # nothing on 8/3/2023
-spam_search('from:"Windstream Enterprise"')  # nothing on 8/3/2023
-spam_search("from:8x8")  # nothing on 8/3/2023
-spam_search("from:webinars" + "@" + "training.businesswatchnetwork.com")
-spam_search("from:expertspeak" + "@" + "email.concordeducations.com")
+    config: AccountConfig
+    browser_slot: str
+    service: Any
 
-input("Press ENTER")
 
-print("Suspicious senders, part 2")
-spam_search("(from:AlertMedia OR from:Amazon OR from:BOXX OR from:Banco)")
-spam_search("(from:BeTechly OR from:Bloomberg OR from:EDIBON OR from:ESET)")
-spam_search("(from:Egnyte OR from:Ginja OR from:Helpdesk OR from:Hitradio)")
-spam_search("(from:McAfee OR from:Norton OR from:Planview OR from:RingCentral)")
-spam_search("from:SeguridadHB")
-spam_search("(from:Avantor OR from:ATC-NY OR from:SimpsonScarborough OR from:VinFuture)")
-spam_search('(from:"Check Point" OR from:"Staples Technology Solutions")')
-spam_search("(from:FB)")
-spam_search('(from:"Amalia Meyer" OR from:"Anna Müller")')
-spam_search('(from:"AAA" OR from:"topgolf" OR from:"Open Access Government")')
-spam_search('(from:"Horst Thomas")')
-
-input("Press ENTER")
-
-print("Suspicious senders, part 3")
-# spam_search("from:bee" + "@" + "BAUER.UH.EDU")  # nothing on 8/3/2023
-spam_search("from:jooble.org")
-spam_search("from:deuscustoms.com")
-spam_search("(from:blr OR from:cardio OR from:convergetp.com OR from:demings)")
-spam_search("(from:fortinet OR from:imperva OR from:liberator OR from:linkedin)")
-spam_search(
-    "(from:sci_ed" + "@" + "info.vwr.com OR from:sonicwall OR from:uCertify OR from:whitmer)"
+ACCOUNT_CONFIGS = (
+    AccountConfig(
+        "mernst" + "@" + "cs.washington.edu",
+        Path.home() / "private/googleusercontent-oauth-token-mernst-cs-washington-edu.json",
+    ),
+    AccountConfig(
+        "michael.ernst" + "@" + "gmail.com",
+        Path.home() / "private/googleusercontent-oauth-token-michael-ernst-gmail-com.json",
+    ),
 )
-spam_search("(from:CashApp OR from:temu OR from:howida)")
-spam_search("from:email")
-spam_search("(from:bytesize OR from:nfina)")
-spam_search('(from:"Klaus Richter" OR from:"Manfred Böhm" OR from:"Manfred Schmitz")')
-# These do not include "from:" in the search
-spam_search('("golf wire" OR Speechelo OR Syxsense OR labelbox OR techwatch)')
-spam_search("bara" + "@" + "kolliers.com")
-input("Press ENTER")
 
-print("Suspicious senders, part 4")
-spam_search("from:no-reply" + "@" + "calendly.com")
-spam_search('from:"The Flights Guru"')
-spam_search("from:cognella.com")
-spam_search("from:matscience-summit.com")
-spam_search("from:medtechmvp")
-spam_search("from:medlinepapersoa.online")
-spam_search("from:editor")
-spam_search("from:journal")
-spam_search("keynote")
-spam_search("anyworkanywhere")
-spam_search("from:team")
-spam_search("from:noreply" + "@" + "reply.kik-textilien.eu")
-input("Press ENTER")
+account_sessions: tuple[AccountSession, ...] = ()
 
-print("Frequent topics 1")
 
-spam_search("subject:urgent")
-spam_search("Scopus OR subject:journal")
+def _read_varint(data: bytes, position: int) -> tuple[int, int]:
+    """Read one protobuf varint.
 
-spam_search('"nick hellen"')
-spam_search('"michael duwayne"')
+    Returns:
+        The decoded integer and the position following it.
+    """
+    result = 0
+    for shift in range(0, 70, 7):
+        if position >= len(data):
+            raise ValueError("truncated protobuf varint")
+        byte = data[position]
+        position += 1
+        result |= (byte & 0x7F) << shift
+        if not byte & 0x80:
+            return result, position
+    raise ValueError("oversized protobuf varint")
 
-input("Press ENTER")
 
-print("Frequent topics 2")
+def _parse_protobuf_fields(data: bytes) -> list[tuple[int, int, int | bytes]]:
+    """Parse the protobuf wire types used by ListAccounts.
 
-## These are not so useful
-# spam_search("Seattle")
-# spam_search("democratic")
-# spam_search("republican")
-# spam_search("subject:Trump")
-## These did not occur for 3 months
-# spam_search("CBD")
-# spam_search("Imperva")
-# spam_search("KN95")
-# spam_search("fuckbuddy")
-# spam_search("hookup")
-# spam_search("pussy")
-# spam_search("temperature")
+    Returns:
+        Tuples containing field number, wire type, and field value.
+    """
+    fields: list[tuple[int, int, int | bytes]] = []
+    position = 0
+    while position < len(data):
+        key, position = _read_varint(data, position)
+        number, wire_type = key >> 3, key & 7
+        if number == 0:
+            raise ValueError("invalid protobuf field number zero")
+        if wire_type == 0:
+            value, position = _read_varint(data, position)
+        elif wire_type == 1:
+            end = position + 8
+            if end > len(data):
+                raise ValueError("truncated fixed64 protobuf field")
+            value, position = data[position:end], end
+        elif wire_type == 2:
+            length, position = _read_varint(data, position)
+            end = position + length
+            if end > len(data):
+                raise ValueError("truncated length-delimited protobuf field")
+            value, position = data[position:end], end
+        elif wire_type == 5:
+            end = position + 4
+            if end > len(data):
+                raise ValueError("truncated fixed32 protobuf field")
+            value, position = data[position:end], end
+        else:
+            message = f"unsupported protobuf wire type {wire_type}"
+            raise ValueError(message)
+        fields.append((number, wire_type, value))
+    return fields
 
-spam_search("singles")
 
-spam_search('"sam\'s club"')
+def _single_field(
+    fields: list[tuple[int, int, int | bytes]], number: int, wire_type: int
+) -> int | bytes | None:
+    """Get an optional non-repeated protobuf field with the expected wire type.
 
-spam_search('"tractor supply"')
-spam_search('"Sky Devialet Soundbox"')
-spam_search("diabetes")
-spam_search("tinnitus")
+    Returns:
+        The field value, or None when the field is absent.
+    """
+    matching = [value for field, wire, value in fields if field == number and wire == wire_type]
+    wrong_wire = any(field == number and wire != wire_type for field, wire, _value in fields)
+    if wrong_wire or len(matching) > 1:
+        message = f"invalid or repeated protobuf field {number}"
+        raise ValueError(message)
+    return matching[0] if matching else None
 
-spam_search("subject:donation")
-spam_search("subject:investment")
-spam_search("subject:quota")
-spam_search("subject:spam")
-spam_search("subject:strategies")
 
-input("Press ENTER")
+def parse_browser_accounts(payload: str) -> dict[str, str]:
+    """Parse Google's undocumented base64-protobuf browser-account response.
 
-print("Frequent topics 3")
-spam_search("subject:confirmation")
-spam_search("subject:conference")
-spam_search("Casino")
-spam_search("(bitcoin OR crypto)")
-spam_search("(coronavirus OR covid)")
-spam_search("fuckme")
-spam_search("indonesia")  # nothing on 2/3/2023
-spam_search("(keto OR ketosis)")  # nothing on 8/3/2022
-spam_search("docusign")
-spam_search("elongation")
-spam_search("trump")
-# spam_search("Kamala Harris")
-input("Press ENTER")
+    Returns:
+        A mapping from valid signed-in email addresses to Gmail browser slots.
+    """
+    if not isinstance(payload, str) or not payload.strip():
+        raise ValueError("empty or non-text ListAccounts response")
+    try:
+        decoded = base64.b64decode(payload.strip(), validate=True)
+    except (binascii.Error, ValueError) as error:
+        raise ValueError("ListAccounts response is not valid base64") from error
 
-print("To unused email address")
-spam_search("to:mernst" + "@" + "cs.rice.edu")
-spam_search("to:mernst" + "@" + "rice.edu")
-input("Press ENTER")
+    top_level_fields = _parse_protobuf_fields(decoded)
+    if any(number == 1 and wire_type != 2 for number, wire_type, _ in top_level_fields):
+        raise ValueError("invalid ListAccounts account field")
+    account_messages = [
+        value
+        for number, wire_type, value in top_level_fields
+        if number == 1 and wire_type == 2 and isinstance(value, bytes)
+    ]
+    if not account_messages:
+        raise ValueError("ListAccounts response contains no accounts")
 
-input("Restart web browser")
-input("Now the rest (read these in Emacs, on the same machine running a browser).")
-print("1. Sort by from, look for frequent senders with non-uniform subject lines.")
-print("2. Sort by subject, scan for non-spam.")
-print("3. Delete all spam from Gmail.")
+    result: dict[str, str] = {}
+    seen_emails: set[str] = set()
+    for index, account_message in enumerate(account_messages):
+        fields = _parse_protobuf_fields(account_message)
+        email_bytes = _single_field(fields, 3, 2)
+        gaia_id = _single_field(fields, 10, 2)
+        valid_session = _single_field(fields, 9, 0)
+        signed_out = _single_field(fields, 14, 0)
+        if not isinstance(email_bytes, bytes) or not email_bytes:
+            message = f"missing email in ListAccounts record at position {index}"
+            raise ValueError(message)
+        if not isinstance(gaia_id, bytes) or not gaia_id:
+            message = f"missing Gaia ID in ListAccounts record at position {index}"
+            raise ValueError(message)
+        if valid_session not in (None, 0, 1) or signed_out not in (None, 0, 1):
+            message = f"invalid account state in ListAccounts record at position {index}"
+            raise ValueError(message)
+        try:
+            email = email_bytes.decode("utf-8").casefold()
+            gaia_id.decode("utf-8")
+        except UnicodeDecodeError as error:
+            message = f"invalid text in ListAccounts record at position {index}"
+            raise ValueError(message) from error
+        if email in seen_emails:
+            message = f"duplicate browser account {email}"
+            raise ValueError(message)
+        seen_emails.add(email)
+        if valid_session != 0 and signed_out != 1:
+            result[email] = str(index)
+    return result
 
-## I don't use Mew any longer; with it, I used the spam-todo label
-# webbrowser.open("https://mail.google.com/mail/u/" + google_acct_a + "/#label/spam-todo")
-# webbrowser.open("https://mail.google.com/mail/u/" + google_acct_b + "/#label/spam-todo")
-webbrowser.open("https://mail.google.com/mail/u/" + google_acct_a + "/#spam")
-webbrowser.open("https://mail.google.com/mail/u/" + google_acct_b + "/#spam")
+
+def discover_browser_slots(expected_emails: tuple[str, ...]) -> dict[str, str]:
+    """Discover Gmail slots using cookies from Chrome's signed-in session.
+
+    Returns:
+        A mapping from each expected email address to its current numeric slot.
+    """
+    try:
+        import browser_cookie3  # ruff: ignore[import-outside-top-level]
+        import requests  # ruff: ignore[import-outside-top-level]
+
+        cookies = browser_cookie3.chrome(domain_name=".google.com")
+        response = requests.post(
+            LIST_ACCOUNTS_URL,
+            data=" ",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Origin": "https://www.google.com",
+            },
+            cookies=cookies,
+            timeout=10,
+        )
+        response.raise_for_status()
+        discovered = parse_browser_accounts(response.text)
+        slots: dict[str, str] = {}
+        for email in expected_emails:
+            slot = discovered.get(email.casefold())
+            if slot is None:
+                message = f"expected signed-in account is missing or invalid: {email}"
+                raise ValueError(message)  # ruff: ignore[raise-within-try]
+            slots[email.casefold()] = slot
+        return slots
+    except Exception as error:
+        message = f"{DISCOVERY_FAILURE}: {error}"
+        raise RuntimeError(message) from error
+
+
+def _write_private_token(path: Path, contents: str) -> None:
+    """Atomically write an OAuth token cache readable only by its owner."""
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    temporary_name: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=path.parent, prefix=path.name + ".", delete=False
+        ) as output:
+            temporary_name = output.name
+            Path(temporary_name).chmod(0o600)
+            output.write(contents)
+        Path(temporary_name).replace(path)
+        temporary_name = None
+        path.chmod(0o600)
+    finally:
+        if temporary_name is not None:
+            with contextlib.suppress(FileNotFoundError):
+                Path(temporary_name).unlink()
+
+
+def authenticate_account(
+    config: AccountConfig, browser_slot: str, client_secret_path: Path
+) -> AccountSession:
+    """Authenticate one account and verify that Google returned the expected identity.
+
+    Returns:
+        The authenticated account session.
+    """
+    try:
+        from google.auth.transport.requests import Request  # ruff: ignore[import-outside-top-level]
+        from google.oauth2.credentials import Credentials  # ruff: ignore[import-outside-top-level]
+        from google_auth_oauthlib.flow import InstalledAppFlow  # ruff: ignore[import-outside-top-level]
+        from googleapiclient.discovery import build  # ruff: ignore[import-outside-top-level]
+    except ImportError as error:
+        raise RuntimeError(
+            "mail-review-spam requires google-api-python-client, google-auth, "
+            "and google-auth-oauthlib; execute the script directly or with "
+            "`uv run --script mail-review-spam` so uv supplies them"
+        ) from error
+
+    try:
+        if config.token_path.exists():
+            credentials = Credentials.from_authorized_user_file(
+                str(config.token_path), [GMAIL_READONLY_SCOPE]
+            )
+            if credentials.expired and credentials.refresh_token:
+                credentials.refresh(Request())
+        else:
+            print(f"Authorize {config.email} (Gmail browser slot {browser_slot}).")
+            flow = InstalledAppFlow.from_client_secrets_file(
+                str(client_secret_path), [GMAIL_READONLY_SCOPE]
+            )
+            credentials = flow.run_local_server(
+                port=0,
+                prompt="select_account",
+                authorization_prompt_message="",
+            )
+
+        if not credentials.valid:
+            raise RuntimeError(  # ruff: ignore[raise-within-try]
+                "the OAuth credentials are invalid and cannot be refreshed"
+            )
+
+        service = build("gmail", "v1", credentials=credentials, cache_discovery=False)
+        actual_email = service.users().getProfile(userId="me").execute()["emailAddress"]
+        if actual_email.casefold() != config.email.casefold():
+            msg = f"authorized {actual_email}, but expected {config.email}; token was not saved"
+            raise RuntimeError(msg)  # ruff: ignore[raise-within-try]
+        _write_private_token(config.token_path, credentials.to_json())
+        return AccountSession(config, browser_slot, service)
+    except RuntimeError:
+        raise
+    except Exception as error:
+        msg = f"cannot authorize {config.email}: {error}"
+        raise RuntimeError(msg) from error
+
+
+def authenticate_accounts(
+    browser_slots: dict[str, str],
+    configs: tuple[AccountConfig, ...] = ACCOUNT_CONFIGS,
+    client_secret_path: Path = CLIENT_SECRET_PATH,
+) -> tuple[AccountSession, ...]:
+    """Authenticate all configured Gmail accounts.
+
+    Returns:
+        Authenticated sessions in configuration order.
+    """
+    if not client_secret_path.is_file():
+        msg = f"OAuth client-secret file does not exist: {client_secret_path}"
+        raise RuntimeError(msg)
+    return tuple(
+        authenticate_account(config, browser_slots[config.email.casefold()], client_secret_path)
+        for config in configs
+    )
+
+
+def gmail_search_url(browser_slot: str, search_term: str) -> str:
+    """Return the Gmail browser URL for a spam search.
+
+    Returns:
+        A URL with the complete search query encoded in its fragment.
+    """
+    query = f"in:spam {search_term}"
+    return f"https://mail.google.com/mail/u/{browser_slot}/#search/{quote(query, safe='')}"
+
+
+def search_has_messages(service: Any, search_term: str) -> bool:
+    """Return whether a Gmail spam search has at least one result.
+
+    Returns:
+        Whether at least one matching message exists.
+    """
+    response = (
+        service.users()
+        .messages()
+        .list(
+            userId="me",
+            q=f"in:spam {search_term}",
+            includeSpamTrash=True,
+            maxResults=1,
+        )
+        .execute()
+    )
+    return bool(response.get("messages"))
+
+
+def is_transient_api_error(error: Exception) -> bool:
+    """Return whether an API error is likely to be temporary.
+
+    Returns:
+        Whether opening the tab is safer than terminating the review.
+    """
+    status = getattr(getattr(error, "resp", None), "status", None)
+    if status in (408, 429) or (isinstance(status, int) and 500 <= status <= 599):
+        return True
+    try:
+        from google.auth.exceptions import TransportError  # ruff: ignore[import-outside-top-level]
+
+        return isinstance(error, (TransportError, TimeoutError, ConnectionError))
+    except ImportError:
+        return isinstance(error, (TimeoutError, ConnectionError))
+
+
+def spam_search(search_term: str, sessions: tuple[AccountSession, ...] | None = None) -> None:
+    """Open this spam search only for accounts in which it has results."""
+    selected_sessions = account_sessions if sessions is None else sessions
+    if not selected_sessions:
+        raise RuntimeError("Gmail accounts have not been authenticated")
+
+    for session in selected_sessions:
+        try:
+            has_messages = search_has_messages(session.service, search_term)
+        except Exception as error:
+            if not is_transient_api_error(error):
+                msg = f"Gmail search failed for {session.config.email}: {search_term}: {error}"
+                raise RuntimeError(msg) from error
+            print(
+                f"Warning: Gmail API unavailable for {session.config.email}; "
+                f"opening search without checking: {search_term}"
+            )
+            has_messages = True
+
+        if has_messages:
+            webbrowser.open(gmail_search_url(session.browser_slot, search_term))
+            time.sleep(0.1)
+
+
+def main() -> None:
+    """Authenticate accounts and run the staged spam review."""
+    global account_sessions
+    # To avoid "Showing related results", double-quote the term.
+
+    print("Stop and re-start Chrome; probably requires `killall chrome` on the command line")
+    input("Press ENTER")
+    browser_slots = discover_browser_slots(tuple(config.email for config in ACCOUNT_CONFIGS))
+    account_sessions = authenticate_accounts(browser_slots)
+
+    print("My username or name in the subject line")
+    spam_search('(subject:"michaelernst" OR subject:"mernst" OR subject:"cs.washington.edu")')
+    # also catches "Michael Ernst"
+    spam_search('(subject:"michael.ernst" OR subject:"Michael D Ernst")')
+    input("Press ENTER")
+
+    print("Mail forged to be from me")
+    spam_search("(from:michaelernst OR from:michael.ernst OR from:mernst)")
+    input("Press ENTER")
+
+    print('Misspelled "Micheal"')
+    spam_search('"Micheal"')
+    input("Press ENTER")
+
+    print('"Michael" in the subject line or "Hi Michael"')
+    spam_search("subject:Michael")
+    spam_search('"Hi Michael"')
+    input("Press ENTER")
+
+    print("Likely false positives (by sender, part 1)")
+    spam_search("from:amazon.com")
+    spam_search("from:auto-reply" + "@" + "usps.com")
+    spam_search("from:builds" + "@" + "circleci.com")
+    spam_search("from:centurylink.com")
+    spam_search("from:checker-framework-dev")
+    spam_search("from:cs.washington.edu")
+    spam_search("from:fredhutch.org")
+    spam_search("from:hallowelltodaro.com")
+    spam_search("from:info" + "@" + "mountaineers.org")
+    spam_search("from:jsagarin" + "@" + "verizon.net")
+    spam_search("from:lincolnseattleptsa.org")
+    spam_search("from:lls.org")
+    input("Press ENTER")
+
+    print("Likely false positives (by sender, part 2)")
+    spam_search("from:mygoodtogo.com")
+    spam_search("from:newyorktimes.com")
+    spam_search("from:noreply" + "@" + "steampowered.com")
+    spam_search("from:pnc.com")
+    spam_search("from:seattlecca.org")
+    spam_search("from:spl.org")
+    spam_search("from:trenduw" + "@" + "uw.edu")
+    spam_search("from:uw.edu")
+    spam_search("from:washington.edu")
+    spam_search('from:"Google Calendar"')
+    spam_search('from:"Mail Delivery System"')
+    spam_search('from:"Mail Delivery Subsystem"')
+    input("Press ENTER")
+
+    print("Likely false positives (other than by sender)")
+
+    spam_search('subject:"security alert for"')
+    spam_search("subject:seajug")
+    spam_search("subject:seworld")
+    spam_search("subject:typetools")
+    spam_search("to:drool" + "@" + "mit.edu")
+    spam_search("to:eit" + "@" + "mit.edu")
+    spam_search("to:mit1989" + "@" + "mailman-alum.mit.edu")
+    # spam_search("to:sgcyouth" + "@" + "googlegroups.com")
+
+    spam_search('"Allen School"')
+    spam_search("ecoop-info")
+    spam_search("lombok")
+    spam_search("maeveahowell" + "@" + "gmail.com")
+    spam_search('"plse"')
+    spam_search("uw-security-research")
+    input("Press ENTER")
+
+    print("Possible false positive")
+    spam_search("subject:invitation")
+    input("Press ENTER")
+
+    print('Foreign languages (watch out for "Showing related results")')
+
+    ## These emoji searches do not work; the search matches all emails.
+    # spam_search("💋")
+    # spam_search("❤")
+    # spam_search("💘")
+    ## It works if I abut it with a word, like this:
+    ## spam_search("🔥H0T")
+
+    # German
+    # This does not seem to work; at least, a "Herzlichen Glückwunsch" email remained
+    spam_search(
+        "("
+        + " OR ".join(  # ruff:ignore[static-join-to-f-string]
+            [
+                '"Geschäft"',
+                '"Sehr geehrter"',
+                '"und mit"',
+                '"nur vom"',
+                '"haben Sie"',
+                '"wie geht es dir"',
+                '"mit der"',
+                '"Herzlichen"',
+                '"Glückwunsch"',
+                "ich",
+                '("wir" AND "die")',
+                '("ab" AND "im")',
+                '("und" AND "von")',
+                '("ist" AND "diese")',
+                '"guten tag"',
+                '"spende"',
+                '"wir uns"',
+                '("Ihre" AND "ist")',
+                '(Gutschein OR "kannst du")',
+                '("hallo" AND "ist")',
+                '("Rückfrage" AND "zu")',
+                '("Ihr Konto")',
+                '("ich bin")',
+                '("ich habe")',
+                "(Nachricht)",
+                "(kurze Frage)",
+                "(anfrage zu)",
+                "(frage zu)",
+            ]
+        )
+        + ")"
+    )
+    # Portuguese
+    spam_search(
+        '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR aprovação OR '
+        "reclamação OR eletrônica OR curriculo OR Investigação"
+    )
+    # Spanish
+    spam_search('(mejor AND opción) OR ("en su")')
+    # Russian
+    spam_search("и")
+    # Polish
+    spam_search("Proszę OR Słowa OR Dzień OR związku OR Wsparcie OR programistyczne OR spotkania")
+    # Italian
+    spam_search("Fattura OR pagata OR guardare OR signora OR uomo")
+    # Chinese
+    spam_search("様")
+    spam_search("重要")
+
+    # NOTE: Most of these aren't a problem because the email subject sorts
+    # at the end when I review the email in Emacs Mew.
+    # spam_search("К")  # ruff:ignore[ambiguous-unicode-character-comment]
+    # spam_search("в")
+    # spam_search("я")
+    # spam_search("في")
+    # spam_search("مارس")
+
+    input("Press ENTER")
+
+    print("Suspicious senders, part 1")
+
+    ## Too broad
+    # spam_search("from:mail")
+    ## Had no search results for 3 months
+    # spam_search('from:"Mustafa Ayvaz"')
+    # spam_search('from:"Ted\'s Wood Working"')
+    # spam_search('from:"ZEISS Microscopy"')
+    # spam_search("from:GreenNewDealNetwork.org")
+    # spam_search("from:Plantronics")
+    # spam_search("from:isualum" + "@" + "mail.iastate.edu")
+    # spam_search('"Scoop News"') # nothing on 8/3/2022, 9/5/2022
+    # spam_search("CyberScoop") # nothing on 8/3/2022, 9/5/2022
+    # spam_search("EdScoop") # nothing on 8/3/2022, 9/5/2022
+    # spam_search("FedScoop") # nothing on 8/3/2022, 9/5/2022
+    # spam_search("StateScoop") # nothing on 8/3/2022, 9/5/2022
+    # spam_search("Fluke") # nothing on 8/3/2022, 9/5/2022
+    # spam_search("Pluralsight") # nothing on 8/3/2022, 9/5/2022
+    # spam_search("TeaParty.org") # nothing on 8/3/2022, 9/5/2022
+    # spam_search("angi") # nothing on 8/3/2022, 9/5/2022
+    # spam_search("cyberweek") # nothing on 8/3/2022, 9/5/2022
+
+    spam_search("(from:dr OR from:mr OR from:mrs OR from:ms)")
+
+    spam_search('from:"Anand Raghavan"')  # nothing on 9/5/2022 # nothing on 8/3/2023
+    spam_search('from:"Cooling Bra Pro"')  # nothing on 9/5/2022
+    spam_search('from:"EMILYs List"')  # nothing on 8/3/2023
+    spam_search('from:"Fluke Corporation"')  # nothing on 8/3/2023
+    spam_search('from:"Harbor Freight"')  # nothing on 8/3/2023
+    spam_search('from:"IKA Works"')
+    spam_search('from:"Innovation News Network"')
+    spam_search('from:"Mend The Marriage"')  # nothing on 8/3/2023
+    spam_search('from:"Michael Weber"')
+    spam_search('from:"Survival Ops Tactical"')  # nothing on 8/3/2023
+    spam_search('from:"TPC Training"')  # nothing on 8/3/2023
+    spam_search('from:"Team OutSystems"')  # nothing on 8/3/2023
+    spam_search('from:"Tracy Zettinig"')  # nothing on 8/3/2023
+    spam_search('from:"Windstream Enterprise"')  # nothing on 8/3/2023
+    spam_search("from:8x8")  # nothing on 8/3/2023
+    spam_search("from:webinars" + "@" + "training.businesswatchnetwork.com")
+    spam_search("from:expertspeak" + "@" + "email.concordeducations.com")
+
+    input("Press ENTER")
+
+    print("Suspicious senders, part 2")
+    spam_search("from:AlertMedia")
+    spam_search("from:Amazon")
+    spam_search("from:BOXX")
+    spam_search("from:Banco")
+    spam_search("from:BeTechly")
+    spam_search("from:Bloomberg")
+    spam_search("from:EDIBON")
+    spam_search("from:ESET")
+    spam_search("from:Egnyte")
+    spam_search("from:Ginja")
+    spam_search("from:Helpdesk")
+    spam_search("from:Hitradio")
+    spam_search("from:McAfee")
+    spam_search("from:Norton")
+    spam_search("from:Planview")
+    spam_search("from:RingCentral")
+    spam_search("from:SeguridadHB")
+    spam_search("from:Avantor")
+    spam_search("from:ATC-NY")
+    spam_search("from:SimpsonScarborough")
+    spam_search("from:VinFuture")
+    spam_search('from:"Check Point"')
+    spam_search('from:"Staples Technology Solutions"')
+    spam_search("from:FB")
+    spam_search('from:"Amalia Meyer"')
+    spam_search('from:"Anna Müller"')
+    spam_search('from:"AAA"')
+    spam_search('from:"topgolf"')
+    spam_search('from:"Open Access Government"')
+    spam_search('from:"Horst Thomas"')
+
+    input("Press ENTER")
+
+    print("Suspicious senders, part 3")
+    # spam_search("from:bee" + "@" + "BAUER.UH.EDU")  # nothing on 8/3/2023
+    spam_search("from:jooble.org")
+    spam_search("from:deuscustoms.com")
+    spam_search("from:blr")
+    spam_search("from:cardio")
+    spam_search("from:convergetp.com")
+    spam_search("from:demings")
+    spam_search("from:fortinet")
+    spam_search("from:imperva")
+    spam_search("from:liberator")
+    spam_search("from:linkedin")
+    spam_search("from:sci_ed" + "@" + "info.vwr.com")
+    spam_search("from:sonicwall")
+    spam_search("from:uCertify")
+    spam_search("from:whitmer")
+    spam_search("from:CashApp")
+    spam_search("from:temu")
+    spam_search("from:howida")
+    spam_search("from:email")
+    spam_search("from:bytesize")
+    spam_search("from:nfina")
+    spam_search('from:"Klaus Richter"')
+    spam_search('from:"Manfred Böhm"')
+    spam_search('from:"Manfred Schmitz"')
+    # These do not include "from:" in the search
+    spam_search('"golf wire"')
+    spam_search("Speechelo")
+    spam_search("Syxsense")
+    spam_search("labelbox")
+    spam_search("techwatch")
+    spam_search("bara" + "@" + "kolliers.com")
+    input("Press ENTER")
+
+    print("Suspicious senders, part 4")
+    spam_search("from:no-reply" + "@" + "calendly.com")
+    spam_search('from:"The Flights Guru"')
+    spam_search("from:cognella.com")
+    spam_search("from:matscience-summit.com")
+    spam_search("from:medtechmvp")
+    spam_search("from:medlinepapersoa.online")
+    spam_search("from:editor")
+    spam_search("from:journal")
+    spam_search("keynote")
+    spam_search("anyworkanywhere")
+    spam_search("from:team")
+    spam_search("from:noreply" + "@" + "reply.kik-textilien.eu")
+    input("Press ENTER")
+
+    print("Frequent topics 1")
+
+    spam_search("subject:urgent")
+    spam_search("Scopus OR subject:journal")
+
+    spam_search('"nick hellen"')
+    spam_search('"michael duwayne"')
+
+    input("Press ENTER")
+
+    print("Frequent topics 2")
+
+    ## These are not so useful
+    # spam_search("Seattle")
+    # spam_search("democratic")
+    # spam_search("republican")
+    # spam_search("subject:Trump")
+    ## These did not occur for 3 months
+    # spam_search("CBD")
+    # spam_search("Imperva")
+    # spam_search("KN95")
+    # spam_search("fuckbuddy")
+    # spam_search("hookup")
+    # spam_search("pussy")
+    # spam_search("temperature")
+
+    spam_search("singles")
+
+    spam_search('"sam\'s club"')
+
+    spam_search('"tractor supply"')
+    spam_search('"Sky Devialet Soundbox"')
+    spam_search("diabetes")
+    spam_search("tinnitus")
+
+    spam_search("subject:donation")
+    spam_search("subject:investment")
+    spam_search("subject:quota")
+    spam_search("subject:spam")
+    spam_search("subject:strategies")
+
+    input("Press ENTER")
+
+    print("Frequent topics 3")
+    spam_search("subject:confirmation")
+    spam_search("subject:conference")
+    spam_search("Casino")
+    spam_search("(bitcoin OR crypto)")
+    spam_search("(coronavirus OR covid)")
+    spam_search("fuckme")
+    spam_search("indonesia")  # nothing on 2/3/2023
+    spam_search("(keto OR ketosis)")  # nothing on 8/3/2022
+    spam_search("docusign")
+    spam_search("elongation")
+    spam_search("trump")
+    # spam_search("Kamala Harris")
+    input("Press ENTER")
+
+    print("To unused email address")
+    spam_search("to:mernst" + "@" + "cs.rice.edu")
+    spam_search("to:mernst" + "@" + "rice.edu")
+    input("Press ENTER")
+
+    input("Restart web browser")
+    input("Now the rest (read these in Emacs, on the same machine running a browser).")
+    print("1. Sort by from, look for frequent senders with non-uniform subject lines.")
+    print("2. Sort by subject, scan for non-spam.")
+    print("3. Delete all spam from Gmail.")
+
+    ## I don't use Mew any longer; with it, I used the spam-todo label
+    for session in account_sessions:
+        webbrowser.open(f"https://mail.google.com/mail/u/{session.browser_slot}/#spam")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nCancelled.")
+    except RuntimeError as error:
+        msg = f"mail-review-spam: {error}"
+        raise SystemExit(msg) from error

@@ -102,7 +102,11 @@
   },
   "spinnerVerbs": {
     "mode": "replace",
-    "verbs": ["Thinking", "Processing", "Working"]
+    "verbs": [
+      "Thinking",
+      "Processing",
+      "Working"
+    ]
   },
   "voice": {
     "enabled": true,

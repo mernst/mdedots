@@ -11,14 +11,18 @@
 
 # shellcheck shell=bash
 
-## Guard against sourcing this file twice in one shell.  Unlike
-## dot_environment_file_read, this variable is deliberately not exported: a
-## child shell inherits no aliases, so a child shell must source this file
-## again.
-if [ -n "${dot_aliases_file_read}" ]; then
+## Guard against sourcing an unchanged version of this file twice in one shell.
+## Unlike dot_environment_file_read, this variable is deliberately not
+## exported: a child shell inherits no aliases, so a child shell must source
+## this file again.  Dereference the symlink so that this timestamp changes
+## when the repository copy changes.
+dot_aliases_file_timestamp=$(stat --dereference --format=%y "${BASH_SOURCE[0]}")
+if [ "${dot_aliases_file_read}" = "${dot_aliases_file_timestamp}" ]; then
+  unset dot_aliases_file_timestamp
   return
 else
-  dot_aliases_file_read=1
+  dot_aliases_file_read=${dot_aliases_file_timestamp}
+  unset dot_aliases_file_timestamp
 fi
 
 ###########################################################################
@@ -150,9 +154,24 @@ alias bigscreen='xrandr -s 1920x1200'
 alias aoeu='if [ $DISPLAY ]; then setxkbmap us; else loadkeys us; fi'
 alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 
-alias claudetrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.claude.json > ~/.claude.json.tmp && mv ~/.claude.json.tmp ~/.claude.json'
-alias claude='claudetrustdir && \claude --model opus --dangerously-skip-permissions'
-alias claudemax='claudetrustdir && \claude --model fable --effort max'
+### LLMs
+
+alias claudetrustdir='[ ! -f "$CLAUDE_CONFIG/.claude.json" ] || (jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" "$CLAUDE_CONFIG/.claude.json" > "$CLAUDE_CONFIG/.claude.json.tmp" && mv "$CLAUDE_CONFIG/.claude.json.tmp" "$CLAUDE_CONFIG/.claude.json")'
+alias claude-cse='export CLAUDE_CONFIG=~/.claude-cse'
+alias claude-personal='export CLAUDE_CONFIG=~/claude-personal'
+# This is the default until the user says otherwise.
+claude-cse
+alias claude='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model opus --dangerously-skip-permissions'
+alias claudemax='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model fable --effort max'
+
+alias agytrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.agy.json > ~/.agy.json.tmp && mv ~/.agy.json.tmp ~/.agy.json'
+alias agy='agytrustdir && \agy --dangerously-skip-permissions'
+alias agymax='agytrustdir && \agy --model fable --effort max'
+
+alias codextrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.codex.json > ~/.codex.json.tmp && mv ~/.codex.json.tmp ~/.codex.json'
+alias codex='codextrustdir && \codex --dangerously-skip-permissions'
+alias codexmax='codextrustdir && \codex --model fable --effort max'
+
 
 alias prekall='prek -q run --all-files'
 
