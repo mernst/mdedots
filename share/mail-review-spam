@@ -38,7 +38,7 @@ def spam_search(search_term: str) -> None:
 
 # To avoid "Showing related results", double-quote the term.
 
-print("Stop and re-start Chrome.")
+print("Stop and re-start Chrome; probably requires `killall chrome` on the command line")
 input("Press ENTER")
 
 print("My username or name in the subject line")
@@ -60,7 +60,7 @@ spam_search("subject:Michael")
 spam_search('"Hi Michael"')
 input("Press ENTER")
 
-print("Likely false positives (by sender)")
+print("Likely false positives (by sender, part 1)")
 spam_search("from:amazon.com")
 spam_search("from:auto-reply" + "@" + "usps.com")
 spam_search("from:builds" + "@" + "circleci.com")
@@ -73,6 +73,9 @@ spam_search("from:info" + "@" + "mountaineers.org")
 spam_search("from:jsagarin" + "@" + "verizon.net")
 spam_search("from:lincolnseattleptsa.org")
 spam_search("from:lls.org")
+input("Press ENTER")
+
+print("Likely false positives (by sender, part 2)")
 spam_search("from:mygoodtogo.com")
 spam_search("from:newyorktimes.com")
 spam_search("from:noreply" + "@" + "steampowered.com")
@@ -263,8 +266,9 @@ spam_search("bara" + "@" + "kolliers.com")
 input("Press ENTER")
 
 print("Suspicious senders, part 4")
+spam_search("from:no-reply" + "@" + "calendly.com")
+spam_search('from:"The Flights Guru"')
 spam_search("from:cognella.com")
-spam_search("from:eyebuydirect.com")
 spam_search("from:matscience-summit.com")
 spam_search("from:medtechmvp")
 spam_search("from:medlinepapersoa.online")
@@ -303,6 +307,8 @@ print("Frequent topics 2")
 # spam_search("hookup")
 # spam_search("pussy")
 # spam_search("temperature")
+
+spam_search("singles")
 
 spam_search('"sam%27s club"')
 

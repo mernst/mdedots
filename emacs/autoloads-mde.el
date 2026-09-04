@@ -341,6 +341,7 @@ Uses Magit."
 (autoload 'resolve-method-signature "conflict-resolve" nil t)
 (autoload 'conflict-resolve-empty "conflict-resolve" nil t)
 (autoload 'resolve-equals-method-conflict "conflict-resolve" nil t)
+(autoload 'conflict-write-versions "conflict-resolve" nil t)
 
 
 ;;;
