@@ -92,6 +92,7 @@
     "claude-code-setup@claude-plugins-official": true,
     "code-review@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
+    "coderabbit@claude-plugins-official": true,
     "jdtls-lsp@claude-plugins-official": true,
     "playground@claude-plugins-official": true,
     "pr-review-toolkit@claude-plugins-official": true,
@@ -101,11 +102,7 @@
   },
   "spinnerVerbs": {
     "mode": "replace",
-    "verbs": [
-      "Thinking",
-      "Processing",
-      "Working"
-    ]
+    "verbs": ["Thinking", "Processing", "Working"]
   },
   "voice": {
     "enabled": true,
@@ -113,7 +110,7 @@
   },
   "skipDangerousModePermissionPrompt": true,
   "theme": "auto",
-  "voiceEnabled": true,
+  "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "inputNeededNotifEnabled": true
+  "voiceEnabled": true
 }
