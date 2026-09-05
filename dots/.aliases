@@ -159,8 +159,10 @@ alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 alias claudetrustdir='[ ! -f "$CLAUDE_CONFIG/.claude.json" ] || (jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" "$CLAUDE_CONFIG/.claude.json" > "$CLAUDE_CONFIG/.claude.json.tmp" && mv "$CLAUDE_CONFIG/.claude.json.tmp" "$CLAUDE_CONFIG/.claude.json")'
 alias claude-cse='export CLAUDE_CONFIG=~/.claude-cse'
 alias claude-personal='export CLAUDE_CONFIG=~/claude-personal'
-# This is the default until the user says otherwise.
-claude-cse
+# The CSE account is the default until the user says otherwise.
+if [ -z "$CLAUDE_CONFIG" ]; then
+  claude-cse
+fi
 alias claude='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model opus --dangerously-skip-permissions'
 alias claudemax='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model fable --effort max'
 
@@ -168,9 +170,9 @@ alias agytrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.a
 alias agy='agytrustdir && \agy --dangerously-skip-permissions'
 alias agymax='agytrustdir && \agy --model fable --effort max'
 
-alias codextrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.codex.json > ~/.codex.json.tmp && mv ~/.codex.json.tmp ~/.codex.json'
-alias codex='codextrustdir && \codex --dangerously-skip-permissions'
-alias codexmax='codextrustdir && \codex --model fable --effort max'
+alias codextrustdir='tomlq -i -t ".projects.\"$(pwd)\".trust_level //= \"trusted\"" ~/.codex/config.toml'
+alias codex='codextrustdir && \codex --search'
+alias codexmax='codextrustdir && \codex --search --model fable --effort max'
 
 
 alias prekall='prek -q run --all-files'
