@@ -52,3 +52,6 @@ When creating a new branch, use a new directory or a new clone.
 ### The Checker Framework
 
 * When running tests on the `checker-framework` repository or its forks (usually found in directories named `$t/checker-framework*`, ignore `slow.typechecking` warnings.
+* In the release notes `docs/CHANGELOG.md`:
+  * Ordinary bug fixes are not described.
+  * Pull requests should not modify the "### Closed issues" section; it is filled in at release time.
