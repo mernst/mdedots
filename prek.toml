@@ -246,8 +246,6 @@ hooks = [
     "-sr",
   ], exclude = { glob = [
     "gradlew",
-    # A polyglot sh/gawk script; its `#!/bin/sh` shebang makes shfmt treat it as shell.
-    "share/addrfilter.awk",
     "dots/conda-initialize.sh",
     "conda-initialize.sh",
   ] } },

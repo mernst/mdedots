@@ -250,7 +250,6 @@ hooks = [
     "gradlew",
     "dots/conda-initialize.sh",
     "conda-initialize.sh",
-    "share/addrfilter.awk",
   ] } },
 ]
 
