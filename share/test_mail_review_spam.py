@@ -6,8 +6,10 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import importlib.machinery
 import importlib.util
+import io
 import stat
 import sys
 import tempfile
@@ -109,6 +111,31 @@ def browser_payload(*accounts):
     """Wrap account protobufs in a base64 ListAccounts response."""
     response = b"".join(protobuf_field(1, account) for account in accounts)
     return base64.b64encode(response).decode()
+
+
+GOOGLE_AUTH_ERROR = type("GoogleAuthError", (Exception,), {})
+
+
+def fake_google_modules(from_authorized_user_file):
+    """Return sys.modules entries that stand in for the Google client libraries."""
+    return {
+        "google": types.SimpleNamespace(),
+        "google.auth": types.SimpleNamespace(),
+        "google.auth.exceptions": types.SimpleNamespace(GoogleAuthError=GOOGLE_AUTH_ERROR),
+        "google.auth.transport": types.SimpleNamespace(),
+        "google.auth.transport.requests": types.SimpleNamespace(Request=lambda: "request"),
+        "google.oauth2": types.SimpleNamespace(),
+        "google.oauth2.credentials": types.SimpleNamespace(
+            Credentials=types.SimpleNamespace(from_authorized_user_file=from_authorized_user_file)
+        ),
+    }
+
+
+def http_error(status, message="error"):
+    """Return an exception shaped like googleapiclient.errors.HttpError."""
+    return type(
+        "FakeHttpError", (Exception,), {"resp": type("Response", (), {"status": status})()}
+    )(message)
 
 
 class MailReviewSpamTest(unittest.TestCase):
@@ -238,13 +265,12 @@ class MailReviewSpamTest(unittest.TestCase):
     @mock.patch.object(mail_review_spam.time, "sleep")
     @mock.patch.object(mail_review_spam.webbrowser, "open")
     def test_transient_error_opens_tab_with_warning(self, browser_open, _sleep):
-        class TransientError(Exception):
-            resp = type("Response", (), {"status": 503})()
-
-        mail_review_spam.spam_search(
-            "subject:test", (session("one@example.com", "0", error=TransientError()),)
-        )
+        with contextlib.redirect_stderr(io.StringIO()) as stderr:
+            mail_review_spam.spam_search(
+                "subject:test", (session("one@example.com", "0", error=http_error(503)),)
+            )
         browser_open.assert_called_once()
+        self.assertIn("Gmail API unavailable for one@example.com", stderr.getvalue())
 
     @mock.patch.object(mail_review_spam.webbrowser, "open")
     def test_permanent_error_stops_without_opening_tab(self, browser_open):
@@ -260,6 +286,138 @@ class MailReviewSpamTest(unittest.TestCase):
             mail_review_spam._write_private_token(token_path, "secret")
             self.assertEqual(token_path.read_text(encoding="utf-8"), "secret")
             self.assertEqual(stat.S_IMODE(token_path.stat().st_mode), 0o600)
+
+    def test_spam_folder_url(self):
+        self.assertEqual(
+            mail_review_spam.gmail_spam_folder_url("2"), "https://mail.google.com/mail/u/2/#spam"
+        )
+
+    @mock.patch.object(mail_review_spam.time, "sleep")
+    @mock.patch.object(mail_review_spam.webbrowser, "open", return_value=False)
+    def test_unopened_tab_warns(self, _browser_open, _sleep):
+        with contextlib.redirect_stderr(io.StringIO()) as stderr:
+            mail_review_spam.open_tab("https://mail.google.com/mail/u/0/#spam")
+        self.assertIn("no browser accepted", stderr.getvalue())
+
+
+class TransientErrorTest(unittest.TestCase):
+    """Test which Gmail failures let the review continue."""
+
+    def test_server_and_throttling_errors_are_transient(self):
+        for status in (408, 429, 500, 503):
+            self.assertTrue(mail_review_spam.is_transient_api_error(http_error(status)), status)
+
+    def test_rate_limited_forbidden_is_transient(self):
+        self.assertTrue(
+            mail_review_spam.is_transient_api_error(http_error(403, "userRateLimitExceeded"))
+        )
+
+    def test_unauthorized_forbidden_is_permanent(self):
+        self.assertFalse(
+            mail_review_spam.is_transient_api_error(http_error(403, "insufficientPermissions"))
+        )
+        self.assertFalse(mail_review_spam.is_transient_api_error(http_error(400, "badRequest")))
+
+    def test_network_failures_are_transient(self):
+        self.assertTrue(mail_review_spam.is_transient_api_error(ConnectionResetError("reset")))
+        self.assertTrue(mail_review_spam.is_transient_api_error(TimeoutError("timed out")))
+
+
+class CachedCredentialsTest(unittest.TestCase):
+    """Test when a cached authorization is reused and when the user must authorize again."""
+
+    @contextlib.contextmanager
+    def cached_token(self, from_authorized_user_file):
+        """Run the body with a cache file that the fake Google libraries interpret.
+
+        Yields:
+            The account configuration whose token cache exists.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            token_path = Path(directory) / "account.json"
+            token_path.write_text("cached", encoding="utf-8")
+            config = mail_review_spam.AccountConfig("one@example.com", token_path)
+            with mock.patch.dict(sys.modules, fake_google_modules(from_authorized_user_file)):
+                yield config
+
+    def test_absent_cache_requires_authorization(self):
+        config = mail_review_spam.AccountConfig("one@example.com", Path("no-such-token.json"))
+        self.assertIsNone(mail_review_spam.cached_credentials(config))
+
+    def test_valid_cache_is_reused(self):
+        credentials = types.SimpleNamespace(valid=True, expired=False, refresh_token=None)
+        with self.cached_token(lambda _path, _scopes: credentials) as config:
+            self.assertIs(mail_review_spam.cached_credentials(config), credentials)
+
+    def test_expired_cache_is_refreshed(self):
+        class Refreshable:
+            valid = False
+            expired = True
+            refresh_token = "refresh"
+
+            def refresh(self, _request):
+                self.valid = True
+
+        credentials = Refreshable()
+        with self.cached_token(lambda _path, _scopes: credentials) as config:
+            self.assertIs(mail_review_spam.cached_credentials(config), credentials)
+
+    def test_revoked_cache_requires_authorization(self):
+        class Revoked:
+            valid = False
+            expired = True
+            refresh_token = "refresh"
+
+            def refresh(self, _request):
+                raise GOOGLE_AUTH_ERROR("Token has been expired or revoked")
+
+        with (
+            self.cached_token(lambda _path, _scopes: Revoked()) as config,
+            contextlib.redirect_stderr(io.StringIO()) as stderr,
+        ):
+            self.assertIsNone(mail_review_spam.cached_credentials(config))
+        self.assertIn("unusable cached credentials", stderr.getvalue())
+
+    def test_malformed_cache_requires_authorization(self):
+        def malformed(_path, _scopes):
+            raise ValueError("not an authorized-user file")
+
+        with (
+            self.cached_token(malformed) as config,
+            contextlib.redirect_stderr(io.StringIO()) as stderr,
+        ):
+            self.assertIsNone(mail_review_spam.cached_credentials(config))
+        self.assertIn("unusable cached credentials", stderr.getvalue())
+
+
+class SectionDataTest(unittest.TestCase):
+    """Test the spam-review sections that main() works through."""
+
+    def all_searches(self):
+        """Return every search term, in review order."""
+        return [
+            search
+            for section in mail_review_spam.SPAM_REVIEW_SECTIONS
+            for search in section.searches
+        ]
+
+    def test_every_section_has_a_heading_and_searches(self):
+        self.assertTrue(mail_review_spam.SPAM_REVIEW_SECTIONS)
+        for section in mail_review_spam.SPAM_REVIEW_SECTIONS:
+            self.assertTrue(section.heading.strip())
+            self.assertTrue(section.searches, section.heading)
+            for search in section.searches:
+                self.assertTrue(search.strip(), section.heading)
+
+    def test_no_search_is_repeated(self):
+        searches = self.all_searches()
+        repeated = sorted({search for search in searches if searches.count(search) > 1})
+        self.assertEqual(repeated, [])
+
+    def test_searches_have_balanced_parentheses_and_quotes(self):
+        for search in self.all_searches():
+            self.assertEqual(search.count("("), search.count(")"), search)
+            self.assertEqual(search.count('"') % 2, 0, search)
 
 
 if __name__ == "__main__":
