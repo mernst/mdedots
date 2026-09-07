@@ -219,7 +219,6 @@ hooks = [
     "SCRIPTDIR",
   ], exclude = { glob = [
     "share/csail-athena-tickets.bash",
-    "share/addrfilter",
     "share/print-mail",
     "share/javapp",
     "share/myxapps",
@@ -246,7 +245,6 @@ hooks = [
     "-sr",
   ], exclude = { glob = [
     "gradlew",
-    "share/addrfilter",
     "dots/conda-initialize.sh",
     "conda-initialize.sh",
   ] } },
@@ -259,7 +257,6 @@ hooks = [
 #   { id = "checkbashisms", types = [
 #     "shell",
 #   ], exclude = { glob = [
-#     "share/addrfilter",
 #     "share/print-mail",
 #     "share/myxapps",
 #     "share/javapp",

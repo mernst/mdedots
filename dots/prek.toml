@@ -222,7 +222,6 @@ hooks = [
     "SCRIPTDIR",
   ], exclude = { glob = [
     "share/csail-athena-tickets.bash",
-    "share/addrfilter",
     "share/print-mail",
     "share/javapp",
     "share/myxapps",
@@ -249,28 +248,14 @@ hooks = [
     "-sr",
   ], exclude = { glob = [
     "gradlew",
-    "share/addrfilter",
     "dots/conda-initialize.sh",
     "conda-initialize.sh",
+    "share/addrfilter.awk",
   ] } },
 ]
 
-# TODO: checkbashisms. I need to write my own, probably. Like other
-# prek configuration, it must install the needed tool, not assume it
-# is already installed.
-# [[repos]]
-# repo = "TODO"
-# hooks = [
-#   { id = "checkbashisms", types = [
-#     "shell",
-#   ], exclude = { glob = [
-#     "share/addrfilter",
-#     "share/print-mail",
-#     "share/myxapps",
-#     "share/javapp",
-#     "gradlew",
-#   ] } },
-# ]
+# For checkbashisms, use
+# https://github.com/mernst/mdedots/blob/main/.github/workflows/checkbashisms.yaml
 
 # Problems:
 # * False positives for E011.
