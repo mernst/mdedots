@@ -235,6 +235,7 @@ hooks = [
 
 [[repos]]
 repo = "https://github.com/scop/pre-commit-shfmt"
+# This "version number" is a tag at https://github.com/scop/pre-commit-shfmt/tags .
 rev = "v3.12.0-1"
 hooks = [
   { id = "shfmt", args = [
