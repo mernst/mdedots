@@ -1,5 +1,4 @@
-#! /usr/bin/gawk -f
-# /usr/local/bin/gawk -f
+#!/usr/bin/env -S gawk -f
 
 # Build mail-aliases file from address file.
 
