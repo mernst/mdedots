@@ -35,14 +35,18 @@ only match basenames whereas this handles pathnames.")
 
 ;; The header of a hunk is either a line ending in "@" (as in "@@ -1,2 +1,2 @@")
 ;; or a line of the form "@@ ... @@ ..." whose trailing text names the enclosing
-;; function.  [@BCDIO\nd] is what can start a line at the end of a hunk:
+;; function.  [@BCDFIOd\n] is what can start a line at the end of a hunk:
 ;; "@" a hunk header, "B" "Binary files ", "C" "Common subdirectories: ",
-;; "D" "Diff finished.", "I" "Index: ", "O" "Only in ", a newline a blank
-;; line, and "d" "diff ".  "D" and "d" both appear because they start two
-;; different lines, not because of case.  `case-fold-search' must be nil when
-;; using this regexp, so each letter matches only the case that diff writes.
+;; "D" "Diff finished.", "F" "Files ", "I" "Index: ", "O" "Only in ",
+;; "d" "diff ", and a newline a blank line.
+;; "B" and "F" are separate because diff writes "Binary files X and Y differ"
+;; for a binary file, but "Files X and Y differ" (with --brief) or "Files X
+;; and Y are identical" (with --report-identical-files) for a text file.
+;; "D" and "d" both appear because they start two different lines, not because
+;; of case.  `case-fold-search' must be nil when using this regexp, so each
+;; letter matches only the case that diff writes.
 (defconst diff-clean-empty-hunk-regexp
-  "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BCDIOd\n]\\|\\'\\|--- \\)"
+  "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BCDFIOd\n]\\|\\'\\|--- \\)"
   "Matches a hunk that has no added or removed lines.
 Group 2 is the text following the hunk, which must be retained.
 Bind `case-fold-search' to nil when using this regexp.")
@@ -61,26 +65,29 @@ Bind `case-fold-search' to nil when using this regexp.")
    "\\(?:\\(?:index .*\n\\)?---.*\n\\+\\+\\+.*\n\\)?"
    ;; The lines that can follow a file's section, which are the same lines that
    ;; can follow a hunk; see `diff-clean-empty-hunk-regexp'.
-   "\\(diff\\|Only in \\|Binary files \\|Common subdirectories: \\|Index: "
+   "\\(diff\\|Only in \\|Binary files \\|Files \\|Common subdirectories: \\|Index: "
    "\\|\nDiff finished\\.\\|\\'\\)")
   "Matches a file's diff section that contains no hunks.
 Group 1 is the text following the section, which must be retained.
 Bind `case-fold-search' to nil when using this regexp.")
 
 ;; TODO: This could perhaps use functions like `diff-hunk-kill'.
-(defun diff-clean (&optional dont-remove-files)
+(defun diff-clean (&optional dont-remove-gitignored)
   "Clean up a diff to remove uninteresting changes.
-Remove some files entirely (see `diff-clean-removed-files').
+Remove the files that git ignores, and the files that match
+`diff-clean-removed-files'.
 Remove trivial diffs, such as hunks or files with empty/no differences.
 Reduce size of diffs with common prefix or suffix.
 The latter two changes are semantics-preserving and are useful after
-editing a diff buffer to remove uninteresting changes."
-  (interactive)
+editing a diff buffer to remove uninteresting changes.
+With a prefix argument, or if DONT-REMOVE-GITIGNORED is non-nil, keep the
+diffs of the files that git ignores; `diff-clean-gitignored-regexps' explains
+which files those are."
+  (interactive "P")
 
   (let ((inhibit-read-only t))
 
-    (if (not dont-remove-files)
-        (diff-clean-files diff-clean-removed-files))
+    (diff-clean-files (diff-clean-removal-regexps dont-remove-gitignored))
 
     (diff-clean-meaning-preserving)
     ))
@@ -89,6 +96,19 @@ editing a diff buffer to remove uninteresting changes."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Remove whole files
 ;;;
+
+(defun diff-clean-removal-regexps (dont-remove-gitignored &optional extra-regexps)
+  "Return the regexps for the files whose diffs `diff-clean' removes.
+The result is EXTRA-REGEXPS, then the files that git ignores, then
+`diff-clean-removed-files'.
+If DONT-REMOVE-GITIGNORED is non-nil, the files that git ignores are omitted.
+Call this in the buffer that contains the diff, because which files git
+ignores is determined from the filenames in the diff."
+  (append extra-regexps
+          (if dont-remove-gitignored
+              '()
+            (diff-clean-gitignored-regexps))
+          diff-clean-removed-files))
 
 (defun diff-clean-files (remove-regexes)
   "Delete files whose pathname matches any of the regexes.
@@ -122,6 +142,13 @@ matches every filename."
 			  "--- " filename-regexp "\\(\t.*\\)?\n\\+\\+\\+ .*$"
 			  "\\|"
 			  "--- .*\n\\+\\+\\+ " filename-regexp "\\(\t.*\\)?$"
+			  "\\|"
+			  ;; Git reports a difference in a binary file with a
+			  ;; "Binary files " line in place of the "---"/"+++" pair
+			  ;; and the hunks.
+			  "Binary files " filename-regexp " and .* differ$"
+			  "\\|"
+			  "Binary files .* and " filename-regexp " differ$"
 			  "\\)")
 		  nil t)
             (let* ((begin (match-beginning 0))
@@ -142,7 +169,19 @@ matches every filename."
 	  ;; A regexp that ends in ".*" can match an "Only in " line directly,
 	  ;; because the ".*" absorbs the ": " described below.
 	  (goto-char (point-min))
-	  (flush-lines (concat "^Only in " filename-regexp "$")))
+	  (flush-lines (concat "^Only in " filename-regexp "$"))
+
+	  ;; Unlike git, diff writes these lines outside any file's diff section,
+	  ;; so the loop above does not remove them.  Diff writes "Binary files X
+	  ;; and Y differ" for a binary file, and, when it is run with --brief,
+	  ;; "Files X and Y differ" for any file.  This runs after that loop, so
+	  ;; that a line within a section that the loop removes is not removed on
+	  ;; its own, which would orphan the "diff" and "index" lines above it.
+	  (goto-char (point-min))
+	  (flush-lines (concat "^\\(?:Binary files \\|Files \\)\\(?:"
+			       filename-regexp " and .*"
+			       "\\|.* and " filename-regexp
+			       "\\) differ$")))
 
         ;; Remove the remaining lines starting "Only in " for certain files.
         ;; The "Only in " lines put ": " in place of the last "/"
@@ -159,64 +198,60 @@ matches every filename."
 		       "\\)")))
 	  (flush-lines onlyin-regexp))
 
-        ;; TODO: Remove "Binary files XXX and YYY differ" lines
-
         ))))
 
 ;; These names may need to be changed, so that completing "diff-clean" is easier to do.
 
-(defun diff-clean-more-files (regex)
+(defun diff-clean-more-files (regex &optional dont-remove-gitignored)
   "Like `diff-clean', but also removes the files that match REGEX.
-The regex matches the whole filename. It must not start with ^ nor end with $."
-  (interactive "sRegex for whole filename (no ^$): ")
-  (diff-clean-files (cons regex diff-clean-removed-files))
-  (diff-clean 'dont-remove-files))
+The regex matches the whole filename. It must not start with ^ nor end with $.
+DONT-REMOVE-GITIGNORED is as in `diff-clean'."
+  (interactive "sRegex for whole filename (no ^$): \nP")
+  (let ((inhibit-read-only t))
+    (diff-clean-files (diff-clean-removal-regexps dont-remove-gitignored
+                                                  (list regex)))
+    (diff-clean-meaning-preserving)))
 
 (defun diff-clean-only-files (regex)
   "Like `diff-clean', but removes only the specified files.
-Removes the files that match the regex; unlike `diff-clean', does not remove
-the files listed in `diff-clean-removed-files'.
+Removes the files that match the regex; unlike `diff-clean', removes neither
+the files that git ignores nor the files listed in `diff-clean-removed-files'.
 The regex matches the whole filename. It must not start with ^ nor end with $."
   (interactive "sRegex for whole filename (no ^$): ")
-  (diff-clean-files (list regex))
-  (diff-clean 'dont-remove-files))
+  (let ((inhibit-read-only t))
+    (diff-clean-files (list regex))
+    (diff-clean-meaning-preserving)))
 
-(defun diff-clean-target ()
-  "Like `diff-clean', but also removes generated files."
-  (interactive)
-  (diff-clean-more-files ".*/target/.*"))
+(defun diff-clean-target (&optional dont-remove-gitignored)
+  "Like `diff-clean', but also removes generated files.
+DONT-REMOVE-GITIGNORED is as in `diff-clean'."
+  (interactive "P")
+  (diff-clean-more-files ".*/target/.*" dont-remove-gitignored))
 
 ;; This name may need to be changed, so that completing "diff-clean" is easier to do.
-(defun diff-clean-build ()
-  "Like `diff-clean', but also removes generated files."
-  (interactive)
-  (diff-clean-more-files ".*/build/.*"))
+(defun diff-clean-build (&optional dont-remove-gitignored)
+  "Like `diff-clean', but also removes generated files.
+DONT-REMOVE-GITIGNORED is as in `diff-clean'."
+  (interactive "P")
+  (diff-clean-more-files ".*/build/.*" dont-remove-gitignored))
 
-(defun diff-clean-backup ()
-  "Remove backup files from a diff."
-  (interactive)
-  (diff-clean-more-files ".*~"))
+(defun diff-clean-backup (&optional dont-remove-gitignored)
+  "Remove backup files from a diff.
+DONT-REMOVE-GITIGNORED is as in `diff-clean'."
+  (interactive "P")
+  (diff-clean-more-files ".*~" dont-remove-gitignored))
 
-(defun diff-clean-javadoc ()
-  "Like `diff-clean', but also removes Javadoc files."
-  (interactive)
-  (diff-clean-more-files ".*/docs/api/.*"))
+(defun diff-clean-javadoc (&optional dont-remove-gitignored)
+  "Like `diff-clean', but also removes Javadoc files.
+DONT-REMOVE-GITIGNORED is as in `diff-clean'."
+  (interactive "P")
+  (diff-clean-more-files ".*/docs/api/.*" dont-remove-gitignored))
 
-(defun diff-clean-json ()
-  "Like `diff-clean', but also removes JSON files."
-  (interactive)
-  (diff-clean-more-files ".*\\.json"))
-
-
-;; TODO: This does not remove "Binary files XXX and YYY differ" lines, because
-;; `diff-clean-files' does not remove them.
-(defun diff-clean-gitignored ()
-  "Like `diff-clean', but also removes every file that git ignores.
-`diff-clean-gitignored-regexps' describes which files are considered ignored."
-  (interactive)
-  (diff-clean-files (append (diff-clean-gitignored-regexps)
-                            diff-clean-removed-files))
-  (diff-clean 'dont-remove-files))
+(defun diff-clean-json (&optional dont-remove-gitignored)
+  "Like `diff-clean', but also removes JSON files.
+DONT-REMOVE-GITIGNORED is as in `diff-clean'."
+  (interactive "P")
+  (diff-clean-more-files ".*\\.json" dont-remove-gitignored))
 
 (defun diff-clean-gitignored-regexps ()
   "Return regexps for the files in the current buffer's diff that git ignores.
@@ -239,12 +274,19 @@ mapped to a file on disk."
       (goto-char (point-min))
       (while (re-search-forward
               (concat "^\\(?:--- \\|\\+\\+\\+ \\)\\([^\t\n]+\\)"
-                      "\\|^Only in \\(.+\\): \\(.+\\)$")
+                      "\\|^Only in \\(.+\\): \\(.+\\)$"
+                      ;; A binary file, or any file in --brief output, has no
+                      ;; "---"/"+++" line.
+                      "\\|^\\(?:Binary files \\|Files \\)\\(.+\\) and \\(.+\\) differ$")
               nil t)
-        (push (or (match-string 1)
-                  ;; An "Only in " line writes ": " in place of the last "/".
-                  (concat (match-string 2) "/" (match-string 3)))
-              diff-names)))
+        (cond ((match-string 1)
+               (push (match-string 1) diff-names))
+              ((match-string 2)
+               ;; An "Only in " line writes ": " in place of the last "/".
+               (push (concat (match-string 2) "/" (match-string 3)) diff-names))
+              (t
+               (push (match-string 4) diff-names)
+               (push (match-string 5) diff-names)))))
 
     (dolist (diff-name diff-names)
       (let ((pathname (diff-clean-gitignored-pathname diff-name)))
