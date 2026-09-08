@@ -13,7 +13,6 @@
   (require 'util-mde))
 
 (autoload 'replace-all-occurrrences-iteratively "util-mde")
-(autoload 'replace-regexp-noninteractive "util-mde")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -36,9 +35,12 @@ only match basenames whereas this handles pathnames.")
 
 ;; The header of a hunk is either a line ending in "@" (as in "@@ -1,2 +1,2 @@")
 ;; or a line of the form "@@ ... @@ ..." whose trailing text names the enclosing
-;; function.  [@BIO\ncd] is what can start a line at the end of a hunk.
+;; function.  [@BCDIO\ncd] is what can start a line at the end of a hunk: a
+;; hunk header, "Binary files ", "Common subdirectories: ", "Diff finished.",
+;; "Index: ", "Only in ", a blank line, or "diff ".  Both cases of a letter
+;; must be listed, because `case-fold-search' is nil when this regexp is used.
 (defconst diff-clean-empty-hunk-regexp
-  "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BIO\ncd]\\|\\'\\|--- \\)"
+  "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BCDIO\ncd]\\|\\'\\|--- \\)"
   "Matches a hunk that has no added or removed lines.
 Group 2 is the text following the hunk, which must be retained.
 Bind `case-fold-search' to nil when using this regexp.")
@@ -46,16 +48,12 @@ Bind `case-fold-search' to nil when using this regexp.")
 (defconst diff-clean-empty-filesection-regexp
   (concat
    "^diff.*\n"
-   ;; Git's extended header lines, which precede "index" and "---".  They are
-   ;; matched only within the branch that requires the "---"/"+++" pair,
-   ;; because a section consisting of header lines alone is not empty: that is
-   ;; how git represents creating an empty file, a rename, or a mode change.
-   "\\(?:"
-   "\\(?:\\(?:old mode\\|new mode\\|new file mode\\|deleted file mode"
-   "\\|copy from\\|copy to\\|rename from\\|rename to"
-   "\\|similarity index\\|dissimilarity index\\) .*\n\\)*"
-   "\\(?:index .*\n\\)?---.*\n\\+\\+\\+.*\n"
-   "\\)?"
+   ;; Git's extended header lines, which precede "index" and "---", are
+   ;; deliberately not matched.  A section that contains one is not empty even
+   ;; if it contains no hunks: that is how git represents creating an empty
+   ;; file, a deletion, a rename, a copy, or a mode change.
+   "\\(?:index .*\n\\)?"
+   "\\(?:---.*\n\\+\\+\\+.*\n\\)?"
    "\\(diff\\|Only in \\|Binary files \\|\nDiff finished\\.\\|\\'\\)")
   "Matches a file's diff section that contains no hunks.
 Group 1 is the text following the section, which must be retained.
@@ -105,16 +103,24 @@ matches every filename."
 				  "\\|")
 		       "\\)")))
 	  (while (re-search-forward
-		  (concat "^diff .*\n\\(new file mode .*\nindex .*\n\\)?\\("
+		  (concat "^diff .*\n"
+			  ;; Git's extended header lines, any number of which may
+			  ;; precede the optional "index" line.
+			  "\\(?:\\(?:old mode\\|new mode\\|new file mode\\|deleted file mode"
+			  "\\|copy from\\|copy to\\|rename from\\|rename to"
+			  "\\|similarity index\\|dissimilarity index\\) .*\n\\)*"
+			  "\\(?:index .*\n\\)?"
+			  "\\("
 			  "--- " filename-regexp "\\(\t.*\\)?\n\\+\\+\\+ .*$"
 			  "\\|"
 			  "--- .*\n\\+\\+\\+ " filename-regexp "\\(\t.*\\)?$"
 			  "\\)")
 		  nil t)
             (let* ((begin (match-beginning 0))
-                   ;; The end of the file's diff is the start of the next line that
-                   ;; begins neither a diff line nor a hunk header, or end of buffer.
-	           (end (if (re-search-forward "\n[^-+ @]" nil t)
+                   ;; The end of the file's diff is the start of the next line
+                   ;; that begins neither a diff line, a hunk header, nor a
+                   ;; "\\ No newline at end of file" marker; or end of buffer.
+	           (end (if (re-search-forward "\n[^-+ @\\\\]" nil t)
 			    (1+ (match-beginning 0))
 		          (point-max))))
 	      (delete-region begin end)
@@ -265,38 +271,40 @@ blank line are identical to the context lines that precede the run.  The
 shifted run ends at the blank line, which groups the changed lines more
 meaningfully.  Operates on the current buffer."
   (interactive)
-  ;; TODO: also do the reverse, moving lines from beginning to end of hunk.
-  (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward "^[^-+].*\n\\(\\(?:[+].*\n\\)+\\|\\(?:[-].*\n\\)+\\)[^-+]" nil t)
-      (let* ((change-begin (match-beginning 1))
-             (change-end (match-end 1))
-             (indicator-char (buffer-substring change-begin (1+ change-begin)))
-             (indicator-char-at-bol (concat "^[" indicator-char "]"))
-             (indicator-char-line (concat indicator-char-at-bol "$")))
-        (goto-char change-end)
-        (when (re-search-backward indicator-char-line change-begin t)
-          ;; Found a blank line in the added text.
-          (let* ((moved-text-begin (1+ (point)))
-                 (moved-text-end change-end)
-                 (moved-text-length (- moved-text-end moved-text-begin))
-                 (moved-text (buffer-substring moved-text-begin moved-text-end))
-                 (moved-text-without-plus (replace-regexp-in-string indicator-char-at-bol " " moved-text))
-                 (candidate-start (- change-begin moved-text-length))
-                 (candidate-end change-begin))
-            (when (and
-                   (>= candidate-start (point-min))
-                   (string= moved-text-without-plus (buffer-substring candidate-start candidate-end)))
-              (change-indicator-char-in-region " " indicator-char candidate-start candidate-end)
-              (change-indicator-char-in-region indicator-char " " moved-text-begin moved-text-end))))
-        (goto-char change-end)))))
+  (let ((inhibit-read-only t))
+    ;; TODO: also do the reverse, moving lines from beginning to end of hunk.
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^[^-+].*\n\\(\\(?:[+].*\n\\)+\\|\\(?:[-].*\n\\)+\\)[^-+]" nil t)
+        (let* ((change-begin (match-beginning 1))
+               (change-end (match-end 1))
+               (indicator-char (buffer-substring change-begin (1+ change-begin)))
+               (indicator-char-at-bol (concat "^[" indicator-char "]"))
+               (indicator-char-line (concat indicator-char-at-bol "$")))
+          (goto-char change-end)
+          (when (re-search-backward indicator-char-line change-begin t)
+            ;; Found a blank line in the added text.
+            (let* ((moved-text-begin (1+ (point)))
+                   (moved-text-end change-end)
+                   (moved-text-length (- moved-text-end moved-text-begin))
+                   (moved-text (buffer-substring moved-text-begin moved-text-end))
+                   (moved-text-without-plus (replace-regexp-in-string indicator-char-at-bol " " moved-text))
+                   (candidate-start (- change-begin moved-text-length))
+                   (candidate-end change-begin))
+              (when (and
+                     (>= candidate-start (point-min))
+                     (string= moved-text-without-plus (buffer-substring candidate-start candidate-end)))
+                (change-indicator-char-in-region " " indicator-char candidate-start candidate-end)
+                (change-indicator-char-in-region indicator-char " " moved-text-begin moved-text-end))))
+          (goto-char change-end))))))
 
 (defun diff-concatenate-hunks ()
   "Merge two hunks that are separated only by punctuation."
   (interactive)
-  (diff-concatenate-hunks-with-indicator "+")
-  (diff-concatenate-hunks-with-indicator "-")
-  )
+  (let ((inhibit-read-only t))
+    (diff-concatenate-hunks-with-indicator "+")
+    (diff-concatenate-hunks-with-indicator "-")
+    ))
 
 (defun diff-concatenate-hunks-with-indicator (indicator-char)
   "Merge two hunks that are separated only by punctuation.
