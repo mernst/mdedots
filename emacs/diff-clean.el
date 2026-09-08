@@ -208,6 +208,120 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
   (diff-clean-more-files ".*\\.json"))
 
 
+;; TODO: This does not remove "Binary files XXX and YYY differ" lines, because
+;; `diff-clean-files' does not remove them.
+(defun diff-clean-gitignored ()
+  "Like `diff-clean', but also removes every file that git ignores.
+`diff-clean-gitignored-regexps' describes which files are considered ignored."
+  (interactive)
+  (diff-clean-files (append (diff-clean-gitignored-regexps)
+                            diff-clean-removed-files))
+  (diff-clean 'dont-remove-files))
+
+(defun diff-clean-gitignored-regexps ()
+  "Return regexps for the files in the current buffer's diff that git ignores.
+Each regexp matches an entire filename as it appears in the diff, which is
+what `diff-clean-files' requires.
+A file is ignored if `git check-ignore' reports it in the repository that
+contains it.  Therefore, a file that git tracks is not ignored even if an
+ignore rule matches it, and a file in no git repository is not ignored.  The
+files may be in different repositories, as when diffing two checkouts.
+`diff-clean-gitignored-pathname' describes how a filename in the diff is
+mapped to a file on disk."
+  (let ((diff-names '())
+        ;; Alist from a directory to an alist from a basename to the filenames,
+        ;; as they appear in the diff, of the files with that basename.  Git is
+        ;; run once per directory rather than once per file, because starting a
+        ;; process is much more expensive than testing one more file.
+        (by-directory '()))
+
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward
+              (concat "^\\(?:--- \\|\\+\\+\\+ \\)\\([^\t\n]+\\)"
+                      "\\|^Only in \\(.+\\): \\(.+\\)$")
+              nil t)
+        (push (or (match-string 1)
+                  ;; An "Only in " line writes ": " in place of the last "/".
+                  (concat (match-string 2) "/" (match-string 3)))
+              diff-names)))
+
+    (dolist (diff-name diff-names)
+      (let ((pathname (diff-clean-gitignored-pathname diff-name)))
+        (when pathname
+          (let* ((directory (file-name-directory pathname))
+                 (basename (file-name-nondirectory pathname))
+                 (directory-cell (assoc directory by-directory)))
+            (unless directory-cell
+              (setq directory-cell (list directory))
+              (push directory-cell by-directory))
+            (let ((basename-cell (assoc basename (cdr directory-cell))))
+              ;; Two filenames in the diff can name the same file on disk, as
+              ;; git's "a/foo" and "b/foo" do, so a basename maps to a list.
+              (if basename-cell
+                  (setcdr basename-cell (cons diff-name (cdr basename-cell)))
+                (setcdr directory-cell
+                        (cons (list basename diff-name) (cdr directory-cell)))))))))
+
+    (let ((result '()))
+      (dolist (directory-cell by-directory)
+        (let ((basename-alist (cdr directory-cell)))
+          (dolist (basename (diff-clean-gitignored-basenames
+                             (car directory-cell)
+                             (mapcar #'car basename-alist)))
+            (dolist (diff-name (cdr (assoc basename basename-alist)))
+              (push (regexp-quote diff-name) result)))))
+      result)))
+
+(defun diff-clean-gitignored-pathname (diff-name)
+  "Return the pathname on disk of DIFF-NAME, a filename that appears in a diff.
+DIFF-NAME is relative to `default-directory', which is the directory in which
+the diff was created if Emacs's `diff' command created it.
+Git writes filenames with an \"a/\" or \"b/\" prefix, and \"diff -r\" writes them
+with the compared directory as a prefix, so DIFF-NAME without its first
+component is also a candidate.  An existing file is preferred, and otherwise a
+file in an existing directory, because git can report whether a nonexistent
+file would be ignored but must be run in a directory that exists.
+Returns nil for \"/dev/null\", which git writes for a created or deleted file,
+and nil if neither candidate is in an existing directory."
+  (let* ((expanded (expand-file-name diff-name))
+         ;; nil if DIFF-NAME has only one component, which has no prefix.
+         (stripped (and (string-match "\\`[^/]+/" diff-name)
+                        (expand-file-name (substring diff-name (match-end 0))))))
+    (cond ((equal diff-name "/dev/null")
+           nil)
+          ((file-exists-p expanded)
+           expanded)
+          ((and stripped (file-exists-p stripped))
+           stripped)
+          ;; Neither candidate exists, as when the diff deletes a file.
+          ((file-directory-p (file-name-directory expanded))
+           expanded)
+          ((and stripped (file-directory-p (file-name-directory stripped)))
+           stripped))))
+
+(defun diff-clean-gitignored-basenames (directory basenames)
+  "Return the elements of BASENAMES that git ignores.
+BASENAMES are the names of files in DIRECTORY.
+Returns nil if DIRECTORY does not exist or is not in a git repository.
+No element of BASENAMES may contain a newline, which is how they are passed
+to git."
+  (when (file-directory-p directory)
+    (with-temp-buffer
+      (dolist (basename basenames)
+        (insert basename "\n"))
+      (let ((default-directory directory))
+        ;; Git exits with status 1 if no file is ignored, and with status 128 on
+        ;; an error such as DIRECTORY not being in a git repository.  In every
+        ;; case its standard output is exactly the ignored files, so the exit
+        ;; status need not be examined.  Its standard error is discarded, to
+        ;; keep messages such as "fatal: not a git repository" out of the
+        ;; result.
+        (call-process-region (point-min) (point-max) "git" t '(t nil) nil
+                             "check-ignore" "--stdin"))
+      (split-string (buffer-string) "\n" t))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Meaning-preserving transformations
 ;;;
