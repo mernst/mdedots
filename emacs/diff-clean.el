@@ -13,6 +13,7 @@
   (require 'util-mde))
 
 (autoload 'replace-all-occurrrences-iteratively "util-mde")
+(autoload 'replace-regexp-noninteractive "util-mde")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -36,12 +37,29 @@ only match basenames whereas this handles pathnames.")
 ;; The header of a hunk is either a line ending in "@" (as in "@@ -1,2 +1,2 @@")
 ;; or a line of the form "@@ ... @@ ..." whose trailing text names the enclosing
 ;; function.  [@BIO\ncd] is what can start a line at the end of a hunk.
-(defvar empty-diff-hunk-regexp "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BIO\ncd]\\|\\'\\|--- \\)")
-;; It is important to set case-fold-search to nil when using `empty-diff-filesection-regexp'.
-(defvar empty-diff-filesection-regexp
+(defconst diff-clean-empty-hunk-regexp
+  "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BIO\ncd]\\|\\'\\|--- \\)"
+  "Matches a hunk that has no added or removed lines.
+Group 2 is the text following the hunk, which must be retained.
+Bind `case-fold-search' to nil when using this regexp.")
+
+(defconst diff-clean-empty-filesection-regexp
   (concat
-   "^diff.*\n\\(?:\\(?:index .*\n\\)?---.*\n\\+\\+\\+.*\n\\)?"
-   "\\(diff\\|Only in \\|Binary files \\|\nDiff finished.\\|\\'\\)"))
+   "^diff.*\n"
+   ;; Git's extended header lines, which precede "index" and "---".  They are
+   ;; matched only within the branch that requires the "---"/"+++" pair,
+   ;; because a section consisting of header lines alone is not empty: that is
+   ;; how git represents creating an empty file, a rename, or a mode change.
+   "\\(?:"
+   "\\(?:\\(?:old mode\\|new mode\\|new file mode\\|deleted file mode"
+   "\\|copy from\\|copy to\\|rename from\\|rename to"
+   "\\|similarity index\\|dissimilarity index\\) .*\n\\)*"
+   "\\(?:index .*\n\\)?---.*\n\\+\\+\\+.*\n"
+   "\\)?"
+   "\\(diff\\|Only in \\|Binary files \\|\nDiff finished\\.\\|\\'\\)")
+  "Matches a file's diff section that contains no hunks.
+Group 1 is the text following the section, which must be retained.
+Bind `case-fold-search' to nil when using this regexp.")
 
 ;; TODO: This could perhaps use functions like `diff-hunk-kill'.
 (defun diff-clean (&optional dont-remove-files)
@@ -99,16 +117,20 @@ matches every filename."
 	           (end (if (re-search-forward "\n[^-+ @]" nil t)
 			    (1+ (match-beginning 0))
 		          (point-max))))
-	      (kill-region begin end)
+	      (delete-region begin end)
               (beginning-of-line 0)))
 
+	  ;; A regexp that ends in ".*" can match an "Only in " line directly,
+	  ;; because the ".*" absorbs the ": " described below.
 	  (goto-char (point-min))
-	  (kill-matching-lines (concat "^Only in " filename-regexp "$")))
+	  (flush-lines (concat "^Only in " filename-regexp "$")))
 
-        ;; Remove lines starting "Only in " for certain files.
+        ;; Remove the remaining lines starting "Only in " for certain files.
         ;; The "Only in " lines put ": " in place of the last "/"
         ;; directory separator, so regexp `remove-regexes'
-        ;; does not match them.
+        ;; does not match them; `file-regexp-to-colon-regexp' adjusts for that.
+        ;; This regexp is not anchored at the end, because the colon form
+        ;; matches only a prefix of the "Only in " line.
         (goto-char (point-min))
         (let ((onlyin-regexp
 	       (concat "^Only in \\("
@@ -116,7 +138,7 @@ matches every filename."
 				  remove-regexes
 				  "\\|")
 		       "\\)")))
-	  (kill-matching-lines onlyin-regexp))
+	  (flush-lines onlyin-regexp))
 
         ;; TODO: Remove "Binary files XXX and YYY differ" lines
 
@@ -125,11 +147,11 @@ matches every filename."
 ;; These names may need to be changed, so that completing "diff-clean" is easier to do.
 
 (defun diff-clean-more-files (regex)
-  "Like `diff-clean', but ignores additional files as well.
+  "Like `diff-clean', but also removes the files that match REGEX.
 The regex matches the whole filename. It must not start with ^ nor end with $."
   (interactive "sRegex for whole filename (no ^$): ")
-  (diff-clean-files (list regex))
-  (diff-clean))
+  (diff-clean-files (cons regex diff-clean-removed-files))
+  (diff-clean 'dont-remove-files))
 
 (defun diff-clean-only-files (regex)
   "Like `diff-clean', but removes only the specified files.
@@ -141,7 +163,7 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
   (diff-clean 'dont-remove-files))
 
 (defun diff-clean-target ()
-  "Like `diff-clean', but also ignores generated files."
+  "Like `diff-clean', but also removes generated files."
   (interactive)
   (diff-clean-more-files ".*/target/.*"))
 
@@ -178,47 +200,62 @@ The regex matches the whole filename. It must not start with ^ nor end with $."
   "Perform meaning-preserving simplifications on the diff."
   (interactive)
 
-  (diff-realign-hunks)
-  (diff-concatenate-hunks)
+  (let ((inhibit-read-only t)
+        (case-fold-search nil))
 
-  (diff-clean-prefix-suffix)
-  (diff-clean-empty-parts)
-  )
+    (diff-realign-hunks)
+    (diff-concatenate-hunks)
+
+    (diff-clean-prefix-suffix)
+    (diff-clean-empty-parts)
+    ))
 
 
 (defun diff-clean-prefix-suffix ()
   "Simplify a diff when a hunk has identical prefix or suffix for - and +."
   (interactive)
 
-  (save-excursion
-    ;; First two lines are identical (one -, one +).
-    (goto-char (point-min))
-    (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\+\\1\\.?\n" " \\1\n")
-    ;; First - line is identical to first + line
-    (goto-char (point-min))
-    (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\(\\(-.*\n\\)+\\)\\+\\1\\.?\n" " \\1\n\\2")
-    ;; Last - line is identical to last + line
-    (goto-char (point-min))
-    (replace-regexp-noninteractive "^-\\(.*\\)\n\\(\\(\\+.*\n\\)+\\)\\+\\1\\.?\n" "\\2 \\1\n")
-    ;; Last - line is identical to first + line
-    (goto-char (point-min))
-    (replace-regexp-noninteractive "^-\\(.*\\)\n-\\(.*\n\\)\\+\\1\\.?\n" " \\1\n-\\2")
-    ;; Needs to be tested before uncommenting
-    ;; (goto-char (point-min))
-    ;; (query-replace-regexp "^-\\(.*\\)\n\\+\\(.*\n\\)\\+\\1\\.?\n" " \\2+\\1\n")
+  ;; `case-fold-search' must be nil: otherwise the "\\1" back-references match
+  ;; case-insensitively, so a line pair that differs only in case, such as
+  ;; "-b" and "+B", collapses to a single context line.  That discards the
+  ;; change, and the resulting all-context hunk is then removed as empty.
+  (let ((inhibit-read-only t)
+        (case-fold-search nil))
+    (save-excursion
+      ;; First two lines are identical (one -, one +).
+      (goto-char (point-min))
+      (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\+\\1\n" " \\1\n")
+      ;; First - line is identical to first + line
+      (goto-char (point-min))
+      (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\(\\(-.*\n\\)+\\)\\+\\1\n" " \\1\n\\2")
+      ;; Last - line is identical to last + line
+      (goto-char (point-min))
+      (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\(\\(\\+.*\n\\)+\\)\\+\\1\n" "\\2 \\1\n")
+      ;; There is no case for "last - line is identical to first + line": the
+      ;; regexp for "first - line is identical to first + line", above,
+      ;; already covers it.
+      ;; Needs to be tested before uncommenting
+      ;; (goto-char (point-min))
+      ;; (query-replace-regexp "^-\\(.*\\)\n\\+\\(.*\n\\)\\+\\1\n" " \\2+\\1\n")
 
-    ;; ;; Remove identical lines with one different one between them.
-    ;; (goto-char (point-min))
-    ;; (replace-regexp-noninteractive "^-\\(.*\\)\n\\([-+].*\n\\)\\+\\1\\.?\n" "\\2 \\1\n")
+      ;; ;; Remove identical lines with one different one between them.
+      ;; (goto-char (point-min))
+      ;; (replace-all-occurrrences-iteratively "^-\\(.*\\)\n\\([-+].*\n\\)\\+\\1\n" "\\2 \\1\n")
 
-    ;; Should do the same as the above, with any number of different lines between them.
-    ))
+      ;; Should do the same as the above, with any number of different lines between them.
+      )))
 
 (defun diff-clean-empty-parts ()
   "Remove empty parts of the file: empty hunks and empty file sections."
   (interactive)
-  (replace-all-occurrrences-iteratively empty-diff-hunk-regexp "\\2")
-  (replace-all-occurrrences-iteratively empty-diff-filesection-regexp "\\1"))
+  ;; Both regexps match diff keywords such as "diff" and "Only in ", which must
+  ;; not match text that differs from a keyword only in case.  Otherwise, for
+  ;; example, "^diff.*\n" matches the "Diff finished." line that Emacs's `diff'
+  ;; appends, and the line is removed from a diff that has real content.
+  (let ((inhibit-read-only t)
+        (case-fold-search nil))
+    (replace-all-occurrrences-iteratively diff-clean-empty-hunk-regexp "\\2")
+    (replace-all-occurrrences-iteratively diff-clean-empty-filesection-regexp "\\1")))
 
 
 (defun diff-realign-hunks ()
@@ -227,6 +264,7 @@ A run may be shifted when it contains a blank line and its lines after that
 blank line are identical to the context lines that precede the run.  The
 shifted run ends at the blank line, which groups the changed lines more
 meaningfully.  Operates on the current buffer."
+  (interactive)
   ;; TODO: also do the reverse, moving lines from beginning to end of hunk.
   (save-excursion
     (goto-char (point-min))
@@ -247,7 +285,7 @@ meaningfully.  Operates on the current buffer."
                  (candidate-start (- change-begin moved-text-length))
                  (candidate-end change-begin))
             (when (and
-                   (>= candidate-start 0)
+                   (>= candidate-start (point-min))
                    (string= moved-text-without-plus (buffer-substring candidate-start candidate-end)))
               (change-indicator-char-in-region " " indicator-char candidate-start candidate-end)
               (change-indicator-char-in-region indicator-char " " moved-text-begin moved-text-end))))
@@ -255,6 +293,7 @@ meaningfully.  Operates on the current buffer."
 
 (defun diff-concatenate-hunks ()
   "Merge two hunks that are separated only by punctuation."
+  (interactive)
   (diff-concatenate-hunks-with-indicator "+")
   (diff-concatenate-hunks-with-indicator "-")
   )
@@ -287,7 +326,7 @@ INDICATOR-CHAR is \"+\" or \"-\"."
                                         ((equal "-" indicator-char)
                                          change2-end)
                                         (t
-                                         (error "bad indicator character '%s'" indicator-char))))
+                                         (error "Bad indicator character `%s'" indicator-char))))
                  (new-indicator (opposite-indicator-char indicator-char)))
             (goto-char insertion-point)
             (insert punctuation)
@@ -312,8 +351,8 @@ statement, then runs `diff-clean'."
       ;; Remove certain files
       (goto-char (point-min))
       (while (re-search-forward "^[-+]\\(import.*;\\|from .* import .*\\)$" nil t)
-	(goto-char (match-beginning 0))
-	(kill-line))))
+	(delete-region (match-beginning 0)
+                       (min (point-max) (1+ (match-end 0)))))))
   (diff-clean))
 
 
@@ -321,16 +360,17 @@ statement, then runs `diff-clean'."
 (defun kill-non-matching-hunks (regexp)
   "Delete hunks that do not contain a match for the given regexp."
   (interactive "sRegexp: ")
-  (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward "^@@ " nil t)
-      (let ((hunk-start (match-beginning 0)))
-	(re-search-forward "^[^-+ ]\\|\\'")
-	(let ((hunk-end (match-beginning 0)))
-	  (goto-char hunk-start)
-	  (if (re-search-forward regexp hunk-end t)
-	      (goto-char hunk-end)
-	    (kill-region hunk-start hunk-end)))))))
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^@@ " nil t)
+        (let ((hunk-start (match-beginning 0)))
+	  (re-search-forward "^[^-+ ]\\|\\'")
+	  (let ((hunk-end (match-beginning 0)))
+	    (goto-char hunk-start)
+	    (if (re-search-forward regexp hunk-end t)
+	        (goto-char hunk-end)
+	      (delete-region hunk-start hunk-end))))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -355,7 +395,7 @@ statement, then runs `diff-clean'."
         ((equal "+" indicator-char)
          "-")
         (t
-         (error (concat "bad indicator char: " indicator-char)))))
+         (error "Bad indicator char: %s" indicator-char))))
 
 (defun change-indicator-char-in-region (old-indicator new-indicator begin end)
   "Replace the indicator character (the character in column 1), in the region.
@@ -376,6 +416,7 @@ Do nothing with lines that do not begin with OLD-INDICATOR."
   "Convert Java array declarations to put the brackets on the element type.
 For example, convert \"short a2[]\" to \"short[] a2\", or
 \"@PolySigned short a2 @Nullable []\" to \"@PolySigned short @Nullable [] a2\"."
+  (interactive)
   (tags-query-replace
    (concat
     "\\([^@]\\)\\b\\([A-Z][a-z][A-Za-z0-9]+\\|byte\\|short\\|int\\|long\\|float\\|double\\|boolean\\|char\\) "
