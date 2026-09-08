@@ -112,8 +112,7 @@ ignores is determined from the filenames in the diff."
 
 (defun diff-clean-files (remove-regexes)
   "Delete files whose pathname matches any of the regexes.
-Does nothing if REMOVE-REGEXES is nil, because an empty alternation
-matches every filename."
+Does nothing if REMOVE-REGEXES is nil."
   (let ((inhibit-read-only t))
 
     (when remove-regexes
@@ -122,83 +121,157 @@ matches every filename."
         ;; (goto-char (point-min))
         ;; (delete-matching-lines "^\\\\ No newline at end of file$")
 
-        ;; Remove certain files
-        (goto-char (point-min))
-        (let ((filename-regexp
-	       (concat "\\("
-		       (mapconcat #'(lambda (r) (concat "\\(" r "\\)"))
-				  remove-regexes
-				  "\\|")
-		       "\\)")))
-	  (while (re-search-forward
-		  (concat "^diff .*\n"
-			  ;; Git's extended header lines, any number of which may
-			  ;; precede the optional "index" line.
-			  "\\(?:\\(?:old mode\\|new mode\\|new file mode\\|deleted file mode"
-			  "\\|copy from\\|copy to\\|rename from\\|rename to"
-			  "\\|similarity index\\|dissimilarity index\\) .*\n\\)*"
-			  "\\(?:index .*\n\\)?"
-			  "\\("
-			  "--- " filename-regexp "\\(\t.*\\)?\n\\+\\+\\+ .*$"
-			  "\\|"
-			  "--- .*\n\\+\\+\\+ " filename-regexp "\\(\t.*\\)?$"
-			  "\\|"
-			  ;; Git reports a difference in a binary file with a
-			  ;; "Binary files " line in place of the "---"/"+++" pair
-			  ;; and the hunks.
-			  "Binary files " filename-regexp " and .* differ$"
-			  "\\|"
-			  "Binary files .* and " filename-regexp " differ$"
-			  "\\)")
-		  nil t)
-            (let* ((begin (match-beginning 0))
-                   ;; The end of the file's diff is the start of the next line
-                   ;; that begins neither a diff line, a hunk header, a blank
-                   ;; line, nor a "\\ No newline at end of file" marker; or end
-                   ;; of buffer.  A blank line is within the diff because
-                   ;; editing a diff can strip the leading space from a blank
-                   ;; context line.  The character class contains a single
-                   ;; backslash, doubled for Emacs string syntax; a character
-                   ;; class has no escape sequences.
-	           (end (if (re-search-forward "\n[^-+ @\\\\\n]" nil t)
-			    (1+ (match-beginning 0))
-		          (point-max))))
-	      (delete-region begin end)
-              (beginning-of-line 0)))
+        (let ((matchers (diff-clean-matchers remove-regexes))
+              ;; The "Only in " lines put ": " in place of the last "/"
+              ;; directory separator, so regexp `remove-regexes' does not match
+              ;; them; `file-regexp-to-colon-regexp' adjusts for that.  The
+              ;; colon form matches only a prefix of the "Only in " line, so
+              ;; these matchers are not anchored at the end.
+              (colon-matchers (diff-clean-matchers
+                               (mapcar #'file-regexp-to-colon-regexp remove-regexes)
+                               t)))
 
-	  ;; A regexp that ends in ".*" can match an "Only in " line directly,
-	  ;; because the ".*" absorbs the ": " described below.
-	  (goto-char (point-min))
-	  (flush-lines (concat "^Only in " filename-regexp "$"))
+          ;; Remove certain files.
+          (goto-char (point-min))
+          (while (re-search-forward
+                  (concat "^diff .*\n"
+                          ;; Git's extended header lines, any number of which may
+                          ;; precede the optional "index" line.
+                          "\\(?:\\(?:old mode\\|new mode\\|new file mode\\|deleted file mode"
+                          "\\|copy from\\|copy to\\|rename from\\|rename to"
+                          "\\|similarity index\\|dissimilarity index\\) .*\n\\)*"
+                          "\\(?:index .*\n\\)?"
+                          "\\(?:"
+                          "--- \\(.*\\)\n\\+\\+\\+ \\(.*\\)$"
+                          "\\|"
+                          ;; Git reports a difference in a binary file with a
+                          ;; "Binary files " line in place of the "---"/"+++" pair
+                          ;; and the hunks.
+                          "Binary files \\(.*\\) differ$"
+                          "\\)")
+                  nil t)
+            ;; The filenames are tested here rather than in the regexp above,
+            ;; because an alternation of all of `remove-regexes' can be too
+            ;; large for Emacs to compile.
+            (when (if (match-beginning 3)
+                      (diff-clean-differ-line-matches-p (match-string 3) matchers)
+                    (or (diff-clean-diff-filename-matches-p (match-string 1) matchers)
+                        (diff-clean-diff-filename-matches-p (match-string 2) matchers)))
+              (let* ((begin (match-beginning 0))
+                     ;; The end of the file's diff is the start of the next line
+                     ;; that begins neither a diff line, a hunk header, a blank
+                     ;; line, nor a "\\ No newline at end of file" marker; or end
+                     ;; of buffer.  A blank line is within the diff because
+                     ;; editing a diff can strip the leading space from a blank
+                     ;; context line.  The character class contains a single
+                     ;; backslash, doubled for Emacs string syntax; a character
+                     ;; class has no escape sequences.
+                     (end (if (re-search-forward "\n[^-+ @\\\\\n]" nil t)
+                              (1+ (match-beginning 0))
+                            (point-max))))
+                (delete-region begin end)
+                (beginning-of-line 0))))
 
-	  ;; Unlike git, diff writes these lines outside any file's diff section,
-	  ;; so the loop above does not remove them.  Diff writes "Binary files X
-	  ;; and Y differ" for a binary file, and, when it is run with --brief,
-	  ;; "Files X and Y differ" for any file.  This runs after that loop, so
-	  ;; that a line within a section that the loop removes is not removed on
-	  ;; its own, which would orphan the "diff" and "index" lines above it.
-	  (goto-char (point-min))
-	  (flush-lines (concat "^\\(?:Binary files \\|Files \\)\\(?:"
-			       filename-regexp " and .*"
-			       "\\|.* and " filename-regexp
-			       "\\) differ$")))
+          ;; A regexp that ends in ".*" can match an "Only in " line directly,
+          ;; because the ".*" absorbs the ": " described above.
+          (goto-char (point-min))
+          (while (re-search-forward "^Only in \\(.*\\)$" nil t)
+            (when (or (diff-clean-matches-p (match-string 1) matchers)
+                      (diff-clean-matches-p (match-string 1) colon-matchers))
+              (delete-region (match-beginning 0)
+                             (min (point-max) (1+ (match-end 0))))))
 
-        ;; Remove the remaining lines starting "Only in " for certain files.
-        ;; The "Only in " lines put ": " in place of the last "/"
-        ;; directory separator, so regexp `remove-regexes'
-        ;; does not match them; `file-regexp-to-colon-regexp' adjusts for that.
-        ;; This regexp is not anchored at the end, because the colon form
-        ;; matches only a prefix of the "Only in " line.
-        (goto-char (point-min))
-        (let ((onlyin-regexp
-	       (concat "^Only in \\("
-		       (mapconcat #'(lambda (r) (concat "\\(" (file-regexp-to-colon-regexp r) "\\)"))
-				  remove-regexes
-				  "\\|")
-		       "\\)")))
-	  (flush-lines onlyin-regexp))
+          ;; Unlike git, diff writes these lines outside any file's diff section,
+          ;; so the loop above does not remove them.  Diff writes "Binary files X
+          ;; and Y differ" for a binary file, and, when it is run with --brief,
+          ;; "Files X and Y differ" for any file.  This runs after that loop, so
+          ;; that a line within a section that the loop removes is not removed on
+          ;; its own, which would orphan the "diff" and "index" lines above it.
+          (goto-char (point-min))
+          (while (re-search-forward
+                  "^\\(?:Binary files \\|Files \\)\\(.*\\) differ$" nil t)
+            (when (diff-clean-differ-line-matches-p (match-string 1) matchers)
+              (delete-region (match-beginning 0)
+                             (min (point-max) (1+ (match-end 0)))))))))))
 
-        ))))
+(defconst diff-clean-matcher-length 2000
+  "The approximate maximum length of a regexp built by `diff-clean-matchers'.
+Emacs signals `invalid-regexp' with message \"Regular expression too big\" for
+a regexp whose compiled form exceeds a fixed size, which corresponds to a
+source regexp of roughly 30000 characters.  This value is far below that.")
+
+(defun diff-clean-matchers (regexps &optional prefix-only)
+  "Return a list of regexps that matches what REGEXPS matches.
+Each result element is anchored at the beginning and, unless PREFIX-ONLY is
+non-nil, at the end, so it matches an entire string.
+The result is a list rather than a single alternation of all of REGEXPS,
+because such an alternation can be too large for Emacs to compile.
+Use `diff-clean-matches-p' to test a string against the result."
+  (let ((result '())
+        ;; The regexps of the alternation that is being built, reversed.
+        (pending '())
+        (pending-length 0))
+    (dolist (regexp regexps)
+      (when (and pending
+                 (> (+ pending-length (length regexp)) diff-clean-matcher-length))
+        (push (diff-clean-matcher pending prefix-only) result)
+        (setq pending '())
+        (setq pending-length 0))
+      (push regexp pending)
+      (setq pending-length (+ pending-length (length regexp))))
+    (when pending
+      (push (diff-clean-matcher pending prefix-only) result))
+    result))
+
+(defun diff-clean-matcher (regexps prefix-only)
+  "Return a regexp that matches a string that any of REGEXPS matches entirely.
+The regexp is anchored at the end unless PREFIX-ONLY is non-nil."
+  (concat "\\`\\(?:"
+          (mapconcat #'(lambda (r) (concat "\\(?:" r "\\)")) regexps "\\|")
+          "\\)"
+          (if prefix-only "" "\\'")))
+
+(defun diff-clean-matches-p (string matchers)
+  "Return non-nil if MATCHERS matches STRING.
+MATCHERS is a list of regexps, as returned by `diff-clean-matchers'."
+  (let ((result nil))
+    (while (and matchers (not result))
+      (setq result (string-match-p (car matchers) string))
+      (setq matchers (cdr matchers)))
+    result))
+
+(defun diff-clean-diff-filename-matches-p (text matchers)
+  "Return non-nil if MATCHERS matches a filename in TEXT.
+TEXT is the text that follows \"--- \" or \"+++ \" on a line of a diff.
+Diff writes a tab and a timestamp after the filename, and git writes nothing
+after it, but a filename may contain a tab; so the filename is any prefix of
+TEXT that ends before a tab, or all of TEXT."
+  ;; `string-match' sets the match data, which the caller is still using.
+  (save-match-data
+    (let ((result (diff-clean-matches-p text matchers))
+          (start 0))
+      (while (and (not result) (string-match "\t" text start))
+        (setq result (diff-clean-matches-p (substring text 0 (match-beginning 0))
+                                           matchers))
+        (setq start (match-end 0)))
+      result)))
+
+(defun diff-clean-differ-line-matches-p (text matchers)
+  "Return non-nil if MATCHERS matches a filename in TEXT.
+TEXT is the text between \"files \" and \" differ\" on a line of a diff, as in
+\"Binary files X and Y differ\".  Because a filename may contain \" and \",
+every way of splitting TEXT into two filenames is tried."
+  ;; `string-match' sets the match data, which the caller is still using.
+  (save-match-data
+    (let ((result nil)
+          (start 0))
+      (while (and (not result) (string-match " and " text start))
+        (setq result (or (diff-clean-matches-p (substring text 0 (match-beginning 0))
+                                               matchers)
+                         (diff-clean-matches-p (substring text (match-end 0))
+                                               matchers)))
+        (setq start (1+ (match-beginning 0))))
+      result)))
 
 ;; These names may need to be changed, so that completing "diff-clean" is easier to do.
 
