@@ -57,3 +57,7 @@ When creating a new branch, use a new directory or a new clone.
 * In the release notes `docs/CHANGELOG.md`:
   * Ordinary bug fixes are not described, nor are ordinary improvements in precison.  Describing every single one would clutter the changelog and obscure the key changes that users should read about.
   * Pull requests should not modify the "### Closed issues" section; it is filled in at release time.
+
+## Claude Code
+
+The syntax rules for Claude Code `settings.json` files are explained in file ~/wisdom/claude-settings-json.md or at <https://github.com/mernst/uwisdom/blob/master/claude-settings-json.md> .
