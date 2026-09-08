@@ -200,6 +200,12 @@ Emacs signals `invalid-regexp' with message \"Regular expression too big\" for
 a regexp whose compiled form exceeds a fixed size, which corresponds to a
 source regexp of roughly 30000 characters.  This value is far below that.")
 
+(defconst diff-clean-matcher-overhead 8
+  "The number of characters that `diff-clean-matcher' adds per element.
+It wraps each element in \"\\(?:\" and \"\\)\" and separates each element from
+the previous one by \"\\|\".  Without this, a list of many short regexps would
+build a regexp far longer than `diff-clean-matcher-length'.")
+
 (defun diff-clean-matchers (regexps &optional prefix-only)
   "Return a list of regexps that matches what REGEXPS matches.
 Each result element is anchored at the beginning and, unless PREFIX-ONLY is
@@ -212,13 +218,14 @@ Use `diff-clean-matches-p' to test a string against the result."
         (pending '())
         (pending-length 0))
     (dolist (regexp regexps)
-      (when (and pending
-                 (> (+ pending-length (length regexp)) diff-clean-matcher-length))
-        (push (diff-clean-matcher pending prefix-only) result)
-        (setq pending '())
-        (setq pending-length 0))
-      (push regexp pending)
-      (setq pending-length (+ pending-length (length regexp))))
+      (let ((regexp-length (+ (length regexp) diff-clean-matcher-overhead)))
+        (when (and pending
+                   (> (+ pending-length regexp-length) diff-clean-matcher-length))
+          (push (diff-clean-matcher pending prefix-only) result)
+          (setq pending '())
+          (setq pending-length 0))
+        (push regexp pending)
+        (setq pending-length (+ pending-length regexp-length))))
     (when pending
       (push (diff-clean-matcher pending prefix-only) result))
     result))

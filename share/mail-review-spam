@@ -274,9 +274,14 @@ def _write_private_token(path: Path, contents: str) -> None:
     """Atomically write an OAuth token cache readable only by its owner."""
     # `mkdir` honors `mode` only when it creates the directory, so an existing
     # directory keeps the permissions it already has.  The token file itself is
-    # 0600, so a lax directory exposes only the file names.
+    # 0600, so no other user can read it; but another user who can write the
+    # directory can replace the token file with one of their own choosing, and
+    # another user who can read it can see the token file names.
     if path.parent.is_dir():
-        if path.parent.stat().st_mode & 0o077:
+        directory_mode = path.parent.stat().st_mode
+        if directory_mode & 0o022:
+            warn(f"{path.parent} is writable by other users; they can replace token files")
+        elif directory_mode & 0o055:
             warn(f"{path.parent} is accessible to other users; token file names are visible")
     else:
         path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -344,10 +349,12 @@ def authenticate_account(
         credentials = cached_credentials(config)
         from_cache = credentials is not None
         if credentials is None:
-            print(f"Authorize {config.email} (Gmail browser slot {browser_slot}).")
+            # Check this before asking the user to authorize, so that a missing
+            # file is not reported only after the user has waited in a browser.
             if not client_secret_path.is_file():
                 msg = f"OAuth client-secret file does not exist: {client_secret_path}"
                 raise RuntimeError(msg)  # ruff: ignore[raise-within-try]
+            print(f"Authorize {config.email} (Gmail browser slot {browser_slot}).")
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(client_secret_path), [GMAIL_READONLY_SCOPE]
             )
