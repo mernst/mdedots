@@ -327,13 +327,15 @@ if [ ! -d /homes/gws/mernst ] || [ "$(hostname -s)" = "bicycle" ]; then
   if command -v syncthing > /dev/null 2>&1; then
     syncthing_running=1
     # Prefer syncthing's REST API, which also detects a process that exists but is unresponsive.
+    # Use /rest/noauth/health: other /rest/ endpoints require an API key and answer 403.
     if command -v curl > /dev/null 2>&1; then
-      curl -s http://127.0.0.1:8384/rest/system/ping | grep '{"ping":"pong"}' > /dev/null 2>&1 || syncthing_running=0
+      curl -s --max-time 5 http://127.0.0.1:8384/rest/noauth/health | grep '"status": *"OK"' > /dev/null 2>&1 || syncthing_running=0
     else
       pgrep -x syncthing > /dev/null 2>&1 || syncthing_running=0
     fi
     if [ "$syncthing_running" = 0 ]; then
       mkdir -p "$HOME"/tmp
+      # Can pass `--no-browser`, but I like teh confirmation that syncthing is running.
       nohup syncthing > "$HOME"/tmp/syncthing.log 2>&1 &
     fi
     unset syncthing_running

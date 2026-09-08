@@ -356,8 +356,9 @@ statement, then runs `diff-clean'."
   (diff-clean))
 
 
-;; TODO: also define kill-matching-hunks, which can share a lot of code with this.
-(defun kill-non-matching-hunks (regexp)
+;; TODO: also define diff-clean-delete-matching-hunks, which can share a lot of
+;; code with this.
+(defun diff-clean-delete-non-matching-hunks (regexp)
   "Delete hunks that do not contain a match for the given regexp."
   (interactive "sRegexp: ")
   (let ((inhibit-read-only t))
