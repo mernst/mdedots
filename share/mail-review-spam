@@ -34,12 +34,14 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
+
 @dataclass(frozen=True)
 class AccountConfig:
     """A Gmail identity and its OAuth token cache."""
 
     email: str
     token_path: Path
+
 
 ACCOUNT_CONFIGS = (
     AccountConfig(
@@ -65,8 +67,8 @@ DISCOVERY_FAILURE = (
     "Google browser-account discovery no longer works; mail-review-spam must be rewritten"
 )
 MISSING_LIBRARIES = (
-    "mail-review-spam requires google-api-python-client, google-auth, "
-    "and google-auth-oauthlib; execute the script directly or with "
+    "mail-review-spam requires browser-cookie3, google-api-python-client, google-auth, "
+    "google-auth-oauthlib, and requests; execute the script directly or with "
     "`uv run --script mail-review-spam` so uv supplies them"
 )
 # Delay after opening a browser tab, to avoid overwhelming the browser.
@@ -238,7 +240,10 @@ def discover_browser_slots(expected_emails: tuple[str, ...]) -> dict[str, str]:
     try:
         import browser_cookie3  # ruff: ignore[import-outside-top-level]
         import requests  # ruff: ignore[import-outside-top-level]
+    except ImportError as error:
+        raise RuntimeError(MISSING_LIBRARIES) from error
 
+    try:
         cookies = browser_cookie3.chrome(domain_name=".google.com")
         response = requests.post(
             LIST_ACCOUNTS_URL,
@@ -621,7 +626,6 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             # "💘",
             # # It works if I abut it with a word, like this:
             # # "🔥H0T",
-
             # German
             GERMAN_SEARCH,
             # Portuguese
