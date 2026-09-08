@@ -1,8 +1,4 @@
-#!/bin/sh
-# This is actually a gawk script, not a sh script.
-condition_that_fails==0 "exec" "gawk" "-f" "$0" "$@"
-## The above is instead of:  #!/usr/bin/env gawk -f
-## See http://stackoverflow.com/questions/4303128/how-to-use-multiple-arguments-with-a-shebang-i-e .
+#!/usr/bin/env -S gawk -f
 
 # addrfilter
 
