@@ -14,7 +14,7 @@
 
 Usage: mail-review-spam
 
-The Gmail API must be enabled for the project represented by
+The Gmail API must be enabled for the application represented by
 ~/private/googleusercontent-oauth-client-secret.json.  On the first run, the
 script asks the user to authorize each account; later runs use separate token
 caches in ~/private.
@@ -34,7 +34,29 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
+
+@dataclass(frozen=True)
+class AccountConfig:
+    """A Gmail identity and its OAuth token cache."""
+
+    email: str
+    token_path: Path
+
+
+ACCOUNT_CONFIGS = (
+    AccountConfig(
+        "mernst" + "@" + "cs.washington.edu",
+        Path.home() / "private/googleusercontent-oauth-token-mernst-cs-washington-edu.json",
+    ),
+    AccountConfig(
+        "michael.ernst" + "@" + "gmail.com",
+        Path.home() / "private/googleusercontent-oauth-token-michael-ernst-gmail-com.json",
+    ),
+)
+
+
 GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
+# This identifies the application; by contrast, the oauth *tokens* identify an account.
 CLIENT_SECRET_PATH = Path.home() / "private/googleusercontent-oauth-client-secret.json"
 GMAIL_URL_PREFIX = "https://mail.google.com/mail/u/"
 LIST_ACCOUNTS_URL = (
@@ -45,20 +67,12 @@ DISCOVERY_FAILURE = (
     "Google browser-account discovery no longer works; mail-review-spam must be rewritten"
 )
 MISSING_LIBRARIES = (
-    "mail-review-spam requires google-api-python-client, google-auth, "
-    "and google-auth-oauthlib; execute the script directly or with "
+    "mail-review-spam requires browser-cookie3, google-api-python-client, google-auth, "
+    "google-auth-oauthlib, and requests; execute the script directly or with "
     "`uv run --script mail-review-spam` so uv supplies them"
 )
 # Delay after opening a browser tab, to avoid overwhelming the browser.
 TAB_DELAY_SECONDS = 0.1
-
-
-@dataclass(frozen=True)
-class AccountConfig:
-    """A Gmail identity and its OAuth token cache."""
-
-    email: str
-    token_path: Path
 
 
 @dataclass(frozen=True)
@@ -76,18 +90,6 @@ class Section:
 
     heading: str
     searches: tuple[str, ...]
-
-
-ACCOUNT_CONFIGS = (
-    AccountConfig(
-        "mernst" + "@" + "cs.washington.edu",
-        Path.home() / "private/googleusercontent-oauth-token-mernst-cs-washington-edu.json",
-    ),
-    AccountConfig(
-        "michael.ernst" + "@" + "gmail.com",
-        Path.home() / "private/googleusercontent-oauth-token-michael-ernst-gmail-com.json",
-    ),
-)
 
 
 def warn(message: str) -> None:
@@ -155,6 +157,10 @@ def _single_field(
     fields: list[tuple[int, int, int | bytes]], number: int, wire_type: int
 ) -> int | bytes | None:
     """Get an optional non-repeated protobuf field with the expected wire type.
+
+    `fields` comes from `_parse_protobuf_fields`, so a wire-type 0 value is a
+    varint that `_read_varint` decoded from the ListAccounts payload, and every
+    other wire type carries the raw bytes of the field.
 
     Returns:
         The field value, or None when the field is absent.
@@ -234,7 +240,10 @@ def discover_browser_slots(expected_emails: tuple[str, ...]) -> dict[str, str]:
     try:
         import browser_cookie3  # ruff: ignore[import-outside-top-level]
         import requests  # ruff: ignore[import-outside-top-level]
+    except ImportError as error:
+        raise RuntimeError(MISSING_LIBRARIES) from error
 
+    try:
         cookies = browser_cookie3.chrome(domain_name=".google.com")
         response = requests.post(
             LIST_ACCOUNTS_URL,
@@ -263,7 +272,19 @@ def discover_browser_slots(expected_emails: tuple[str, ...]) -> dict[str, str]:
 
 def _write_private_token(path: Path, contents: str) -> None:
     """Atomically write an OAuth token cache readable only by its owner."""
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    # `mkdir` honors `mode` only when it creates the directory, so an existing
+    # directory keeps the permissions it already has.  The token file itself is
+    # 0600, so no other user can read it; but another user who can write the
+    # directory can replace the token file with one of their own choosing, and
+    # another user who can read it can see the token file names.
+    if path.parent.is_dir():
+        directory_mode = path.parent.stat().st_mode
+        if directory_mode & 0o022:
+            warn(f"{path.parent} is writable by other users; they can replace token files")
+        elif directory_mode & 0o055:
+            warn(f"{path.parent} is accessible to other users; token file names are visible")
+    else:
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     temporary_name: str | None = None
     try:
         with tempfile.NamedTemporaryFile(
@@ -326,7 +347,13 @@ def authenticate_account(
 
     try:
         credentials = cached_credentials(config)
+        from_cache = credentials is not None
         if credentials is None:
+            # Check this before asking the user to authorize, so that a missing
+            # file is not reported only after the user has waited in a browser.
+            if not client_secret_path.is_file():
+                msg = f"OAuth client-secret file does not exist: {client_secret_path}"
+                raise RuntimeError(msg)  # ruff: ignore[raise-within-try]
             print(f"Authorize {config.email} (Gmail browser slot {browser_slot}).")
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(client_secret_path), [GMAIL_READONLY_SCOPE]
@@ -345,7 +372,16 @@ def authenticate_account(
         service = build("gmail", "v1", credentials=credentials, cache_discovery=False)
         actual_email = service.users().getProfile(userId="me").execute()["emailAddress"]
         if actual_email.casefold() != config.email.casefold():
-            msg = f"authorized {actual_email}, but expected {config.email}; token was not saved"
+            if from_cache:
+                msg = (
+                    f"cached credentials in {config.token_path} belong to {actual_email}, "
+                    f"but {config.email} was expected; delete that file and authorize again"
+                )
+            else:
+                msg = (
+                    f"authorized {actual_email}, but expected {config.email}; "
+                    f"{config.token_path} was not written"
+                )
             raise RuntimeError(msg)  # ruff: ignore[raise-within-try]
         _write_private_token(config.token_path, credentials.to_json())
         return AccountSession(config, browser_slot, service)
@@ -366,9 +402,6 @@ def authenticate_accounts(
     Returns:
         Authenticated sessions in configuration order.
     """
-    if not client_secret_path.is_file():
-        msg = f"OAuth client-secret file does not exist: {client_secret_path}"
-        raise RuntimeError(msg)
     return tuple(
         authenticate_account(config, browser_slots[config.email.casefold()], client_secret_path)
         for config in configs
@@ -600,7 +633,6 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             # "💘",
             # # It works if I abut it with a word, like this:
             # # "🔥H0T",
-
             # German
             GERMAN_SEARCH,
             # Portuguese
