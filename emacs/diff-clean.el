@@ -35,12 +35,14 @@ only match basenames whereas this handles pathnames.")
 
 ;; The header of a hunk is either a line ending in "@" (as in "@@ -1,2 +1,2 @@")
 ;; or a line of the form "@@ ... @@ ..." whose trailing text names the enclosing
-;; function.  [@BCDIO\ncd] is what can start a line at the end of a hunk: a
-;; hunk header, "Binary files ", "Common subdirectories: ", "Diff finished.",
-;; "Index: ", "Only in ", a blank line, or "diff ".  Both cases of a letter
-;; must be listed, because `case-fold-search' is nil when this regexp is used.
+;; function.  [@BCDIO\nd] is what can start a line at the end of a hunk:
+;; "@" a hunk header, "B" "Binary files ", "C" "Common subdirectories: ",
+;; "D" "Diff finished.", "I" "Index: ", "O" "Only in ", a newline a blank
+;; line, and "d" "diff ".  "D" and "d" both appear because they start two
+;; different lines, not because of case.  `case-fold-search' must be nil when
+;; using this regexp, so each letter matches only the case that diff writes.
 (defconst diff-clean-empty-hunk-regexp
-  "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BCDIO\ncd]\\|\\'\\|--- \\)"
+  "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BCDIOd\n]\\|\\'\\|--- \\)"
   "Matches a hunk that has no added or removed lines.
 Group 2 is the text following the hunk, which must be retained.
 Bind `case-fold-search' to nil when using this regexp.")
@@ -52,9 +54,15 @@ Bind `case-fold-search' to nil when using this regexp.")
    ;; deliberately not matched.  A section that contains one is not empty even
    ;; if it contains no hunks: that is how git represents creating an empty
    ;; file, a deletion, a rename, a copy, or a mode change.
-   "\\(?:index .*\n\\)?"
-   "\\(?:---.*\n\\+\\+\\+.*\n\\)?"
-   "\\(diff\\|Only in \\|Binary files \\|\nDiff finished\\.\\|\\'\\)")
+   ;; The "index" line is matched only within the branch that requires the
+   ;; "---"/"+++" pair, because a section consisting of "diff" and "index"
+   ;; alone is not empty either: that is how git represents a change to a
+   ;; binary file ("diff --git", "index", "Binary files X and Y differ").
+   "\\(?:\\(?:index .*\n\\)?---.*\n\\+\\+\\+.*\n\\)?"
+   ;; The lines that can follow a file's section, which are the same lines that
+   ;; can follow a hunk; see `diff-clean-empty-hunk-regexp'.
+   "\\(diff\\|Only in \\|Binary files \\|Common subdirectories: \\|Index: "
+   "\\|\nDiff finished\\.\\|\\'\\)")
   "Matches a file's diff section that contains no hunks.
 Group 1 is the text following the section, which must be retained.
 Bind `case-fold-search' to nil when using this regexp.")
@@ -118,9 +126,14 @@ matches every filename."
 		  nil t)
             (let* ((begin (match-beginning 0))
                    ;; The end of the file's diff is the start of the next line
-                   ;; that begins neither a diff line, a hunk header, nor a
-                   ;; "\\ No newline at end of file" marker; or end of buffer.
-	           (end (if (re-search-forward "\n[^-+ @\\\\]" nil t)
+                   ;; that begins neither a diff line, a hunk header, a blank
+                   ;; line, nor a "\\ No newline at end of file" marker; or end
+                   ;; of buffer.  A blank line is within the diff because
+                   ;; editing a diff can strip the leading space from a blank
+                   ;; context line.  The character class contains a single
+                   ;; backslash, doubled for Emacs string syntax; a character
+                   ;; class has no escape sequences.
+	           (end (if (re-search-forward "\n[^-+ @\\\\\n]" nil t)
 			    (1+ (match-beginning 0))
 		          (point-max))))
 	      (delete-region begin end)
