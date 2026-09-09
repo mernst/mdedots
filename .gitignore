@@ -1,6 +1,8 @@
 TAGS
 *~
 *.elc
+__pycache__/
+*.pyc
 
 dots/.Xresources-cse
 dots/.Xresources-laptop
