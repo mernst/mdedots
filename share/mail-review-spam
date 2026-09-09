@@ -397,7 +397,7 @@ def authenticate_accounts(
     configs: tuple[AccountConfig, ...] = ACCOUNT_CONFIGS,
     client_secret_path: Path = CLIENT_SECRET_PATH,
 ) -> tuple[AccountSession, ...]:
-    """Authenticate all configured Gmail accounts.
+    """Authenticate the given Gmail accounts.
 
     Returns:
         Authenticated sessions in configuration order.
@@ -442,7 +442,7 @@ def open_tab(url: str) -> None:
     time.sleep(TAB_DELAY_SECONDS)
 
 
-def search_has_messages(service: Any, search_term: str) -> bool:
+def search_succeeds(service: Any, search_term: str) -> bool:
     """Return whether a Gmail spam search has at least one result.
 
     Returns:
@@ -466,7 +466,7 @@ def is_transient_api_error(error: Exception) -> bool:
     """Return whether an API error is likely to be temporary.
 
     Returns:
-        Whether opening the tab is safer than terminating the review.
+        Whether the same request is likely to succeed if retried.
     """
     status = getattr(getattr(error, "resp", None), "status", None)
     if status in (408, 429) or (isinstance(status, int) and 500 <= status <= 599):
@@ -487,11 +487,13 @@ def spam_search(search_term: str, sessions: tuple[AccountSession, ...]) -> None:
     """Open this spam search only for accounts in which it has results."""
     for session in sessions:
         try:
-            has_messages = search_has_messages(session.service, search_term)
+            has_messages = search_succeeds(session.service, search_term)
         except Exception as error:
             if not is_transient_api_error(error):
                 msg = f"Gmail search failed for {session.config.email}: {search_term}: {error}"
                 raise RuntimeError(msg) from error
+            # For a temporary failure, opening the tab is better than
+            # terminating the review; at worst the tab shows no messages.
             warn(
                 f"Gmail API unavailable for {session.config.email}; "
                 f"opening search without checking: {search_term}"
@@ -545,6 +547,10 @@ GERMAN_SEARCH = "(" + " OR ".join(GERMAN_TERMS) + ")"
 # To avoid "Showing related results", double-quote the term.
 SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
     Section(
+        "Mail forged to be from me",
+        ("(from:michaelernst OR from:michael.ernst OR from:mernst)",),
+    ),
+    Section(
         "My username or name in the subject line",
         (
             '(subject:"michaelernst" OR subject:"mernst" OR subject:"cs.washington.edu")',
@@ -553,19 +559,15 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
         ),
     ),
     Section(
-        "Mail forged to be from me",
-        ("(from:michaelernst OR from:michael.ernst OR from:mernst)",),
-    ),
-    Section(
-        'Misspelled "Micheal"',
-        ('"Micheal"',),
-    ),
-    Section(
         '"Michael" in the subject line or "Hi Michael"',
         (
             "subject:Michael",
             '"Hi Michael"',
         ),
+    ),
+    Section(
+        'Misspelled "Micheal"',
+        ('"Micheal"',),
     ),
     Section(
         "Likely false positives (by sender, part 1)",
@@ -593,7 +595,6 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             "from:pnc.com",
             "from:seattlecca.org",
             "from:spl.org",
-            "from:trenduw" + "@" + "uw.edu",
             "from:uw.edu",
             "from:washington.edu",
             'from:"Google Calendar"',
@@ -621,7 +622,7 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
         ),
     ),
     Section(
-        "Possible false positive",
+        "Possible false positive for calendar event",
         ("subject:invitation",),
     ),
     Section(
@@ -633,6 +634,7 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             # "💘",
             # # It works if I abut it with a word, like this:
             # # "🔥H0T",
+            #
             # German
             GERMAN_SEARCH,
             # Portuguese
@@ -654,7 +656,7 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             "重要",
             # NOTE: Most of these aren't a problem because the email subject sorts
             # at the end when I review the email in Emacs Mew.
-            # "К",  # ruff:ignore[ambiguous-unicode-character-comment]
+            # "К",  # ruff:ignore[ambiguous-unicode-character-comment] # intentionally not regular "K"
             # "в",
             # "я",
             # "في",
@@ -765,12 +767,6 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             'from:"Klaus Richter"',
             'from:"Manfred Böhm"',
             'from:"Manfred Schmitz"',
-            # These do not include "from:" in the search
-            '"golf wire"',
-            "Speechelo",
-            "Syxsense",
-            "labelbox",
-            "techwatch",
             "bara" + "@" + "kolliers.com",
         ),
     ),
@@ -785,17 +781,29 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             "from:medlinepapersoa.online",
             "from:editor",
             "from:journal",
-            "keynote",
-            "anyworkanywhere",
             "from:team",
             "from:noreply" + "@" + "reply.kik-textilien.eu",
         ),
     ),
     Section(
+        "Suspicious senders, part 5",
+        (
+            # These do not include "from:" in the search
+            "keynote",
+            "anyworkanywhere",
+            '"golf wire"',
+            "Speechelo",
+            "Syxsense",
+            "labelbox",
+            "techwatch",
+),
+),
+    Section(
         "Frequent topics 1",
         (
             "subject:urgent",
-            "Scopus OR subject:journal",
+            "Scopus",
+            "subject:journal",
             '"nick hellen"',
             '"michael duwayne"',
         ),
