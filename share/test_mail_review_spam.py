@@ -179,7 +179,7 @@ class MailReviewSpamTest(unittest.TestCase):
 
     def test_api_request_checks_one_spam_message(self):
         service = FakeService({"messages": [{"id": "1"}]})
-        self.assertTrue(mail_review_spam.search_has_messages(service, 'subject:"hello"'))
+        self.assertTrue(mail_review_spam.search_succeeds(service, 'subject:"hello"'))
         self.assertEqual(
             service.messages_resource.list_arguments,
             {
