@@ -750,7 +750,7 @@ alias git-diff-all="(git diff && git-diff-new)"
 
 alias gcb=git-checkout-branch
 alias gnb=git-new-branch
-alias rmgob='rm -rf $(git-orphaned-branches)'
+alias rmgob='git-orphaned-branches --print0 | xargs -0 rm -rf'
 gcbs() {
   for br in "$@"; do
     gcb "${br}"
@@ -760,6 +760,29 @@ gcbs() {
 # shellcheck disable=SC2046 # want argument splitting
 git_log_show() { git show $(git log --format=format:%H "$@"); }
 alias git-log-show=git_log_show
+
+# coderabbit-review [<interval>]
+# Ask CodeRabbit to review the current branch's PR,
+# optionally waiting the interval (passed to `sleep`) first.
+crreview() {
+  if [ "$#" -gt 1 ]; then
+    echo "crreview: pass at most one argument; received $*"
+    return 1
+  fi
+  if [ "$#" -eq 1 ]; then
+    # Validate the number, after removing any suffix.
+    case "${1%[smhd]}" in
+      '' | . | *[!0-9.]* | *.*.*)
+        echo "crreview: the argument must be a sleep interval such as 30 or 5m; received $1"
+        return 1
+        ;;
+    esac
+    # shellcheck disable=SC2016 # "$1" is expanded by the inner shell, not by this one
+    nohup bash -c 'sleep "$1" && gh pr comment --body "@coderabbitai review"' bash "$1" > /dev/null 2>&1 &
+    return 0
+  fi
+  gh pr comment --body "@coderabbitai review"
+}
 
 ### JSON
 
