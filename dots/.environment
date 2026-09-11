@@ -77,6 +77,9 @@ export RIPGREP_CONFIG_PATH="$HOME"/.ripgreprc
 # The `:+` avoids an empty leading component, which would mean "the current directory".
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${HOME}/.local/lib"
 
+# Limit the background subagent execution wait time to 60 minutes (default 10 minutes).
+export CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=3600000
+
 ###
 ### Shell
 ###

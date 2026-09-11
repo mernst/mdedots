@@ -460,6 +460,7 @@
      ;; also a typo for "appear":  ("apper" "paper" nil 0)
      ("parallle" "parallel" nil 0)
      ("paralllel" "parallel" nil 0)
+     ("paramter" "parameter" nil 0)
      ("parseable" "parsable" nil 0)
      ("pepole" "people" nil 0)
      ("plsex" "programming languages and software engineering" nil 0)

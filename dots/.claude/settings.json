@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "auto",
     "allow": [
       "Agent(*)",
       "Bash(./gradlew:*)",
@@ -101,11 +100,7 @@
   },
   "spinnerVerbs": {
     "mode": "replace",
-    "verbs": [
-      "Thinking",
-      "Processing",
-      "Working"
-    ]
+    "verbs": ["Thinking", "Processing", "Working"]
   },
   "voice": {
     "enabled": true,

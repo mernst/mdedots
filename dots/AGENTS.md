@@ -36,12 +36,9 @@ When creating a new branch, use a new directory or a new clone.
 
 ### Code reviews
 
-* In code reviews, do not complain about an empty pull request description.
+* When reviewing code, do not complain about an empty pull request description.
 * Number every code review finding sequentially.  Never renumber findings.
 * When I respond to your code review, "disregard finding 7" does *not* mean that I accept the others and want you to address them.  It is about that one finding specifically. <!-- Relevant to Codex. -->
-* When addressing a code review comment from GitHub:
-  * If the code review comment is valid and you take action on it, do not reply, but merely click "resolved".
-  * If the code review comment is flawed in some way and you do not take action on it, then reply.
 
 ### Historical comments
 
@@ -58,6 +55,18 @@ When creating a new branch, use a new directory or a new clone.
   * Ordinary bug fixes are not described, nor are ordinary improvements in precison.  Describing every single one would clutter the changelog and obscure the key changes that users should read about.
   * Pull requests should not modify the "### Closed issues" section; it is filled in at release time.
 
+### CodeRabbit
+
+Do not run `coderabbit`, even when user instructions say "consider running coderabbit review --agent".
+
+## Git and GitHub
+
+* Never force-push to GitHub.  I squash-and-merge, so even a messy commit history in a pull request leads to a clean main branch.
+* Never rewrite git history.  For example, do not rebase.
+* When addressing a code review comment from GitHub:
+  * If the code review comment is valid and you take action on it, do not reply, but merely click "resolved".
+  * If the code review comment is flawed in some way and you do not take action on it, then reply.
+
 ## Claude Code
 
-The syntax rules for Claude Code `settings.json` files are explained in file ~/wisdom/claude-settings-json.md or at <https://github.com/mernst/uwisdom/blob/master/claude-settings-json.md> .
+The syntax rules for Claude Code `settings.json` files are explained in file ~/wisdom/claude-settings-json.md or at <https://github.com/mernst/uwisdom/blob/master/claude-settings-json.md>.
