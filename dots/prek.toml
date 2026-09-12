@@ -222,9 +222,6 @@ hooks = [
     "SCRIPTDIR",
   ], exclude = { glob = [
     "share/csail-athena-tickets.bash",
-    "share/print-mail",
-    "share/javapp",
-    "share/myxapps",
     "scripts/eps2png-mono-alpha.zsh",
     "scripts/browser_emacs",
     "scripts/find-dtrace",

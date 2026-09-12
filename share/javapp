@@ -1,23 +1,22 @@
-#! /bin/csh
+#! /bin/sh
 # Pretty-print a Java file, overwriting the original contents but saving the
 # original non-pretty-printed file with a ".unpp" extension.
 
-# This is a shell script rather than a shell alias like
+# This is a shell script rather than a shell alias like the csh alias
 #   alias	javapp	'mv -f \!* \!*.unpp; java JavaPP \!*.unpp > \!*'
 # so that it can take multiple arguments.
 
-while ($#argv)
-    set f = "$argv[1]"
-    set tmp = "$f.javapp.$$"
-    java -mx192m -classpath $HOME/java/JavaPrinter:$CLASSPATH JavaPP "$f" > "$tmp"
-    if ($status != 0) then
-        echo "javapp: pretty-printing failed for $f" > /dev/stderr
-        rm -f "$tmp"
-        exit 1
-    endif
-    # Keep the first ".unpp" file, which holds the original, never-pretty-printed
-    # text; a later run would otherwise overwrite it with pretty-printed text.
-    if (! -e "$f.unpp") mv -f "$f" "$f.unpp"
-    mv -f "$tmp" "$f"
-    shift
-end
+for f in "$@"; do
+  tmp="$f.javapp.$$"
+  if ! java -mx192m -classpath "$HOME/java/JavaPrinter${CLASSPATH:+:$CLASSPATH}" JavaPP "$f" > "$tmp"; then
+    echo "javapp: pretty-printing failed for $f" 1>&2
+    rm -f "$tmp"
+    exit 1
+  fi
+  # Keep the first ".unpp" file, which holds the original, never-pretty-printed
+  # text; a later run would otherwise overwrite it with pretty-printed text.
+  if [ ! -e "$f.unpp" ]; then
+    mv -f "$f" "$f.unpp"
+  fi
+  mv -f "$tmp" "$f"
+done
