@@ -750,7 +750,7 @@ alias git-diff-all="(git diff && git-diff-new)"
 
 alias gcb=git-checkout-branch
 alias gnb=git-new-branch
-alias rmgob='git-orphaned-branches --print0 | xargs -0 rm -rf'
+alias rmgob='git-orphaned-branches --remove'
 gcbs() {
   for br in "$@"; do
     gcb "${br}"
