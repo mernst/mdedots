@@ -33,6 +33,13 @@ WEEKLY_REVIEW_SECTIONS: tuple[Section, ...] = (
         (
             # Merged pull requests
             "label:pr-merged",
+            # Many but not all of these are closed pull requests.
+            (
+                "label:inbox from:notifications@github.com "
+                '"Reply to this email directly, view it on GitHub, or unsubscribe. '
+                'You are receiving this because you are subscribed to this thread." '
+                '"closed"'
+            ),
             # Kids' daily & weekly email
             "category:promotions label:silas label:inbox",
             "category:social label:silas label:inbox",
