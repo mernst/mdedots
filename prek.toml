@@ -1,6 +1,9 @@
 # Configuration file for `prek`, a git hook framework written in Rust.
 # See https://prek.j178.dev for more information.
 #:schema https://www.schemastore.org/prek.json
+#
+# This file is shared across multiple repositories.  Not all settings are
+# necessarily relevant to the repository where you are reading this comment.
 
 # In prek's glob matcher:
 # * A pattern matches the file's path relative to the repository root.
@@ -231,7 +234,7 @@ hooks = [
 [[repos]]
 repo = "https://github.com/scop/pre-commit-shfmt"
 # This "version number" is a tag at https://github.com/scop/pre-commit-shfmt/tags .
-rev = "v3.12.0-1"
+rev = "v3.13.1-1"
 hooks = [
   { id = "shfmt", args = [
     "-i",
@@ -245,16 +248,8 @@ hooks = [
   ] } },
 ]
 
-# TODO: checkbashisms (I need to write my own).
-# [[repos]]
-# repo = "TODO"
-# hooks = [
-#   { id = "checkbashisms", types = [
-#     "shell",
-#   ], exclude = { glob = [
-#     "gradlew",
-#   ] } },
-# ]
+# For checkbashisms, use
+# https://github.com/mernst/mdedots/blob/main/.github/workflows/checkbashisms.yaml
 
 # Problems:
 # * False positives for E011.
