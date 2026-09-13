@@ -8,6 +8,9 @@
 
 ;;; Code:
 
+(setq gc-cons-threshold 80000000)       ; default is only 800K (!); affects mostly startup.
+(setq gc-cons-percentage 0.2)
+
 ;; Temporary, for debugging.
 (add-variable-watcher 'after-save-hook (lambda (&rest x) (message "Variable after-save-hook changed: %S" x)))
 
@@ -657,10 +660,6 @@ Eliminate the question, \"A command is running - kill it?\""
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Packages I can't autoload or that I always use
 
-;; (setq large-file-warning-threshold 30000000) ; default 10000000
-;; (setq undo-ask-before-discard nil)      ; it's annoying to be constantly asked
-;; (setq undo-outer-limit 15000000)        ; default 12000000
-
 
 ;; Mail hackery
 
@@ -1064,6 +1063,10 @@ After running this, run from the shell:  print-mail bulk." t)
 ;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Variables
+
+;; (setq large-file-warning-threshold 30000000) ; default 10000000
+;; (setq undo-ask-before-discard nil)      ; it's annoying to be constantly asked
+;; (setq undo-outer-limit 15000000)        ; default 12000000
 
 ;; custom-add-option adds additional options to the item; it does not set it.
 ;; (require 'warnings)
@@ -1539,6 +1542,8 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (advice-add 'diff-hunk-kill :before #'diff-hunk-kill--refine-hunk)
 
 (setq diff-refine 'font-lock)
+
+(setq smerge-refine-shadow-cursor nil)  ; sometimes smerge takes minutes!
 
 (defun smerge-refine-all ()
   "Refine all hunks (within conflict markers) in the current buffer."
