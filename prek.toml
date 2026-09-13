@@ -279,7 +279,7 @@ hooks = [
 # repo = "https://github.com/crate-ci/typos"
 # rev = "v1.48.0"
 # hooks = [
-#     { id = "typos", exclude = { glob = ["**/.abbrev_defs", "share/mail-review-spam", "bugs/jikes-patches/**/*", "share/checkbashisms", "**/.aspell.en.prepl", "**/.aspell.en.pws", "**/en_US_apostrophe.aff", "**/en_US_apostrophe.dic" ] } }
+#     { id = "typos", exclude = { glob = ["**/.abbrev_defs", "share/mail-review-spam.py", "bugs/jikes-patches/**/*", "share/checkbashisms", "**/.aspell.en.prepl", "**/.aspell.en.pws", "**/en_US_apostrophe.aff", "**/en_US_apostrophe.dic" ] } }
 # ]
 
 # Very noisy.  Perhaps re-enable later.

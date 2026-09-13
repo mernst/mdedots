@@ -1,24 +1,21 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#   "browser-cookie3",
-#   "google-api-python-client",
-#   "google-auth",
-#   "google-auth-oauthlib",
-#   "requests",
-# ]
-# ///
+"""Shared support for the Gmail review scripts.
 
-"""Review spam mail in Gmail.
-
-Usage: mail-review-spam
+mail-review-spam.py and mail-review-weekly.py import this module, which must
+remain in the same directory as those scripts.  Each script declares the dependencies that
+these routines need; run a script directly or with `uv run --script`, so that uv
+supplies them.
 
 The Gmail API must be enabled for the application represented by
-~/private/googleusercontent-oauth-client-secret.json.  On the first run, the
+~/private/googleusercontent-oauth-client-secret.json.  On the first run, a
 script asks the user to authorize each account; later runs use separate token
 caches in ~/private.
 """
+
+# Each script's uv header supplies the third-party libraries, which this file
+# imports where they are used, so that running a script without them explains
+# how to supply them.  They are not installed in this project's environment,
+# which is why every such import also suppresses ty's unresolved-import error.
+# ruff: file-ignore[import-outside-top-level]
 
 from __future__ import annotations
 
@@ -64,12 +61,12 @@ LIST_ACCOUNTS_URL = (
     "?gpsia=1&source=ChromiumBrowser&json=standard&laf=b64bin"
 )
 DISCOVERY_FAILURE = (
-    "Google browser-account discovery no longer works; mail-review-spam must be rewritten"
+    "Google browser-account discovery no longer works; mail_review.py must be rewritten"
 )
 MISSING_LIBRARIES = (
-    "mail-review-spam requires browser-cookie3, google-api-python-client, google-auth, "
+    "the mail-review scripts require browser-cookie3, google-api-python-client, google-auth, "
     "google-auth-oauthlib, and requests; execute the script directly or with "
-    "`uv run --script mail-review-spam` so uv supplies them"
+    "`uv run --script` so uv supplies them"
 )
 # Delay after opening a browser tab, to avoid overwhelming the browser.
 TAB_DELAY_SECONDS = 0.1
@@ -85,8 +82,29 @@ class AccountSession:
 
 
 @dataclass(frozen=True)
+class Review:
+    """How one review script turns its search terms into Gmail queries.
+
+    `query_prefix` restricts every search term of the review, and
+    `include_spam_trash` determines whether the Gmail API also considers
+    messages in the spam and trash folders, which it ignores by default.
+    """
+
+    query_prefix: str = ""
+    include_spam_trash: bool = False
+
+    def query(self, search_term: str) -> str:
+        """Restrict a search term to the part of the mailbox that this review covers.
+
+        Returns:
+            The complete Gmail query for the search term.
+        """
+        return f"{self.query_prefix} {search_term}" if self.query_prefix else search_term
+
+
+@dataclass(frozen=True)
 class Section:
-    """A group of spam searches that the user reviews before continuing."""
+    """A group of searches that the user reviews before continuing."""
 
     heading: str
     searches: tuple[str, ...]
@@ -238,8 +256,8 @@ def discover_browser_slots(expected_emails: tuple[str, ...]) -> dict[str, str]:
         A mapping from each expected email address to its current numeric slot.
     """
     try:
-        import browser_cookie3  # ruff: ignore[import-outside-top-level]
-        import requests  # ruff: ignore[import-outside-top-level]
+        import browser_cookie3  # ty: ignore[unresolved-import]
+        import requests  # ty: ignore[unresolved-import]
     except ImportError as error:
         raise RuntimeError(MISSING_LIBRARIES) from error
 
@@ -311,9 +329,9 @@ def cached_credentials(config: AccountConfig) -> Any | None:
     if not config.token_path.exists():
         return None
     try:
-        from google.auth.exceptions import GoogleAuthError  # ruff: ignore[import-outside-top-level]
-        from google.auth.transport.requests import Request  # ruff: ignore[import-outside-top-level]
-        from google.oauth2.credentials import Credentials  # ruff: ignore[import-outside-top-level]
+        from google.auth.exceptions import GoogleAuthError  # ty: ignore[unresolved-import]
+        from google.auth.transport.requests import Request  # ty: ignore[unresolved-import]
+        from google.oauth2.credentials import Credentials  # ty: ignore[unresolved-import]
     except ImportError as error:
         raise RuntimeError(MISSING_LIBRARIES) from error
 
@@ -340,8 +358,8 @@ def authenticate_account(
         The authenticated account session.
     """
     try:
-        from google_auth_oauthlib.flow import InstalledAppFlow  # ruff: ignore[import-outside-top-level]
-        from googleapiclient.discovery import build  # ruff: ignore[import-outside-top-level]
+        from google_auth_oauthlib.flow import InstalledAppFlow  # ty: ignore[unresolved-import]
+        from googleapiclient.discovery import build  # ty: ignore[unresolved-import]
     except ImportError as error:
         raise RuntimeError(MISSING_LIBRARIES) from error
 
@@ -408,31 +426,35 @@ def authenticate_accounts(
     )
 
 
-def spam_query(search_term: str) -> str:
-    """Restrict a search term to the spam folder.
+def start_sessions(
+    configs: tuple[AccountConfig, ...] = ACCOUNT_CONFIGS,
+    client_secret_path: Path = CLIENT_SECRET_PATH,
+) -> tuple[AccountSession, ...]:
+    """Find each account's current browser slot and authenticate it.
 
     Returns:
-        The Gmail query for the search term.
+        Authenticated sessions in configuration order.
     """
-    return f"in:spam {search_term}"
+    browser_slots = discover_browser_slots(tuple(config.email for config in configs))
+    return authenticate_accounts(browser_slots, configs, client_secret_path)
 
 
-def gmail_search_url(browser_slot: str, search_term: str) -> str:
-    """Return the Gmail browser URL for a spam search.
+def gmail_search_url(browser_slot: str, query: str) -> str:
+    """Return the Gmail browser URL for a search.
 
     Returns:
         A URL with the complete search query encoded in its fragment.
     """
-    return f"{GMAIL_URL_PREFIX}{browser_slot}/#search/{quote(spam_query(search_term), safe='')}"
+    return f"{GMAIL_URL_PREFIX}{browser_slot}/#search/{quote(query, safe='')}"
 
 
-def gmail_spam_folder_url(browser_slot: str) -> str:
-    """Return the Gmail browser URL for the spam folder itself.
+def gmail_folder_url(browser_slot: str, folder: str) -> str:
+    """Return the Gmail browser URL for a folder such as "spam".
 
     Returns:
-        A URL that shows all spam in one account.
+        A URL that shows one folder in one account.
     """
-    return f"{GMAIL_URL_PREFIX}{browser_slot}/#spam"
+    return f"{GMAIL_URL_PREFIX}{browser_slot}/#{quote(folder, safe='')}"
 
 
 def open_tab(url: str) -> None:
@@ -442,8 +464,8 @@ def open_tab(url: str) -> None:
     time.sleep(TAB_DELAY_SECONDS)
 
 
-def search_succeeds(service: Any, search_term: str) -> bool:
-    """Return whether a Gmail spam search has at least one result.
+def search_succeeds(service: Any, query: str, include_spam_trash: bool) -> bool:
+    """Return whether a Gmail search has at least one result.
 
     Returns:
         Whether at least one matching message exists.
@@ -453,8 +475,8 @@ def search_succeeds(service: Any, search_term: str) -> bool:
         .messages()
         .list(
             userId="me",
-            q=spam_query(search_term),
-            includeSpamTrash=True,
+            q=query,
+            includeSpamTrash=include_spam_trash,
             maxResults=1,
         )
         .execute()
@@ -477,417 +499,45 @@ def is_transient_api_error(error: Exception) -> bool:
     # OSError covers the connection, timeout, name-resolution, and TLS errors
     # that the HTTP client raises.
     try:
-        from google.auth.exceptions import TransportError  # ruff: ignore[import-outside-top-level]
+        from google.auth.exceptions import TransportError  # ty: ignore[unresolved-import]
     except ImportError:
         return isinstance(error, OSError)
     return isinstance(error, (TransportError, OSError))
 
 
-def spam_search(search_term: str, sessions: tuple[AccountSession, ...]) -> None:
-    """Open this spam search only for accounts in which it has results."""
+def open_search(search_term: str, sessions: tuple[AccountSession, ...], review: Review) -> None:
+    """Open this search only for accounts in which it has results."""
+    query = review.query(search_term)
     for session in sessions:
         try:
-            has_messages = search_succeeds(session.service, search_term)
+            has_messages = search_succeeds(session.service, query, review.include_spam_trash)
         except Exception as error:
             if not is_transient_api_error(error):
-                msg = f"Gmail search failed for {session.config.email}: {search_term}: {error}"
+                msg = f"Gmail search failed for {session.config.email}: {query}: {error}"
                 raise RuntimeError(msg) from error
             # For a temporary failure, opening the tab is better than
             # terminating the review; at worst the tab shows no messages.
             warn(
                 f"Gmail API unavailable for {session.config.email}; "
-                f"opening search without checking: {search_term}"
+                f"opening search without checking: {query}"
             )
             has_messages = True
 
         if has_messages:
-            open_tab(gmail_search_url(session.browser_slot, search_term))
+            open_tab(gmail_search_url(session.browser_slot, query))
 
 
-def review_section(section: Section, sessions: tuple[AccountSession, ...]) -> None:
+def review_section(section: Section, sessions: tuple[AccountSession, ...], review: Review) -> None:
     """Open the section's searches that have results, then wait for the user to review them."""
     print(section.heading)
     for search_term in section.searches:
-        spam_search(search_term, sessions)
+        open_search(search_term, sessions, review)
     input("Press ENTER")
 
 
-GERMAN_TERMS = (
-    '"Geschäft"',
-    '"Sehr geehrter"',
-    '"und mit"',
-    '"nur vom"',
-    '"haben Sie"',
-    '"wie geht es dir"',
-    '"mit der"',
-    '"Herzlichen"',
-    '"Glückwunsch"',
-    "ich",
-    '("wir" AND "die")',
-    '("ab" AND "im")',
-    '("und" AND "von")',
-    '("ist" AND "diese")',
-    '"guten tag"',
-    '"spende"',
-    '"wir uns"',
-    '("Ihre" AND "ist")',
-    '(Gutschein OR "kannst du")',
-    '("hallo" AND "ist")',
-    '("Rückfrage" AND "zu")',
-    '("Ihr Konto")',
-    '("ich bin")',
-    '("ich habe")',
-    "(Nachricht)",
-    "(kurze Frage)",
-    "(anfrage zu)",
-    "(frage zu)",
-)
-GERMAN_SEARCH = "(" + " OR ".join(GERMAN_TERMS) + ")"
-
-# To avoid "Showing related results", double-quote the term.
-SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
-    Section(
-        "Mail forged to be from me",
-        ("(from:michaelernst OR from:michael.ernst OR from:mernst)",),
-    ),
-    Section(
-        "My username or name in the subject line",
-        (
-            '(subject:"michaelernst" OR subject:"mernst" OR subject:"cs.washington.edu")',
-            # also catches "Michael Ernst"
-            '(subject:"michael.ernst" OR subject:"Michael D Ernst")',
-        ),
-    ),
-    Section(
-        '"Michael" in the subject line or "Hi Michael"',
-        (
-            "subject:Michael",
-            '"Hi Michael"',
-        ),
-    ),
-    Section(
-        'Misspelled "Micheal"',
-        ('"Micheal"',),
-    ),
-    Section(
-        "Likely false positives (by sender, part 1)",
-        (
-            "from:amazon.com",
-            "from:auto-reply" + "@" + "usps.com",
-            "from:builds" + "@" + "circleci.com",
-            "from:centurylink.com",
-            "from:checker-framework-dev",
-            "from:cs.washington.edu",
-            "from:fredhutch.org",
-            "from:hallowelltodaro.com",
-            "from:info" + "@" + "mountaineers.org",
-            "from:jsagarin" + "@" + "verizon.net",
-            "from:lincolnseattleptsa.org",
-            "from:lls.org",
-        ),
-    ),
-    Section(
-        "Likely false positives (by sender, part 2)",
-        (
-            "from:mygoodtogo.com",
-            "from:newyorktimes.com",
-            "from:noreply" + "@" + "steampowered.com",
-            "from:pnc.com",
-            "from:seattlecca.org",
-            "from:spl.org",
-            "from:uw.edu",
-            "from:washington.edu",
-            'from:"Google Calendar"',
-            'from:"Mail Delivery System"',
-            'from:"Mail Delivery Subsystem"',
-        ),
-    ),
-    Section(
-        "Likely false positives (other than by sender)",
-        (
-            'subject:"security alert for"',
-            "subject:seajug",
-            "subject:seworld",
-            "subject:typetools",
-            "to:drool" + "@" + "mit.edu",
-            "to:eit" + "@" + "mit.edu",
-            "to:mit1989" + "@" + "mailman-alum.mit.edu",
-            # "to:sgcyouth" + "@" + "googlegroups.com",
-            '"Allen School"',
-            "ecoop-info",
-            "lombok",
-            "maeveahowell" + "@" + "gmail.com",
-            '"plse"',
-            "uw-security-research",
-        ),
-    ),
-    Section(
-        "Possible false positive for calendar event",
-        ("subject:invitation",),
-    ),
-    Section(
-        'Foreign languages (watch out for "Showing related results")',
-        (
-            # # These emoji searches do not work; the search matches all emails.
-            # "💋",
-            # "❤",
-            # "💘",
-            # # It works if I abut it with a word, like this:
-            # # "🔥H0T",
-            #
-            # German
-            GERMAN_SEARCH,
-            # Portuguese
-            (
-                '"Ação" OR Requerida OR "Atualização" OR Importante OR Notificacao OR '
-                "aprovação OR reclamação OR eletrônica OR curriculo OR Investigação"
-            ),
-            # Spanish
-            '(mejor AND opción) OR ("en su")',
-            # Russian
-            "и",
-            # Polish
-            "Proszę OR Słowa OR Dzień OR związku OR Wsparcie OR programistyczne OR spotkania",
-            # Italian
-            "Fattura OR pagata OR guardare OR signora OR uomo",
-            # Japanese
-            "様",
-            # Chinese or Japanese
-            "重要",
-            # NOTE: Most of these aren't a problem because the email subject sorts
-            # at the end when I review the email in Emacs Mew.
-            # "К",  # ruff:ignore[ambiguous-unicode-character-comment] # intentionally not regular "K"
-            # "в",
-            # "я",
-            # "في",
-            # "مارس",
-        ),
-    ),
-    Section(
-        "Suspicious senders, part 1",
-        (
-            ## Too broad
-            # "from:mail",
-            ## Had no search results for 3 months
-            # 'from:"Mustafa Ayvaz"',
-            # 'from:"Ted\'s Wood Working"',
-            # 'from:"ZEISS Microscopy"',
-            # "from:GreenNewDealNetwork.org",
-            # "from:Plantronics",
-            # "from:isualum" + "@" + "mail.iastate.edu",
-            # '"Scoop News"', # nothing on 8/3/2022, 9/5/2022
-            # "CyberScoop", # nothing on 8/3/2022, 9/5/2022
-            # "EdScoop", # nothing on 8/3/2022, 9/5/2022
-            # "FedScoop", # nothing on 8/3/2022, 9/5/2022
-            # "StateScoop", # nothing on 8/3/2022, 9/5/2022
-            # "Fluke", # nothing on 8/3/2022, 9/5/2022
-            # "Pluralsight", # nothing on 8/3/2022, 9/5/2022
-            # "TeaParty.org", # nothing on 8/3/2022, 9/5/2022
-            # "angi", # nothing on 8/3/2022, 9/5/2022
-            # "cyberweek", # nothing on 8/3/2022, 9/5/2022
-            "(from:dr OR from:mr OR from:mrs OR from:ms)",
-            'from:"Anand Raghavan"',  # nothing on 9/5/2022 # nothing on 8/3/2023
-            'from:"Cooling Bra Pro"',  # nothing on 9/5/2022
-            'from:"EMILYs List"',  # nothing on 8/3/2023
-            'from:"Fluke Corporation"',  # nothing on 8/3/2023
-            'from:"Harbor Freight"',  # nothing on 8/3/2023
-            'from:"IKA Works"',
-            'from:"Innovation News Network"',
-            'from:"Mend The Marriage"',  # nothing on 8/3/2023
-            'from:"Michael Weber"',
-            'from:"Survival Ops Tactical"',  # nothing on 8/3/2023
-            'from:"TPC Training"',  # nothing on 8/3/2023
-            'from:"Team OutSystems"',  # nothing on 8/3/2023
-            'from:"Tracy Zettinig"',  # nothing on 8/3/2023
-            'from:"Windstream Enterprise"',  # nothing on 8/3/2023
-            "from:8x8",  # nothing on 8/3/2023
-            "from:webinars" + "@" + "training.businesswatchnetwork.com",
-            "from:expertspeak" + "@" + "email.concordeducations.com",
-        ),
-    ),
-    Section(
-        "Suspicious senders, part 2",
-        (
-            "from:AlertMedia",
-            "from:Amazon",
-            "from:BOXX",
-            "from:Banco",
-            "from:BeTechly",
-            "from:Bloomberg",
-            "from:EDIBON",
-            "from:ESET",
-            "from:Egnyte",
-            "from:Ginja",
-            "from:Helpdesk",
-            "from:Hitradio",
-            "from:McAfee",
-            "from:Norton",
-            "from:Planview",
-            "from:RingCentral",
-            "from:SeguridadHB",
-            "from:Avantor",
-            "from:ATC-NY",
-            "from:SimpsonScarborough",
-            "from:VinFuture",
-            'from:"Check Point"',
-            'from:"Staples Technology Solutions"',
-            "from:FB",
-            'from:"Amalia Meyer"',
-            'from:"Anna Müller"',
-            'from:"AAA"',
-            'from:"topgolf"',
-            'from:"Open Access Government"',
-            'from:"Horst Thomas"',
-        ),
-    ),
-    Section(
-        "Suspicious senders, part 3",
-        (
-            # "from:bee" + "@" + "BAUER.UH.EDU",  # nothing on 8/3/2023
-            "from:jooble.org",
-            "from:deuscustoms.com",
-            "from:blr",
-            "from:cardio",
-            "from:convergetp.com",
-            "from:demings",
-            "from:fortinet",
-            "from:imperva",
-            "from:liberator",
-            "from:linkedin",
-            "from:sci_ed" + "@" + "info.vwr.com",
-            "from:sonicwall",
-            "from:uCertify",
-            "from:whitmer",
-            "from:CashApp",
-            "from:temu",
-            "from:howida",
-            "from:email",
-            "from:bytesize",
-            "from:nfina",
-            'from:"Klaus Richter"',
-            'from:"Manfred Böhm"',
-            'from:"Manfred Schmitz"',
-            "bara" + "@" + "kolliers.com",
-        ),
-    ),
-    Section(
-        "Suspicious senders, part 4",
-        (
-            "from:no-reply" + "@" + "calendly.com",
-            'from:"The Flights Guru"',
-            "from:cognella.com",
-            "from:matscience-summit.com",
-            "from:medtechmvp",
-            "from:medlinepapersoa.online",
-            "from:editor",
-            "from:journal",
-            "from:team",
-            "from:noreply" + "@" + "reply.kik-textilien.eu",
-        ),
-    ),
-    Section(
-        "Suspicious senders, part 5",
-        (
-            # These do not include "from:" in the search
-            "keynote",
-            "anyworkanywhere",
-            '"golf wire"',
-            "Speechelo",
-            "Syxsense",
-            "labelbox",
-            "techwatch",
-),
-),
-    Section(
-        "Frequent topics 1",
-        (
-            "subject:urgent",
-            "Scopus",
-            "subject:journal",
-            '"nick hellen"',
-            '"michael duwayne"',
-        ),
-    ),
-    Section(
-        "Frequent topics 2",
-        (
-            ## These are not so useful
-            # "Seattle",
-            # "democratic",
-            # "republican",
-            # "subject:Trump",
-            ## These did not occur for 3 months
-            # "CBD",
-            # "Imperva",
-            # "KN95",
-            # "fuckbuddy",
-            # "hookup",
-            # "pussy",
-            # "temperature",
-            "singles",
-            '"sam\'s club"',
-            '"tractor supply"',
-            '"Sky Devialet Soundbox"',
-            "diabetes",
-            "tinnitus",
-            "subject:donation",
-            "subject:investment",
-            "subject:quota",
-            "subject:spam",
-            "subject:strategies",
-        ),
-    ),
-    Section(
-        "Frequent topics 3",
-        (
-            "subject:confirmation",
-            "subject:conference",
-            "Casino",
-            "(bitcoin OR crypto)",
-            "(coronavirus OR covid)",
-            "fuckme",
-            "indonesia",  # nothing on 2/3/2023
-            "(keto OR ketosis)",  # nothing on 8/3/2022
-            "docusign",
-            "elongation",
-            "trump",
-            # "Kamala Harris",
-        ),
-    ),
-    Section(
-        "To unused email address",
-        (
-            "to:mernst" + "@" + "cs.rice.edu",
-            "to:mernst" + "@" + "rice.edu",
-        ),
-    ),
-)
-
-
-def main() -> None:
-    """Authenticate accounts and run the staged spam review."""
-    print("Stop and re-start Chrome; probably requires `killall chrome` on the command line")
-    input("Press ENTER")
-    browser_slots = discover_browser_slots(tuple(config.email for config in ACCOUNT_CONFIGS))
-    sessions = authenticate_accounts(browser_slots)
-
-    for section in SPAM_REVIEW_SECTIONS:
-        review_section(section, sessions)
-
-    print("Now the rest (read these in Emacs, on the same machine running a browser).")
-    print("1. Sort by from, look for frequent senders with non-uniform subject lines.")
-    print("2. Sort by subject, scan for non-spam.")
-    print("3. Delete all spam from Gmail.")
-    input("Restart the web browser, then press ENTER")
-    for session in sessions:
-        open_tab(gmail_spam_folder_url(session.browser_slot))
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except (EOFError, KeyboardInterrupt):
-        print("\nCancelled.")
-    except RuntimeError as error:
-        msg = f"mail-review-spam: {error}"
-        raise SystemExit(msg) from error
+def review_sections(
+    sections: tuple[Section, ...], sessions: tuple[AccountSession, ...], review: Review
+) -> None:
+    """Work through every section of a review, one at a time."""
+    for section in sections:
+        review_section(section, sessions, review)

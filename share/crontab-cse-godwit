@@ -173,12 +173,12 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 10 1 * * Tue	echo -e "auto-browse to https://github.com/pulls/assigned \nauto-browse to https://github.com/issues/assigned \nauto-browse to https://github.com/pulls \nauto-browse to https://github.com/typetools/jdk/pulls \nauto-browse to https://github.com/notifications " | $MAILCOMMAND -s "GitHub pull requests and issues" $EMAIL
 08 1 * * Tue	echo -e " " | $MAILCOMMAND -s "Write home (including Dave)" $EMAILPERSONAL
 # 09 1 * * Tue	echo -e "Look for UW regalia: auto-browse to https://seattle.craigslist.org/search/sss?query=uw+regalia&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=uw+robe&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+regalia&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+robe&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=uw+gown&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+gown&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=uw+doctoral&sort=rel ; auto-browse to https://seattle.craigslist.org/search/sss?query=washington+doctoral&sort=rel" | $MAILCOMMAND -s "Look for UW regalia" $EMAILPERSONAL
-54 4 * * Sat	echo -e "Read daily and weekly email, run: mail-review-weekly" | $MAILCOMMAND -s "Read daily and weekly email, run: mail-review-weekly" $EMAIL
+54 4 * * Sat	echo -e "Read daily and weekly email, run: mail-review-weekly.py" | $MAILCOMMAND -s "Read daily and weekly email, run: mail-review-weekly.py" $EMAIL
 ###
 ### Monthly email reminders
 ###
 # Delete spam once per month
-10 4 3 * *	echo -e "Delete spam, run: mail-review-spam" | $MAILCOMMAND -s "Delete spam, run: mail-review-spam" $EMAIL
+10 4 3 * *	echo -e "Delete spam, run: mail-review-spam.py" | $MAILCOMMAND -s "Delete spam, run: mail-review-spam.py" $EMAIL
 # 09 4 3 * *	echo -e "On home computer, clean up docker images" | $MAILCOMMAND -s "On home computer, run: \n docker image prune && docker images | grep none | awk '{ print $3; }' | xargs --no-run-if-empty docker rmi --force && docker stop \$(docker ps -a -q) && docker rm \$(docker ps -a -q)" $EMAIL
 30 4 * * Sun	echo -e "Clear out inbox from previous week" | $MAILCOMMAND -s "Clear inbox from previous week" $EMAIL
 # 21 4 * * Sun     echo -e "Auto-browse to https://uwhires.admin.washington.edu/eng/hm/order_profile.cfm?szOrderID=84832&szStageOrder=OrderCandidates.StatusDate&szStageDir=DESC#Candidates" | $MAILCOMMAND -s "Review resumes in UW Hires" $EMAIL
