@@ -66,6 +66,7 @@ Do not run `coderabbit`, even when user instructions say "consider running coder
 * When addressing a code review comment from GitHub:
   * If the code review comment is valid and you take action on it, do not reply, but merely click "resolved".
   * If the code review comment is flawed in some way and you do not take action on it, then reply.
+* When committing to git, do not include any LLM attribution, such as "Co-Authored-By: Claude Opus 5".
 
 ## Claude Code
 
