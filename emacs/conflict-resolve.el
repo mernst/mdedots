@@ -7,19 +7,18 @@
 ;; Run at the top level: etags $(rg --files-with-matches '^<<<<<<')
 ;; Visit that tags table.
 ;; (require 'conflict-resolve)
-;; ;; TODO: What is the purpose of this?
-;; ;; (read-conflict-files-from-tags-table)
 ;; Now run as many of the following as desired.
 ;; (tags-conflict-resolve)
 ;; (tags-conflict-resolve-annotation-lines)
 ;; (tags-conflict-resolve-method-signature)
-;; (tags-conflict-resolve-equals-method-conflict)
+;; (tags-add-nullable-to-equals)
+;; (move-cf-imports-from-other-to-before)
+;; (move-cf-imports-from-head-to-before)
 
 ;; When not using a tags table:
 ;; (conflict-resolve)
 ;; (conflict-resolve-annotation-lines)
 ;; (resolve-annotatedfor-conflicts)
-;; (move-cf-imports-to-beginning)
 ;; (resolve-import-conflicts)
 ;; (conflict-resolve-empty)
 
@@ -257,10 +256,10 @@ The other side is the one after the `=======' separator; see
 ;; This is superseded by merge-java-imports-driver.sh .
 (defun tags-conflict-resolve-import-conflicts ()
   "Resolve conflicts that involve only import lines, by accepting all the lines.
+This is not necessarily the right thing to do!
 Two caveats:
 1. You may have to adjust whitespace at the beginning and end manually.
-2. The mode-hook might blow away the match-data, in which case first run
-   `M-x read-conflict-files-from-tags-table`."
+2. The mode-hook might blow away the match-data."
   (interactive)
   ;; This is necessary because the mode-hook might blow away the match-data,
   ;; causing the value of (e.g.) `(match-string 1)` to be incorrect.
@@ -478,9 +477,27 @@ Use this with care."
    "")
   )
 
+(defun tags-conflict-resolve-empty-other ()
+  "If head is empty and both base and other are not, accept empty head.
+Use this with care."
+  (interactive)
+  (tags-query-replace-noerror
+   (concat cr-less-than-hunk-start-re
+           "\\(\n\\|[^|\n].*\n\\)" ;; at least one line
+           cr-left-lines-re
+           cr-vertical-bar-separator-re
+           "\\(\n\\|[^=\n].*\n\\)" ;; at least one line
+           cr-base-lines-re
+           cr-equal-sign-separator-re
+           cr-greater-than-hunk-end-re)
+   "")
+  )
+
+
+
 (defun tags-conflict-resolve-annotation-lines-in-head ()
   "Move annotations only on the HEAD method before the hunk.
-  This assumes there is no corresponding annotation in base or OTHER."
+  This assumes (without checking) there is no corresponding annotation in base or OTHER."
   (interactive)
   (tags-query-replace
    (concat cr-less-than-hunk-start-grouped "\\(\\(" cr-annotation-line-regex "\n\\)+\\)")
@@ -489,7 +506,7 @@ Use this with care."
 
 (defun tags-conflict-resolve-annotation-lines-in-other ()
   "Move annotations only on the OTHER method before the hunk.
-  This assumes there is no corresponding annotation in base or HEAD."
+  This assumes (without checking) there is no corresponding annotation in base or HEAD."
   (interactive)
   (tags-query-replace
    (concat "^\\("
@@ -543,6 +560,61 @@ Use this with care."
       "\\3"
       ))
   )
+
+
+;; TODO: Generalize this.
+(defun tags-conflict-resolve-specific-prefix (left-prefix right-prefix &optional right-first)
+  "Resolves hunks starting with the given text."
+  (tags-query-replace
+   (concat
+    cr-less-than-hunk-start-grouped
+    (concat "\\(" left-prefix "\\)")
+    (concat "\\("
+            cr-left-lines-re
+            cr-vertical-bar-separator-re
+            cr-base-lines-re
+            cr-equal-sign-separator-re
+            "\\)")
+    (concat "\\(" right-prefix "\\)")
+    (concat "\\("
+            cr-right-lines-re
+            cr-greater-than-hunk-end-re
+            "\\)"))
+   (concat
+    (if right-first
+        "\\4\\2"
+      "\\2\\4")
+    "\\1"
+    "\\3"
+    "\\5"))
+  )
+(if nil
+    (tags-conflict-resolve-specific-prefix
+     "    @Override\n"
+     "    @Pure\n    @StaticallyExecutable\n"
+     'right-first)
+  )
+(if nil
+    (tags-conflict-resolve-specific-prefix
+     "    @IntrinsicCandidate\n"
+     "    @Pure\n    @StaticallyExecutable\n"
+     'right-first)
+  )
+(if nil
+    (tags-conflict-resolve-specific-prefix
+     "    @SuppressWarnings(\"this-escape\")\n"
+     "    @SideEffectFree\n"
+     'right-first)
+  )
+(if nil
+    (tags-conflict-resolve-specific-prefix
+     "    @SuppressWarnings(\"unchecked\")\n"
+     (concat
+      "    @SideEffectsOnly(\"this\")\n"
+      "    @DoesNotUnrefineReceiver(\"modifiability\")\n")
+     'right-first)
+  )
+
 
 
 
@@ -987,6 +1059,16 @@ Operates on the current buffer."
 ;;
 ;;
 
+(defun tags-resolve-checkerframework-imports ()
+  (interactive)
+  (tags-query-replace (concat "\\(<<<<<<< HEAD\n\\)"
+                              "\\(\\(?:import org.checkerframework..*\n\\)+"
+                              "\n?\\)")
+                      (concat "\\2\\1")))
+
+
+
+
 (defun tags-add-nullable-to-equals ()
   "Add @Nullable to the signature of equals."
   (interactive)
@@ -999,23 +1081,6 @@ Operates on the current buffer."
            "\\( *\\(?:public \\)?boolean equals(\\)\\(Object [a-zA-Z_]+)\\(?:;\\| {\\)\n\\)")
    "\\1\\2@Nullable \\3")
   )
-
-;; tags-add-nullable-to-equals eliminates the need for this, probably.
-(defun tags-conflict-resolve-equals-method-conflict ()
-  "Special case for the `equals()` method."
-  (interactive)
-  (tags-query-replace
-   (concat
-    cr-less-than-hunk-start-re
-    "    public boolean equals(Object obj) {\n"
-    cr-vertical-bar-separator-re
-    "    public boolean equals(Object obj) {\n"
-    cr-equal-sign-separator-re
-    "    public boolean equals(@Nullable Object obj) {\n"
-    cr-greater-than-hunk-end-re)
-   "    public boolean equals(@Nullable Object obj) {\n")
-  )
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
