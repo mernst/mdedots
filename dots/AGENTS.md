@@ -7,7 +7,7 @@
 
 ## English text
 
-* Never replace concrete nouns by pronouns.  (But you do not have to replace every pronouns by a noun.)
+* Never replace concrete nouns by pronouns.  (But you do not have to replace every pronoun by a noun.)
 * Do not expand contractions, but do not introduce them either.
 * Retain the fences (three backticks) around fenced code blocks.
 * Use technical writing conventions; for example, punctuation is written inside quotation marks if it belongs to the quote, and punctuation is written outside quotation marks if it belongs to the larger sentence.
@@ -26,7 +26,7 @@
 
 ### Branches
 
-Do not change the branch of any existing git repository or clone or working copy.
+Do not change the branch of any existing git repository or clone or working copy, because each working directory is dedicated to one branch.
 For example, do not run `git switch` or `git checkout [-b] <branch-name>` in any pre-existing directory.
 When creating a new branch, use a new directory or a new clone.
 
@@ -50,9 +50,9 @@ When creating a new branch, use a new directory or a new clone.
 
 ### The Checker Framework
 
-* When running tests on the `checker-framework` repository or its forks (usually found in directories named `$t/checker-framework*`, ignore `slow.typechecking` warnings.
+* When running tests on the `checker-framework` repository or its forks (usually found in directories named `$t/checker-framework*`), ignore `slow.typechecking` warnings.
 * In the release notes `docs/CHANGELOG.md`:
-  * Ordinary bug fixes are not described, nor are ordinary improvements in precison.  Describing every single one would clutter the changelog and obscure the key changes that users should read about.
+  * Ordinary bug fixes are not described, nor are ordinary improvements in precision.  Describing every single one would clutter the changelog and obscure the key changes that users should read about.
   * Pull requests should not modify the "### Closed issues" section; it is filled in at release time.
 
 ### CodeRabbit
