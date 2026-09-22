@@ -31,6 +31,8 @@ exclude = { glob = [
   "**/*.svg",
   "**/*expected*",
   "**/COPYING",
+  "gradlew",
+  "gradlew.bat",
   "src/main/resources/specifications/jdk/**/*",
   "src/test/resources/end-to-end/**/*",
   "tests/kvasir-tests/povray/**/*",
@@ -78,8 +80,7 @@ hooks = [
   { id = "forbid-new-submodules" },
   { id = "mixed-line-ending" },
   { id = "trailing-whitespace", exclude = { glob = [
-    "**/.aspell.en.prepl",
-    "**/.aspell.en.pws",
+    "**/.aspell.en.{prepl,pws}",
     "**/en_US_apostrophe.aff",
     "**/enscript.st",
     "**/tests/squeeze-blank-lines-test/**/*",
@@ -172,7 +173,7 @@ hooks = [{ id = "sync-pre-commit-deps" }]
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.15.22"
+rev = "v0.16.6"
 hooks = [
   # Run the linter.
   { id = "ruff-check", args = ["--fix"], types_or = ["python", "pyi"] },
@@ -221,11 +222,8 @@ hooks = [
     "-P",
     "SCRIPTDIR",
   ], exclude = { glob = [
-    "classfile_check_version",
     "cronic-orig",
-    "scripts/browser_emacs",
     "scripts/eps2png-mono-alpha.zsh",
-    "scripts/find-dtrace",
     "share/csail-athena-tickets.bash",
     "tests/kvasir-tests/**/*",
   ] } },
@@ -244,7 +242,6 @@ hooks = [
     "-sr",
   ], exclude = { glob = [
     "**/conda-initialize.sh",
-    "gradlew",
   ] } },
 ]
 
