@@ -497,7 +497,8 @@ Use this with care."
 
 (defun tags-conflict-resolve-annotation-lines-in-head ()
   "Move annotations only on the HEAD method before the hunk.
-  This assumes (without checking) there is no corresponding annotation in base or OTHER."
+This assumes (without checking) there is no corresponding annotation in base
+or OTHER."
   (interactive)
   (tags-query-replace
    (concat cr-less-than-hunk-start-grouped "\\(\\(" cr-annotation-line-regex "\n\\)+\\)")
@@ -506,7 +507,8 @@ Use this with care."
 
 (defun tags-conflict-resolve-annotation-lines-in-other ()
   "Move annotations only on the OTHER method before the hunk.
-  This assumes (without checking) there is no corresponding annotation in base or HEAD."
+This assumes (without checking) there is no corresponding annotation in base
+or HEAD."
   (interactive)
   (tags-query-replace
    (concat "^\\("
@@ -1180,6 +1182,74 @@ This takes up a ridiculous amount of Emacs memory, for large TAGS tables."
             (smerge-keep-base))
           (save-buffer))))
     ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Remove duplicate hunks
+;;;
+
+(defconst cr-diff-file-header-re
+  "^--- .*\n\\+\\+\\+ .*\n"
+  "Matches the \"---\"/\"+++\" file header lines of a unified diff.
+The two lines start with \"-\" and \"+\", but the two lines are not part of a
+hunk.  Bind `case-fold-search' to nil when using this regexp.")
+
+(defun cr-diff-hunk-regions (begin end)
+  "Return the hunks in the current buffer, between BEGIN and END.
+Each element of the result is a cons of the start and the end position of a
+hunk; the elements appear in increasing order of position.
+A hunk is a maximal sequence of lines that start with \"-\" or \"+\", not
+counting the \"---\"/\"+++\" file header lines."
+  (save-excursion
+    (let ((case-fold-search nil)
+          (result '()))
+      (goto-char begin)
+      (while (re-search-forward "^[-+]" end t)
+        (goto-char (match-beginning 0))
+        (if (looking-at cr-diff-file-header-re)
+            (goto-char (match-end 0))
+          (let ((hunk-begin (point)))
+            (while (and (< (point) end)
+                        (looking-at "^[-+]")
+                        (not (looking-at cr-diff-file-header-re)))
+              (forward-line 1))
+            (push (cons hunk-begin (point)) result))))
+      (nreverse result))))
+
+(defun cr-diff-first-file-end ()
+  "Return the end of the first file's section of the diff in the current buffer.
+The end is the position of the second \"---\"/\"+++\" file header, or
+`point-max' if the diff contains fewer than two file headers."
+  (save-excursion
+    (let ((case-fold-search nil))
+      (goto-char (point-min))
+      (if (and (re-search-forward cr-diff-file-header-re nil t)
+               (re-search-forward cr-diff-file-header-re nil t))
+          (match-beginning 0)
+        (point-max)))))
+
+(defun remove-hunks-in-first-file ()
+  "Remove all occurrences of hunks that appear in the first file of the diff.
+Operates on the diff in the current buffer."
+  (interactive)
+  (let ((inhibit-read-only t)
+        (first-file-hunks (make-hash-table :test #'equal))
+        (removed 0))
+    (save-excursion
+      (dolist (region (cr-diff-hunk-regions (point-min) (cr-diff-first-file-end)))
+        (puthash (buffer-substring-no-properties (car region) (cdr region))
+                 t
+                 first-file-hunks))
+      (if (zerop (hash-table-count first-file-hunks))
+          (user-error "The first file of the diff contains no hunks"))
+      ;; Process the hunks from last to first, so that a deletion does not
+      ;; invalidate the positions of the hunks that have not been processed.
+      (dolist (region (nreverse (cr-diff-hunk-regions (point-min) (point-max))))
+        (when (gethash (buffer-substring-no-properties (car region) (cdr region))
+                       first-file-hunks)
+          (delete-region (car region) (cdr region))
+          (setq removed (1+ removed)))))
+    (message "Removed %d hunks" removed)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
