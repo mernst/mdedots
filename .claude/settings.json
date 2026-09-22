@@ -25,6 +25,8 @@
       "Bash(git -C * diff:*)",
       "Bash(git -C * log:*)",
       "Bash(git add:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
       "Bash(git commit:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -32,6 +34,8 @@
       "Bash(git remote get-url:*)",
       "Bash(git rev-parse:*)",
       "Bash(git show:*)",
+      "Bash(git stash list:*)",
+      "Bash(git stash:*)",
       "Bash(git status:*)",
       "Bash(git tag:*)",
       "Bash(go test:*)",
@@ -63,7 +67,8 @@
       "Bash(uniq:*)",
       "Bash(wc:*)",
       "Bash(which:*)",
-      "Edit(./**)",
+      "Bash(xargs cat:*)",
+      "Edit(*)",
       "Glob(*)",
       "Grep(*)",
       "NotebookEdit(*)",
@@ -78,17 +83,14 @@
       "WebSearch(*)",
       "Write(*)"
     ],
-    "deny": [
-      "Bash(git branch)",
-      "Bash(git branch:*)",
-      "Bash(git checkout)",
-      "Bash(git checkout:*)",
-      "Bash(git stash)",
-      "Bash(git stash:*)",
-      "Bash(git switch)",
-      "Bash(git switch:*)"
-    ],
+    "deny": ["Bash(git switch)", "Bash(git switch:*)"],
     "ask": []
+  },
+  "agentPushNotifEnabled": true,
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
   },
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
@@ -102,6 +104,7 @@
     "rust-analyzer-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true
   },
+  "inputNeededNotifEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "spinnerVerbs": {
     "mode": "replace",
