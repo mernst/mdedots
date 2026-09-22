@@ -22,6 +22,8 @@
       "Bash(gh pr list:*)",
       "Bash(gh pr view:*)",
       "Bash(gh repo view:*)",
+      "Bash(git -C * diff:*)",
+      "Bash(git -C * log:*)",
       "Bash(git add:*)",
       "Bash(git branch:*)",
       "Bash(git checkout:*)",
@@ -35,7 +37,6 @@
       "Bash(git stash list:*)",
       "Bash(git stash:*)",
       "Bash(git status:*)",
-      "Bash(git switch:*)",
       "Bash(git tag:*)",
       "Bash(go test:*)",
       "Bash(grep:*)",
@@ -82,9 +83,10 @@
       "WebSearch(*)",
       "Write(*)"
     ],
-    "deny": [],
+    "deny": ["Bash(git switch)", "Bash(git switch:*)"],
     "ask": []
   },
+  "agentPushNotifEnabled": true,
   "attribution": {
     "commit": "",
     "pr": "",
@@ -95,7 +97,6 @@
     "claude-code-setup@claude-plugins-official": true,
     "code-review@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
-    "coderabbit@claude-plugins-official": true,
     "jdtls-lsp@claude-plugins-official": true,
     "playground@claude-plugins-official": true,
     "pr-review-toolkit@claude-plugins-official": true,
@@ -103,6 +104,8 @@
     "rust-analyzer-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true
   },
+  "inputNeededNotifEnabled": true,
+  "skipDangerousModePermissionPrompt": true,
   "spinnerVerbs": {
     "mode": "replace",
     "verbs": ["Thinking", "Processing", "Working"]
@@ -111,9 +114,6 @@
     "enabled": true,
     "mode": "hold"
   },
-  "skipDangerousModePermissionPrompt": true,
   "theme": "auto",
-  "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
   "voiceEnabled": true
 }
