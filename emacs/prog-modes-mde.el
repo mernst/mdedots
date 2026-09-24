@@ -1836,8 +1836,17 @@ How does this differ from whatever is built in?"
 ;;;
 
 (use-package recompile-on-save :ensure t
-  :init
-  (recompile-on-save-advice compile))
+  :commands (recompile-on-save))
+
+;; Like `recompile-on-save-advice', but that macro uses the obsolete
+;; variable `compilation-last-buffer'.
+(defun compile--recompile-on-save (orig-fun &rest args)
+  "Call ORIG-FUN on ARGS, then recompile when the current buffer is saved."
+  (let ((buf (current-buffer)))
+    (apply orig-fun args)
+    (with-current-buffer buf
+      (recompile-on-save next-error-last-buffer))))
+(advice-add 'compile :around #'compile--recompile-on-save)
 
 ;; Compile calls `save-some-buffers', but I don't want a question about the current buffer.
 (defun compile--save (_command &optional _comint)
