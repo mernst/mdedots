@@ -777,8 +777,6 @@ its From: line.")
 
 ;; For general mail writing customizations, see sendmail-mde.el
 
-(autoload 'regexp-remove-alternative "startup-functions-mde")
-
 ;; These are in error, as they should make sure that there isn't a SPECIFIC
 ;; Subject: or To: line that's being ignored.
 
@@ -790,11 +788,18 @@ its From: line.")
 ;;   Mike:  I've changed Michael Bayne from 'hold' to 'accept.'
 
 (with-eval-after-load "sendmail" ; sendmail.el defines mail-yank-ignored-headers
-  ;; Include Subject: and To: fields when yanking.
-  (setq mail-yank-ignored-headers (regexp-remove-alternative "^subject:" mail-yank-ignored-headers))
-  (setq mail-yank-ignored-headers (regexp-remove-alternative "^to:" mail-yank-ignored-headers))
+  ;; Include Subject: and To: fields when yanking.  This is the default value
+  ;; of `mail-yank-ignored-headers', without "to" and "subject".  (The default
+  ;; is built by `regexp-opt', so its alternatives cannot be removed textually.)
   (setq mail-yank-ignored-headers
-	(concat mail-yank-ignored-headers
+	(concat "^"
+		(regexp-opt '("via" "mail-from" "origin" "status" "remailed"
+			      "received" "message-id" "summary-line"
+			      "in-reply-to" "return-path" "mail-reply-to"
+			      "x-rmail-attributes" "x-rmail-keywords"
+			      "mail-followup-to")
+			    "\\(?:")
+		":"
 		"\\|^Reply-to: "
 		"\\|^To: mernst-fair@ai.mit.edu$"
 		"\\|^Subject: FAIR WWW page comment$"

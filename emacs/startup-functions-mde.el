@@ -20,9 +20,7 @@
 ;;; defined functions
 ;;;
 
-(autoload 'time-less-p "time-date")
 (autoload 'file-contents "util-mde")
-(autoload 'mail-text "sendmail")
 (autoload 'offer-to-change-if-read-only "replace-paragraphs"
   "Offer to make the buffer not read-only.")
 (autoload 'word-at-point "thingatpt"
@@ -83,30 +81,6 @@
     (goto-char (1- (point-max)))
     (if (looking-at "\C-z" 'inhibit-modify)
         (delete-char 1))))
-
-(defun make-interactive (symbol &optional interactive-spec)
-  "Make the function on SYMBOL be a command (make it interactive).
-Optional INTERACTIVE-SPEC defaults to the list (interactive)."
-  (let ((fn (symbol-function symbol)))
-    (if (not (commandp fn))
-        ;; it isn't already interactive
-        (setcdr (cdr fn)
-                (cons (if interactive-spec
-                          (list 'interactive interactive-spec)
-                        '(interactive))
-                      (cdr (cdr fn)))))))
-
-
-(defun usenet-address (fuzzy-string)
-  "Find a random person's email address, if he has ever posted netnews.
-Argument FUZZY-STRING is a string of space-separated names to be fuzzy-matched."
-  (interactive "sSpace-separated names for fuzzy matching: ")
-  (eval-when-compile (require 'sendmail))
-  (mail)
-  (mail-to) (insert "mail-server@pit-manager.mit.edu")
-  (mail-text) (insert "send usenet-addresses/" fuzzy-string)
-  (mail-bcc) (beginning-of-line 1) (kill-line 1)
-  (mail-send-and-exit nil))
 
 ;;; This should be the last advice to save-buffers-kill-emacs, so that
 ;;; no work at all occurs if the user replies "no".
@@ -198,8 +172,6 @@ Arbitrary BUFFER may be supplied (defaults to *grep*)."
 
 
 
-(eval-when-compile '(require 'man))     ; for Man-fontify-manpage-flag
-
 (declare-function Man-mode "man")
 ;;; Was "man-format", but that conflicts with "manual-entry" for completion.
 ;; This seems to work, but point is left in the Man buffer and the messages
@@ -237,16 +209,13 @@ Such whitespace can be caused by cut and paste."
 (defun revert-all-buffers ()
   "Revert all unmodified buffers from disk."
   (interactive)
-  (save-excursion
-    (mapcar (function (lambda (b)
-                        (if (and (not (buffer-modified-p))
-                                 (buffer-file-name b)
-                                 (file-readable-p (buffer-file-name b))
-                                 (not (verify-visited-file-modtime b)))
-                            (progn
-                              (set-buffer b)
-                              (revert-buffer 'IGNORE-AUTO 'NOCONFIRM)))))
-            (buffer-list))))
+  (dolist (b (buffer-list))
+    (if (and (not (buffer-modified-p b))
+             (buffer-file-name b)
+             (file-readable-p (buffer-file-name b))
+             (not (verify-visited-file-modtime b)))
+        (with-current-buffer b
+          (revert-buffer 'IGNORE-AUTO 'NOCONFIRM)))))
 
 
 ;; For the "search" Perl program; the Emacs function was originally called
@@ -397,10 +366,13 @@ Also consider `normal-erase-is-backspace' variable (Emacs 21)."
 (global-set-key "\C-x4w" 'kill-other-buffer-and-window)  ; C-x 4 w
 
 (defun insert-other-window ()
-  "Insert other window at point."
+  "Insert the contents of the other window's buffer at point.
+Leave point before the inserted text and mark after it."
   (interactive)
-  (insert-buffer-substring (window-buffer (next-window)))
-  (exchange-point-and-mark))
+  (let ((start (point)))
+    (insert-buffer-substring (window-buffer (next-window)))
+    (push-mark)
+    (goto-char start)))
 
 (defun remove-text-properties-region (begin end)
   "Remove all text properties from the region."
@@ -435,23 +407,26 @@ The first column is omitted if the optional argument is specified."
         (message "tab-width set to %d because of %s" tab-width max-width-text)))))
 
 
-(defun pdf-fixup-region (beg _end)
-  "Fix ligatures that resulted from cutting PDF text and pasting into Emacs."
+(defun pdf-fixup-region (beg end)
+  "Fix ligatures that resulted from cutting PDF text and pasting into Emacs.
+Operates on the region from BEG to END."
   (interactive "r")
   (save-excursion
-    (goto-char beg)
-    (replace-string-noninteractive "¯" "fi")
-    (goto-char beg)
-    (replace-string-noninteractive "®" "ff")
-    (goto-char beg)
-    (replace-string-noninteractive "±" "ffi")
-    (goto-char beg)
-    (replace-string-noninteractive "|" " -- ")
-    (goto-char beg)
-    (replace-regexp-noninteractive "\\([a-z]-\\) \\([a-z]\\)" "\\1\\2")
-    (goto-char beg)
-    (replace-regexp-noninteractive "\\([ \n]\\)\\\\\\([a-z]+\"\\)" "\\1\"\\2")
-    ))
+    (save-restriction
+      (narrow-to-region beg end)
+      (goto-char beg)
+      (replace-string-noninteractive "¯" "fi")
+      (goto-char beg)
+      (replace-string-noninteractive "®" "ff")
+      (goto-char beg)
+      (replace-string-noninteractive "±" "ffi")
+      (goto-char beg)
+      (replace-string-noninteractive "|" " -- ")
+      (goto-char beg)
+      (replace-regexp-noninteractive "\\([a-z]-\\) \\([a-z]\\)" "\\1\\2")
+      (goto-char beg)
+      (replace-regexp-noninteractive "\\([ \n]\\)\\\\\\([a-z]+\"\\)" "\\1\"\\2")
+      )))
 
 
 ;; This is intended for us in ~/private/addresses.tex
@@ -465,7 +440,7 @@ The first column is omitted if the optional argument is specified."
 (defun latex-timestamp-paragraph (_beg _end _pre-change-length)
   "Add/update, after a paragraph, a LaTeX comment containing the current date.
 This is good for indicating when the paragraph was last edited.
-You can add this function to `after-change-hooks'."
+You can add this function to `after-change-functions'."
   (save-excursion
     (end-of-paragraph-text)
     (beginning-of-line)
@@ -502,8 +477,8 @@ Not guaranteed to work in all cases."
               (setq del-start (match-end 1)
                     del-end (match-end 0)))
              ((string-match (concat (grouped (concat qalt qalternative)) gqclose) whole-regexp)
-              (setq del-start (match-beginning 0)
-                    del-end (match-end 0))))
+              (setq del-start (match-beginning 1)
+                    del-end (match-end 1))))
       (if del-start
           (concat (substring whole-regexp 0 del-start)
                   (substring whole-regexp del-end))
@@ -721,7 +696,7 @@ Not guaranteed to work in all cases."
 (defun emacs-source-file-p (filename)
   "Return t if FILENAME is an Emacs source file."
   (or (string-match "/emacs/x?lisp/" filename nil 'inhibit-modify)
-      (string-match "emacs[-/][0-9]+\.[0-9]+\\(\.[0-9]+\\)?/\\(lisp\\|src\\)/" filename nil 'inhibit-modify)
+      (string-match "emacs[-/][0-9]+\\.[0-9]+\\(\\.[0-9]+\\)?/\\(lisp\\|src\\)/" filename nil 'inhibit-modify)
       ;; (string-match "local/src/emacs-19" (buffer-file-name))
       ;; (string-match "lib/emacs/local-lisp/w3" (buffer-file-name)))
       ))
@@ -1008,15 +983,15 @@ command, so it is convenient to have that buffer displayed."
 
 ;; TODO: Do that for locate-library, too.
 
-(eval-when-compile '(require 'thingatpt))
-
 (defun bibfind (string)
   "Find bibliography entries matching words in STRING."
   (interactive
    (let* ((default (word-at-point))
-          (user-input (read-string (format "Arguments to bibfind (default %s): "
-                                           default))))
-     (list (if (string= user-input "") default user-input))))
+          (user-input (read-string (if default
+                                       (format "Arguments to bibfind (default %s): "
+                                               default)
+                                     "Arguments to bibfind: "))))
+     (list (if (and (string= user-input "") default) default user-input))))
   (shell-command (concat "bibfind " (quote-for-shell-command string))))
 
 
@@ -1055,7 +1030,6 @@ command, so it is convenient to have that buffer displayed."
   (interactive)
   (setq tags-case-fold-search (not tags-case-fold-search))
   (message "tags-case-fold-search is %s." tags-case-fold-search))
-(set-default 'tags-case-fold-search t)
 (setq tags-case-fold-search t)
 
 (defun visible-bell ()
@@ -1148,7 +1122,9 @@ If called interactively, prompt for which index."
 
 (defun f1-score (p r)
   "Computes the F1 score of a given precision and recall."
-  (/ (* 2 p r) (+ p r)))
+  (if (zerop (+ p r))
+      0.0
+    (/ (* 2.0 p r) (+ p r))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Executed statements
