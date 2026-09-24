@@ -35,8 +35,6 @@
 
 
 
-(make-variable-buffer-local 'before-save-hook)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Utilities
 ;;;
@@ -610,7 +608,7 @@ proposal")
 
   ;; Delete trailing whitespace for some files
   (if (string-match "docs/manual$" (directory-file-name default-directory) nil 'inhibit-modify)
-      (add-hook 'before-save-hook 'delete-trailing-whitespace))
+      (add-hook 'before-save-hook 'delete-trailing-whitespace nil 'local))
   )
 (add-hook 'tex-mode-hook 'mde-tex-mode-hook)
 (add-hook 'latex-mode-hook 'mde-tex-mode-hook)
@@ -745,7 +743,7 @@ proposal")
   ;; I want a nil fill-prefix outside BibTeX entries, but the existing one
   ;; is OK inside them...
   (setq fill-prefix nil)
-  (add-hook 'before-save-hook 'delete-trailing-whitespace)
+  (add-hook 'before-save-hook 'delete-trailing-whitespace nil 'local)
   )
 (add-hook 'bibtex-mode-hook 'mde-bibtex-mode-hook)
 
