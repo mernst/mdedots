@@ -1838,12 +1838,23 @@ How does this differ from whatever is built in?"
 (use-package recompile-on-save :ensure t
   :commands (recompile-on-save))
 
+(defvar compile--running nil
+  "Non-nil while `compile' is running.
+Saves during that time do not trigger `recompile-on-save'.  Otherwise,
+the resulting `recompile' would compete with the new compilation.")
+(defun ros--recompile-on-save--unless-compiling ()
+  "Return non-nil, suppressing `recompile-on-save', while `compile' is running."
+  compile--running)
+(advice-add 'ros--recompile-on-save :before-until
+            #'ros--recompile-on-save--unless-compiling)
+
 ;; Like `recompile-on-save-advice', but that macro uses the obsolete
 ;; variable `compilation-last-buffer'.
 (defun compile--recompile-on-save (orig-fun &rest args)
   "Call ORIG-FUN on ARGS, then recompile when the current buffer is saved."
   (let ((buf (current-buffer)))
-    (apply orig-fun args)
+    (let ((compile--running t))
+      (apply orig-fun args))
     (with-current-buffer buf
       (recompile-on-save next-error-last-buffer))))
 (advice-add 'compile :around #'compile--recompile-on-save)
@@ -1852,7 +1863,8 @@ How does this differ from whatever is built in?"
 (defun compile--save (_command &optional _comint)
   "Save current buffer before performing compilation.
 This avoids a question, the answer to which would surely be \"Yes\"."
-  (save-buffer-if-modified))
+  (let ((compile--running t))
+    (save-buffer-if-modified)))
 (advice-add 'compile :before #'compile--save)
 
 (defun compile--check-for-bad-regexps (_command &optional _comint)
