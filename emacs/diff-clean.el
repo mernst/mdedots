@@ -13,6 +13,7 @@
   (require 'util-mde))
 
 (autoload 'replace-all-occurrrences-iteratively "util-mde")
+(autoload 'diff-fixup-modifs "diff-mode")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -35,10 +36,13 @@ only match basenames whereas this handles pathnames.")
 
 ;; The header of a hunk is either a line ending in "@" (as in "@@ -1,2 +1,2 @@")
 ;; or a line of the form "@@ ... @@ ..." whose trailing text names the enclosing
-;; function.  [@BCDFIOd\n] is what can start a line at the end of a hunk:
+;; function.  [@BCDFIOd] is what can start a line at the end of a hunk:
 ;; "@" a hunk header, "B" "Binary files ", "C" "Common subdirectories: ",
-;; "D" "Diff finished.", "F" "Files ", "I" "Index: ", "O" "Only in ",
-;; "d" "diff ", and a newline a blank line.
+;; "D" "Diff finished.", "F" "Files ", "I" "Index: ", "O" "Only in ", and
+;; "d" "diff ".  A hunk can also be followed by the blank line that precedes
+;; Emacs's "Diff finished." line, but any other blank line is within a hunk,
+;; because editing a diff can strip the leading space from a blank context
+;; line.
 ;; "B" and "F" are separate because diff writes "Binary files X and Y differ"
 ;; for a binary file, but "Files X and Y differ" (with --brief) or "Files X
 ;; and Y are identical" (with --report-identical-files) for a text file.
@@ -46,7 +50,7 @@ only match basenames whereas this handles pathnames.")
 ;; of case.  `case-fold-search' must be nil when using this regexp, so each
 ;; letter matches only the case that diff writes.
 (defconst diff-clean-empty-hunk-regexp
-  "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BCDFIOd\n]\\|\\'\\|--- \\)"
+  "^@\\(?:.*@\\|@ .* @@ .*\\)\n\\( .*\n\\)*\\(?:\\\\ No newline at end of file\n\\)?\\([@BCDFIOd]\\|\nDiff finished\\.\\|\\'\\|--- \\)"
   "Matches a hunk that has no added or removed lines.
 Group 2 is the text following the hunk, which must be retained.
 Bind `case-fold-search' to nil when using this regexp.")
@@ -124,12 +128,11 @@ Does nothing if REMOVE-REGEXES is nil."
         (let ((matchers (diff-clean-matchers remove-regexes))
               ;; The "Only in " lines put ": " in place of the last "/"
               ;; directory separator, so regexp `remove-regexes' does not match
-              ;; them; `file-regexp-to-colon-regexp' adjusts for that.  The
-              ;; colon form matches only a prefix of the "Only in " line, so
-              ;; these matchers are not anchored at the end.
+              ;; them; `file-regexp-to-colon-regexp' adjusts for that.  These
+              ;; matchers are anchored at the end: otherwise ".*: build", from
+              ;; ".*/build/.*", would match "proj: buildSrc".
               (colon-matchers (diff-clean-matchers
-                               (mapcar #'file-regexp-to-colon-regexp remove-regexes)
-                               t)))
+                               (mapcar #'file-regexp-to-colon-regexp remove-regexes))))
 
           ;; Remove certain files.
           (goto-char (point-min))
@@ -605,11 +608,20 @@ statement, then runs `diff-clean'."
   (interactive)
   (let ((inhibit-read-only t))
     (save-excursion
-      ;; Remove certain files
+      ;; Remove import lines.
       (goto-char (point-min))
-      (while (re-search-forward "^[-+]\\(import.*;\\|from .* import .*\\)$" nil t)
+      (while (re-search-forward
+              (concat "^[-+]\\(?:"
+                      (string-join '("import .*;"              ; Java
+                                     "import [[:alnum:]_., ]+" ; Python
+                                     "from .* import .*")      ; Python
+                                   "\\|")
+                      "\\)$")
+              nil t)
 	(delete-region (match-beginning 0)
-                       (min (point-max) (1+ (match-end 0)))))))
+                       (min (point-max) (1+ (match-end 0))))))
+    ;; The deletions make the line counts in the hunk headers wrong.
+    (diff-fixup-modifs (point-min) (point-max)))
   (diff-clean))
 
 
@@ -623,12 +635,15 @@ statement, then runs `diff-clean'."
       (goto-char (point-min))
       (while (re-search-forward "^@@ " nil t)
         (let ((hunk-start (match-beginning 0)))
-	  (re-search-forward "^[^-+ ]\\|\\'")
+	  ;; A "\\ No newline at end of file" line belongs to the hunk.
+	  (re-search-forward "^[^-+ \\\\]\\|\\'")
 	  (let ((hunk-end (match-beginning 0)))
 	    (goto-char hunk-start)
 	    (if (re-search-forward regexp hunk-end t)
 	        (goto-char hunk-end)
-	      (delete-region hunk-start hunk-end))))))))
+	      (delete-region hunk-start hunk-end))))))
+    ;; Remove the headers of files whose hunks were all deleted.
+    (diff-clean-empty-parts)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

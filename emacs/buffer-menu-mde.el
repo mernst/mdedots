@@ -15,7 +15,7 @@
 ;;  * updates the "*Buffer List*" buffer whenever `save-some-buffers' executes
 
 ;; To use, add to your .emacs:
-;;   (with-eval-after-load "buff-menu" (load "buffer-menu-mde"))
+;;   (with-eval-after-load "buff-menu" (require 'buffer-menu-mde))
 ;; You may also wish to set some of the variables that appear in this file.
 
 
@@ -72,6 +72,8 @@ Buffers whose names match NAME-REGEXP, or whose major mode is a member of
 MAJOR-MODES, are set unmodified.  Either or both of the arguments may be nil.
 Buffers whose names match optional third argument EXCEPTIONS-REGEXP
 or whose mode is in EXCEPTIONS-MODES are never set unmodified.
+Nor are buffers whose `buffer-offer-save' is non-nil, such as unsent mail
+drafts, because their modification flag protects unsaved work.
 Also sets dired buffer modification flags."
   (let ((blist (buffer-list)))
     (while blist
@@ -80,12 +82,13 @@ Also sets dired buffer modification flags."
         ;; Don't do the work unless the buffer is marked modified.
         (if (buffer-modified-p)
             (progn
-              (if (and (or (and name-regexp
-                                (string-match name-regexp (buffer-name) nil 'inhibit-modify))
-                           (memq major-mode major-modes))
-                       (not (or (and exceptions-regexp
-                                     (string-match exceptions-regexp (buffer-name) nil 'inhibit-modify))
-                                (memq major-mode exceptions-modes))))
+              (if (and (or (memq major-mode major-modes)
+                           (and name-regexp
+                                (string-match name-regexp (buffer-name) nil 'inhibit-modify)))
+                       (not (or buffer-offer-save
+                                (memq major-mode exceptions-modes)
+                                (and exceptions-regexp
+                                     (string-match exceptions-regexp (buffer-name) nil 'inhibit-modify)))))
                   (set-buffer-modified-p nil))
               ;; This special-casing is sort of cheating.  But hey, it works.
               ;; It's OK for this to be in the progn because adding a mark
@@ -138,7 +141,7 @@ Here is an example setting:
   ;; Original idea from Edward Nieters <nieters@crd.ge.com>.
   ;; In Emacs 19, I should use directory-abbrev-alist here.  (No, that's
   ;; already done for us.)
-  (let ((repl-alist (cons (cons (getenv "HOME") "~")
+  (let ((repl-alist (cons (cons (regexp-quote (getenv "HOME")) "~")
                           buffer-menu-replacement-alist))
         from to)
     (while repl-alist
@@ -213,12 +216,12 @@ Here is an example setting:
           (mapconcat (function identity)
                      (list
                       ;; VM buffers, such as "INBOX Summary"
-                      ".* Summary"
-                      ".* Presentation"
+                      ".* Summary\\'"
+                      ".* Presentation\\'"
                       )
                      "\\|"))
-  "Regular expression matching lines to kill from buffer listings.
-The regular expressions are implicitly anchored at the front.")
+  "Regular expression matching names of buffers to omit from buffer listings.
+The regular expression is implicitly anchored at the beginning of the name.")
 
 (defun buffer-menu--kill-some-lines (&optional _arg)
   (with-current-buffer "*Buffer List*"
@@ -233,17 +236,17 @@ The regular expressions are implicitly anchored at the front.")
 (advice-add 'buffer-menu :after #'buffer-menu--kill-some-lines)
 
 (defun Buffer-menu-kill-some-lines (regexp)
-  "Delete lines in the buffer menu whose buffer name matches REGEXP."
-  (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward (concat "^...[ \"]\\(" regexp "\\)\"?") nil t)
-      (beginning-of-line)
-      (delete-region (point) (progn (end-of-line) (point)))
-      (if (bobp)
-          (delete-char 1)
-        (progn
-          (backward-char 1)
-          (delete-char 1))))))
+  "Delete lines in the buffer menu whose buffer name matches REGEXP.
+REGEXP is anchored at the beginning of the buffer name."
+  (let ((name-regexp (concat "\\`\\(?:" regexp "\\)")))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (let ((buffer (tabulated-list-get-id)))
+          (if (and (buffer-live-p buffer)
+                   (string-match-p name-regexp (buffer-name buffer)))
+              (delete-region (point) (progn (forward-line 1) (point)))
+            (forward-line 1)))))))
 
 ;;;
 ;;; Erase the read-only marks and the "current" mark
@@ -293,30 +296,24 @@ The regular expressions are implicitly anchored at the front.")
 
 ;; I could also invert the sense of the argument.
 (defun save-some-buffers--regenerate-buffer-menu (&optional _arg _pred)
-  "Regenerate the buffer menu (\"*Buffer List*\" buffer), if it is visible."
-  (save-window-excursion
-    (walk-windows
-     (function (lambda (window)
-                 (if (equal "*Buffer List*" (buffer-name (window-buffer window)))
-                     (buffer-menu nil))))
-     'no-minibuffer)))
+  "Regenerate the buffer menu (\"*Buffer List*\" buffer), if it is visible.
+This does what `buffer-menu' and its advice do, except that it keeps the
+buffer menu's files-only setting and does not display the help message."
+  (let ((buffer (get-buffer "*Buffer List*")))
+    (if (and buffer (get-buffer-window buffer))
+        (let ((files-only (buffer-local-value 'Buffer-menu-files-only buffer)))
+          (buffer-menu--set-some-buffers-unmodified)
+          (list-buffers-noselect files-only)
+          (buffer-menu--do-buffer-menu-replacements)
+          (buffer-menu--kill-some-lines)
+          (with-current-buffer buffer
+            (buffer-menu--erase-read-only-marks))))))
 (advice-add 'save-some-buffers :after #'save-some-buffers--regenerate-buffer-menu)
 
 (defun save-some-buffers--save-type-break (&optional _arg _pred)
   "Unconditionally save buffer \".type-break\"."
   (save-buffer-if-modified (get-buffer ".type-break")))
 (advice-add 'save-some-buffers :before #'save-some-buffers--save-type-break)
-
-
-;;;
-;;; Put the cursor in the buffer menu
-;;;
-
-;; TODO: Instead of
-;;   (switch-to-buffer (list-buffers-noselect arg))
-;; as in original buffer-menu, I want to do
-;;   (list-buffers arg)
-;;   (pop-to-buffer "*Buffer List*")
 
 
 (provide 'buffer-menu-mde)

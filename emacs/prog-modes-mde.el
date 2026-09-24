@@ -23,6 +23,7 @@
   (require 'cl-lib)			; for `cl-assert'
   (require 'compile)
   (require 'cc-cmds)
+  (require 'checkdoc)                   ; so `let' binds checkdoc's variables dynamically
   (require 'pylookup nil 'noerror)
   (require 'groovy-mode nil 'noerror)
   (require 'util-mde)                   ; for `save-buffer-if-modified', `replace-string-noninteractive', etc.
@@ -37,6 +38,8 @@
   "Save buffer if it exists and is modified." t)
 (autoload 'replace-string-noninteractive "util-mde"
   "Like `replace-string', but doesn't modify mark or the mark ring.")
+(autoload 'replace-regexp-noninteractive "util-mde"
+  "Like `replace-regexp', but doesn't modify mark or the mark ring.")
 
 
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
@@ -70,9 +73,8 @@ This is good for modes like Perl, where the parser can get confused."
 ;; Automatically format buffers when saving them.
 (use-package apheleia)
 ;; For debugging:
-(when t
-  (setq apheleia-log-only-errors nil)
-  (setq apheleia-log-debug-info t))
+;; (setq apheleia-log-only-errors nil)
+;; (setq apheleia-log-debug-info t)
 (with-eval-after-load "apheleia"
   (setf (alist-get 'python-mode apheleia-mode-alist)
         '(ruff-isort ruff))
@@ -150,7 +152,7 @@ Intended for use in after-save-hook."
 
 (defun mde-c-mode-hook ()
   "Michael Ernst's C mode hook."
-  (if (featurep 'elide-head-mode)
+  (if (featurep 'elide-head)
       (elide-head-mode))
   (swap-return-and-linefeed)
   (local-set-key "\C-c\C-c" 'compile)
@@ -288,17 +290,6 @@ if point is not in a function."
 ;; (require 'lsp-java nil 'noerror)
 ;; (add-hook 'java-mode-hook #'lsp)
 
-(condition-case nil
-    (require 'use-package)
-  (file-error
-   (require 'package)
-   (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-   (package-initialize)
-   (package-refresh-contents)
-   (package-install 'use-package)
-   (setq use-package-always-ensure t)
-   (require 'use-package)))
-
 ;; TODO: Why is all this at the top level?
 (use-package flycheck)
 ;; (use-package yasnippet :config (yas-global-mode))
@@ -399,8 +390,6 @@ With prefix arg, goes to end of class; otherwise to end of method."
 ;;       (= arg 0))))
 
 
-(make-variable-buffer-local 'before-save-hook)
-
 (defun mde-java-mode-hook ()
   "Michael Ernst's Java mode hook."
   (eval-when-compile (require 'cc-mode)) ; defines java-mode
@@ -414,12 +403,12 @@ With prefix arg, goes to end of class; otherwise to end of method."
         (define-key java-mode-map "\C-hf" 'javadoc-lookup))
     (if (boundp 'java-ts-mode-map)
         (define-key java-ts-mode-map "\C-hf" 'javadoc-lookup))
-    (add-hook 'before-save-hook 'change-returns-to-return)
-    (add-hook 'before-save-hook 'sort-checkerframework-code)
+    (add-hook 'before-save-hook 'change-returns-to-return nil 'local)
+    (add-hook 'before-save-hook 'sort-checkerframework-code nil 'local)
     (if (string-match "/\\(checker-framework\\|plume-lib\\|randoop\\)/"
 		      (directory-file-name default-directory) nil 'inhibit-modify)
 	(progn
-	  (add-hook 'before-save-hook 'delete-trailing-whitespace)
+	  (add-hook 'before-save-hook 'delete-trailing-whitespace nil 'local)
 	  ))
     (java-set-compile-command)
 
@@ -455,7 +444,7 @@ With prefix arg, goes to end of class; otherwise to end of method."
   "Change Javadoc occurrences of @returns to @return."
   (save-excursion
     (goto-char (point-min))
-    (replace-string-noninteractive "^\\( *\\(\\* *\\)\\)@returns " "\\1@return ")))
+    (replace-regexp-noninteractive "^\\( *\\(\\* *\\)\\)@returns " "\\1@return ")))
 
 (defun sort-checkerframework-code ()
   "Improve style by sorting Checker Framework code."
@@ -483,8 +472,12 @@ With prefix arg, goes to end of class; otherwise to end of method."
 	      (save-restriction
 		(narrow-to-region begin (point))
 		(goto-char (point-min))
-		(let ;; To make `end-of-line' and etc. to ignore fields.
-		    ((inhibit-field-text-motion t))
+		(let (;; To make `end-of-line' and etc. to ignore fields.
+		      (inhibit-field-text-motion t)
+		      ;; `import<' compares with `compare-buffer-substrings', which
+		      ;; ignores case if `case-fold-search' is non-nil, but
+		      ;; google-java-format sorts imports in ASCII order.
+		      (case-fold-search nil))
 		  (sort-subr nil 'forward-line 'end-of-line nil nil 'import<)
 		  (delete-duplicate-lines (point-min) (point-max)))))))))
 
@@ -502,7 +495,7 @@ With prefix arg, goes to end of class; otherwise to end of method."
 
 ;; This function exists for efficiency, to reduce the creation of temporary strings.
 (defun polyannos-are-unsorted (beg end)
-  "Returns t if the @PolyXXX annotations in the given range are sorted."
+  "Return t if the @PolyXXX annotations between BEG and END are unsorted."
   (save-excursion
     (save-match-data
       (goto-char beg)
@@ -570,7 +563,7 @@ Interactively, it's probably better to just set variable `tab-width'."
   (let ((class-name (match-string 1 buffer-file-name)))
     (if (not (bolp))
         (insert "\n"))
-    (insert "  public boolean equals(Object obj)
+    (insert "  public boolean equals(Object other)
     {
       if (!(other instanceof " class-name ")) {
         return false;
@@ -720,13 +713,6 @@ This is disabled on lines with a comment containing the string \"interned\"."
      ;; No formatting for all other projects
      (t
       nil))))
-
-(with-eval-after-load "apheleia"
-  (setf (alist-get 'python-mode apheleia-mode-alist)
-        'ruff)
-  ;; out of the box, apheleia uses the script name "google-java-format" which doesn't exist
-  (setf (alist-get 'google-java-format apheleia-formatters)
-        '("run-google-java-format.py" inplace)))
 
 (defun enable-python-formatting-p ()
   "Returns true if the file matches a hard-coded list of directories."
@@ -905,7 +891,7 @@ Returns t if any change was made, nil otherwise."
 	  (string-match-p "/plume-scripts" filename)
 	  (string-match-p "/html-tools" filename)
           (string-match-p "/prompt-mutation-experiments" filename)
-          (string-match-p "/randoop[^/]/scripts/" filename)
+          (string-match-p "/randoop[^/]*/scripts/" filename)
           )
       t)
 
@@ -924,8 +910,6 @@ Returns t if any change was made, nil otherwise."
         (setq sh-basic-offset 2)
         (apheleia-mode +1)))
   (add-hook 'after-save-hook 'shell-script-validate nil 'local)
-  (if (enable-shell-script-formatting-p)
-      (apheleia-mode +1))
   )
 (add-hook 'sh-mode-hook 'mde-sh-mode-hook)
 
@@ -983,7 +967,7 @@ ARGS are args to pass it.  Buffer file name is provided as last arg."
   (setq perl-brace-offset -2)
   (make-local-variable 'compile-command)
   (if buffer-file-name
-      (if (looking-at ".* -[^ ]T" 'inhibit-modify)
+      (if (looking-at ".* -[^ ]*T" 'inhibit-modify)
           ;; If shebang line has -T, command line must also
           (setq compile-command (concat "perl -cT " buffer-file-name))
         (setq compile-command (concat "perl -c " buffer-file-name))))
@@ -1208,6 +1192,8 @@ otherwise, raise an error after the first problem is encountered."
   ;; This variable only ever honors comments starting with exactly one #,
   ;; never those starting with "##".  I hate that behavior, so I hacked
   ;; my version of python-mode.el.
+  ;; TODO: This setting has no effect: neither python.el nor python-mode.el
+  ;; defines `python-honour-comment-indentation'.
   (setq python-honour-comment-indentation t)
   (define-key python-mode-map "\C-hf" 'pylookup-lookup)
   (define-key python-mode-map "\C-x-" 'kill-buffer-and-window)
@@ -1351,8 +1337,6 @@ Returns t if any change was made, nil otherwise."
 ;; Should also deal with fi:emacs-lisp-mode (which replaces emacs-lisp-mode
 ;; when ACL extensions are loaded).
 
-(make-variable-buffer-local 'before-save-hook)
-
 (defun mde-lisp-mode-hook ()
   "Michael Ernst's Lisp mode hook."
   (if (featurep 'elide-head)
@@ -1372,7 +1356,7 @@ Returns t if any change was made, nil otherwise."
 
   (if (string-match "/plume-lib/"
 		    (directory-file-name default-directory) nil 'inhibit-modify)
-      (add-hook 'before-save-hook 'delete-trailing-whitespace))
+      (add-hook 'before-save-hook 'delete-trailing-whitespace nil 'local))
   (if (eq major-mode 'lisp-mode)
       ;; Not emacs-lisp-mode, fi::*-mode, etc.
       (progn
@@ -1441,7 +1425,6 @@ If the value is neither nil nor t, then the user is queried first.")
   (run-hooks 'lisp-mode-hook)
   (if (enable-elisp-formatting-p)
       (apheleia-mode +1))
-  (apheleia-mode +1)
 
   (add-hook 'write-contents-functions 'maybe-checkdoc-current-buffer 'append) ; execute last
   )
@@ -1746,18 +1729,6 @@ How does this differ from whatever is built in?"
 ;;   (rustic-mode . eglot-ensure))
 ;; (setq rustic-cargo-clippy-trigger-fix 'on-compile)
 
-(condition-case nil
-    (require 'use-package)
-  (file-error
-   (require 'package)
-   (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
-   (package-initialize)
-   (package-refresh-contents)
-   (package-install 'use-package)
-   (setq use-package-always-ensure t)
-   (require 'use-package)))
-
-(setq rust-format-on-save t)
 
 (defun mde-rust-mode-hook ()
   (apheleia-mode +1))
@@ -1770,7 +1741,6 @@ How does this differ from whatever is built in?"
 ;;;
 
 (defun mde-json-mode-hook ()
-  (message "here I am")
   (apheleia-mode +1)
   (setq tab-width 2)
   (setq js-indent-level 2)
@@ -1836,14 +1806,35 @@ How does this differ from whatever is built in?"
 ;;;
 
 (use-package recompile-on-save :ensure t
-  :init
-  (recompile-on-save-advice compile))
+  :commands (recompile-on-save))
+
+(defvar compile--running nil
+  "Non-nil while `compile' is running.
+Saves during that time do not trigger `recompile-on-save'.  Otherwise,
+the resulting `recompile' would compete with the new compilation.")
+(defun ros--recompile-on-save--unless-compiling ()
+  "Return non-nil, suppressing `recompile-on-save', while `compile' is running."
+  compile--running)
+(advice-add 'ros--recompile-on-save :before-until
+            #'ros--recompile-on-save--unless-compiling)
+
+;; Like `recompile-on-save-advice', but that macro uses the obsolete
+;; variable `compilation-last-buffer'.
+(defun compile--recompile-on-save (orig-fun &rest args)
+  "Call ORIG-FUN on ARGS, then recompile when the current buffer is saved."
+  (let ((buf (current-buffer)))
+    (let ((compile--running t))
+      (apply orig-fun args))
+    (with-current-buffer buf
+      (recompile-on-save next-error-last-buffer))))
+(advice-add 'compile :around #'compile--recompile-on-save)
 
 ;; Compile calls `save-some-buffers', but I don't want a question about the current buffer.
 (defun compile--save (_command &optional _comint)
   "Save current buffer before performing compilation.
 This avoids a question, the answer to which would surely be \"Yes\"."
-  (save-buffer-if-modified))
+  (let ((compile--running t))
+    (save-buffer-if-modified)))
 (advice-add 'compile :before #'compile--save)
 
 (defun compile--check-for-bad-regexps (_command &optional _comint)
@@ -1978,9 +1969,9 @@ in this directory or some superdirectory."
                            "pom.xml" default-directory))
 	       (maven-command
 		(let ((mvnw (file-relative-name
-			     default-directory
 			     (concat (file-name-directory buildfile)
-				     "mvnw"))))
+				     "mvnw")
+			     default-directory)))
 		  (if (file-readable-p mvnw)
 		      mvnw
 		    "mvn"))))
@@ -1997,8 +1988,8 @@ in this directory or some superdirectory."
 			  "Config" default-directory)))
 	  (make-local-variable 'compile-command)
 	  (setq compile-command (concat "cd " (file-relative-name
-					       default-directory
-					       (file-name-directory buildfile))
+					       (file-name-directory buildfile)
+					       default-directory)
 					" && brazil-build "))))
        ;; Ant
        ((let ((buildfile (file-in-super-directory
@@ -2128,6 +2119,7 @@ Use as a hook, like so:
 	      (string-match
 	       "checker-framework-optional-demo/checker/tests/optional/JdkCheck.java"
 	       (file-truename buffer-file-name) nil 'inhibit-modify))
+         (make-local-variable 'compile-command)
          (setq compile-command "$ch/bin/javac -processor optional JdkCheck.java"))
 	((and buffer-file-name
 	      (string-match
@@ -2171,6 +2163,7 @@ Use as a hook, like so:
 					 testname "Test"))))
 	((string-match "\\(^.*\\)/\\(?:checker\\|framework\\)/jtreg/" default-directory)
          (let ((cf-dir (file-relative-name (match-string 1 default-directory))))
+           (make-local-variable 'compile-command)
 	   (setq compile-command (concat cf-dir "/gradlew -p " cf-dir " " "jtregTests"))))
 
 	;; Checker Framework manual
@@ -2271,7 +2264,7 @@ Use as a hook, like so:
 	  '("^  build file '\\([^']+\\)': \\([0-9]+\\): " 1 2) ;; column number is also available
 
           ;; Kotlin
-          '("^e: file://\\(.*\\):\\([0-9]\\):\\([0-9]\\): " 1 2 3)
+          '("^e: file://\\(.*\\):\\([0-9]+\\):\\([0-9]+\\): " 1 2 3)
 
 	  ;; For dmalloc's ra_info output
 	  '("^Line \\([0-9]+\\) of \"\\([^\"]*\\)\"" 2 1)

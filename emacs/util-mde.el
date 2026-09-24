@@ -12,6 +12,7 @@
 ;; Required at run time, not just at compile time, because `cl-oddp',
 ;; `cl-plusp', and `cl-minusp' are inlined only when this file is compiled.
 (require 'cl-lib)			; for `cl-loop', `cl-oddp', `cl-plusp', `cl-minusp'
+(declare-function fileloop-continue "fileloop" ())
 
 
 ;; This file marks no standard Emacs function as obsolete; it is a library,

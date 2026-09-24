@@ -459,9 +459,11 @@ pdfclean() {
 md2html() {
   pandoc --standalone --css "${HOME}"/dots/fullwidth.css < "$1" > "${1%.*}".html
 }
+# DejaVu Serif is a bit ugly, but it contains more Unicode characters than Times New Roman.
 md2pdf() {
-  pandoc "$1" -o "${1%.*}".pdf -V geometry:margin=1in
+  pandoc "$1" -o "${1%.*}".pdf --pdf-engine=xelatex -V geometry:margin=1in -V mainfont="DejaVu Serif"
 }
+
 
 ###########################################################################
 ### Java
