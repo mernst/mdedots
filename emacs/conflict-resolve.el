@@ -17,9 +17,7 @@
 
 ;; When not using a tags table:
 ;; (conflict-resolve)
-;; (conflict-resolve-annotation-lines)
 ;; (resolve-annotatedfor-conflicts)
-;; (resolve-import-conflicts)
 ;; (conflict-resolve-empty)
 
 

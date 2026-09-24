@@ -330,18 +330,28 @@ Uses Magit."
 (autoload 'Buffer-menu-revert "bdiff" "Revert buffer under point from file, then select it." t)
 (autoload 'Buffer-menu-revert-select "bdiff" "Select this line's buffer, after replacing its text with disk file contents." t)
 
-;; TODO: add the documentation strings
-(autoload 'conflict-resolve "conflict-resolve" nil t)
-(autoload 'tags-conflict-resolve "conflict-resolve" nil t)
-(autoload 'conflict-resolve-annotation-lines "conflict-resolve" nil t)
-(autoload 'tags-conflict-resolve-annotation-lines "conflict-resolve" nil t)
-(autoload 'resolve-annotatedfor-conflicts "conflict-resolve" nil t)
-(autoload 'move-cf-imports-to-beginning "conflict-resolve" nil t)
-(autoload 'resolve-import-conflicts "conflict-resolve" nil t)
-(autoload 'resolve-method-signature "conflict-resolve" nil t)
-(autoload 'conflict-resolve-empty "conflict-resolve" nil t)
-(autoload 'resolve-equals-method-conflict "conflict-resolve" nil t)
-(autoload 'conflict-write-versions "conflict-resolve" nil t)
+(autoload 'conflict-resolve "conflict-resolve"
+  "Resolve diffs in the current buffer." t)
+(autoload 'tags-conflict-resolve "conflict-resolve"
+  "Resolve diffs in the current tags table." t)
+(autoload 'tags-conflict-resolve-annotation-lines "conflict-resolve"
+  "When two annotation groups are the same, resolve those lines." t)
+(autoload 'resolve-annotatedfor-conflicts "conflict-resolve"
+  "Resolve conflicts that involve only @AnnotatedFor lines." t)
+(autoload 'move-cf-imports-from-head-to-before "conflict-resolve"
+  "Move Checker Framework imports from HEAD to before the hunk." t)
+(autoload 'move-cf-imports-from-other-to-before "conflict-resolve"
+  "Move Checker Framework imports from the other side to before the hunk." t)
+(autoload 'tags-conflict-resolve-import-conflicts "conflict-resolve"
+  "Resolve conflicts that involve only import lines, by accepting all the lines." t)
+(autoload 'tags-conflict-resolve-method-signature "conflict-resolve"
+  "Resolve conflicts in which the versions differ in a method signature line." t)
+(autoload 'conflict-resolve-empty "conflict-resolve"
+  "Resolve diffs in which at least one of the versions of the text is empty." t)
+(autoload 'tags-add-nullable-to-equals "conflict-resolve"
+  "Add @Nullable to the signature of equals." t)
+(autoload 'conflict-write-versions "conflict-resolve"
+  "Write three versions of the file in the current buffer." t)
 
 
 ;;;
