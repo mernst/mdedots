@@ -14,18 +14,17 @@
 ;; Temporary, for debugging.
 (add-variable-watcher 'after-save-hook (lambda (&rest x) (message "Variable after-save-hook changed: %S" x)))
 
-;; Put these first to put packages before built-ins, on the load-path.
-(setq load-path (cons package-user-dir load-path))
-;; (package-initialize)                    ; seems necessary for compiling via makefile
+;; Put the newest installed version of each package on the load-path.  This is
+;; already done at interactive startup, but not in batch mode (e.g., the
+;; Makefile).  Don't add every subdirectory of ~/.emacs.d/elpa/, which would put
+;; stale package versions ahead of current ones.
+(package-activate-all)
 
 (setq load-prefer-newer t)
 
 (add-to-list 'load-path "~/emacs")
 (add-to-list 'load-path "~/emacs/mew/elisp")
 (add-to-list 'load-path "~/java/plume-lib/javadoc-lookup/src/main/emacs")
-(let ((default-directory "~/.emacs.d/elpa/"))
-  (if (file-directory-p default-directory)
-      (normal-top-level-add-subdirs-to-load-path)))
 (add-to-list 'load-path "~/java/google-java-format/core/src/main/scripts/")
 
 (require 'auto-compile)
