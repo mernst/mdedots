@@ -13,6 +13,10 @@
 ;;   "Initialize a new round of replace on several files." t)
 
 
+(declare-function fileloop-continue "fileloop" ())
+(declare-function fileloop--case-fold "fileloop" (string case-fold))
+
+
 ;; Copied from fileloop-initialize-replace.
 (defun fileloop-initialize-replace-noquery (from to files case-fold &optional delimited)
   "Initialize a new round of replace on several files.

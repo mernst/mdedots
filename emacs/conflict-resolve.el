@@ -37,6 +37,7 @@
   (require 'util-mde))
 
 (autoload 'tags-query-replace-noerror "etags-mde")
+(declare-function fileloop-continue "fileloop" ())
 
 
 

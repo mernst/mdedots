@@ -6,6 +6,7 @@
 (eval-when-compile
   (require 'etags)
   (require 'cc-cmds))
+(declare-function fileloop-continue "fileloop" ())
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
