@@ -148,8 +148,8 @@
     ("\\.jpg$" "xloadimage -shrink")
     ("\\.JPG$" "xloadimage -shrink")		; uppercase
     ;; These PDF entries are edited below.
-    ("\\.pdf$" "okular * &" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; add acroread, gv
-    ("\\.PDF$" "okular * &" "papers * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; uppercase
+    ("\\.pdf$" "papers * &" "okular * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; add acroread, gv
+    ("\\.PDF$" "papers * &" "okular * &" "evince * &" "acroread * &" "xpdf * &" "gv * &")	; uppercase
     ("\\.mp4$" "vlc")			; not in background
     ("\\.tex\\'" "pdflatex")		; default: ("\\.tex\\'" "latex" "tex")
     ("\\.tgz$" "tar xvfz")
