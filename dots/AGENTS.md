@@ -28,7 +28,10 @@
 
 Do not change the branch of any existing git repository or clone or working copy, because each working directory is dedicated to one branch.
 For example, do not run `git switch` or `git checkout [-b] <branch-name>` in any pre-existing directory.
+
 When creating a new branch, use a new directory or a new clone.
+
+If a directory is named `<reponame>-fork-<orgname>...`, then it must contain `<orgname>/<reponame>`, not any other fork of `<reponome>`.
 
 ### Java warning suppressions
 

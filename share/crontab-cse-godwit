@@ -192,11 +192,10 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 ###
 ### Weekly for seminars/classes; disable during the summer
 ###
-# 10 23 * * Thu	${JAVA} -ea -cp /homes/gws/mernst/bin/src/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl --checkouts=${HOME}/class/403/19we/staff/github-urls.txt update
-# 10 17 * * Wed	${JAVA} -ea -cp /homes/gws/mernst/bin/src/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl --checkouts=${HOME}/class/403/19wi/staff/github-urls.txt update
+10 17 * * Wed	${JAVA} -ea -cp /homes/gws/mernst/bin/src/multi-version-control/build/libs/multi-version-control-all.jar org.plumelib.multiversioncontrol.MultiVersionControl --checkouts=${HOME}/class/403/26au/staff/github-urls.txt update
 # 17 5 * * Mon     echo -e "Auto-browse to http://uwplse.org/meet/lunch/\n\nSubject: PLSE lunch meeting announcement\n\nCould you send an announcement, with title and abstract, of the PLSE lunch on Tuesday?" | $MAILCOMMAND -s "PLSE lunch announcement; and get slides for next week" $EMAIL
 # 17 5 * * Tue     echo -e "Auto-browse to http://uwplse.org/meet/gm/\n\nSubject: PLSE meeting announcement\n\nCould you send an announcement, with title and abstract, of the PLSE meeting on Wednesday?" | $MAILCOMMAND -s "PLSE announcement; and get slides for next week" $EMAIL
-# 18 5 * * Fri     echo -e "Auto-browse to http://uwplse.org/meet/serg/\n\nTo: cse590n@cs.washington.edu\nSubject: 590n/SERG next week\nOn Monday, we will discuss\n\n  \n\nwhich is available from http://uwplse.org/meet/serg/ .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need 590n announcement 24 hours in advance" $EMAIL
+18 5 * * Fri     echo -e "Auto-browse to http://uwplse.org/meet/serg/\n\nTo: cse590n@cs.washington.edu\nSubject: 590n/SERG next week\nOn Monday, we will discuss\n\n  \n\nwhich is available from http://uwplse.org/meet/serg/ .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need 590n announcement 24 hours in advance" $EMAIL
 # 20 5 * * Mon     echo -e "Auto-browse to http://uwplse.org/meet/lunch/\n\nTo: plse@cs.washington.edu\nSubject: PLSE lunch this week\nOn Tuesday, we will hear\n\n  .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need PLSE lunch announcement 24 hours in advance" $EMAIL
 # 21 5 * * Tue     echo -e "Auto-browse to http://uwplse.org/meet/plrg/\n\nTo: cse590p@cs.washington.edu\nSubject: 590p this week\nOn Friday, we will discuss\n\n  \n\nwhich is available from http://uwplse.org/meet/plrg/ .\n\nSee you then!\n\n                    -Mike" | $MAILCOMMAND -s "Need 590p announcement 24 hours in advance" $EMAIL
 # Weekly if I am assigned to this.
@@ -229,7 +228,6 @@ PATH=.:/homes/gws/mernst/bin/Linux-x86_64:/homes/gws/mernst/bin/share:/homes/gws
 02 6 27 * *	cd $TYPES/checker-framework-branch-master && $CRONIC ./gradlew javadoc
 # The command below makes its own backup, in ~/.javadoc-index.el-OLD.
 # 31 6 27 * *	sh -c "java -cp $HOME/java/plume-lib/javadoc-lookup/build/libs/javadoc-lookup-all.jar org.plumelib.javadoclookup.CreateJavadocIndex > ~/.javadoc-index.el-NEW && mv ~/.javadoc-index.el ~/.javadoc-index.el-OLD && mv ~/.javadoc-index.el-NEW ~/.javadoc-index.el"
-01 02 03 * *     echo -e "Auto-browse to http://egauge6444.egaug.es/ \n If trouble, see https://artisanelectricinc.com/troubleshoot-monitoring-system/" | $MAILCOMMAND -s "Is solar working?" $EMAILPERSONAL
 02 02 03 * *     echo -e "Merge contacts; instructions in ~/private/contacts/google-contacts/google-contacts-notes.txt" | $MAILCOMMAND -s "Merge contacts" $EMAILPERSONAL
 #CSAIL 10 5 28 * *	make -C /afs/csail/group/pag/www/daikon pubs
 ## TODO: reinstate after this is moved to UW, but too many old links are broken on the MIT website

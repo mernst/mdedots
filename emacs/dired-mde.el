@@ -153,6 +153,7 @@
     ("\\.mp4$" "vlc")			; not in background
     ("\\.tex\\'" "pdflatex")		; default: ("\\.tex\\'" "latex" "tex")
     ("\\.tgz$" "tar xvfz")
+    ("\\.csv$" run-office-program)
     ;; Microsoft formats
     ("\\.docx?$" run-office-program)
     ("\\.pptx?$" run-office-program)
@@ -169,8 +170,8 @@
 ;; It would be better to remove programs that are not available (by calling `command -v`).
 (if (eq system-site 'cse)
     (progn
-      (delete "papers * &" (assoc "\\.pdf$" my-dired-shell-guesses))
-      (delete "papers * &" (assoc "\\.PDF$" my-dired-shell-guesses))
+      (delete "evince * &" (assoc "\\.pdf$" my-dired-shell-guesses))
+      (delete "evince * &" (assoc "\\.PDF$" my-dired-shell-guesses))
       (delete "okular * &" (assoc "\\.pdf$" my-dired-shell-guesses))
       (delete "okular * &" (assoc "\\.PDF$" my-dired-shell-guesses))
       ))

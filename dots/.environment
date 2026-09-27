@@ -251,7 +251,7 @@ export SDI="$sdi"
 
 export sebase="$HOME"/class/403
 # Customize just the next line; also update `ffap-semi-env-vars' in ~/emacs/dot-emacs.el
-export seq=25au
+export seq=26au
 export se="$sebase/$seq"
 export sen="$sebase"/notes
 
@@ -286,8 +286,8 @@ export htp="$htpbase/$htpy"
 
 # My current quarter teaching (must come after $sdi or $se or $gse is defined).
 # export s="$sdi"
-# export s="$se"
-export s="$gse"
+export s="$se"
+# export s="$gse"
 
 export sbook="$gsebase"/program-analysis-book
 
