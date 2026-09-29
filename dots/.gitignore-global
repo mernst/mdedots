@@ -39,6 +39,7 @@ gradle/verification-metadata.dryrun.xml
 *.synctex.gz
 *.synctex\(busy\)
 _minted-paper
+tmp-pdfcrop-*.tex
 
 # LibreOffice files?
 .~lock.*#
