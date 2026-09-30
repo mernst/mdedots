@@ -48,15 +48,15 @@ WEEKLY_REVIEW_SECTIONS: tuple[Section, ...] = (
             # Specific promotions email
             "from:scancafe label:inbox",
             "from:extracare label:inbox",
+            # These come early so that the delay-weekly label might update before the next search.
+            "label:delay-weekly seworld",
+            "label:delay-weekly ecoop-info",
         ),
     ),
     Section(
         "Part 2: specific delayed mail",
         (
-            # These come early so that the delay-weekly label might update
-            # before I get to it.
-            "label:delay-weekly seworld",
-            "label:delay-weekly ecoop-info",
+            # These come early so that the delay-weekly label might update before the next search.
             'label:delay-junk "micheal"',
             "to:it-fmeurope-events",
         ),

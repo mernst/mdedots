@@ -935,7 +935,10 @@ Not guaranteed to work in all cases."
 
 (defun sort-lines--not-certain-files (_reverse _beg _end)
   "Don't sort lines in certain files."
-  (if (paragraph-buffer-p)
+  (if (and (paragraph-buffer-p)
+           (save-excursion
+             (goto-char _beg)
+             (re-search-forward "^\\s-*$" (1- _end) t)))
       (error "Sort this file by paragraphs, not by lines")))
 (advice-add 'sort-lines :before #'sort-lines--not-certain-files)
 
