@@ -1764,7 +1764,7 @@ How does this differ from whatever is built in?"
 ;;         (add-hook 'after-save-hook 'run-createcal nil 'local))))
 ;; ;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
 ;; (add-hook 'conf-mode-hook 'mde-conf-mode-hook)
-;; 
+;;
 ;; (defun run-createcal ()
 ;;   "Run external program `createcal' in the parent directory."
 ;;   (interactive)
