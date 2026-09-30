@@ -1754,22 +1754,22 @@ How does this differ from whatever is built in?"
 ;;; m4 and conf
 ;;;
 
-(defun mde-conf-mode-hook ()
-  "Run the `createcal' program after its input files have been edited."
-  ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
-  (let ((filename (and buffer-file-name (file-truename buffer-file-name))))
-    (if (and filename
-             (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename nil 'inhibit-modify)
-             (not (string-match "/503/17sp/" filename nil 'inhibit-modify)))
-        (add-hook 'after-save-hook 'run-createcal nil 'local))))
-;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
-(add-hook 'conf-mode-hook 'mde-conf-mode-hook)
-
-(defun run-createcal ()
-  "Run external program `createcal' in the parent directory."
-  (interactive)
-  (let ((default-directory (parent-directory default-directory)))
-    (call-process-show-if-error "createcal")))
+;; (defun mde-conf-mode-hook ()
+;;   "Run the `createcal' program after its input files have been edited."
+;;   ;; Documentation for createcal: https://courses.cs.washington.edu/tools/createcal/doc/
+;;   (let ((filename (and buffer-file-name (file-truename buffer-file-name))))
+;;     (if (and filename
+;;              (string-match "/calendar/\\(inputFiles\\|htmlTemplates\\)/" filename nil 'inhibit-modify)
+;;              (not (string-match "/503/17sp/" filename nil 'inhibit-modify)))
+;;         (add-hook 'after-save-hook 'run-createcal nil 'local))))
+;; ;; TODO: need to apply this hook to files such as hwlist.template as well as .ini files
+;; (add-hook 'conf-mode-hook 'mde-conf-mode-hook)
+;; 
+;; (defun run-createcal ()
+;;   "Run external program `createcal' in the parent directory."
+;;   (interactive)
+;;   (let ((default-directory (parent-directory default-directory)))
+;;     (call-process-show-if-error "createcal")))
 
 (defun call-process-exit-code-and-output (program &rest args)
   "Run PROGRAM with ARGS and return the exit code and output in a list."
