@@ -68,15 +68,15 @@ nman() { command tbl "$@" | neqn | nroff -man | col; }
 alias ooffice='soffice'
 
 # Suffix "p" means portrait input, suffix "l" means landscape input.
-alias pdfnup2p='pdfjam --nup 2x1 --landscape --suffix nup --frame true'
+alias pdfnup2p='pdfjam --nup 2x1 --landscape --suffix 2up --frame true'
 alias pdfnup2='pdfnup2p'
-alias pdfnup4l='pdfjam --nup 2x2 --landscape --suffix nup --frame true'
-alias pdfnup4p='pdfjam --nup 2x2 --no-landscape --suffix nup --frame true'
+alias pdfnup4l='pdfjam --nup 2x2 --landscape --suffix 4up --frame true'
+alias pdfnup4p='pdfjam --nup 2x2 --no-landscape --suffix 4up --frame true'
 alias pdfnup4='pdfnup4l'
-alias pdfnup3x2='pdfjam --nup 3x2 --landscape --suffix nup --frame true'
-alias pdfnup6l='pdfjam --nup 2x3 --landscape --suffix nup --frame true'
+alias pdfnup3x2='pdfjam --nup 3x2 --landscape --suffix 6up --frame true'
+alias pdfnup6l='pdfjam --nup 2x3 --landscape --suffix 6up --frame true'
 alias pdfnup6='pdfnup6l'
-alias pdfnup8='pdfjam --nup 4x2 --landscape --suffix nup --frame true'
+alias pdfnup8='pdfjam --nup 4x2 --landscape --suffix 8up --frame true'
 
 # ps2ascii <psfile> # outputs text of <psfile>  (always spell-check afterward)
 alias ps2ascii='gs -q -dNODISPLAY -dNOBIND -dWRITESYSTEMDICT -dSIMPLE ps2ascii.ps'
