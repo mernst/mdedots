@@ -10,6 +10,19 @@
 
 (setq ffap-url-regexp nil)              ; don't match URLs
 
+;; Setting `ffap-url-regexp' to nil is not enough:  `ffap-file-at-point' then
+;; treats a URL such as "https://host/path" as a remote file name
+;; "/https:/host/path".  A "file:" URL is not ignored, because it names a
+;; local file.
+(defun ffap-file-at-point--ignore-urls (ffap-file-at-point-function)
+  "Return nil if the text at point is a URL, other than a \"file:\" URL."
+  (let ((string (ffap-string-at-point))
+        (case-fold-search t))
+    (unless (and (string-match-p "\\`[a-z][-a-z0-9+.]*://" string)
+                 (not (string-match-p "\\`file:" string)))
+      (funcall ffap-file-at-point-function))))
+(advice-add 'ffap-file-at-point :around #'ffap-file-at-point--ignore-urls)
+
 ;;; Experimentally commented out, 2025-04-06.
 ;; (defun set-ffap-require-prefix-true-locally ()
 ;;   "Set variable `ffap-require-prefix' true in this buffer only."
