@@ -1062,6 +1062,30 @@ proposal")
 	   "\\( [0-9]+\\)?% "))))
 (add-hook 'shell-mode-hook 'mde-shell-mode-hook)
 
+;; pcomplete (which handles the arguments of `cd' and other commands with a
+;; pcomplete/ function) compares the argument from
+;; `shell--parse-pcomplete-arguments' to the buffer text as unquoted by
+;; `pcomplete-unquote-argument-function'.  The latter expands environment
+;; variables but the former does not, so for "cd $inv/daikon-fork-mer" they
+;; differ.  pcomplete then uses `completion-table-subvert', which rejects
+;; every completion because `pcomplete-entries' returns it with $inv expanded.
+;; The result is that partial-completion inserts a bogus trailing "/"
+;; ("cd $inv/daikon-fork-mernst-branch-/"), and the next TAB says "No match".
+;; Expanding environment variables here makes the two strings agree.
+(defun shell--parse-pcomplete-arguments--expand-env-vars (result)
+  "Expand environment variables in the arguments in RESULT.
+RESULT is the return value of `shell--parse-pcomplete-arguments'."
+  (cons (mapcar (lambda (arg)
+                  (replace-regexp-in-string
+                   "\\$\\(?:\\([[:alpha:]][[:alnum:]]*\\)\\|{\\(?1:[^{}]+\\)}\\)"
+                   (lambda (m) (or (getenv (match-string 1 m)) ""))
+                   arg t t))
+                (car result))
+        (cdr result)))
+(with-eval-after-load 'shell
+  (advice-add 'shell--parse-pcomplete-arguments :filter-return
+              #'shell--parse-pcomplete-arguments--expand-env-vars))
+
 ;; `comint-delete-output', bound to C-c C-o, removes the output of the
 ;; preceding command line. This command is slightly different in that it
 ;; can be used repeatedly whereas subsequent invocations of
@@ -1148,6 +1172,16 @@ it returns, which would destroy the state of a buffer the user is editing."
 		   (diff-mode))
 		  (t (fundamental-mode))))))))
 (advice-add 'shell-command :after #'shell-command--set-diff-mode)
+
+;; This must be added after `shell-command--set-diff-mode', so that it runs
+;; after that advice; setting the major mode kills the local `compile-command'.
+(defun shell-command--set-compile-command (_command &optional output-buffer _error-buffer)
+  "Set `compile-command' in buffer *Shell Command Output*."
+  (let ((buffer (shell-command-buffer output-buffer)))
+    (if buffer
+	(with-current-buffer buffer
+	  (set-compile-command-for-directory)))))
+(advice-add 'shell-command :after #'shell-command--set-compile-command)
 
 
 (defun shell-command-only-output-buffer (&optional output-buffer)

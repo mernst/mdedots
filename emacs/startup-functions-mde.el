@@ -659,25 +659,10 @@ Not guaranteed to work in all cases."
 ;;; Advices
 ;;;
 
-;;; Experimentally commented out, 2025-04-06.
-;; (defadvice scroll-up (around end-of-buffer-maybe activate)
-;;   "If on the last screenful of a buffer but not at the end, go to the end.
-;; By default, `scroll-up' raises an error in that circumstance."
-;;   (condition-case err
-;;       ad-do-it
-;;     (end-of-buffer (if (eobp)
-;;                        (signal (car err) (cdr err))
-;;                      (goto-char (point-max))))))
-;;
-;; (defadvice scroll-down (around beginning-of-buffer-maybe activate)
-;;   "If on the first screenful of a buffer but not at the beginning,
-;; go to the beginning.
-;; By default, `scroll-down' raises an error in that circumstance."
-;;   (condition-case err
-;;       ad-do-it
-;;     (beginning-of-buffer (if (bobp)
-;;                              (signal (car err) (cdr err))
-;;                            (goto-char (point-min))))))
+;; If PageDown (`scroll-up-command') cannot scroll because the end of the
+;; buffer is visible, move to the end of the buffer instead of signaling an
+;; error.  Likewise PageUp (`scroll-down-command') and the beginning.
+(setq scroll-error-top-bottom t)
 
 
 ;; ;; Should be made to work for obarrays (which less frequently have duplicates).

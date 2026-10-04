@@ -1848,10 +1848,15 @@ in compilation output."
               (error "Element of compilation-error-regexp-alist starts with \".*\": %s" cer))))))
 (advice-add 'compile :before #'compile--check-for-bad-regexps)
 
-(defun compile--recompute-compile-command (_command &optional _comint)
-  "In certain modes, re-compute `compile-command'."
-  (if (memq major-mode '(shell-mode))
-      (set-compile-command-for-directory)))
+;; The work is done in the interactive spec, because `compile' reads
+;; `compile-command' in its interactive spec, which runs before the body of
+;; any advice.  Recomputing in the body would affect only the next call.
+(defun compile--recompute-compile-command (&rest _args)
+  "In certain modes, re-compute `compile-command' before `compile' reads it."
+  (interactive (lambda (spec)
+                 (if (memq major-mode '(shell-mode))
+                     (set-compile-command-for-directory))
+                 (advice-eval-interactive-spec spec))))
 (advice-add 'compile :before #'compile--recompute-compile-command)
 
 
@@ -1898,6 +1903,8 @@ or null if it does not exist."
   (or
    ;; editing a file or directory
    buffer-file-name
+   ;; output of `shell-command'
+   (equal (buffer-name) shell-command-buffer-name)
    ;; other major modes
    (memq major-mode
 	 '(compilation-mode cvs-mode dired-mode grep-mode magit-status-mode
