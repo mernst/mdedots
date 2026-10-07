@@ -434,6 +434,8 @@
      ("mex" "Michael Ernst" nil 0)
      ("miek" "Mike" nil 0)
      ("mgiht" "might" nil 0)
+     ("Minic" "Minić" nil 0)
+     ("Minicx" "Minić" nil 0)
      ("mitx" "Massachusetts Institute of Technology" nil 0)
      ("migth" "might" nil 0)
      ("mroe" "more" nil 0)
