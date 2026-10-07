@@ -460,8 +460,34 @@ md2html() {
   pandoc --standalone --css "${HOME}"/dots/fullwidth.css < "$1" > "${1%.*}".html
 }
 # DejaVu Serif is a bit ugly, but it contains more Unicode characters than Times New Roman.
+# Without a monofont setting, code blocks use Latin Modern Mono, which lacks
+# characters such as ∀ ∈ ≤ ✓ and ─.  Neither DejaVu font has every character
+# (e.g., ✓ ✗ ★ CJK), so the header gives both fonts a fallback chain:  any
+# character missing from a font is taken from the first fallback font that has
+# it.  DejaVu Math TeX Gyre comes first because it is the serif companion of
+# DejaVu Serif.  Fallback fonts have no bold faces, so in bold text they are
+# emboldened.  Add fonts to the chain if characters are still missing.
 md2pdf() {
-  pandoc "$1" -o "${1%.*}".pdf --pdf-engine=xelatex -V geometry:margin=1in -V mainfont="DejaVu Serif"
+  md2pdf_header=$(mktemp --suffix=.tex)
+  cat > "$md2pdf_header" << 'EOF'
+\directlua{
+  local fonts = {"DejaVu Math TeX Gyre", "DejaVu Sans", "Droid Sans Fallback"}
+  local regular, bold = {}, {}
+  for i, name in ipairs(fonts) do
+    regular[i] = name .. ":mode=node;"
+    bold[i] = name .. ":mode=node;embolden=2;"
+  end
+  luaotfload.add_fallback("mdfallback", regular)
+  luaotfload.add_fallback("mdfallbackbold", bold)
+}
+\setmainfont{DejaVu Serif}[RawFeature={fallback=mdfallback},
+  BoldFeatures={RawFeature={fallback=mdfallbackbold}}]
+\setmonofont{DejaVu Sans Mono}[RawFeature={fallback=mdfallback}]
+EOF
+  pandoc "$1" -o "${1%.*}".pdf --pdf-engine=lualatex -V geometry:margin=1in -H "$md2pdf_header"
+  md2pdf_status=$?
+  rm -f "$md2pdf_header"
+  return $md2pdf_status
 }
 
 
