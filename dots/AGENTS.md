@@ -46,7 +46,7 @@ If a directory is named `<reponame>-fork-<orgname>...`, then it must contain `<o
 
 ### Historical comments
 
-* Do not write comments about how the code used to work.  Comments should focus on how it works now, and (occasionally) how it would fail if the implementation were changed.
+* Do not write comments about how the code used to work.  Comments should focus on how it works now.  It is acceptable to mention how the code would fail if the implementation were changed -- that is, it is fine to discuss an alternative implementation, but never mention whether the implementation ever was like that.
 
 ### Tests
 
