@@ -1,0 +1,47 @@
+#!/bin/bash
+# Convert each Markdown file foo.md into a PDF file foo.pdf.
+#
+# Uses these fonts:
+# * DejaVu Serif
+#   Instead of Pandoc's default mainfont, Latin Modern Roman.
+#   DejaVu Serif is a bit ugly, but it contains many more Unicode characters.
+# * DejaVu Sans Mono
+#   Instead of Pandoc's default monofont, Latin Modern Mono, which lacks
+#   characters such as ∀ ∈ ≤ ✓ and ─.
+# * Fallback chain
+#   DejaVu Serif and DejaVu Sans Mono lack some characters (DejaVu Serif lacks
+#   ✓ ✗ ★; both lack CJK).  The fallback chain supplies them:
+#   * DejaVu Math TeX Gyre, for math symbols and ✓
+#   * DejaVu Sans, for symbols such as ✗ ★
+#   * Droid Sans Fallback, for CJK
+#   If Pandoc warns "Missing character", add a font to the fallback chain.
+
+if [ "$#" -eq 0 ]; then
+  echo "md2pdf: pass one or more Markdown files" >&2
+  exit 1
+fi
+
+header=$(mktemp --suffix=.tex)
+trap 'rm -f "$header"' EXIT
+cat > "$header" << 'EOF'
+\directlua{
+  local fonts = {"DejaVu Math TeX Gyre", "DejaVu Sans", "Droid Sans Fallback"}
+  local regular, bold = {}, {}
+  for i, name in ipairs(fonts) do
+    regular[i] = name .. ":mode=node;"
+    bold[i] = name .. ":mode=node;embolden=2;"
+  end
+  luaotfload.add_fallback("mdfallback", regular)
+  luaotfload.add_fallback("mdfallbackbold", bold)
+}
+\setmainfont{DejaVu Serif}[RawFeature={fallback=mdfallback},
+  BoldFeatures={RawFeature={fallback=mdfallbackbold}}]
+\setmonofont{DejaVu Sans Mono}[RawFeature={fallback=mdfallback}]
+EOF
+
+status=0
+for mdfile in "$@"; do
+  pandoc "$mdfile" -o "${mdfile%.*}".pdf --pdf-engine=lualatex \
+    -V geometry:margin=1in -H "$header" || status=1
+done
+exit "$status"
