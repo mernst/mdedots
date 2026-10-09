@@ -1,0 +1,36 @@
+#!/bin/bash
+# Convert each Markdown file foo.md into an HTML file foo.html.
+# --embed-resources copies the CSS into the HTML, so the file works elsewhere.
+# The filter sets the <title> element (whose absence pandoc warns about) from
+# the YAML title, else the first top-level "#" heading, else the file name.
+
+if [ "$#" -eq 0 ]; then
+  echo "md2html: pass one or more Markdown files" >&2
+  exit 1
+fi
+
+filter=$(mktemp --suffix=.lua)
+trap 'rm -f "$filter"' EXIT
+cat > "$filter" << 'EOF'
+function Pandoc(doc)
+  if doc.meta.title or doc.meta.pagetitle then
+    return nil
+  end
+  for _, block in ipairs(doc.blocks) do
+    if block.t == "Header" and block.level == 1 then
+      doc.meta.pagetitle = pandoc.utils.stringify(block)
+      return doc
+    end
+  end
+  local file = PANDOC_STATE.input_files[1] or "untitled"
+  doc.meta.pagetitle = pandoc.path.split_extension(pandoc.path.filename(file))
+  return doc
+end
+EOF
+
+status=0
+for mdfile in "$@"; do
+  pandoc --standalone --embed-resources --css "${HOME}"/dots/fullwidth.css \
+    --lua-filter "$filter" "$mdfile" -o "${mdfile%.*}".html || status=1
+done
+exit "$status"
