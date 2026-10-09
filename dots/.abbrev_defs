@@ -257,6 +257,7 @@
      ("gelcdx" "GNU Emacs Lisp Code Directory" nil 0)
      ("guage" "gauge" nil 0)
      ("jist" "gist" nil 0)
+     ("githubx" "GitHub" nil 0)
      ("godo" "good" nil 0)
      ("gsocx" "Google Summer of Code" nil 0)
      ("grey" "gray" nil 0)
