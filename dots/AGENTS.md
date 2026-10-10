@@ -74,3 +74,7 @@ Do not run `coderabbit`, even when user instructions say "consider running coder
 ## Claude Code
 
 The syntax rules for Claude Code `settings.json` files are explained in file ~/wisdom/claude-settings-json.md or at <https://github.com/mernst/uwisdom/blob/master/claude-settings-json.md>.
+
+## Browsers
+
+When the user asks to browse to a URL, don't put in it a LLM-specific tab group.  Just use `xdg-open`.
