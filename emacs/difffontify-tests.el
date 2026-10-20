@@ -259,23 +259,22 @@ The caller must kill the buffer."
   "Long lines are wrapped at a space, with marks, shaded on a deleted line."
   (with-temp-buffer
     (insert (propertize "-" 'face '(diff-indicator-removed))
-            (propertize "aaaa bbbb cccc dddd eeee\n" 'face '(diff-removed))
+            (propertize "aaa bbbb cccc dddd\n" 'face '(diff-removed))
             "header line that is long\n")
     (difffontify--wrap-lines 12)
-    ;; "-»cccc dddd \\" would be 13 columns wide.
     (should (equal (buffer-string)
-                   (concat "-aaaa bbbb \\\n-»cccc \\\n-»dddd eeee\n"
-                           "header \\\n»line that \\\n»is long\n")))
+                   (concat "-aaa bbbb  \\\n»cccc dddd\n"
+                           "header     \\\n»line that \\\n»is long\n")))
     (goto-char (point-min))
-    (search-forward "\\")
-    (should (equal (get-text-property (match-beginning 0) 'face)
+    (search-forward "bbbb  \\")
+    (should (equal (get-text-property (- (match-end 0) 2) 'face)
                    '(diff-removed)))
-    (search-forward "-»")
-    (should (equal (get-text-property (match-beginning 0) 'face)
-                   '(diff-indicator-removed)))
     (should (equal (get-text-property (1- (match-end 0)) 'face)
                    '(diff-removed)))
-    (search-forward "header \\")
+    (search-forward "»")
+    (should (equal (get-text-property (match-beginning 0) 'face)
+                   '(diff-indicator-removed)))
+    (search-forward "header     \\")
     (should (null (get-text-property (1- (match-end 0)) 'face)))))
 
 (ert-deftest difffontify-tests-wrap-tab ()
@@ -284,7 +283,7 @@ The caller must kill the buffer."
     ;; The tab occupies columns 10 through 15.
     (insert "+abcdefghi\tjklmnop\n")
     (difffontify--wrap-lines 12)
-    (should (equal (buffer-string) "+abcdefghi\\\n»\tjkl\\\n»mnop\n"))))
+    (should (equal (buffer-string) "+abcdefghi \\\n»\tjkl\\\n»mnop\n"))))
 
 
 ;;; PDF

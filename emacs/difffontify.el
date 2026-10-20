@@ -409,10 +409,10 @@ Run `difffontify-latin-1-command' on CHARS, one per line."
 
 (defun difffontify--wrap-lines (width)
   "Wrap lines that are wider than WIDTH columns.
-Each wrapped line ends with \"\\\", and each continuation line starts with
-\"»\".  In a hunk, the continuation line starts with the original prefix
-character, before the \"»\".  The marks are in the regular font, but on a
-deleted line they are shaded."
+Each wrapped line ends with \"\\\" in the rightmost column, so that it is
+not confused with a \"\\\" in the text, and each continuation line starts
+with \"»\".  In a hunk, the \"»\" replaces the prefix character.  The marks
+are in the regular font, but on a deleted line they are shaded."
   (goto-char (point-min))
   (while (not (eobp))
     (let ((bol (point)))
@@ -427,10 +427,11 @@ deleted line they are shaded."
                (mark-faces (and (memq 'diff-indicator-removed prefix-faces)
                                 '(diff-removed))))
           (goto-char (difffontify--break-position bol width))
-          (insert (propertize "\\\n" 'face mark-faces))
-          (when hunk-line
-            (insert (propertize (string (char-after bol)) 'face prefix-faces)))
-          (insert (propertize "»" 'face mark-faces))
+          (insert (propertize (concat (make-string
+                                       (max 0 (- width 1 (current-column))) ?\s)
+                                      "\\\n")
+                              'face mark-faces)
+                  (propertize "»" 'face (and hunk-line prefix-faces)))
           ;; The continuation line might need to be wrapped too.
           (forward-line 0))))))
 
@@ -444,11 +445,10 @@ any."
   ;; A tab can extend past the column.
   (when (> (current-column) (1- width))
     (backward-char))
-  ;; At least 3 characters precede the break, so the continuation line, which
-  ;; starts with at most 2 characters of marks, is shorter than this line.
-  ;; Otherwise, a character too wide to fit after the marks would cause an
-  ;; infinite loop.
-  (let ((end (max (point) (min (+ bol 3) (line-end-position))))
+  ;; At least 2 characters precede the break, so the continuation line, which
+  ;; starts with a 1-character mark, is shorter than this line.  Otherwise, a
+  ;; character too wide to fit after the mark would cause an infinite loop.
+  (let ((end (max (point) (min (+ bol 2) (line-end-position))))
         (limit (progn (move-to-column (/ width 2)) (point))))
     (goto-char end)
     (if (and (< limit end) (re-search-backward "[ \t]" limit t))

@@ -37,8 +37,8 @@
 ⟨diff-context| ⟩
 ⟨diff-context|   ⟩⟨keyword+diff-context|public⟩⟨diff-context| ⟩⟨type+diff-context|void⟩⟨diff-context| ⟩⟨function-name+diff-context|log⟩⟨diff-context|() {⟩
 ⟨diff-indicator-removed|-⟩⟨diff-removed|    System.out.println("This line is long enough that the printed diff must wrap it.");⟩
-⟨diff-indicator-added|+⟩⟨diff-added|    System.out.println("This line is long enough that the printed diff must wrap it onto a second ⟩\
-⟨diff-indicator-added|+⟩»⟨diff-added|printed line, with continuation marks.");⟩
+⟨diff-indicator-added|+⟩⟨diff-added|    System.out.println("This line is long enough that the printed diff must wrap it onto a second ⟩   \
+⟨diff-indicator-added|»⟩⟨diff-added|printed line, with continuation marks.");⟩
 ⟨diff-context|   }⟩
 ⟨diff-context| }⟩
 ⟨diff-file-header|diff -u -b -r old/foo.py new/foo.py⟩
@@ -88,5 +88,5 @@
 ⟨diff-context| ⟩
 ⟨diff-context| ⟩⟨function-name+diff-context|foo⟩⟨diff-context|: foo.c⟩
 ⟨diff-indicator-removed|-⟩⟨diff-removed|	$(CC) -o foo foo.c⟩
-⟨diff-indicator-added|+⟩⟨diff-added|	$(CC) $(CFLAGS) -o foo foo.c -lm -lpthread -ldl -lrt -lz -lssl -lcrypto -lcurl -lxml2 -lyaml ⟩\
-⟨diff-indicator-added|+⟩»⟨diff-added|-lsqlite3 -lpng⟩
+⟨diff-indicator-added|+⟩⟨diff-added|	$(CC) $(CFLAGS) -o foo foo.c -lm -lpthread -ldl -lrt -lz -lssl -lcrypto -lcurl -lxml2 -lyaml ⟩ \
+⟨diff-indicator-added|»⟩⟨diff-added|-lsqlite3 -lpng⟩
