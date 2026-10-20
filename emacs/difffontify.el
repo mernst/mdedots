@@ -13,8 +13,6 @@
 ;;
 ;; From the command line, to write FILE.diff.pdf:
 ;;   emacs -Q --batch -l difffontify.el -f difffontify-batch-pdf FILE.diff ...
-;;
-;; The design is described in difffontify-plan.md.
 
 ;;; Code:
 
@@ -34,6 +32,12 @@ this."
 
 (defcustom difffontify-lpr-command "lpr"
   "Program that `difffontify-print' runs, with a PDF file as its argument."
+  :type 'string)
+
+(defcustom difffontify-latin-1-command "iconv-latin-1"
+  "Program that converts UTF-8 to Latin 1, approximating other characters.
+It reads standard input and writes standard output, and preserves line breaks.
+`ps-print' prints each character that is not in Latin 1 as \"?\"."
   :type 'string)
 
 (defconst difffontify--paper-type 'letter)
@@ -345,84 +349,54 @@ of them."
 
 ;;; Latin 1
 
-(defconst difffontify--latin-1-replacements
-  (let ((greek '((?Α . "Alpha") (?α . "alpha") (?Β . "Beta") (?β . "beta")
-                 (?Γ . "Gamma") (?γ . "gamma") (?Δ . "Delta") (?δ . "delta")
-                 (?Ε . "Epsilon") (?ε . "epsilon") (?Ζ . "Zeta") (?ζ . "zeta")
-                 (?Η . "Eta") (?η . "eta")
-                 (?Θ . "Theta") (?θ . "theta") (?ϑ . "theta")
-                 (?Ι . "Iota") (?ι . "iota") (?Κ . "Kappa") (?κ . "kappa")
-                 (?Λ . "Lambda") (?λ . "lambda") (?Μ . "Mu") (?μ . "mu")
-                 (?Ν . "Nu") (?ν . "nu") (?Ξ . "Xi") (?ξ . "xi")
-                 (?Ο . "Omicron") (?ο . "omicron") (?Π . "Pi") (?π . "pi")
-                 (?Ρ . "Rho") (?ρ . "rho")
-                 (?Σ . "Sigma") (?σ . "sigma") (?ς . "sigma")
-                 (?Τ . "Tau") (?τ . "tau") (?Υ . "Upsilon") (?υ . "upsilon")
-                 (?Φ . "Phi") (?φ . "phi") (?ϕ . "phi")
-                 (?Χ . "Chi") (?χ . "chi") (?Ψ . "Psi") (?ψ . "psi")
-                 (?Ω . "Omega") (?ω . "omega")))
-        (logic '((?∈ . "in") (?∉ . "notin") (?∀ . "forall") (?∃ . "exists")
-                 (?∅ . "{}") (?⊆ . "subseteq") (?⊂ . "subset")
-                 (?⊇ . "supseteq") (?⊃ . "supset")
-                 (?∪ . "union") (?∩ . "intersect") (?∧ . "/\\") (?∨ . "\\/")
-                 (?⊢ . "|-") (?↦ . "|->") (?≡ . "==") (?≈ . "~=") (?∘ . "o")
-                 (?∞ . "infinity") (?⊤ . "T") (?⊥ . "_|_")
-                 (?⊏ . "&sqsub;") (?⊑ . "&sqsube;")
-                 (?⊐ . "&sqsup;") (?⊒ . "&sqsupe;")
-                 (?≤ . "<=") (?≥ . ">=") (?≠ . "!=") (?− . "-")
-                 (?→ . "->") (?← . "<-") (?↔ . "<->")
-                 (?⇒ . "=>") (?⇐ . "<=") (?⇔ . "<=>") (?⟨ . "<") (?⟩ . ">")))
-        (punctuation '((?‘ . "'") (?’ . "'") (?‚ . "'")
-                       (?′ . "'") (?″ . "''")
-                       (?“ . "\"") (?” . "\"") (?„ . "\"")
-                       (?‐ . "-") (?‑ . "-") (?– . "-") (?— . "--")
-                       (?… . "...") (?• . "o") (?◦ . "o")
-                       (?‣ . ">") (?▶ . ">") (?▸ . ">")
-                       (?★ . "*") (?⚠ . "!") (?€ . "EUR") (?™ . "(TM)")
-                       (?\N{ZERO WIDTH SPACE} . "")
-                       (?\N{ZERO WIDTH NO-BREAK SPACE} . "")))
-        (boxes '((?─ . "-") (?│ . "|")
-                 (?┌ . "+") (?┐ . "+") (?└ . "+") (?┘ . "+")
-                 (?├ . "+") (?┤ . "+") (?┬ . "+") (?┴ . "+") (?┼ . "+")
-                 (?═ . "=") (?║ . "|")
-                 (?╔ . "+") (?╗ . "+") (?╚ . "+") (?╝ . "+")
-                 (?╠ . "+") (?╣ . "+") (?╦ . "+") (?╩ . "+") (?╬ . "+")
-                 (?█ . "X")))
-        (marks '((?✓ . "yes") (?✔ . "yes") (?✅ . "yes")
-                 (?✗ . "no") (?✘ . "no") (?❌ . "no"))))
-    (append greek logic punctuation boxes marks))
-  "Replacements for characters that are not in Latin 1.
-`ps-print' prints such characters as \"?\".  The replacements are the same
-as in the shell function `iconv_latin_1' in ~/.aliases.")
-
 (defun difffontify--latin-1 ()
   "Replace each character that is not in Latin 1 by an approximation, or \"?\".
 The replacement has the same text properties as the character."
   (save-excursion
+    (let ((replacements (difffontify--latin-1-replacements
+                         (difffontify--non-latin-1-chars))))
+      (goto-char (point-min))
+      (while (re-search-forward "[^\u0000-\u00ff]" nil t)
+        (let ((props (text-properties-at (1- (point))))
+              (replacement (gethash (char-before) replacements)))
+          (delete-char -1)
+          (insert (apply #'propertize replacement props)))))))
+
+(defun difffontify--non-latin-1-chars ()
+  "Return a list of the distinct characters in the buffer that are not in Latin 1."
+  (save-excursion
     (goto-char (point-min))
-    (while (re-search-forward "[^\u0000-\u00ff]" nil t)
-      (let* ((char (char-before))
-             (props (text-properties-at (1- (point))))
-             (replacement (or (alist-get char difffontify--latin-1-replacements)
-                              (difffontify--decompose char)
-                              "?")))
-        (delete-char -1)
-        (insert (apply #'propertize replacement props))))))
+    (let (chars)
+      (while (re-search-forward "[^\u0000-\u00ff]" nil t)
+        (cl-pushnew (char-before) chars))
+      chars)))
 
-(defun difffontify--decompose (char)
-  "Return CHAR's decomposition, without combining marks, if it is in Latin 1.
-For example, \"ő\" becomes \"o\" and \"ﬁ\" becomes \"fi\".  Return nil if
-CHAR has no such Unicode decomposition."
-  (let ((chars (cl-remove-if
-                (lambda (c)
-                  (or (symbolp c)
-                      (eq (get-char-code-property c 'general-category) 'Mn)))
-                (get-char-code-property char 'decomposition))))
-    (and chars
-         (not (equal chars (list char)))
-         (cl-every (lambda (c) (<= c #xff)) chars)
-         (apply #'string chars))))
-
+(defun difffontify--latin-1-replacements (chars)
+  "Return a hash table that maps each of CHARS to its Latin-1 approximation.
+Run `difffontify-latin-1-command' on CHARS, one per line."
+  (let ((table (make-hash-table))
+        ;; A character that UTF-8 cannot encode, such as a raw byte, would make
+        ;; the program read all of its input as Windows-1252.
+        (unicode (cl-remove-if (lambda (c) (> c (max-char t))) chars)))
+    (dolist (c chars)
+      (puthash c "?" table))
+    (when unicode
+      (with-temp-buffer
+        (insert (mapconcat #'string unicode "\n") "\n")
+        (let* ((coding-system-for-write 'utf-8-unix)
+               (coding-system-for-read 'latin-1-unix)
+               (status (call-process-region (point-min) (point-max)
+                                            difffontify-latin-1-command
+                                            t t nil))
+               (lines (split-string (buffer-string) "\n")))
+          (unless (and (eql 0 status)
+                       ;; The output ends with a newline.
+                       (= (length lines) (1+ (length unicode))))
+            (error "Program %s failed: %s" difffontify-latin-1-command
+                   (string-trim (buffer-string))))
+          (cl-mapc (lambda (c line) (puthash c line table))
+                   unicode lines))))
+    table))
 
 ;;; Wrapping
 
@@ -491,6 +465,8 @@ Use color if COLOR is non-nil."
     (user-error "Not in a diff buffer"))
   (unless (executable-find "ps2pdf")
     (user-error "Program ps2pdf not found; install Ghostscript"))
+  (unless (executable-find difffontify-latin-1-command)
+    (user-error "Program %s not found" difffontify-latin-1-command))
   (let ((buffer (difffontify--prepare color))
         (ps (make-temp-file "difffontify-" nil ".ps")))
     (unwind-protect

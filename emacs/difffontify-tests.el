@@ -244,9 +244,10 @@ The caller must kill the buffer."
 (ert-deftest difffontify-tests-latin-1 ()
   "Characters outside Latin 1 are replaced, keeping their text properties."
   (with-temp-buffer
-    (insert "é “λ” " (propertize "∀" 'face '(font-lock-keyword-face)) " ő Ł")
+    (insert "é “λ” " (propertize "∀" 'face '(font-lock-keyword-face))
+            " ő Ł λ 中 " (unibyte-char-to-multibyte #x81))
     (difffontify--latin-1)
-    (should (equal (buffer-string) "é \"lambda\" forall o ?"))
+    (should (equal (buffer-string) "é \"lambda\" forall o L lambda ? ?"))
     (goto-char (point-min))
     (search-forward "forall")
     (should (equal (get-text-property (match-beginning 0) 'face)

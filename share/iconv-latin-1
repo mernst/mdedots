@@ -1,0 +1,50 @@
+#!/bin/bash
+# Usage: iconv-latin-1 [FILE]
+# Writes FILE (default: standard input) to standard output, encoded using ISO-8859-1
+# (= Latin 1).  The input may be UTF-8 or Windows-1252 (which differs from Latin 1 only
+# in bytes 0x80-0x9F, which are control characters in Latin 1 but mostly printable
+# characters in Windows-1252).
+# A character that is not in Latin 1 becomes an ASCII approximation, or "?" if it has none.
+# Line breaks are preserved, so each output line corresponds to an input line.
+
+if [ "$#" -gt 1 ]; then
+  echo "iconv-latin-1: pass at most one file argument; received $*" >&2
+  exit 1
+fi
+if [ "$#" -eq 1 ] && { [ -d "$1" ] || ! [ -r "$1" ]; }; then
+  echo "iconv-latin-1: not a readable file: $1" >&2
+  exit 1
+fi
+# The sed script is next to this program, which might be run via a symbolic link.
+sed_script="$(dirname "$(readlink -f "$0")")/iconv-latin-1.sed"
+if ! [ -r "$sed_script" ]; then
+  echo "iconv-latin-1: cannot read $sed_script" >&2
+  exit 1
+fi
+if [ "$#" -eq 1 ] && [ -f "$1" ]; then
+  input="$1"
+else
+  # The input is read twice:  once to detect its encoding and once to convert it.
+  # Standard input or a pipe (such as "<(cmd)") can be read only once, so copy it.
+  input="$(mktemp)" || exit 1
+  trap 'rm -f "$input"' EXIT
+  cat -- "$@" > "$input" || exit 1
+fi
+# iconv reads the input from a redirection rather than a file argument, which iconv
+# would treat as an option if it started with "-".
+# `file --mime-encoding` is unreliable; for example, it can output "unknown-8bit", which
+# iconv rejects.
+if iconv -f UTF-8 -t UTF-8 < "$input" > /dev/null 2>&1; then
+  from=UTF-8
+else
+  from=WINDOWS-1252
+fi
+# The sed script handles characters that iconv's transliteration turns into "?".
+# sed needs a UTF-8 locale so that a bracket expression matches characters, not bytes.
+# iconv's transliteration depends on the locale; in the C locale, even "≠" becomes "?".
+iconv -c -f "$from" -t UTF-8 < "$input" | LC_ALL=C.UTF-8 sed -f "$sed_script" \
+  | LC_ALL=C.UTF-8 iconv -c -f UTF-8 -t ISO-8859-1//TRANSLIT
+status=("${PIPESTATUS[@]}")
+# The first iconv's status is ignored.  It exits 1 if the input contains a byte that
+# Windows-1252 leaves undefined (such as 0x81), even though -c makes it drop the byte.
+[ "${status[1]}" -eq 0 ] && [ "${status[2]}" -eq 0 ]

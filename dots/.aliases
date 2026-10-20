@@ -212,59 +212,6 @@ html2pdf() {
   done
 }
 
-iconv_latin_1() {
-  # Usage: iconv_latin_1 [FILE]
-  # Writes FILE (default: standard input) to standard output, encoded using ISO-8859-1
-  # (= Latin 1).  The input may be UTF-8 or Windows-1252 (which differs from Latin 1 only
-  # in bytes 0x80-0x9F, which are control characters in Latin 1 but mostly printable
-  # characters in Windows-1252).
-  # A character that is not in Latin 1 becomes an ASCII approximation, or "?" if it has none.
-  if [ "$#" -gt 1 ]; then
-    echo "iconv_latin_1: pass at most one file argument; received $*" >&2
-    return 1
-  fi
-  if [ "$#" -eq 1 ] && ! { [ -f "$1" ] && [ -r "$1" ]; }; then
-    echo "iconv_latin_1: not a readable file: $1" >&2
-    return 1
-  fi
-  local input tmp="" from status
-  if [ "$#" -eq 1 ]; then
-    input="$1"
-  else
-    # The input is read twice:  once to detect its encoding and once to convert it.
-    tmp="$(mktemp)" || return 1
-    cat > "$tmp"
-    input="$tmp"
-  fi
-  # `file --mime-encoding` is unreliable; for example, it can output "unknown-8bit", which
-  # iconv rejects.
-  if iconv -f UTF-8 -t UTF-8 "$input" > /dev/null 2>&1; then
-    from=UTF-8
-  else
-    from=WINDOWS-1252
-  fi
-  # The sed commands handle characters that iconv's transliteration turns into "?".
-  # sed needs a UTF-8 locale so that a bracket expression matches characters, not bytes.
-  # iconv's transliteration depends on the locale; in the C locale, even "≠" becomes "?".
-  iconv -c -f "$from" -t UTF-8 "$input" | LC_ALL=C.UTF-8 sed -e 's/═/=/g' -e 's/║/|/g' -e 's/[╔╗╚╝╠╣╦╩╬]/+/g' \
-    -e 's/✓/yes/g' -e 's/✔/yes/g' -e 's/✅/yes/g' -e 's/✗/no/g' -e 's/✘/no/g' -e 's/❌/no/g' \
-    -e 's/█/X/g' -e 's/[▶▸‣]/>/g' -e 's/★/*/g' -e 's/⚠/!/g' -e 's/′/'"'"'/g' -e 's/″/'"''"'/g' \
-    -e 's/∈/in/g' -e 's/∉/notin/g' -e 's/∀/forall/g' -e 's/∃/exists/g' -e 's/∅/{}/g' \
-    -e 's/⊆/subseteq/g' -e 's/⊂/subset/g' -e 's/⊇/supseteq/g' -e 's/⊃/supset/g' \
-    -e 's/∪/union/g' -e 's/∩/intersect/g' -e 's|∧|/\\|g' -e 's|∨|\\/|g' \
-    -e 's/⊢/|-/g' -e 's/↦/|->/g' -e 's/≡/==/g' -e 's/≈/~=/g' -e 's/∘/o/g' -e 's/∞/infinity/g' \
-    -e 's/⊏/\&sqsub;/g' -e 's/⊑/\&sqsube;/g' -e 's/⊐/\&sqsup;/g' -e 's/⊒/\&sqsupe;/g' \
-    -e 's/⊤/T/g' -e 's/⊥/_|_/g' \
-    -e 's/ς/sigma/g' -e 's/ϑ/theta/g' -e 's/ϕ/phi/g' \
-    -e 's/Α/Alpha/g' -e 's/α/alpha/g' -e 's/Β/Beta/g' -e 's/β/beta/g' -e 's/Γ/Gamma/g' -e 's/γ/gamma/g' -e 's/Δ/Delta/g' -e 's/δ/delta/g' -e 's/Ε/Epsilon/g' -e 's/ε/epsilon/g' -e 's/Ζ/Zeta/g' -e 's/ζ/zeta/g' -e 's/Η/Eta/g' -e 's/η/eta/g' -e 's/Θ/Theta/g' -e 's/θ/theta/g' -e 's/Ι/Iota/g' -e 's/ι/iota/g' -e 's/Κ/Kappa/g' -e 's/κ/kappa/g' -e 's/Λ/Lambda/g' -e 's/λ/lambda/g' -e 's/Μ/Mu/g' -e 's/μ/mu/g' -e 's/Ν/Nu/g' -e 's/ν/nu/g' -e 's/Ξ/Xi/g' -e 's/ξ/xi/g' -e 's/Ο/Omicron/g' -e 's/ο/omicron/g' -e 's/Π/Pi/g' -e 's/π/pi/g' -e 's/Ρ/Rho/g' -e 's/ρ/rho/g' -e 's/Σ/Sigma/g' -e 's/σ/sigma/g' -e 's/Τ/Tau/g' -e 's/τ/tau/g' -e 's/Υ/Upsilon/g' -e 's/υ/upsilon/g' -e 's/Φ/Phi/g' -e 's/φ/phi/g' -e 's/Χ/Chi/g' -e 's/χ/chi/g' -e 's/Ψ/Psi/g' -e 's/ψ/psi/g' -e 's/Ω/Omega/g' -e 's/ω/omega/g' \
-    | LC_ALL=C.UTF-8 iconv -c -f UTF-8 -t ISO-8859-1//TRANSLIT
-  status=("${PIPESTATUS[@]}")
-  if [ -n "$tmp" ]; then rm -f "$tmp"; fi
-  # The first iconv's status is ignored.  It exits 1 if the input contains a byte that
-  # Windows-1252 leaves undefined (such as 0x81), even though -c makes it drop the byte.
-  [ "${status[1]}" -eq 0 ] && [ "${status[2]}" -eq 0 ]
-}
-
 # Enscript/genscript (ens uses -pOUTFILE; gens uses -oOUTFILE to output to file)
 # -h: no burst/header page; -B: no page headings; -b 'header'; -G: gaudy page
 # headings; -R: portrait
@@ -306,7 +253,7 @@ ens1() {
     return 1
   fi
   b="$(basename "$1")"
-  iconv_latin_1 "$1" > /tmp/"$b" || return 1
+  iconv-latin-1 "$1" > /tmp/"$b" || return 1
   (cd /tmp && ens1d -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps && lpr "$b".pdf && rm -f "$b".pdf)
 }
 ens1f() {
@@ -315,7 +262,7 @@ ens1f() {
     return 1
   fi
   b="$(basename "$1")"
-  iconv_latin_1 "$1" > /tmp/"$b" || return 1
+  iconv-latin-1 "$1" > /tmp/"$b" || return 1
   (cd /tmp && ens1d -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps)
   mv /tmp/"$b".pdf .
 }
@@ -343,7 +290,7 @@ ens100() {
     return 1
   fi
   b="$(basename "$1")"
-  iconv_latin_1 "$1" > /tmp/"$b" || return 1
+  iconv-latin-1 "$1" > /tmp/"$b" || return 1
   (cd /tmp && ens1small -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps && lpr "$b".pdf && rm -f "$b".pdf)
 }
 ens100f() {
@@ -352,7 +299,7 @@ ens100f() {
     return 1
   fi
   b="$(basename "$1")"
-  iconv_latin_1 "$1" > /tmp/"$b" || return 1
+  iconv-latin-1 "$1" > /tmp/"$b" || return 1
   (cd /tmp && ens1small -o "$b".ps "$b" && ps2pdf "$b".ps "$b".pdf && rm "$b" "$b".ps)
   mv /tmp/"$b".pdf .
 }
