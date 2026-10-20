@@ -80,7 +80,7 @@ Do not run `coderabbit`, even when user instructions say "consider running coder
 * When addressing a code review comment from GitHub:
   * If the code review comment is valid and you take action on it, do not reply, but merely click "resolved".
   * If the code review comment is flawed in some way and you do not take action on it, then reply.
-* The word "merge" is used ambiguously to mean a git merge or landing a GitHub pull request.  Use "land", never "merg" for the latter, so that when you use "merge" it is not ambiguous.
+* The word "merge" is used ambiguously to mean a git merge or landing a GitHub pull request.  Use "land", never "merge" for the latter, so that when you use "merge" it is not ambiguous.
 * Never land a pull request unless explicitly asked.
 * When working on a downstream fork of an upstream repository (one that periodically merges from upstream and carries its own changes), strive to minimize the differences from the upstream repository.  That is more important than optimizing the downstream fork.  Examples:  `codespecs/fjalar` (its `valgrind/` subdirectory is downstream of `valgrind`), `typetools/jdk` and `typetools/jdk21u` (of `openjdk/jdk*`), `typetools/stubparser` (of `javaparser/javaparser`), `typetools/guava`, `typetools/asm`, and `codespecs/commons-bcel` (of `apache/commons-bcel`).  `eisop/checker-framework` is downstream of `typetools/checker-framework`, but it intentionally makes design changes, so minimize only incidental differences.  A personal fork that holds only pull-request branches (such as `mernst/daikon`) is not a downstream fork.
 
