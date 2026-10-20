@@ -41,7 +41,7 @@ If a directory is named `<reponame>-fork-<orgname>...`, then it must contain `<o
 
 ### Java warning suppressions
 
-* The justification for a Checker-Framework-related type-checking warning suppression must start on the same line as the `@SuppressWarnings` key string, and should ideally be brief enough to fit on that same line.
+* The justification for a Checker-Framework-related type-checking warning suppression must start on the same line as the message key string (which is inside `@SuppressWarnings(...)`, and should ideally be brief enough to fit on that same line.
 
 ### Code reviews
 
