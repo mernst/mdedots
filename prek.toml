@@ -31,6 +31,7 @@ exclude = { glob = [
   "**/*.svg",
   "**/*expected*",
   "**/COPYING",
+  "emacs/difffontify-tests/{old,new}/**/*",
   "gradlew",
   "gradlew.bat",
   "src/main/resources/specifications/jdk/**/*",

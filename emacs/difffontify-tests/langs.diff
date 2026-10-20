@@ -1,0 +1,90 @@
+diff -u -b -r old/foo.el new/foo.el
+--- old/foo.el	2026-10-20 09:25:24.321526618 -0700
++++ new/foo.el	2026-10-20 09:25:24.323526609 -0700
+@@ -1,5 +1,6 @@
+ ;;; foo.el --- A demonstration  -*- lexical-binding: t -*-
+ 
+ (defun foo-double (n)
+-  "Return twice N."
+-  (* 2 n))
++  "Return twice N.
++N must be a number."
++  (+ n n))
+diff -u -b -r old/Foo.java new/Foo.java
+--- old/Foo.java	2026-10-20 09:25:24.284526786 -0700
++++ new/Foo.java	2026-10-20 09:25:24.288526768 -0700
+@@ -10,7 +10,7 @@
+  * License line 9.
+  * License line 10.
+  * License line 11.
+- * License line 12.
++ * License line 12, revised.
+  * License line 13.
+  * License line 14.
+  */
+@@ -18,14 +18,14 @@
+ 
+ /** A demonstration class. */
+ public class Foo {
+-  private int count = 0;
++  private long count = 0;
+ 
+   /** Returns the count. */
+-  public int count() {
++  public long count() {
+     return count;
+   }
+ 
+   public void log() {
+-    System.out.println("This line is long enough that the printed diff must wrap it.");
++    System.out.println("This line is long enough that the printed diff must wrap it onto a second printed line, with continuation marks.");
+   }
+ }
+diff -u -b -r old/foo.py new/foo.py
+--- old/foo.py	2026-10-20 09:25:24.293526745 -0700
++++ new/foo.py	2026-10-20 09:25:24.296526732 -0700
+@@ -2,7 +2,7 @@
+     """Return a greeting.
+ 
+     The greeting is in English.
+-    It is suitable for most purposes.
++    It is suitable — “mostly” — for all purposes.
+     """
+-    # Résumé: naïve
++    # Résumé: naïve; ∀ x ∈ S, λ → ✓
+     return f"Hello, {name}!"
+diff -u -b -r old/foo.sh new/foo.sh
+--- old/foo.sh	2026-10-20 09:25:24.308526677 -0700
++++ new/foo.sh	2026-10-20 09:25:24.311526664 -0700
+@@ -2,6 +2,8 @@
+ # Print a message.
+ if [ -n "$1" ]; then
+     echo "Hello, $1"
++else
++  echo "Hello, world"
+ fi
+ cat <<END
+ A heredoc line.
+diff -u -b -r old/foo.tex new/foo.tex
+--- old/foo.tex	2026-10-20 09:25:24.315526646 -0700
++++ new/foo.tex	2026-10-20 09:25:24.318526632 -0700
+@@ -1,6 +1,6 @@
+ \section{Introduction}
+ % A comment.
+-The value is $x + y$.
++The value is $x - y$, \emph{not} $x + y$.
+ \begin{equation}
+   E = m c^2
+ \end{equation}
+diff -u -b -r old/Makefile new/Makefile
+--- old/Makefile	2026-10-20 09:25:24.318526632 -0700
++++ new/Makefile	2026-10-20 09:25:34.632661000 -0700
+@@ -1,6 +1,7 @@
+ CC = gcc
++CFLAGS = -O2 -Wall
+ 
+ all: foo
+ 
+ foo: foo.c
+-	$(CC) -o foo foo.c
++	$(CC) $(CFLAGS) -o foo foo.c -lm -lpthread -ldl -lrt -lz -lssl -lcrypto -lcurl -lxml2 -lyaml -lsqlite3 -lpng

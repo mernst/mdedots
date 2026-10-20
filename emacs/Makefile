@@ -28,7 +28,7 @@ compile: compile-without-mew
 
 # Load the .el files rather than the .elc files, which might be out of date.
 test:
-	${EMACS} --batch -L . -l replace-paragraphs.el -l replace-paragraphs-tests.el -f ert-run-tests-batch-and-exit
+	${EMACS} --batch -L . -l replace-paragraphs.el -l replace-paragraphs-tests.el -l difffontify.el -l difffontify-tests.el -f ert-run-tests-batch-and-exit
 
 .PHONY: javadoc-index
 javadoc-index:
