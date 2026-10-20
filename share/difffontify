@@ -1,0 +1,26 @@
+#!/bin/bash
+# Usage: difffontify FILE.diff ...
+# For each FILE.diff, writes FILE.diff.pdf:  the diff, with syntax highlighting.
+# File names in each diff are relative to the diff file's directory; if the compared
+# files exist there, they make the highlighting more accurate.
+# See ../emacs/difffontify.el, which also has commands for use within Emacs.
+
+if [ "$#" -eq 0 ]; then
+  echo "Usage: difffontify FILE.diff ..." >&2
+  exit 1
+fi
+for file in "$@"; do
+  # difffontify-batch-pdf would write an empty PDF for a nonexistent file.
+  if [ -d "$file" ] || ! [ -r "$file" ]; then
+    echo "difffontify: not a readable file: $file" >&2
+    exit 1
+  fi
+done
+# The Emacs library is in a sibling directory of this program, which might be run via a
+# symbolic link.
+library="$(dirname "$(readlink -f "$0")")/../emacs/difffontify.el"
+if ! [ -r "$library" ]; then
+  echo "difffontify: cannot read $library" >&2
+  exit 1
+fi
+exec emacs -Q --batch -l "$library" -f difffontify-batch-pdf "$@"
