@@ -23,6 +23,10 @@
 
 * No `~` is required before `\ref`.
 
+### Markdown
+
+* Every Markdown file that you write should satisfy `markdownlint-cli2`.  Use the configuration in `~/dots/.markdownlint-cli2.yaml` if the directory/project containing the Markdown files does not have its own configuration.  When supplying file names explicitly to `markdownlint-cli2`, use a variant of the configuration that omits the `gitignore: true` setting.
+
 ### Conventions for numbers
 
 * It is permissible to use digits, such as “there were 3 blind mice”.  Do not change from digits to words.
