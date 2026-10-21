@@ -85,13 +85,13 @@ Reduce size of diffs with common prefix or suffix.
 The latter two changes are semantics-preserving and are useful after
 editing a diff buffer to remove uninteresting changes.
 With a prefix argument, or if DONT-REMOVE-GITIGNORED is non-nil, keep the
-diffs of the files that git ignores; `diff-clean-gitignored-regexps' explains
+diffs of the files that git ignores; `diff-clean-gitignored-filenames' explains
 which files those are."
   (interactive "P")
 
   (let ((inhibit-read-only t))
 
-    (diff-clean-files (diff-clean-removal-regexps dont-remove-gitignored))
+    (diff-clean-remove-files dont-remove-gitignored)
 
     (diff-clean-meaning-preserving)
     ))
@@ -101,38 +101,40 @@ which files those are."
 ;;; Remove whole files
 ;;;
 
-(defun diff-clean-removal-regexps (dont-remove-gitignored &optional extra-regexps)
-  "Return the regexps for the files whose diffs `diff-clean' removes.
-The result is EXTRA-REGEXPS, then the files that git ignores, then
-`diff-clean-removed-files'.
-If DONT-REMOVE-GITIGNORED is non-nil, the files that git ignores are omitted.
-Call this in the buffer that contains the diff, because which files git
-ignores is determined from the filenames in the diff."
-  (append extra-regexps
-          (if dont-remove-gitignored
-              '()
-            (diff-clean-gitignored-regexps))
-          diff-clean-removed-files))
+(defun diff-clean-remove-files (dont-remove-gitignored &optional extra-regexps)
+  "Remove the diffs of the files that `diff-clean' removes.
+Those are the files that match EXTRA-REGEXPS or `diff-clean-removed-files', and
+the files that git ignores.
+If DONT-REMOVE-GITIGNORED is non-nil, the files that git ignores are retained."
+  (diff-clean-files (append extra-regexps diff-clean-removed-files)
+                    (if dont-remove-gitignored
+                        '()
+                      (diff-clean-gitignored-filenames))))
 
-(defun diff-clean-files (remove-regexes)
+(defun diff-clean-files (remove-regexes &optional remove-filenames)
   "Delete files whose pathname matches any of the regexes.
-Does nothing if REMOVE-REGEXES is nil."
+Also delete files whose pathname is one of REMOVE-FILENAMES, which are
+compared literally.  Testing a filename against a long list of filenames
+is much faster this way than via a regexp for each filename.
+Does nothing if REMOVE-REGEXES and REMOVE-FILENAMES are both nil."
   (let ((inhibit-read-only t))
 
-    (when remove-regexes
+    (when (or remove-regexes remove-filenames)
       (save-excursion
 
         ;; (goto-char (point-min))
         ;; (delete-matching-lines "^\\\\ No newline at end of file$")
 
-        (let ((matchers (diff-clean-matchers remove-regexes))
+        (let ((matcher (diff-clean-make-matcher remove-regexes remove-filenames))
               ;; The "Only in " lines put ": " in place of the last "/"
-              ;; directory separator, so regexp `remove-regexes' does not match
-              ;; them; `file-regexp-to-colon-regexp' adjusts for that.  These
-              ;; matchers are anchored at the end: otherwise ".*: build", from
+              ;; directory separator, so neither `remove-regexes' nor
+              ;; `remove-filenames' matches them; `file-regexp-to-colon-regexp'
+              ;; and `file-name-to-colon-name' adjust for that.  The adjusted
+              ;; regexps are anchored at the end: otherwise ".*: build", from
               ;; ".*/build/.*", would match "proj: buildSrc".
-              (colon-matchers (diff-clean-matchers
-                               (mapcar #'file-regexp-to-colon-regexp remove-regexes))))
+              (colon-matcher (diff-clean-make-matcher
+                              (mapcar #'file-regexp-to-colon-regexp remove-regexes)
+                              (mapcar #'file-name-to-colon-name remove-filenames))))
 
           ;; Remove certain files.
           (goto-char (point-min))
@@ -157,9 +159,9 @@ Does nothing if REMOVE-REGEXES is nil."
             ;; because an alternation of all of `remove-regexes' can be too
             ;; large for Emacs to compile.
             (when (if (match-beginning 3)
-                      (diff-clean-differ-line-matches-p (match-string 3) matchers)
-                    (or (diff-clean-diff-filename-matches-p (match-string 1) matchers)
-                        (diff-clean-diff-filename-matches-p (match-string 2) matchers)))
+                      (diff-clean-differ-line-matches-p (match-string 3) matcher)
+                    (or (diff-clean-diff-filename-matches-p (match-string 1) matcher)
+                        (diff-clean-diff-filename-matches-p (match-string 2) matcher)))
               (let* ((begin (match-beginning 0))
                      ;; The end of the file's diff is the start of the next line
                      ;; that begins neither a diff line, a hunk header, a blank
@@ -179,8 +181,8 @@ Does nothing if REMOVE-REGEXES is nil."
           ;; because the ".*" absorbs the ": " described above.
           (goto-char (point-min))
           (while (re-search-forward "^Only in \\(.*\\)$" nil t)
-            (when (or (diff-clean-matches-p (match-string 1) matchers)
-                      (diff-clean-matches-p (match-string 1) colon-matchers))
+            (when (or (diff-clean-matches-p (match-string 1) matcher)
+                      (diff-clean-matches-p (match-string 1) colon-matcher))
               (delete-region (match-beginning 0)
                              (min (point-max) (1+ (match-end 0))))))
 
@@ -193,12 +195,12 @@ Does nothing if REMOVE-REGEXES is nil."
           (goto-char (point-min))
           (while (re-search-forward
                   "^\\(?:Binary files \\|Files \\)\\(.*\\) differ$" nil t)
-            (when (diff-clean-differ-line-matches-p (match-string 1) matchers)
+            (when (diff-clean-differ-line-matches-p (match-string 1) matcher)
               (delete-region (match-beginning 0)
                              (min (point-max) (1+ (match-end 0)))))))))))
 
 (defconst diff-clean-matcher-length 2000
-  "The approximate maximum length of a regexp built by `diff-clean-matchers'.
+  "The approximate maximum length of a regexp from `diff-clean-regexp-matchers'.
 Emacs signals `invalid-regexp' with message \"Regular expression too big\" for
 a regexp whose compiled form exceeds a fixed size, which corresponds to a
 source regexp of roughly 30000 characters.  This value is far below that.")
@@ -209,13 +211,24 @@ It wraps each element in \"\\(?:\" and \"\\)\" and separates each element from
 the previous one by \"\\|\".  Without this, a list of many short regexps would
 build a regexp far longer than `diff-clean-matcher-length'.")
 
-(defun diff-clean-matchers (regexps &optional prefix-only)
+(defun diff-clean-make-matcher (regexps &optional filenames)
+  "Return a matcher for the strings that REGEXPS or FILENAMES match.
+A string matches a regexp in REGEXPS if the regexp matches it entirely, and it
+matches FILENAMES if it is an element of FILENAMES.
+The result's car is a hash table whose keys are FILENAMES, and its cdr is a
+list of regexps, as returned by `diff-clean-regexp-matchers'.
+Use `diff-clean-matches-p' to test a string against the result."
+  (let ((table (make-hash-table :test #'equal :size (length filenames))))
+    (dolist (filename filenames)
+      (puthash filename t table))
+    (cons table (diff-clean-regexp-matchers regexps))))
+
+(defun diff-clean-regexp-matchers (regexps &optional prefix-only)
   "Return a list of regexps that matches what REGEXPS matches.
 Each result element is anchored at the beginning and, unless PREFIX-ONLY is
 non-nil, at the end, so it matches an entire string.
 The result is a list rather than a single alternation of all of REGEXPS,
-because such an alternation can be too large for Emacs to compile.
-Use `diff-clean-matches-p' to test a string against the result."
+because such an alternation can be too large for Emacs to compile."
   (let ((result '())
         ;; The regexps of the alternation that is being built, reversed.
         (pending '())
@@ -241,33 +254,34 @@ The regexp is anchored at the end unless PREFIX-ONLY is non-nil."
           "\\)"
           (if prefix-only "" "\\'")))
 
-(defun diff-clean-matches-p (string matchers)
-  "Return non-nil if MATCHERS matches STRING.
-MATCHERS is a list of regexps, as returned by `diff-clean-matchers'."
-  (let ((result nil))
-    (while (and matchers (not result))
-      (setq result (string-match-p (car matchers) string))
-      (setq matchers (cdr matchers)))
+(defun diff-clean-matches-p (string matcher)
+  "Return non-nil if MATCHER matches STRING.
+MATCHER is as returned by `diff-clean-make-matcher'."
+  (let ((result (gethash string (car matcher)))
+        (regexps (cdr matcher)))
+    (while (and regexps (not result))
+      (setq result (string-match-p (car regexps) string))
+      (setq regexps (cdr regexps)))
     result))
 
-(defun diff-clean-diff-filename-matches-p (text matchers)
-  "Return non-nil if MATCHERS matches a filename in TEXT.
+(defun diff-clean-diff-filename-matches-p (text matcher)
+  "Return non-nil if MATCHER matches a filename in TEXT.
 TEXT is the text that follows \"--- \" or \"+++ \" on a line of a diff.
 Diff writes a tab and a timestamp after the filename, and git writes nothing
 after it, but a filename may contain a tab; so the filename is any prefix of
 TEXT that ends before a tab, or all of TEXT."
   ;; `string-match' sets the match data, which the caller is still using.
   (save-match-data
-    (let ((result (diff-clean-matches-p text matchers))
+    (let ((result (diff-clean-matches-p text matcher))
           (start 0))
       (while (and (not result) (string-match "\t" text start))
         (setq result (diff-clean-matches-p (substring text 0 (match-beginning 0))
-                                           matchers))
+                                           matcher))
         (setq start (match-end 0)))
       result)))
 
-(defun diff-clean-differ-line-matches-p (text matchers)
-  "Return non-nil if MATCHERS matches a filename in TEXT.
+(defun diff-clean-differ-line-matches-p (text matcher)
+  "Return non-nil if MATCHER matches a filename in TEXT.
 TEXT is the text between \"files \" and \" differ\" on a line of a diff, as in
 \"Binary files X and Y differ\".  Because a filename may contain \" and \",
 every way of splitting TEXT into two filenames is tried."
@@ -277,9 +291,9 @@ every way of splitting TEXT into two filenames is tried."
           (start 0))
       (while (and (not result) (string-match " and " text start))
         (setq result (or (diff-clean-matches-p (substring text 0 (match-beginning 0))
-                                               matchers)
+                                               matcher)
                          (diff-clean-matches-p (substring text (match-end 0))
-                                               matchers)))
+                                               matcher)))
         (setq start (1+ (match-beginning 0))))
       result)))
 
@@ -291,8 +305,7 @@ The regex matches the whole filename. It must not start with ^ nor end with $.
 DONT-REMOVE-GITIGNORED is as in `diff-clean'."
   (interactive "sRegex for whole filename (no ^$): \nP")
   (let ((inhibit-read-only t))
-    (diff-clean-files (diff-clean-removal-regexps dont-remove-gitignored
-                                                  (list regex)))
+    (diff-clean-remove-files dont-remove-gitignored (list regex))
     (diff-clean-meaning-preserving)))
 
 (defun diff-clean-only-files (regex)
@@ -336,10 +349,10 @@ DONT-REMOVE-GITIGNORED is as in `diff-clean'."
   (interactive "P")
   (diff-clean-more-files ".*\\.json" dont-remove-gitignored))
 
-(defun diff-clean-gitignored-regexps ()
-  "Return regexps for the files in the current buffer's diff that git ignores.
-Each regexp matches an entire filename as it appears in the diff, which is
-what `diff-clean-files' requires.
+(defun diff-clean-gitignored-filenames ()
+  "Return the filenames in the current buffer's diff that git ignores.
+Each is a filename as it appears in the diff, except that a file named by an
+\"Only in DIR: NAME\" line is returned as \"DIR/NAME\".
 A file is ignored if `git check-ignore' reports it in the repository that
 contains it.  Therefore, a file that git tracks is not ignored even if an
 ignore rule matches it, and a file in no git repository is not ignored.  The
@@ -395,7 +408,7 @@ mapped to a file on disk."
                              (car directory-cell)
                              (mapcar #'car basename-alist)))
             (dolist (diff-name (cdr (assoc basename basename-alist)))
-              (push (regexp-quote diff-name) result)))))
+              (push diff-name result)))))
       result)))
 
 (defun diff-clean-gitignored-pathname (diff-name)
@@ -660,6 +673,14 @@ statement, then runs `diff-clean'."
 ;; (file-regexp-to-colon-regexp ".*/defects4j[^/]*/framework/test/d4j.log")
 ;; (file-regexp-to-colon-regexp ".*/daikon[^/]*/utils/.*")
 ;; (file-regexp-to-colon-regexp	".*/logging-log4j2.*/target/.*")
+
+(defun file-name-to-colon-name (filename)
+  "Change the last slash in FILENAME to \": \", as an \"Only in \" line does."
+  (if (string-match "/[^/]*\\'" filename)
+      (concat (substring filename 0 (match-beginning 0))
+              ": "
+              (substring filename (1+ (match-beginning 0))))
+    filename))
 
 (defun opposite-indicator-char (indicator-char)
   "Given \"-\", returns \"+\".  Given \"+\", returns \"-\"."
