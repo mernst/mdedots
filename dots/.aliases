@@ -220,20 +220,20 @@ html2pdf() {
 # ASCII input, 1up
 alias ens1nofont='enscript --pretty-print -1R --non-printable-format=questionmark --word-wrap --mark-wrapped-lines=arrow --no-job-header'
 # Decimal font sizes like Courier10.2 are permitted.
-#                   Columns       Landscape
-# Font size        10    9  8.7     8   10   9    8
-# Courier          87   97  100   109    ?  135    ?
-# DejaVuSansMono   87   97  100   109    ?  135    ?
-# Inconsolata      113?  ?    ?    ?     ?    ?    ?
+#                   Columns             Landscape
+# Font size        10    9  8.7  8.62     8   10   9    8
+# Courier          87   97  100   101   109    ?  135    ?
+# DejaVuSansMono   87   97  100   101   109    ?  135    ?
+# Inconsolata      113?  ?    ?     ?    ?     ?    ?    ?
 # For code, don't use Inconsolata or DejaVuSansMono: they lack bold and oblique versions for use by enscript!
 # Inconsolata is not installed at CSE
 # "c" is for courier, "i" is for inconsolata; default is Courier10.
 alias ens1c='ens1nofont -f Courier10'
 alias ens1d='ens1nofont -f DejaVuSansMono10'
 alias ens1i='ens1nofont -f Inconsolata10'
-# tweak sizes to fit 100 columns
-alias ens1csmall='ens1nofont -f Courier8.7'
-alias ens1dsmall='ens1nofont -f DejaVuSansMono8.7'
+# tweak sizes to fit 101 columns
+alias ens1csmall='ens1nofont -f Courier8.62'
+alias ens1dsmall='ens1nofont -f DejaVuSansMono8.62'
 alias ens1ismall='ens1nofont -f Inconsolata9'
 alias ens1small='ens1csmall'
 alias ens1csmaller='ens1nofont -f Courier8'
