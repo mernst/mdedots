@@ -81,7 +81,8 @@ Do not run `coderabbit`, even when user instructions say "consider running coder
 
 * Never rewrite git history.  For example, do not rebase.
 * When working on a downstream fork of an upstream repository (one that periodically merges from upstream and carries its own changes), strive to minimize the differences from the upstream repository.  That is more important than optimizing the downstream fork.  Examples:  `codespecs/fjalar` (its `valgrind/` subdirectory is downstream of `valgrind`), `typetools/jdk` and `typetools/jdk21u` (of `openjdk/jdk*`), `typetools/stubparser` (of `javaparser/javaparser`), `typetools/guava`, `typetools/asm`, and `codespecs/commons-bcel` (of `apache/commons-bcel`).  `eisop/checker-framework` is downstream of `typetools/checker-framework`, but it intentionally makes design changes, so minimize only incidental differences.  A personal fork that holds only pull-request branches (such as `mernst/daikon`) is not a downstream fork.
-* The word "merge" is used ambiguously to mean a git merge or landing a GitHub pull request.  Use "land" for the latter; thus, when you use "merge" it is not ambiguous.
+* Use "land", never "merge", to mean landing a GitHub pull request.
+* When creating a new branch, create a new directory for it using `git-checkout-branch`.
 
 ## GitHub
 
@@ -90,12 +91,16 @@ Do not run `coderabbit`, even when user instructions say "consider running coder
   * If the code review comment is valid and you take action on it, do not reply, but merely click "resolved".
   * If the code review comment is flawed in some way and you do not take action on it, then reply.
 * Never land a pull request unless explicitly asked.
-* When describing dependences in the description of a pull request, use a regular, stylized format (in which any of the below lines may be absent):
+* If I tell you to commit and/or push, do not delay just because tests are running; do it in parallel with the tests.
+* When describing dependences in the description of a pull request, use a regular, stylized format (in which any of the below groups may be absent):
 
   ```markdown
-  Land after #NNNN, #NNNN, #NNNN.
+  Land after #NNNN.
+  Land after #NNNN.
+  Land after #NNNN.
   Land with #NNNN.
-  Land before #NNNN, #NNNN.
+  Land before #NNNN.
+  Land before #NNNN.
   ```
 
 ## Claude Code

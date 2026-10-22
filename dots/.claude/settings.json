@@ -97,6 +97,19 @@
     ],
     "ask": []
   },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.cwd // \"unknown\"' | { read -r d; notify-send -u critical 'Claude Code' \"Waiting for permission in $(basename \"$d\")\"; paplay /usr/share/sounds/freedesktop/stereo/dialog-warning.oga; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "claude-code-setup@claude-plugins-official": true,
@@ -118,6 +131,11 @@
       "Working"
     ]
   },
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    }
+  },
   "tui": "fullscreen",
   "voice": {
     "enabled": true,
@@ -127,18 +145,5 @@
   "theme": "auto",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "voiceEnabled": true,
-  "hooks": {
-    "Notification": [
-      {
-        "matcher": "permission_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.cwd // \"unknown\"' | { read -r d; notify-send -u critical 'Claude Code' \"Waiting for permission in $(basename \"$d\")\"; paplay /usr/share/sounds/freedesktop/stereo/dialog-warning.oga; } 2>/dev/null || true"
-          }
-        ]
-      }
-    ]
-  }
+  "voiceEnabled": true
 }
