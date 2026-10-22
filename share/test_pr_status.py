@@ -28,6 +28,18 @@ def load_script() -> types.ModuleType:
 pr_status = load_script()
 
 
+class TableRowTest(unittest.TestCase):
+    """Tests for table_row."""
+
+    def test_escapes_pipes_within_cells(self):
+        """A pipe within a cell does not create another Markdown table column."""
+        self.assertEqual(
+            pr_status.table_row(["Unbox && and ||", "second"]),
+            r"| Unbox && and \|\| | second |",
+        )
+        self.assertEqual(pr_status.table_row([r"already \| escaped"]), r"| already \| escaped |")
+
+
 class UpdatedPrDescriptionTest(unittest.TestCase):
     """Tests for updated_pr_description."""
 

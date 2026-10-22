@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the PR status documents of /home/mernst/research/invariants/.
+"""Regenerate the PR status documents in the current directory.
 
 Usage (run in the directory that holds the documents):
   pr-status.py            # snapshot, report changes, regenerate the documents
@@ -703,6 +703,17 @@ def fix_empty_cells(lines):
     ]
 
 
+def table_row(cells):
+    """Return a Markdown table row containing cells.
+
+    Pipe characters within a cell are escaped so that they do not create extra columns.
+
+    Returns:
+        A Markdown table row.
+    """
+    return "| " + " | ".join(re.sub(r"(?<!\\)\|", r"\\|", cell) for cell in cells) + " |"
+
+
 def capitalize(s):
     """Capitalize the first letter of s, leaving the rest of s unchanged.
 
@@ -871,7 +882,7 @@ def unblocked_doc(models, cfg, base, doc, as_of):
         lines += [
             "",
             *([f"## {r.label}", ""] if len(models) > 1 else []),
-            "| " + " | ".join(heading) + " |",
+            table_row(heading),
             "|" + " --- |" * len(heading),
         ]
         for n in m.unblocked():
@@ -887,7 +898,7 @@ def unblocked_doc(models, cfg, base, doc, as_of):
                 needed_by(m, n),
                 unblocked_notes(m, cfg, n),
             ]
-            lines.append("| " + " | ".join(cells) + " |")
+            lines.append(table_row(cells))
     excluded = [(m, cfg["repos"][m.repo.name].get("excluded", {})) for m in models]
     if any(ex.get("prs") for _, ex in excluded):
         lines += ["", "## Excluded by decision", ""]
@@ -1108,8 +1119,9 @@ def gen_details(model, cfg):
         else:
             cells = dependency_cells(model, n)
         lines.append(
-            f"| {r.link(n)} {t} | {model.assigned_to(n)} | {' | '.join(cells)} | "
-            f"{detail_notes(model, cfg, n)} |"
+            table_row(
+                [r.link(n) + " " + t, model.assigned_to(n), *cells, detail_notes(model, cfg, n)]
+            )
         )
     return lines
 
@@ -1185,7 +1197,7 @@ def gen_independent(model, cfg):
             textual_conflicts(model, cfg, n),
             note,
         ]
-        lines.append("| " + " | ".join(cells) + " |")
+        lines.append(table_row(cells))
     return lines
 
 
@@ -1208,7 +1220,7 @@ def pr_table(model, cfg, base, heading, rows):
         "Directory",
         *heading,
     ]
-    lines = ["| " + " | ".join(heading) + " |", "|" + " --- |" * len(heading)]
+    lines = [table_row(heading), "|" + " --- |" * len(heading)]
     for n, cells in rows:
         author = [r.prs[n]["author"]["login"]] if r.show_author else []
         row = [
@@ -1219,7 +1231,7 @@ def pr_table(model, cfg, base, heading, rows):
             pr_directory(r, n, base),
             *cells,
         ]
-        lines.append("| " + " | ".join(row) + " |")
+        lines.append(table_row(row))
     return lines
 
 
@@ -1347,7 +1359,7 @@ def gen_directories(models, cfg, base):
         rows.append(([d for d, _ in pairs], status, "none"))
     lines = ["| Directory | Status | Relationship to other branches |", "| --- | --- | --- |"]
     for dirs, status, rel in rows:
-        lines.append(f"| {', '.join(f'`{d}`' for d in dirs)} | {status} | {rel} |")
+        lines.append(table_row([", ".join(f"`{d}`" for d in dirs), status, rel]))
     return lines
 
 
