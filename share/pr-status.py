@@ -1423,7 +1423,7 @@ def report_changes(models, old, new):
 
 
 def main():
-    """Report changes, print the push commands, and regenerate the documents."""
+    """Report changes and regenerate the documents."""
     check_only = "--check" in sys.argv[1:]
     base = str(pathlib.Path.cwd())
     with pathlib.Path(CONFIG).open() as f:
@@ -1453,12 +1453,6 @@ def main():
                 f"{m.repo.ref(n)}: "
                 + ", ".join(f"{m.repo.ref(k)} ({s})" for k, s in m.stated_closed[n])
             )
-    commands, notes = push_commands(models, base)
-    print("## Commands that update each dependent branch from its prerequisites")
-    for line in notes:
-        print(line)
-    for line in commands:
-        print(line)
     if check_only:
         return
     docs = cfg["documents"]
