@@ -1,0 +1,108 @@
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+approval_policy = "on-request"
+
+[projects."/home/mernst"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-12"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/mdedots"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types/checker-framework-fork-mernst-branch-eclipse-too-many-requests"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/invariants/daikon-fork-markro49-branch-dcomp24-fixes"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-2"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-29"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-ci-macos"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-19"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-16"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-18"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types/checker-framework-fork-mernst-branch-wpi-review-fix-52"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-37"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-26"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-20"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types/checker-framework-fork-ceasermikes002-branch-intellij-external-annotations"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-17"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types/checker-framework-fork-mernst-branch-wpi-review-fix-63"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-code-review-fixes-pr67"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/manage-git-branches-branch-wpi-review-fix-1"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types/checker-framework-fork-smillst-branch-issue8017-followup"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/share"]
+trust_level = "trusted"
+
+[projects."/home/mernst/bin/src/git-scripts"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types/checker-framework-fork-msridhar-branch-fix-8328-unboxing"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/invariants/fjalar-fork-mernst-branch-dyncomp-ccall-units/valgrind/fjalar/kvasir"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types/checker-framework-branch-rlc-collections-hooks"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types/checker-framework-branch-iterated-collection-element"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/invariants/fjalar-fork-mernst-branch-dyncomp-load-tag-snapshots"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/invariants/fjalar-fork-mernst-branch-binutils-check-hook-counts"]
+trust_level = "trusted"
+
+[tui]
+screen_reader_detection_done = true
+terminal_title = []
+
+[tui.model_availability_nux]
+"gpt-5.6-sol" = 1
+gpt-6-astra = 4
+"gpt-6.1-sol" = 4
+
+[notice]
+hide_rate_limit_model_nudge = true
