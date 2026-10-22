@@ -255,38 +255,65 @@ def query_pr_states(refs):
 BASE_KEYWORDS = ["depends on", "depend on", "builds on", "land", "merge"]
 
 
-def stated_prerequisites(body, repo):
-    """Find the PRs that a description names as prerequisites of its PR.
+def pr_refs(text, repo):
+    """Find the PRs that text names.
 
     Returns:
         A set of numbers in repo, and a set of "owner/repo#N" in other repositories.
     """
+    numbers = {int(n) for n in re.findall(r"(?<![\w/])#(\d+)\b", text)}
+    external = set()
+    for gh, n in re.findall(r"\b([\w.-]+/[\w.-]+)#(\d+)\b", text) + re.findall(
+        r"github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)", text
+    ):
+        if gh == repo.gh:
+            numbers.add(int(n))
+        else:
+            external.add(f"{gh}#{n}")
+    return numbers, external
+
+
+def stated_prerequisites(body, repo):
+    """Find the PRs that a description names as prerequisites or as dependents of its PR.
+
+    Returns:
+        A set of numbers in repo and a set of "owner/repo#N" in other repositories, which
+        are prerequisites, and a set of numbers in repo, which are dependents.
+    """
     keywords = BASE_KEYWORDS + repo.keywords
     pattern = re.compile(r"\b(" + "|".join(re.escape(k) for k in keywords) + r")\b", re.IGNORECASE)
-    numbers, external = set(), set()
+    numbers, external, dependents = set(), set(), set()
     # A colon does not end a sentence, so "Merge with:" and the list that follows stay together.
     for sentence in re.split(r"(?<=[.;])\s+|\n\s*\n(?!\s*https?://)", body):
         for m in pattern.finditer(sentence):
             rest = sentence[m.end() :]
-            if re.match(r"\s*(this|it)\b", rest, re.IGNORECASE):
-                continue  # "#N depends on this PR":  #N is a dependent
             keyword = m[1].lower()
-            if keyword in ("land", "merge") and not (
+            if keyword not in ("land", "merge"):
+                if re.match(r"\s*(this|it)\b", rest, re.IGNORECASE):
+                    continue  # "#N depends on this PR":  #N is a dependent
+                ns, ext = pr_refs(rest, repo)
+                numbers |= ns
+                external |= ext
+                continue
+            if not (
                 re.search(r"\b(first|after)\b", rest, re.IGNORECASE)
                 or re.match(
-                    r"\s*(together with|with|right before|before)[\s:]", rest, re.IGNORECASE
+                    r"\s*((this|it)\s+)?(together with|with|right before|before)[\s:]",
+                    rest,
+                    re.IGNORECASE,
                 )
             ):
                 continue
-            numbers.update(int(n) for n in re.findall(r"(?<![\w/])#(\d+)\b", rest))
-            for gh, n in re.findall(r"\b([\w.-]+/[\w.-]+)#(\d+)\b", rest) + re.findall(
-                r"github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)", rest
-            ):
-                if gh == repo.gh:
-                    numbers.add(int(n))
+            # In "Land it after #A and before #B", #A is a prerequisite and #B is a dependent.
+            parts = re.split(r"\b(after|before|with)\b", rest, flags=re.IGNORECASE)
+            for i in range(0, len(parts), 2):
+                ns, ext = pr_refs(parts[i], repo)
+                if i and parts[i - 1].lower() == "before":
+                    dependents |= ns
                 else:
-                    external.add(f"{gh}#{n}")
-    return numbers, external
+                    numbers |= ns
+                    external |= ext
+    return numbers, external, dependents
 
 
 class Model:
@@ -301,15 +328,16 @@ class Model:
         open_prs = set(repo.prs) - self.excluded
         self.open = open_prs
         self.stated = {}
+        self.stated_dependents = {}
         self.stated_closed = {}
         self.external = {}
         prereqs = {n: stated_prerequisites(repo.prs[n]["body"], repo) for n in open_prs}
         # Look up all the states at once; state_of and external_state look up any that remain.
-        external = {e for _, ext in prereqs.values() for e in ext} | {
+        external = {e for _, ext, _ in prereqs.values() for e in ext} | {
             e for refs in rc.get("extra_external_dependencies", {}).values() for e in refs
         }
         internal = {
-            f"{repo.gh}#{m}" for names, _ in prereqs.values() for m in names - set(repo.prs)
+            f"{repo.gh}#{m}" for names, _, _ in prereqs.values() for m in names - set(repo.prs)
         }
         for ref, state in query_pr_states((external - set(EXTERNAL_STATE)) | internal).items():
             if ref in external:
@@ -317,9 +345,10 @@ class Model:
             else:
                 repo.closed_state[int(ref.split("#")[1])] = state if state != "open" else None
         for n in open_prs:
-            names, external = prereqs[n]
+            names, external, dependents = prereqs[n]
             names -= {n}
             self.stated[n] = names & open_prs
+            self.stated_dependents[n] = (dependents - {n}) & open_prs
             self.stated_closed[n] = sorted(
                 (m, repo.state_of(m)) for m in names - set(repo.prs) if repo.state_of(m)
             )
@@ -332,6 +361,8 @@ class Model:
         deps = defaultdict(set)
         for n in open_prs:
             deps[n] |= self.stated[n]
+            for m in self.stated_dependents[n]:
+                deps[m].add(n)
         # A stacked PR depends on the PR whose branch is its base branch.
         self.base_pr = {}
         by_head = {(pr["owner"], pr["headRefName"]): m for m, pr in repo.prs.items()}
@@ -356,6 +387,9 @@ class Model:
                 deps[a].add(b)
                 self.extra[a].add(b)
         self.all_deps = {n: self.closure(deps, n) for n in open_prs}
+        # Each PR that depends on itself, such as two PRs whose descriptions say to land each
+        # with the other.
+        self.cyclic = sorted(n for n in open_prs if any(n in self.all_deps[d] for d in deps[n]))
         # Direct dependencies:  the transitive reduction.
         self.direct = {}
         for n in open_prs:
@@ -463,6 +497,7 @@ class Model:
 
         def lev(n):
             if n not in level:
+                level[n] = 1  # provisional, so that a cycle of dependencies terminates
                 level[n] = 1 + max((lev(d) for d in self.direct[n]), default=0)
             return level[n]
 
@@ -909,8 +944,12 @@ def dependency_cells(model, n):
     """
     r = model.repo
     direct = sorted(model.direct[n])
-    stated = [r.ref(d) for d in direct if d in model.stated[n]] + model.external[n]
-    unstated = [r.ref(d) for d in direct if d not in model.stated[n]]
+    stated = [
+        r.ref(d) for d in direct if d in model.stated[n] or n in model.stated_dependents[d]
+    ] + model.external[n]
+    unstated = [
+        r.ref(d) for d in direct if d not in model.stated[n] and n not in model.stated_dependents[d]
+    ]
     if not unstated:
         stated_text = "yes"
     elif not stated:
@@ -1453,6 +1492,11 @@ def main():
                 f"{m.repo.ref(n)}: "
                 + ", ".join(f"{m.repo.ref(k)} ({s})" for k, s in m.stated_closed[n])
             )
+    cycles = [m for m in models if m.cyclic]
+    if cycles:
+        print("## PRs that depend on themselves, through a cycle of dependencies")
+        for m in cycles:
+            print(m.repo.refs(m.cyclic))
     if check_only:
         return
     docs = cfg["documents"]
