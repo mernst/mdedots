@@ -14,6 +14,7 @@ Each run:
   * computes the dependencies:  a PR depends on another if its description says
     so, if its branch contains all of the other PR's non-merge commits, or if the
     config says so,
+  * updates each modeled PR description's "Land after" and "Land before" lines,
   * prints what changed since the previous snapshot (input for the summary),
   * rewrites the unblocked documents entirely, and the parts of the dependency
     document between <!-- BEGIN GENERATED: name --> and <!-- END GENERATED: name -->.
@@ -254,6 +255,8 @@ def query_pr_states(refs):
 
 BASE_KEYWORDS = ["depends on", "depend on", "builds on", "land", "merge"]
 
+LANDING_LINE = re.compile(r"Land (after|with|before) #(\d+)\.[ \t]*")
+
 
 def pr_refs(text, repo):
     """Find the PRs that text names.
@@ -314,6 +317,50 @@ def stated_prerequisites(body, repo):
                     numbers |= ns
                     external |= ext
     return numbers, external, dependents
+
+
+def updated_pr_description(body, prerequisites, dependents):
+    """Update the conventional landing-order lines in a PR description.
+
+    Existing ``Land with #N.`` lines are retained between the generated "Land after"
+    and "Land before" groups.
+
+    Returns:
+        The updated description.
+    """
+    lines = body.splitlines()
+    final_newline = body.endswith("\n")
+    landing = [(i, LANDING_LINE.fullmatch(line)) for i, line in enumerate(lines)]
+    landing = [(i, match) for i, match in landing if match]
+    with_lines = [lines[i] for i, match in landing if match[1] == "with"]
+    with_prs = {int(match[2]) for _, match in landing if match[1] == "with"}
+    replacement = [
+        *(f"Land after #{n}." for n in sorted(set(prerequisites) - with_prs)),
+        *with_lines,
+        *(f"Land before #{n}." for n in sorted(set(dependents) - with_prs)),
+    ]
+
+    if landing:
+        landing_indices = {i for i, _ in landing}
+        insertion = landing[0][0]
+        lines = [line for i, line in enumerate(lines) if i not in landing_indices]
+        lines[insertion:insertion] = replacement
+        if not replacement:
+            # Remove one blank line that only separated the landing-order block from the body.
+            if insertion == len(lines) and insertion and not lines[insertion - 1]:
+                lines.pop()
+            elif insertion == 0 and lines and not lines[0]:
+                lines.pop(0)
+            elif 0 < insertion < len(lines) and not lines[insertion - 1] and not lines[insertion]:
+                lines.pop(insertion)
+    elif replacement:
+        if lines and lines[-1]:
+            lines.append("")
+        lines.extend(replacement)
+    else:
+        return body
+
+    return "\n".join(lines) + ("\n" if final_newline else "")
 
 
 class Model:
@@ -527,6 +574,67 @@ class Model:
             seen |= comp
             comps.append(sorted(comp))
         return comps
+
+
+def description_updates(models):
+    """Find the PR descriptions whose conventional landing-order lines are stale.
+
+    Returns:
+        Tuples of the model, PR number, and updated description.
+    """
+    updates = []
+    for model in models:
+        with_prs = defaultdict(set)
+        for n in model.open:
+            for line in model.repo.prs[n]["body"].splitlines():
+                match = LANDING_LINE.fullmatch(line)
+                if match and match[1] == "with" and int(match[2]) in model.open:
+                    other = int(match[2])
+                    with_prs[n].add(other)
+                    with_prs[other].add(n)
+        for n in sorted(model.open):
+            body = model.repo.prs[n]["body"]
+            updated = updated_pr_description(
+                body, model.direct[n] - with_prs[n], model.dependents[n] - with_prs[n]
+            )
+            if updated != body:
+                updates.append((model, n, updated))
+    return updates
+
+
+def refresh_description_facts(model, cfg, n):
+    """Refresh the facts derived from one locally updated PR description."""
+    r = model.repo
+    names, external, dependents = stated_prerequisites(r.prs[n]["body"], r)
+    names -= {n}
+    model.stated[n] = names & model.open
+    model.stated_dependents[n] = (dependents - {n}) & model.open
+    model.stated_closed[n] = sorted(
+        (m, state) for m in names - set(r.prs) if (state := r.state_of(m))
+    )
+    configured = cfg["repos"][r.name].get("extra_external_dependencies", {}).get(str(n), [])
+    model.external[n] = sorted(
+        {ref for ref in external | set(configured) if external_state(ref) == "open"}
+    )
+
+
+def apply_description_updates(updates, cfg):
+    """Write PR description updates to GitHub and reflect them in the in-memory facts.
+
+    Returns:
+        The updates that GitHub rejected, paired with their errors.
+    """
+    failures = []
+    for model, n, body in updates:
+        r = model.repo
+        try:
+            run(["gh", "pr", "edit", str(n), "-R", r.gh, "--body", body])
+        except subprocess.CalledProcessError as error:
+            failures.append((model, n, error))
+            continue
+        r.prs[n]["body"] = body
+        refresh_description_facts(model, cfg, n)
+    return failures
 
 
 def needed_by(model, n):
@@ -1472,6 +1580,10 @@ def main():
         repo = Repo(cfg["repos"][name])
         load_repo(repo)
         models.append(Model(repo, cfg))
+    updates = description_updates(models)
+    failed_updates = []
+    if not check_only:
+        failed_updates = apply_description_updates(updates, cfg)
     now = dt.datetime.now().astimezone()
     as_of = now.strftime("%Y-%m-%d %H:%M %Z")
     new = facts(models)
@@ -1484,19 +1596,31 @@ def main():
         print(f"## Changes since the previous snapshot ({old.get('time', 'none')})")
         for line in changes:
             print(line)
-    stale_descriptions = [(m, n) for m in models for n in sorted(m.open) if m.stated_closed[n]]
-    if stale_descriptions:
-        print("## GitHub PR descriptions that name landed or closed PRs as prerequisites")
-        for m, n in stale_descriptions:
-            print(
-                f"{m.repo.ref(n)}: "
-                + ", ".join(f"{m.repo.ref(k)} ({s})" for k, s in m.stated_closed[n])
-            )
     cycles = [m for m in models if m.cyclic]
     if cycles:
         print("## PRs that depend on themselves, through a cycle of dependencies")
         for m in cycles:
             print(m.repo.refs(m.cyclic))
+    for m, n, error in failed_updates:
+        detail = error.stderr.strip()
+        print(
+            f"pr-status.py: could not update {m.repo.ref(n)}" + (f": {detail}" if detail else ""),
+            file=sys.stderr,
+        )
+    if failed_updates:
+        stale_descriptions = [(m, n) for m in models for n in sorted(m.open) if m.stated_closed[n]]
+        if stale_descriptions:
+            print("## GitHub PR descriptions that name landed or closed PRs as prerequisites")
+            for m, n in stale_descriptions:
+                print(
+                    f"{m.repo.ref(n)}: "
+                    + ", ".join(f"{m.repo.ref(k)} ({s})" for k, s in m.stated_closed[n])
+                )
+        sys.exit(1)
+    if updates and check_only:
+        print("## GitHub PR descriptions need updates")
+        for m, n, _ in updates:
+            print(m.repo.ref(n))
     if check_only:
         return
     docs = cfg["documents"]
