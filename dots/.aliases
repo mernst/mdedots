@@ -726,8 +726,8 @@ alias git-diff-all="(git diff && git-diff-new)"
 alias gcb=git-checkout-branch
 alias gnb=git-new-branch
 alias gpu=git-pull-upstream
+alias gdu=git-diff-upstream
 alias gpdu='cronic --permit-stderr git-pull-upstream && git-diff-upstream'
-alias gdu=gpdu
 alias rmgob='git-orphaned-branches --remove'
 gcbs() {
   for br in "$@"; do
