@@ -95,6 +95,12 @@ trust_level = "trusted"
 [projects."/home/mernst/research/invariants/fjalar-fork-mernst-branch-binutils-check-hook-counts"]
 trust_level = "trusted"
 
+[projects."/home/mernst/research/invariants/fjalar-fork-mernst-branch-plus-uconst-byte-offset"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types/checker-framework-branch-javadoc-classpath-asm"]
+trust_level = "trusted"
+
 [tui]
 screen_reader_detection_done = true
 terminal_title = []
