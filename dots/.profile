@@ -176,8 +176,6 @@ export PATH=${PATH}:$HOME/bin/install/cov-analysis-linux64-7.7.0/bin
 
 export PATH=${PATH}:$HOME/bin/install/global-6.6.3-install/bin
 
-# Experimentally commented out (use uv, not venv), 2025-11-03.
-# export PATH=${HOME}/.venv/bin:${PATH}
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$PATH:/root/.local/bin"
 if command -v register-python-argcomplete > /dev/null; then
@@ -356,6 +354,3 @@ export SDKMAN_DIR="$HOME/.sdkman"
 # Generated for envman. Do not edit.
 # shellcheck disable=SC1091 # files might not exist
 [ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
-
-# Added by Antigravity CLI installer
-export PATH="$HOME/.local/bin:$PATH"
