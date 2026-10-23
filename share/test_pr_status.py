@@ -116,5 +116,38 @@ class ApplyDescriptionUpdatesTest(unittest.TestCase):
         refresh.assert_not_called()
 
 
+class ChainHasConflictTest(unittest.TestCase):
+    """Tests for chain_has_conflict."""
+
+    def test_clean_chain(self):
+        """A chain with no reported conflict is clean."""
+        repo = types.SimpleNamespace(master_conflicts={}, pair_conflicts={})
+        self.assertFalse(pr_status.chain_has_conflict(repo, [1, 2, 3], True))
+
+    def test_master_conflict_anywhere_in_chain(self):
+        """An upstream conflict in a later PR affects the merge that reaches that PR."""
+        repo = types.SimpleNamespace(master_conflicts={2: ["file"]}, pair_conflicts={})
+        self.assertTrue(pr_status.chain_has_conflict(repo, [1, 2, 3], True))
+        self.assertFalse(pr_status.chain_has_conflict(repo, [1, 2, 3], False))
+
+    def test_nonadjacent_pr_conflict(self):
+        """A later merge receives earlier, nonadjacent PRs in the chain."""
+        repo = types.SimpleNamespace(master_conflicts={}, pair_conflicts={(1, 3): ["file"]})
+        self.assertTrue(pr_status.chain_has_conflict(repo, [1, 2, 3], True))
+
+
+class SectionGeneratorsTest(unittest.TestCase):
+    """Tests for section_generators."""
+
+    def test_configures_conflicting_commands_section(self):
+        """The conflict-only section is opt-in for each dependency document."""
+        without = pr_status.section_generators([], {"documents": {}}, "/base")
+        with_conflicts = pr_status.section_generators(
+            [], {"documents": {"conflicting_push_commands": True}}, "/base"
+        )
+        self.assertNotIn("conflicting-push-commands", without)
+        self.assertIn("conflicting-push-commands", with_conflicts)
+
+
 if __name__ == "__main__":
     unittest.main()

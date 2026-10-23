@@ -72,6 +72,7 @@ If a directory is named `<reponame>-fork-<orgname>...`, then it must contain `<o
 * In the release notes `docs/CHANGELOG.md`:
   * Ordinary bug fixes are not described, nor are ordinary improvements in precision.  Describing every single one would clutter the changelog and obscure the key changes that users should read about.
   * Pull requests should not modify the "### Closed issues" section; it is filled in at release time.
+* When editing the Checker Framework, see the Checker Framework Developer Manual in `docs/developer/developer-manual.html`.
 
 ### CodeRabbit
 
@@ -92,15 +93,16 @@ Do not run `coderabbit`, even when user instructions say "consider running coder
   * If the code review comment is flawed in some way and you do not take action on it, then reply.
 * Never land a pull request unless explicitly asked.
 * If I tell you to commit and/or push, do not delay just because tests are running; do it in parallel with the tests.
-* When describing dependences in the description of a pull request, use a regular, stylized format (in which any of the below groups may be absent):
+* Sometimes, the parent directory of the current working copy contains a file `pr-dependencies.md` that describes other PRs that are open and may be related to the current one.
+* When describing dependences in a pull request, put them at the beginning of the description.  Use a regular, stylized format (in which any of the below groups may be absent):
 
   ```markdown
-  Land after #NNNN.
-  Land after #NNNN.
-  Land after #NNNN.
-  Land with #NNNN.
-  Land before #NNNN.
-  Land before #NNNN.
+  Land after #N.
+  Land after #N.
+  Land after #N.
+  Land with #N.
+  Land before #N.
+  Land before #N.
   ```
 
 ## Claude Code

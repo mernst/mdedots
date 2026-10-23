@@ -22,6 +22,7 @@ Each run:
 
 import datetime as dt
 import hashlib
+import itertools
 import json
 import operator
 import pathlib
@@ -1400,6 +1401,10 @@ def section_generators(models, cfg, base):
         "directories": lambda: gen_directories(models, cfg, base),
         "push-commands": lambda: gen_push_commands(models, base),
     }
+    if cfg["documents"].get("conflicting_push_commands"):
+        generators["conflicting-push-commands"] = lambda: gen_push_commands(
+            models, base, conflicts_only=True
+        )
     for m in models:
         name = m.repo.name
         generators[f"details-{name}"] = lambda m=m: gen_details(m, cfg)
@@ -1413,13 +1418,30 @@ def section_generators(models, cfg, base):
 # ---------- commands that update dependent branches ----------
 
 
-def push_chains(model, base):
+def chain_has_conflict(repo, prs, has_upstream):
+    """Return whether merging a chain of PRs would encounter a textual conflict.
+
+    A later merge receives every earlier branch in the chain.  Therefore, a conflict
+    between any 2 PRs in the chain can affect a merge, not only a conflict between 2
+    adjacent PRs.  If the chain starts with upstream, every PR also receives upstream.
+
+    Returns:
+        True if at least one merge in the chain would conflict.
+    """
+    return (has_upstream and any(n in repo.master_conflicts for n in prs)) or any(
+        tuple(sorted(pair)) in repo.pair_conflicts for pair in itertools.combinations(prs, 2)
+    )
+
+
+def push_chains(model, base, conflicts_only=False):
     """Compute the `git-push-to` chains that push every PR's direct prerequisites into it.
 
     Each chain is a list of directories, each of which `git-push-to` pushes into the next.
     Each chain starts with a working copy of the upstream default branch, if there is one.
     Before a chain pushes into a directory, the chains that precede it have updated that
     directory's prerequisites.
+    If conflicts_only is true, retain a whole chain only if merging it would encounter a
+    conflict between 2 of its PRs, or between upstream and one of its PRs.
 
     Returns:
         The chains, the PRs that have no working copy, and whether there is a working copy of
@@ -1449,11 +1471,12 @@ def push_chains(model, base):
                 break
             edges.discard((chain[-1], nxt))
             chain.append(nxt)
-        chains.append(upstream + [dirs[n][0] for n in chain])
+        if not conflicts_only or chain_has_conflict(r, chain, bool(upstream)):
+            chains.append(upstream + [dirs[n][0] for n in chain])
     return chains, missing, bool(upstream)
 
 
-def push_commands(models, base):
+def push_commands(models, base, conflicts_only=False):
     """Generate the shell commands that update each dependent branch from its prerequisites.
 
     Returns:
@@ -1463,7 +1486,7 @@ def push_commands(models, base):
     notes = []
     for m in models:
         r = m.repo
-        chains, missing, has_upstream = push_chains(m, base)
+        chains, missing, has_upstream = push_chains(m, base, conflicts_only)
         for chain in chains:
             lines += ["git-push-to \\", *(f"  {d} \\" for d in chain[:-1]), f"  {chain[-1]}"]
             lines[-1] += " && \\"
@@ -1480,13 +1503,13 @@ def push_commands(models, base):
     return lines, notes
 
 
-def gen_push_commands(models, base):
+def gen_push_commands(models, base, conflicts_only=False):
     """Generate the "push-commands" section.
 
     Returns:
         The section's lines:  notes, then the commands in a fenced code block.
     """
-    commands, notes = push_commands(models, base)
+    commands, notes = push_commands(models, base, conflicts_only)
     return [f"{note}." for note in notes] + ([""] if notes else []) + ["```sh", *commands, "```"]
 
 

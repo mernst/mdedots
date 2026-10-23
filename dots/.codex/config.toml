@@ -101,6 +101,15 @@ trust_level = "trusted"
 [projects."/home/mernst/research/types/checker-framework-branch-javadoc-classpath-asm"]
 trust_level = "trusted"
 
+[projects."/home/mernst/research/types/checker-framework-fork-mernst"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/invariants"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/types"]
+trust_level = "trusted"
+
 [tui]
 screen_reader_detection_done = true
 terminal_title = []
