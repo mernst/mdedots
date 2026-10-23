@@ -1724,15 +1724,13 @@ def default_dependency_document(models):
         heading = f" ({m.repo.label})" if len(models) > 1 else ""
         lines += [
             "",
-            f"## PRs with dependencies{heading}",
+            f"## Unblocked PRs{heading}",
             "",
-            *generated(f"details-{name}"),
+            *generated(f"unblocked-{name}"),
             "",
-            *generated(f"prerequisites-{name}"),
+            f"## Blocked PRs{heading}",
             "",
-            f"## Independent PRs{heading}",
-            "",
-            *generated(f"independent-{name}"),
+            *generated(f"blocked-{name}"),
         ]
     lines += [
         "",
