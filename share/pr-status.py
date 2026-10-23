@@ -1434,10 +1434,12 @@ def chain_has_conflict(repo, prs, has_upstream):
 
 
 def push_chains(model, base, conflicts_only=False):
-    """Compute the `git-push-to` chains that push every PR's direct prerequisites into it.
+    """Compute the `git-push-to` chains that update every PR from upstream and its prerequisites.
 
     Each chain is a list of directories, each of which `git-push-to` pushes into the next.
     Each chain starts with a working copy of the upstream default branch, if there is one.
+    A chain may contain a single PR, which has no direct prerequisite or dependent that has
+    a working copy; such a chain exists only if there is a working copy of upstream.
     Before a chain pushes into a directory, the chains that precede it have updated that
     directory's prerequisites.
     If conflicts_only is true, retain a whole chain only if merging it would encounter a
@@ -1455,10 +1457,11 @@ def push_chains(model, base, conflicts_only=False):
         if info[0] == "git" and info[1:] == (owner, name, r.default_branch)
     ][:1]
     dirs = {n: pr_directories(r, r.prs[n], base) for n in model.open}
-    missing = sorted(n for n in model.open if model.in_graph(n) and not dirs[n])
+    missing = sorted(n for n in model.open if not dirs[n])
     edges = {(d, n) for n in model.open for d in model.direct[n] if dirs[d] and dirs[n]}
+    in_edge = {n for e in edges for n in e}
     level = model.levels()
-    chains = []
+    pr_chains = []
     for d, n in sorted(edges, key=lambda e: (level[e[0]], e)):
         if (d, n) not in edges:
             continue
@@ -1471,13 +1474,22 @@ def push_chains(model, base, conflicts_only=False):
                 break
             edges.discard((chain[-1], nxt))
             chain.append(nxt)
-        if not conflicts_only or chain_has_conflict(r, chain, bool(upstream)):
-            chains.append(upstream + [dirs[n][0] for n in chain])
+        pr_chains.append(chain)
+    if upstream:
+        pr_chains += [[n] for n in sorted(model.open) if dirs[n] and n not in in_edge]
+    # A stable sort, which retains the order of the chains that start at the same level.
+    # A PR that is not in the dependency graph has no level; it would be at level 1.
+    pr_chains.sort(key=lambda chain: level.get(chain[0], 1))
+    chains = [
+        upstream + [dirs[n][0] for n in chain]
+        for chain in pr_chains
+        if not conflicts_only or chain_has_conflict(r, chain, bool(upstream))
+    ]
     return chains, missing, bool(upstream)
 
 
 def push_commands(models, base, conflicts_only=False):
-    """Generate the shell commands that update each dependent branch from its prerequisites.
+    """Generate the shell commands that update each PR's branch from upstream and its prerequisites.
 
     Returns:
         The commands' lines, and notes about what the commands omit.

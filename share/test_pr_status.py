@@ -136,6 +136,58 @@ class ChainHasConflictTest(unittest.TestCase):
         self.assertTrue(pr_status.chain_has_conflict(repo, [1, 2, 3], True))
 
 
+class PushChainsTest(unittest.TestCase):
+    """Tests for push_chains."""
+
+    @staticmethod
+    def chains(direct, master_conflicts, has_upstream=True, conflicts_only=False):
+        """Run push_chains on PRs whose direct prerequisites are direct.
+
+        Each PR n has the working copy "pr<n>".
+
+        Returns:
+            The chains.
+        """
+        repo = types.SimpleNamespace(
+            gh="owner/repo",
+            default_branch="master",
+            prs={n: {} for n in direct},
+            master_conflicts=master_conflicts,
+            pair_conflicts={},
+        )
+        levels = {n: 1 + len(ds) for n, ds in direct.items() if ds} | {
+            d: 1 for ds in direct.values() for d in ds
+        }
+        model = types.SimpleNamespace(
+            repo=repo, open=set(direct), direct=direct, levels=lambda: levels
+        )
+        upstream = {"master": ("git", "owner", "repo", "master")} if has_upstream else {}
+        # pr_directories receives the PR's data, so look up the PR's number by identity.
+        ids = {id(repo.prs[n]): n for n in direct}
+        with (
+            mock.patch.object(pr_status, "scan_directories", return_value=upstream),
+            mock.patch.object(
+                pr_status, "pr_directories", lambda _r, pr, _base: [f"pr{ids[id(pr)]}"]
+            ),
+        ):
+            return pr_status.push_chains(model, "/base", conflicts_only)[0]
+
+    def test_single_pr_chain(self):
+        """A PR with no prerequisite or dependent forms a chain with upstream."""
+        chains = self.chains({1: set(), 2: set(), 3: {2}}, {})
+        self.assertEqual(chains, [["master", "pr2", "pr3"], ["master", "pr1"]])
+
+    def test_single_pr_chain_conflicts_only(self):
+        """A single-PR chain is retained exactly when its PR conflicts with upstream."""
+        chains = self.chains({1: set(), 2: set(), 3: {2}}, {1: ["file"]}, conflicts_only=True)
+        self.assertEqual(chains, [["master", "pr1"]])
+
+    def test_no_single_pr_chain_without_upstream(self):
+        """Without upstream, a single PR has nothing to push into it."""
+        chains = self.chains({1: set(), 2: set(), 3: {2}}, {}, has_upstream=False)
+        self.assertEqual(chains, [["pr2", "pr3"]])
+
+
 class SectionGeneratorsTest(unittest.TestCase):
     """Tests for section_generators."""
 
