@@ -13,50 +13,18 @@
 
 ## English text
 
-* Never replace concrete nouns by pronouns.  (But you do not have to replace every pronoun by a noun.)
-* Do not expand contractions, but do not introduce them either.
-* Retain the fences (three backticks) around fenced code blocks.
-* Use technical writing conventions; for example, punctuation is written inside quotation marks if it belongs to the quote, and punctuation is written outside quotation marks if it belongs to the larger sentence.
-* When editing, fix errors and clumsiness, but do not trade emphasis or precision for brevity.
-
-### LaTeX
-
-* No `~` is required before `\ref`.
-
-### Markdown
-
-* Every Markdown file that you write should satisfy `markdownlint-cli2`.  Use the configuration in `~/dots/.markdownlint-cli2.yaml` if the directory/project containing the Markdown files does not have its own configuration.  When supplying file names explicitly to `markdownlint-cli2`, use a variant of the configuration that omits the `gitignore: true` setting.
-
-### Conventions for numbers
-
-* It is permissible to use digits, such as “there were 3 blind mice”.  Do not change from digits to words.
-* Do not add or remove commas from a number with 4+ digits; that is, both “2093” and “2093” are acceptable.
+When editing English text (files with extension .txt, .md, .tex, etc.), follow the rules in file `instructions/english-text.md`.
+Tell the user if you cannot find that file.
 
 ## Programming
 
-### Branches
+### Specifications (user-visible code documentation)
 
-Do not change the branch of any existing git repository or clone or working copy, because each working directory is dedicated to one branch.
-For example, do not run `git switch` or `git checkout [-b] <branch-name>` in any pre-existing directory.
-
-When creating a new branch, use a new directory or a new clone.
-
-If a directory is named `<reponame>-fork-<orgname>...`, then it must contain `<orgname>/<reponame>`, not any other fork of `<reponame>`.
+* The documentation for a procedure should focus on what the procedure does.  It usually should not give details about how a specific clients use the procedure; such documentation belongs in the client.
 
 ### Java warning suppressions
 
-* The justification for a Checker-Framework-related type-checking warning suppression must start on the same line as the message key string (which is inside `@SuppressWarnings(...)`, and should ideally be brief enough to fit on that same line.
-
-### Code reviews
-
-* When reviewing code, do not complain about an empty pull request description.
-* Number every code review finding sequentially.  Never renumber findings.
-* When findings are presented out of numeric order (for example, grouped by severity), do not use Markdown ordered-list syntax (`1.`), because renderers renumber list items.  Write each number as literal text instead, such as `- **8.** ...`.
-* When I respond to your code review, "disregard finding 7" or "skip 7" does *not* mean that I accept the others and want you to address them.  It is about that one finding specifically.  This holds even if you just asked whether to address a list of findings that includes 7.  Do not change code for a finding until I explicitly ask you to address that finding. <!-- Relevant to Codex. -->
-* When addressing a code review finding, always consider whether there is a better fix than the one(s) suggested.
-* When reporting code review findings, call out ones that are low-value or unlikely.
-* Always consider whether a pull request can be simplified.
-* When I ask whether a pull request can be simplified, I am asking about the code/comments/etc.  I do not care about the size of the diff.
+* The justification for a Checker-Framework-related type-checking warning suppression must start on the same line as the message key string (which is inside `@SuppressWarnings(...)`), and should ideally be brief enough to fit on that same line.
 
 ### Historical comments
 
@@ -78,32 +46,15 @@ If a directory is named `<reponame>-fork-<orgname>...`, then it must contain `<o
 
 Do not run `coderabbit`, even when user instructions say "consider running coderabbit review --agent".
 
-## Git
+## Git and GitHub
 
-* Never rewrite git history.  For example, do not rebase.
-* When working on a downstream fork of an upstream repository (one that periodically merges from upstream and carries its own changes), strive to minimize the differences from the upstream repository.  That is more important than optimizing the downstream fork.  Examples:  `codespecs/fjalar` (its `valgrind/` subdirectory is downstream of `valgrind`), `typetools/jdk` and `typetools/jdk21u` (of `openjdk/jdk*`), `typetools/stubparser` (of `javaparser/javaparser`), `typetools/guava`, `typetools/asm`, and `codespecs/commons-bcel` (of `apache/commons-bcel`).  `eisop/checker-framework` is downstream of `typetools/checker-framework`, but it intentionally makes design changes, so minimize only incidental differences.  A personal fork that holds only pull-request branches (such as `mernst/daikon`) is not a downstream fork.
-* Use "land", never "merge", to mean landing a GitHub pull request.
-* When creating a new branch, create a new directory for it using `git-checkout-branch`.
+When working with Git or GitHub, follow the rules in file `instructions/git.md`.
+Tell the user if you cannot find that file.
 
-## GitHub
+## Pull requests and code reviews
 
-* Never force-push to GitHub.  I squash-and-merge, so even a messy commit history in a pull request leads to a clean main branch.
-* When addressing a code review comment from GitHub:
-  * If the code review comment is valid and you take action on it, do not reply, but merely click "resolved".
-  * If the code review comment is flawed in some way and you do not take action on it, then reply.
-* Never land a pull request unless explicitly asked.
-* If I tell you to commit and/or push, do not delay just because tests are running; do it in parallel with the tests.
-* Sometimes, the parent directory of the current working copy contains a file `pr-dependencies.md` that describes other PRs that are open and may be related to the current one.
-* When describing dependences in a pull request, put them at the beginning of the description.  Use a regular, stylized format (in which any of the below groups may be absent):
-
-  ```markdown
-  Land after #N.
-  Land after #N.
-  Land after #N.
-  Land with #N.
-  Land before #N.
-  Land before #N.
-  ```
+When working with pull requests or code reviews, follow the rules in file `instructions/code-review.md`.
+Tell the user if you cannot find that file.
 
 ## Claude Code
 
@@ -115,4 +66,5 @@ When the user asks to browse to a URL, don't put in it a LLM-specific tab group.
 
 ## Handwriting recognition
 
-There are notes about reading my handwriting in file `~/.claude/ocr-handwriting-notes.md`.
+There are notes about reading my handwriting in file `instructions/ocr-handwriting-notes.md`.
+Tell the user if you cannot find that file.

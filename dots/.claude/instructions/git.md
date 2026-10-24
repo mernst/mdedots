@@ -1,0 +1,34 @@
+# Rules about Git, GitHub, and pull requests
+
+## Git
+
+* Never rewrite git history.  For example, do not rebase.
+* When working on a downstream fork of an upstream repository (one that periodically merges from upstream and carries its own changes), strive to minimize the differences from the upstream repository.  That is more important than optimizing the downstream fork.  Examples:  `codespecs/fjalar` (its `valgrind/` subdirectory is downstream of `valgrind`), `typetools/jdk` and `typetools/jdk21u` (of `openjdk/jdk*`), `typetools/stubparser` (of `javaparser/javaparser`), `typetools/guava`, `typetools/asm`, and `codespecs/commons-bcel` (of `apache/commons-bcel`).  `eisop/checker-framework` is downstream of `typetools/checker-framework`, but it intentionally makes design changes, so minimize only incidental differences.  A personal fork that holds only pull-request branches (such as `mernst/daikon`) is not a downstream fork.
+* When creating a new branch, create a new directory for it using `git-checkout-branch`.
+
+## Branches
+
+Do not change the branch of any existing git repository or clone or working copy, because each working directory is dedicated to one branch.
+For example, do not run `git switch` or `git checkout [-b] <branch-name>` in any pre-existing directory.
+
+When creating a new branch, use a new directory or a new clone.
+
+If a directory is named `<reponame>-fork-<orgname>...`, then it must contain `<orgname>/<reponame>`, not any other fork of `<reponame>`.
+
+## GitHub
+
+* Use "land", never "merge", to mean landing a GitHub pull request.
+* Never force-push to GitHub.  I squash-and-merge, so even a messy commit history in a pull request leads to a clean main branch.
+* Never land a pull request unless explicitly asked.
+* If I tell you to commit and/or push, do not delay just because tests are running; do it in parallel with the tests.
+* Sometimes, the parent directory of the current working copy contains a file `pr-dependencies.md` that describes other PRs that are open and may be related to the current one.
+* When describing dependences in a pull request, put them at the beginning of the description.  Use a regular, stylized format (in which any of the below groups may be absent):
+
+  ```markdown
+  Land after #N.
+  Land after #N.
+  Land after #N.
+  Land with #N.
+  Land before #N.
+  Land before #N.
+  ```
