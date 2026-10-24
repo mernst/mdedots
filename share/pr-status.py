@@ -1097,7 +1097,6 @@ def gen_clusters(models, cfg):
         names = cfg["repos"][m.repo.name].get("cluster_names", {})
         comps = m.components()
         if not comps:
-            lines.append(f"* {m.repo.label} has no dependency clusters.")
             continue
         lines.append(f"* {m.repo.label} has these dependency clusters:")
         for comp in comps:
