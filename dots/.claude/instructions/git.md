@@ -40,3 +40,9 @@ If a branch can be pushed only to a URL, then its directory is the wrong one:  s
   Land before #N.
   Land before #N.
   ```
+
+## Merging
+
+* When resolving a merge conflict, change only the conflicted hunks.  Keep every hunk that git merged cleanly, even in a file that has conflicts.  Do not resolve a file by taking one side wholesale (`git checkout --ours`/`--theirs`, `-X ours`/`-X theirs`, or rewriting the file from one parent).
+* Before committing a merge, run `git diff AUTO_MERGE`.  It shows how the working tree differs from git's automatic merge, which still has its conflict markers.  Every change it shows must be inside a conflict region.  Investigate any other change; it usually means that the resolution undid one side's work.
+* To audit a merge that is already committed, recreate git's automatic merge with `git merge-tree --write-tree M^1 M^2` and diff the resulting tree against `M`.
