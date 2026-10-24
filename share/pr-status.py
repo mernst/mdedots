@@ -98,6 +98,9 @@ class Repo:
         self.contains = set()  # (a, b): a contains all non-merge commits of b
         self.pair_conflicts = {}  # (a, b) with a < b -> list of files
         self.closed_state = {}  # number -> "landed" | "closed" | None (not a PR)
+        # number -> list of (reviewer, outdated), one per unresolved review thread;
+        # None until load_review_threads runs.
+        self.review_threads = None
 
     def ref(self, n):
         """Return how documents refer to PR n.
@@ -196,6 +199,93 @@ def load_repo(repo, pairwise=True):
             m = re.match(r"(\d+) vs (\d+):(.*)", line)
             assert m, line
             repo.pair_conflicts[int(m[1]), int(m[2])] = m[3].split()
+
+
+REVIEW_THREAD_FIELDS = "isResolved isOutdated comments(first: 1) { nodes { author { login } } }"
+
+REVIEW_THREADS_QUERY = """
+query($owner: String!, $name: String!, $endCursor: String) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(states: OPEN, first: 50, after: $endCursor) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number
+        reviewThreads(first: 100) { pageInfo { hasNextPage } nodes { FIELDS } }
+      }
+    }
+  }
+}
+""".replace("FIELDS", REVIEW_THREAD_FIELDS)
+
+PR_REVIEW_THREADS_QUERY = """
+query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100, after: $endCursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes { FIELDS }
+      }
+    }
+  }
+}
+""".replace("FIELDS", REVIEW_THREAD_FIELDS)
+
+
+def review_thread_query(repo, query, jq, *fields):
+    """Run a paginated GraphQL query about repo, whose variables are $owner, $name, and fields.
+
+    Returns:
+        The objects that the jq filter jq yields from each page of the result.
+    """
+    owner, name = repo.gh.split("/")
+    out = run(
+        [
+            "gh",
+            "api",
+            "graphql",
+            "--paginate",
+            "-f",
+            f"owner={owner}",
+            "-f",
+            f"name={name}",
+            *(arg for field in fields for arg in ("-F", field)),
+            "-f",
+            f"query={query}",
+            "--jq",
+            jq,
+        ]
+    )
+    return [json.loads(line) for line in out.splitlines()]
+
+
+def load_review_threads(repo):
+    """Read the unresolved review threads of the open PRs into repo.review_threads.
+
+    A thread's reviewer is the author of its first comment.
+    """
+    if repo.review_threads is not None:
+        return
+    repo.review_threads = {}
+    for pr in review_thread_query(
+        repo, REVIEW_THREADS_QUERY, ".data.repository.pullRequests.nodes[]"
+    ):
+        threads = pr["reviewThreads"]["nodes"]
+        if pr["reviewThreads"]["pageInfo"]["hasNextPage"]:
+            # Query the PR's threads on their own, because --paginate pages only through PRs.
+            threads = review_thread_query(
+                repo,
+                PR_REVIEW_THREADS_QUERY,
+                ".data.repository.pullRequest.reviewThreads.nodes[]",
+                f"number={pr['number']}",
+            )
+        repo.review_threads[pr["number"]] = [
+            (
+                ((t["comments"]["nodes"] or [{}])[0].get("author") or {}).get("login", "ghost"),
+                t["isOutdated"],
+            )
+            for t in threads
+            if not t["isResolved"]
+        ]
 
 
 PR_STATES = {"OPEN": "open", "MERGED": "landed", "CLOSED": "closed"}
@@ -1287,6 +1377,40 @@ def gen_blocked(model, cfg, base):
     )
 
 
+def review_cells(model, n):
+    """Return the review cells of PR n.
+
+    Returns:
+        The "Unresolved threads" cell, which counts the PR's unresolved review threads and
+        how many of them are outdated, and the "Reviewers" cell, which gives the number of
+        those threads that each reviewer started.
+    """
+    threads = model.repo.review_threads.get(n, [])
+    outdated = sum(o for _, o in threads)
+    count = str(len(threads)) + (f" ({outdated} outdated)" if outdated else "")
+    by_reviewer = Counter(reviewer for reviewer, _ in threads)
+    reviewers = and_list(
+        f"{reviewer} ({k})"
+        for reviewer, k in sorted(by_reviewer.items(), key=lambda kv: (-kv[1], kv[0]))
+    )
+    return [count, reviewers]
+
+
+def gen_review_comments(model, cfg, base):
+    """Generate the "review-comments-REPO" section.
+
+    Returns:
+        The section's lines:  a table of the PRs that have unresolved review threads.
+    """
+    load_review_threads(model.repo)
+    rows = [
+        (n, review_cells(model, n)) for n in sorted(model.open) if model.repo.review_threads.get(n)
+    ]
+    if not rows:
+        return [f"No open {model.repo.label} PR has an unresolved review thread."]
+    return pr_table(model, cfg, base, ["Unresolved threads", "Reviewers"], rows)
+
+
 def gen_directories(models, cfg, base):
     """Generate the "directories" section.
 
@@ -1423,6 +1547,7 @@ def section_generators(models, cfg, base):
         generators[f"independent-{name}"] = lambda m=m: gen_independent(m, cfg)
         generators[f"unblocked-{name}"] = lambda m=m: gen_unblocked(m, cfg, base)
         generators[f"blocked-{name}"] = lambda m=m: gen_blocked(m, cfg, base)
+        generators[f"review-comments-{name}"] = lambda m=m: gen_review_comments(m, cfg, base)
     return generators
 
 
@@ -1770,6 +1895,12 @@ def default_dependency_document(models):
             f"## Blocked PRs{heading}",
             "",
             *generated(f"blocked-{name}"),
+            "",
+            f"## PRs with unaddressed review comments{heading}",
+            "",
+            "Each of these PRs has a review thread that is not resolved.",
+            "",
+            *generated(f"review-comments-{name}"),
         ]
     lines += [
         "",
