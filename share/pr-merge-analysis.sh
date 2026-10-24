@@ -4,11 +4,13 @@
 #  * which PRs contain all the non-merge commits of another PR, and
 #  * which pairs of PRs conflict with each other.
 #
-# Usage: pr-merge-analysis.sh [--no-pairwise] REPO_DIR OWNER/REPO [PR_NUMBER...]
+# Usage: pr-merge-analysis.sh [--no-pairwise] [--default-branch BRANCH] REPO_DIR OWNER/REPO [PR_NUMBER...]
 #   REPO_DIR is a local clone, into which the PR heads are fetched
 #   (as refs/remotes/pr/N) along with master (as refs/remotes/csm/master).
 #   The PR numbers are those of the open PRs; if none is given, gh lists them.
 #   --no-pairwise omits the pairwise conflicts, the most expensive section.
+#   --default-branch names the repository's default branch, which this script
+#   calls "master" (default: master).  It is fetched as refs/remotes/csm/master.
 #
 # Results are cached in pr-merge-analysis-cache-OWNER-REPO.tsv in the current
 # directory (or in $PR_MERGE_ANALYSIS_CACHE, if set), keyed by commit SHAs, so a
@@ -22,8 +24,15 @@
 
 set -o pipefail
 PAIRWISE=yes
-[ "$1" = --no-pairwise ] && { PAIRWISE=no; shift; }
-[ $# -ge 2 ] || { echo "usage: $0 [--no-pairwise] REPO_DIR OWNER/REPO [PR_NUMBER...]" >&2; exit 2; }
+DEFAULT_BRANCH=master
+while true; do
+  case "$1" in
+    --no-pairwise) PAIRWISE=no; shift ;;
+    --default-branch) DEFAULT_BRANCH=$2; shift 2 ;;
+    *) break ;;
+  esac
+done
+[ $# -ge 2 ] || { echo "usage: $0 [--no-pairwise] [--default-branch BRANCH] REPO_DIR OWNER/REPO [PR_NUMBER...]" >&2; exit 2; }
 G="git -C $1"
 CACHE="${PR_MERGE_ANALYSIS_CACHE:-$PWD/pr-merge-analysis-cache-${2//\//-}.tsv}"
 touch "$CACHE"
@@ -34,7 +43,8 @@ else
   P=$(gh pr list -R "$2" --state open --limit 300 --json number --jq '.[].number' | sort -n) || exit 1
 fi
 # Fetch only the open PRs; refs/pull/*/head would also fetch every closed PR.
-REFSPECS=(+master:refs/remotes/csm/master)
+# The ref is named "master" whatever the default branch, so that callers need not know it.
+REFSPECS=("+refs/heads/$DEFAULT_BRANCH:refs/remotes/csm/master")
 for n in $P; do REFSPECS+=("+refs/pull/$n/head:refs/remotes/pr/$n"); done
 $G fetch -q "https://github.com/$2.git" "${REFSPECS[@]}" || exit 1
 MSHA=$($G rev-parse refs/remotes/csm/master)

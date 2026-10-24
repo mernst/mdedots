@@ -174,6 +174,8 @@ def load_repo(repo, pairwise=True):
         [
             ANALYSIS,
             *([] if pairwise else ["--no-pairwise"]),
+            "--default-branch",
+            repo.default_branch,
             repo.clone,
             repo.gh,
             *map(str, sorted(repo.prs)),
@@ -672,8 +674,11 @@ def depends_on(model, n):
     return text
 
 
-def auto_notes(model, n):
+def auto_notes(model, n, master=True):
     """Generate the notes about PR n that do not come from the config.
+
+    If master is false, omit the note about conflicts with the default branch, which the
+    table that contains the notes gives in its "Textual conflicts" column.
 
     Returns:
         Note fragments, each starting with a lowercase letter.
@@ -688,9 +693,10 @@ def auto_notes(model, n):
             f"its description still names the landed {r.refs(landed)} as "
             + ("a prerequisite" if len(landed) == 1 else "prerequisites")
         )
-    if n in r.master_conflicts:
+    if master and n in r.master_conflicts:
         notes.append(
-            "conflicts with `master` in " + and_list(f"`{f}`" for f in r.master_conflicts[n])
+            f"conflicts with `{r.default_branch}` in "
+            + and_list(f"`{f}`" for f in r.master_conflicts[n])
         )
     return notes
 
@@ -726,14 +732,16 @@ def capitalize(s):
     return s[:1].upper() + s[1:] if s else s
 
 
-def unblocked_notes(model, cfg, n):
+def unblocked_notes(model, cfg, n, master=True):
     """Return the "Notes" cell of PR n in a table of unblocked PRs.
+
+    If master is false, omit the note about conflicts with the default branch.
 
     Returns:
         The PR's notes from the config, followed by the generated ones.
     """
     manual = cfg["repos"][model.repo.name].get("unblocked_notes", {}).get(str(n), "")
-    parts = ([manual] if manual else []) + auto_notes(model, n)
+    parts = ([manual] if manual else []) + auto_notes(model, n, master)
     return capitalize("; ".join(parts))
 
 
@@ -941,8 +949,8 @@ def gen_status(models):
     """Generate the "status" section.
 
     Returns:
-        The section's lines:  which PRs conflict with `master`, and which dependent branches
-        lack their prerequisites' current commits.
+        The section's lines:  which PRs conflict with the default branch, and which dependent
+        branches lack their prerequisites' current commits.
     """
     lines = []
     for m in models:
@@ -950,10 +958,11 @@ def gen_status(models):
         conflicting = sorted(r.master_conflicts)
         if conflicting:
             lines.append(
-                f"* Every {r.label} PR merges with `master` cleanly, except {r.refs(conflicting)}."
+                f"* Every {r.label} PR merges with `{r.default_branch}` cleanly,"
+                f" except {r.refs(conflicting)}."
             )
         else:
-            lines.append(f"* Every {r.label} PR merges with `master` cleanly.")
+            lines.append(f"* Every {r.label} PR merges with `{r.default_branch}` cleanly.")
     where = (
         ", in both repositories,"
         if len(models) == 2
@@ -996,8 +1005,12 @@ def gen_clusters(models, cfg):
     lines = []
     for m in models:
         names = cfg["repos"][m.repo.name].get("cluster_names", {})
+        comps = m.components()
+        if not comps:
+            lines.append(f"* {m.repo.label} has no dependency clusters.")
+            continue
         lines.append(f"* {m.repo.label} has these dependency clusters:")
-        for comp in m.components():
+        for comp in comps:
             name = next((names[str(n)] for n in comp if str(n) in names), None)
             members = m.repo.refs(comp)
             lines.append(f"  * {name} ({members})" if name else f"  * {members}")
@@ -1043,11 +1056,12 @@ def gen_merge_order(models):
     for i, m in enumerate(models):
         r = m.repo
         level = m.levels()
-        if i:
-            lines += [f"{r.label} (independent of the {models[0].repo.label} order):", ""]
-        else:
-            lines += [f"{r.label}:", ""]
-        for k in range(1, max(level.values(), default=0) + 1):
+        heading = f"{r.label} (independent of the {models[0].repo.label} order)" if i else r.label
+        if not level:
+            lines += [f"{heading}:  any order, because no PR depends on another.", ""]
+            continue
+        lines += [f"{heading}:", ""]
+        for k in range(1, max(level.values()) + 1):
             prs = sorted(n for n, v in level.items() if v == k)
             extra = " (and any independent PR)" if k == 1 else ""
             lines.append(f"{k}. {', '.join(r.ref(n) for n in prs)}{extra}")
@@ -1151,13 +1165,21 @@ def gen_prerequisites(model):
 def textual_conflicts(model, cfg, n):
     """Return the "Textual conflicts" cell of PR n.
 
+    If PR n conflicts with the default branch or with a neighbor in a chain of dependencies
+    (a direct prerequisite or a direct dependent), the cell gives only those conflicts.
+
     Returns:
-        The non-routine files in which PR n conflicts with other open PRs, grouped by
-        partner, or "none".
+        The non-routine files in which PR n conflicts with the default branch and with other
+        open PRs, grouped by partner, or "none".  A group of more than 4 files is given as a
+        count.  The default branch comes first, both among the groups and within each group's
+        partners.
     """
     r = model.repo
     routine = set(cfg["repos"][r.name].get("routine_files", []))
-    by_file = defaultdict(set)
+    by_file = defaultdict(set)  # file -> partners, where None stands for the default branch
+    for f in r.master_conflicts.get(n, []):
+        if basename(f) not in routine:
+            by_file[basename(f)].add(None)
     for (a, b), files in r.pair_conflicts.items():
         if n not in (a, b):
             continue
@@ -1167,12 +1189,24 @@ def textual_conflicts(model, cfg, n):
         for f in files:
             if basename(f) not in routine:
                 by_file[basename(f)].add(other)
+    neighbors = {None} | model.direct[n] | model.dependents[n]
+    if any(partners & neighbors for partners in by_file.values()):
+        by_file = {f: partners & neighbors for f, partners in by_file.items()}
+        by_file = {f: partners for f, partners in by_file.items() if partners}
     by_partners = defaultdict(list)
     for f, partners in by_file.items():
-        by_partners[tuple(sorted(partners))].append(f)
+        by_partners[frozenset(partners)].append(f)
+
+    def partner_list(partners):
+        prs = [r.ref(m) for m in sorted(partners - {None})]
+        return and_list(([f"`{r.default_branch}`"] if None in partners else []) + prs)
+
     conflicts = "; ".join(
-        f"{and_list(f'`{f}`' for f in sorted(files))} with {r.refs(partners)}"
-        for partners, files in sorted(by_partners.items(), key=lambda kv: sorted(kv[1]))
+        (f"{len(files)} files" if len(files) > 4 else and_list(f"`{f}`" for f in sorted(files)))
+        + f" with {partner_list(partners)}"
+        for partners, files in sorted(
+            by_partners.items(), key=lambda kv: (None not in kv[0], sorted(kv[1]))
+        )
     )
     return conflicts or "none"
 
@@ -1191,7 +1225,7 @@ def gen_independent(model, cfg):
     ]
     for n in model.independent():
         note = notes.get(str(n), "")
-        auto = auto_notes(model, n)
+        auto = auto_notes(model, n, master=False)
         note = capitalize("; ".join(([note] if note else []) + auto))
         cells = [
             r.link(n),
@@ -1255,7 +1289,7 @@ def gen_unblocked(model, cfg, base):
                 [
                     needed_by(model, n),
                     textual_conflicts(model, cfg, n),
-                    unblocked_notes(model, cfg, n),
+                    unblocked_notes(model, cfg, n, master=False),
                 ],
             )
             for n in model.unblocked()
@@ -1315,7 +1349,8 @@ def gen_directories(models, cfg, base):
             m = by_repo[info[2]]
             r = m.repo
             if info[3] in (r.default_branch, ""):
-                state = "upstream `master`" if info[1] == r.owner.lower() else "a fork's `master`"
+                branch = f"`{r.default_branch}`"
+                state = f"upstream {branch}" if info[1] == r.owner.lower() else f"a fork's {branch}"
                 groups[state, "none"].append(d)
                 continue
             found = json.loads(
@@ -1534,8 +1569,8 @@ def facts(models):
     """Collect the facts that the snapshot records.
 
     Returns:
-        A map from each repository's name to its PRs, dependencies, conflicts with `master`,
-        and unblocked PRs.
+        A map from each repository's name to its PRs, dependencies, conflicts with the default
+        branch, and unblocked PRs.
     """
     result = {}
     for m in models:
@@ -1624,9 +1659,12 @@ def report_changes(models, old, new):
 def default_config(base):
     """Construct the config to use when there is no config file.
 
-    The config describes one repository:  the GitHub repository that most of the git clones
-    in base are clones of, or its upstream if that repository is a fork.  It has no notes
-    or decisions, and its documents are unblocked-prs.md and pr-dependencies.md.
+    The config describes each GitHub repository that at least 2 of the git clones in base
+    are clones of (or, if there is none, the one that the most clones are clones of), or its
+    upstream if that repository is a fork with the same name.  Clones are grouped by
+    repository name, so the clones of a repository and of its forks are counted together.
+    The config has no notes or decisions, and its documents are unblocked-prs.md and
+    pr-dependencies.md.
 
     Returns:
         The default config.
@@ -1636,37 +1674,68 @@ def default_config(base):
     ]
     if not clones:
         sys.exit(f"pr-status.py: no {CONFIG} and no clone of a GitHub repository in {base}")
-    name = Counter(info[2] for _, info in clones).most_common(1)[0][0]
-    clones = [(d, info) for d, info in clones if info[2] == name]
+    counts = Counter(info[2] for _, info in clones).most_common()
+    names = [name for name, count in counts if count >= 2] or [counts[0][0]]
     fields = ["--json", "nameWithOwner,parent,defaultBranchRef"]
-    j = json.loads(run(["gh", "repo", "view", f"{clones[0][1][1]}/{name}", *fields]))
-    if j["parent"]:
-        parent = j["parent"]
-        j = json.loads(
-            run(["gh", "repo", "view", f"{parent['owner']['login']}/{parent['name']}", *fields])
-        )
-    gh = j["nameWithOwner"]
-    default_branch = j["defaultBranchRef"]["name"]
-    owner = gh.split("/")[0].lower()
-    # Prefer a clone of the upstream default branch, which has no branch of its own to disturb.
-    clone = min(clones, key=lambda c: (c[1][1] != owner, c[1][3] != default_branch, c[0]))[0]
-    print(f"pr-status.py: no {CONFIG}, so reporting on {gh}", file=sys.stderr)
-    repo_name = gh.split("/")[1]
+    repos = {}
+    for name in names:
+        name_clones = [(d, info) for d, info in clones if info[2] == name]
+        try:
+            j = json.loads(run(["gh", "repo", "view", f"{name_clones[0][1][1]}/{name}", *fields]))
+            parent = j["parent"]
+            # A renamed fork, such as of a large project, is a project of its own.
+            if parent and parent["name"].lower() == name:
+                j = json.loads(
+                    run(
+                        [
+                            "gh",
+                            "repo",
+                            "view",
+                            f"{parent['owner']['login']}/{parent['name']}",
+                            *fields,
+                        ]
+                    )
+                )
+        except subprocess.CalledProcessError as error:
+            print(
+                f"pr-status.py: skipping {name}: {error.stderr.strip()}",
+                file=sys.stderr,
+            )
+            continue
+        gh = j["nameWithOwner"]
+        if any(r["gh"] == gh for r in repos.values()):
+            continue
+        default_branch = j["defaultBranchRef"]["name"]
+        owner = gh.split("/")[0].lower()
+        # Prefer a clone of the upstream default branch, which has no branch of its own to disturb.
+        clone = min(name_clones, key=lambda c: (c[1][1] != owner, c[1][3] != default_branch, c[0]))[
+            0
+        ]
+        repo_name = gh.split("/")[1]
+        repos[repo_name] = {
+            "name": repo_name,
+            "gh": gh,
+            "clone": str(pathlib.Path(base) / clone),
+            "label": repo_name,
+            "default_branch": default_branch,
+        }
+    if not repos:
+        sys.exit(f"pr-status.py: no {CONFIG} and no GitHub repository that gh can view")
+    for repo_name, repo in repos.items():
+        # With several repositories, a bare "#N" would be ambiguous.
+        repo["prefix"] = "#" if len(repos) == 1 else f"{repo_name}#"
+        repo["node_prefix"] = "pr" if len(repos) == 1 else re.sub(r"\W", "_", repo_name) + "_"
+    print(
+        f"pr-status.py: no {CONFIG}, so reporting on " + and_list(r["gh"] for r in repos.values()),
+        file=sys.stderr,
+    )
     return {
-        "order": [repo_name],
-        "repos": {
-            repo_name: {
-                "name": repo_name,
-                "gh": gh,
-                "clone": str(pathlib.Path(base) / clone),
-                "prefix": "#",
-                "label": repo_name,
-                "node_prefix": "pr",
-                "default_branch": default_branch,
-            }
-        },
+        "order": list(repos),
+        "repos": repos,
         "documents": {
-            "unblocked": [{"file": "unblocked-prs.md", "title": f"Unblocked {repo_name} PRs"}],
+            "unblocked": [
+                {"file": "unblocked-prs.md", "title": f"Unblocked {and_list(repos)} PRs"}
+            ],
             "dependencies": "pr-dependencies.md",
         },
         "directories": [],
