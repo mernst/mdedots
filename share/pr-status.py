@@ -17,6 +17,8 @@ Each run:
     config says so,
   * updates each modeled PR description's "Land after" and "Land before" lines,
   * prints what changed since the previous snapshot (input for the summary),
+  * renames the working copies whose name does not match their branch's PR, when
+    doing so loses no information,
   * prints the directories whose name or origin does not match their branch's PR,
   * rewrites the unblocked documents entirely, and the parts of the dependency
     document between <!-- BEGIN GENERATED: name --> and <!-- END GENERATED: name -->
@@ -980,7 +982,38 @@ def pr_state(pr):
     return {"MERGED": "landed", "CLOSED": "closed"}.get(pr["state"], pr["state"].lower())
 
 
-def directory_problems(models, base):
+def rename_obstacle(base, d, new, owner):
+    """Return why renaming entry d of base to new might lose information.
+
+    Returns:
+        The reason, or None if d can be renamed:  d's origin is owner's repository, no entry of
+        base is named new or links to d, and d's repository has no other working tree.
+    """
+    path = pathlib.Path(base, d)
+    info = scan_directories(base)[d]
+    if info[1] != owner:
+        return f"its origin is {info[1]}/{info[2]}"
+    if pathlib.Path(base, new).exists() or pathlib.Path(base, new).is_symlink():
+        return f"{new} exists"
+    for e, other in scan_directories(base).items():
+        if other[0] == "link" and pathlib.Path(base, other[1]).resolve() == path.resolve():
+            return f"{e} links to it"
+    worktrees = run(["git", "-C", str(path), "worktree", "list", "--porcelain"])
+    if sum(line.startswith("worktree ") for line in worktrees.splitlines()) > 1:
+        return "its repository has another working tree"
+    return None
+
+
+def rename_directory(base, d, new):
+    """Rename entry d of base to new, and record the rename in the result of scan_directories."""
+    global DIRECTORIES
+    pathlib.Path(base, d).rename(pathlib.Path(base, new))
+    entries = scan_directories(base)
+    entries[new] = entries.pop(d)
+    DIRECTORIES = dict(sorted(entries.items()))
+
+
+def directory_problems(models, base, fix=False):
     """Find the directories that do not follow the naming and remote conventions.
 
     A working copy of a PR's branch from OWNER is named PROJECT-fork-OWNER-branch-BRANCH (or
@@ -988,11 +1021,17 @@ def directory_problems(models, base):
     repository's owner may also be in PROJECT-branch-BRANCH (or PROJECT).  A "/" in BRANCH is
     written as "-".
 
+    If fix is true, rename each misnamed working copy to PROJECT-fork-OWNER-branch-BRANCH,
+    unless it is the working copy of more than one PR or renaming it might lose information
+    (see rename_obstacle).
+
     Returns:
-        One line for each problem.
+        A pair:  one line for each problem, and one line for each rename.
     """
     by_repo = {m.repo.gh.lower().split("/")[1]: m.repo for m in models}
     problems = []
+    renames = []
+    wanted = defaultdict(list)  # directory -> [(PR reference, new name, PR owner)]
     for m in models:
         r = m.repo
         for n in sorted(r.prs):
@@ -1003,12 +1042,23 @@ def directory_problems(models, base):
             if owner == r.owner.lower():
                 names |= {f"{r.dir_name}-branch-{branch}", r.dir_name}
             names = {name.lower() for name in names}
-            problems += [
-                f"{d}: the working copy of {r.ref(n)} should be named "
-                f"{r.dir_name}-fork-{pr['owner']}-branch-{branch}"
-                for d in pr_directories(r, pr, base)
-                if d.lower() not in names
-            ]
+            for d in pr_directories(r, pr, base):
+                if d.lower() not in names:
+                    new = f"{r.dir_name}-fork-{pr['owner']}-branch-{branch}"
+                    wanted[d].append((r.ref(n), new, owner))
+    for d, prs in sorted(wanted.items()):
+        if fix and len(prs) == 1:
+            ref, new, owner = prs[0]
+            obstacle = rename_obstacle(base, d, new, owner)
+            if obstacle is None:
+                rename_directory(base, d, new)
+                renames.append(f"{d} -> {new} (the working copy of {ref})")
+                continue
+            problems.append(
+                f"{d}: the working copy of {ref} should be named {new}; not renamed: {obstacle}"
+            )
+            continue
+        problems += [f"{d}: the working copy of {ref} should be named {new}" for ref, new, _ in prs]
     for d, info in scan_directories(base).items():
         r = by_repo.get(info[2]) if info[0] == "git" else None
         if r is None or info[1] != r.owner.lower() or info[3] in (r.default_branch, ""):
@@ -1022,7 +1072,7 @@ def directory_problems(models, base):
             for p in sorted(prs, key=operator.itemgetter("number"))
             if head_owner(p)
         ]
-    return problems
+    return problems, renames
 
 
 # ---------- unblocked documents ----------
@@ -1786,7 +1836,8 @@ def report_changes(models, old, new):
             if added:
                 out.append(f"newly unblocked: {r.refs(added)}")
             blocked = [k for k in removed if k in m.open]
-            gone = [k for k in removed if k not in m.open]
+            # A landed PR is already reported as landed.
+            gone = [k for k in removed if k not in m.open and r.state_of(k) != "landed"]
             if blocked:
                 out.append(f"newly blocked: {r.refs(blocked)}")
             if gone:
@@ -2005,7 +2056,11 @@ def main():
         print("## PRs that depend on themselves, through a cycle of dependencies")
         for m in cycles:
             print(m.repo.refs(m.cyclic))
-    problems = directory_problems(models, base)
+    problems, renames = directory_problems(models, base, fix=not check_only)
+    if renames:
+        print("## Renamed directories, to match their branch's PR")
+        for line in renames:
+            print(line)
     if problems:
         print("## Directories whose name or origin does not match their branch's PR")
         for line in problems:
