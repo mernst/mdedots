@@ -539,7 +539,7 @@ class Model:
         return "none" if len(missing) == len(own) else "newest"
 
     def levels(self):
-        """Compute each PR's step in the merge order.
+        """Compute each PR's level in the dependency graph.
 
         Returns:
             A map from each PR in the dependency graph to 1 plus the largest level of its
@@ -1046,31 +1046,6 @@ def gen_graph(models, cfg):
     return lines
 
 
-def gen_merge_order(models):
-    """Generate the "merge-order" section.
-
-    Returns:
-        The section's lines:  for each repository, the PRs grouped by their level.
-    """
-    lines = []
-    for i, m in enumerate(models):
-        r = m.repo
-        level = m.levels()
-        heading = f"{r.label} (independent of the {models[0].repo.label} order)" if i else r.label
-        if not level:
-            lines += [f"{heading}:  any order, because no PR depends on another.", ""]
-            continue
-        lines += [f"{heading}:", ""]
-        for k in range(1, max(level.values()) + 1):
-            prs = sorted(n for n, v in level.items() if v == k)
-            extra = " (and any independent PR)" if k == 1 else ""
-            lines.append(f"{k}. {', '.join(r.ref(n) for n in prs)}{extra}")
-        lines.append("")
-    if lines and lines[-1] == "":
-        lines.pop()
-    return lines
-
-
 def dependency_cells(model, n):
     """Return the dependency cells of PR n, which has a prerequisite.
 
@@ -1434,7 +1409,6 @@ def section_generators(models, cfg, base):
         "status": lambda: gen_status(models),
         "clusters": lambda: gen_clusters(models, cfg),
         "graph": lambda: gen_graph(models, cfg),
-        "merge-order": lambda: gen_merge_order(models),
         "directories": lambda: gen_directories(models, cfg, base),
         "push-commands": lambda: gen_push_commands(models, base),
     }
@@ -1783,10 +1757,6 @@ def default_dependency_document(models):
         *generated("clusters"),
         "",
         *generated("graph"),
-        "",
-        "## Merge order",
-        "",
-        *generated("merge-order"),
     ]
     for m in models:
         name = m.repo.name
