@@ -1747,7 +1747,7 @@ def default_config(base):
     are clones of (or, if there is none, the one that the most clones are clones of), or its
     upstream if that repository is a fork with the same name.  Clones are grouped by
     repository name, so the clones of a repository and of its forks are counted together.
-    The config has no notes or decisions, and its documents are unblocked-prs.md and
+    The config has no notes or decisions, and its documents are pr-unblocked.md and
     pr-dependencies.md.
 
     Returns:
@@ -1817,9 +1817,7 @@ def default_config(base):
         "order": list(repos),
         "repos": repos,
         "documents": {
-            "unblocked": [
-                {"file": "unblocked-prs.md", "title": f"Unblocked {and_list(repos)} PRs"}
-            ],
+            "unblocked": [{"file": "pr-unblocked.md", "title": f"Unblocked {and_list(repos)} PRs"}],
             "dependencies": "pr-dependencies.md",
         },
         "directories": [],
