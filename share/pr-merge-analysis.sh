@@ -12,7 +12,7 @@
 #   --default-branch names the repository's default branch, which this script
 #   calls "master" (default: master).  It is fetched as refs/remotes/csm/master.
 #
-# Results are cached in pr-merge-analysis-cache-OWNER-REPO.tsv in the current
+# Results are cached in .pr-merge-analysis-cache-OWNER-REPO.tsv in the current
 # directory (or in $PR_MERGE_ANALYSIS_CACHE, if set), keyed by commit SHAs, so a
 # check is recomputed only when a branch moves.  Each run removes the cache lines
 # that refer to a commit that is no longer the head of an open PR or master, so
@@ -34,7 +34,7 @@ while true; do
 done
 [ $# -ge 2 ] || { echo "usage: $0 [--no-pairwise] [--default-branch BRANCH] REPO_DIR OWNER/REPO [PR_NUMBER...]" >&2; exit 2; }
 G="git -C $1"
-CACHE="${PR_MERGE_ANALYSIS_CACHE:-$PWD/pr-merge-analysis-cache-${2//\//-}.tsv}"
+CACHE="${PR_MERGE_ANALYSIS_CACHE:-$PWD/.pr-merge-analysis-cache-${2//\//-}.tsv}"
 touch "$CACHE"
 
 if [ $# -gt 2 ]; then

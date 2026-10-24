@@ -6,9 +6,9 @@ Usage (run in the directory that holds the documents):
   pr-status.py --check    # snapshot and report changes, but write no document
 
 Inputs:
-  pr-status-config.json   hand-maintained:  repositories, notes, labels, decisions
-                          (optional; see default_config for the default)
-  pr-status-snapshot.json written by the previous run; compared with this run
+  pr-status-config.json    hand-maintained:  repositories, notes, labels, decisions
+                           (optional; see default_config for the default)
+  .pr-status-snapshot.json written by the previous run; compared with this run
 Each run:
   * reads the open PRs with gh,
   * runs pr-merge-analysis.sh (cached) on them, for each repository,
@@ -34,7 +34,7 @@ import sys
 from collections import Counter, defaultdict
 
 CONFIG = "pr-status-config.json"
-SNAPSHOT = "pr-status-snapshot.json"
+SNAPSHOT = ".pr-status-snapshot.json"
 ANALYSIS = str(pathlib.Path("~/bin/share/pr-merge-analysis.sh").expanduser())
 
 
@@ -1535,11 +1535,8 @@ def section_generators(models, cfg, base):
         "graph": lambda: gen_graph(models, cfg),
         "directories": lambda: gen_directories(models, cfg, base),
         "push-commands": lambda: gen_push_commands(models, base),
+        "conflicting-push-commands": lambda: gen_push_commands(models, base, conflicts_only=True),
     }
-    if cfg["documents"].get("conflicting_push_commands"):
-        generators["conflicting-push-commands"] = lambda: gen_push_commands(
-            models, base, conflicts_only=True
-        )
     for m in models:
         name = m.repo.name
         generators[f"details-{name}"] = lambda m=m: gen_details(m, cfg)
@@ -1631,6 +1628,8 @@ def push_commands(models, base, conflicts_only=False):
         The commands' lines, and notes about what the commands omit.
     """
     lines = [f"cd {base} && \\"]
+    if conflicts_only:
+        lines.insert(0, "# Run this and fix merge commits until it succeeds:")
     notes = []
     for m in models:
         r = m.repo
@@ -1856,6 +1855,10 @@ def default_dependency_document(models):
     Returns:
         The text of a dependency document whose generated sections are empty.
     """
+    if len(models) == 1:
+        upstream = f"upstream `{models[0].repo.default_branch}`"
+    else:
+        upstream = "the upstream default branch"
     lines = [
         "# PR dependencies",
         "",
@@ -1881,7 +1884,28 @@ def default_dependency_document(models):
         "",
         *generated("clusters"),
         "",
-        *generated("graph"),
+        "## Updating branches",
+        "",
+        "Each command updates one dependency chain.",
+        (
+            f"It starts with {upstream}, then pushes each PR's branch into the branches of the PRs"
+            " that directly depend on it, prerequisites first."
+        ),
+        f"A chain may consist of {upstream} and a single PR that has no prerequisite or dependent.",
+        "`git-push-to` merges, compiles, and pushes; see its documentation.",
+        "",
+        "### Dependency chains with conflicts",
+        "",
+        (
+            "This subset repeats a whole dependency chain if at least one merge in the chain"
+            " would result in a textual conflict."
+        ),
+        "",
+        *generated("conflicting-push-commands"),
+        "",
+        "### All dependency chains",
+        "",
+        *generated("push-commands"),
     ]
     for m in models:
         name = m.repo.name
@@ -1903,10 +1927,6 @@ def default_dependency_document(models):
             *generated(f"review-comments-{name}"),
         ]
     lines += [
-        "",
-        "## Commands that update dependent branches",
-        "",
-        *generated("push-commands"),
         "",
         "## Other directories",
         "",
