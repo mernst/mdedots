@@ -17,6 +17,7 @@ Each run:
     config says so,
   * updates each modeled PR description's "Land after" and "Land before" lines,
   * prints what changed since the previous snapshot (input for the summary),
+  * prints the directories whose name or origin does not match their branch's PR,
   * rewrites the unblocked documents entirely, and the parts of the dependency
     document between <!-- BEGIN GENERATED: name --> and <!-- END GENERATED: name -->
     (or creates the dependency document, if it does not exist).
@@ -924,6 +925,100 @@ def pr_directory(repo, n, base):
     return ", ".join(f"`{base}/{d}/`" for d in dirs) if dirs else "(none)"
 
 
+PRS_WITH_HEAD = {}  # (GitHub repository, branch) -> gh JSON of every PR with that head branch
+
+
+def prs_with_head(repo, branch):
+    """Find the PRs, in any state and from any fork, whose head branch is branch.
+
+    Returns:
+        The gh JSON of each PR:  its number, state, and head repository's owner.
+    """
+    key = repo.gh, branch
+    if key not in PRS_WITH_HEAD:
+        PRS_WITH_HEAD[key] = json.loads(
+            run(
+                [
+                    "gh",
+                    "pr",
+                    "list",
+                    "-R",
+                    repo.gh,
+                    "--state",
+                    "all",
+                    "--head",
+                    branch,
+                    "--json",
+                    "number,state,headRepositoryOwner",
+                ]
+            )
+        )
+    return PRS_WITH_HEAD[key]
+
+
+def head_owner(pr):
+    """Return the lowercase owner of a PR's head repository, from gh JSON.
+
+    Returns:
+        The owner, or "" if the head repository has been deleted.
+    """
+    return (pr.get("headRepositoryOwner") or {}).get("login", "").lower()
+
+
+def pr_state(pr):
+    """Return the state of a PR, from gh JSON.
+
+    Returns:
+        "landed", "closed", or "open".
+    """
+    return {"MERGED": "landed", "CLOSED": "closed"}.get(pr["state"], pr["state"].lower())
+
+
+def directory_problems(models, base):
+    """Find the directories that do not follow the naming and remote conventions.
+
+    A working copy of a PR's branch from OWNER is named PROJECT-fork-OWNER-branch-BRANCH (or
+    PROJECT-fork-OWNER), and its origin is OWNER's repository.  A PR from the upstream
+    repository's owner may also be in PROJECT-branch-BRANCH (or PROJECT).  A "/" in BRANCH is
+    written as "-".
+
+    Returns:
+        One line for each problem.
+    """
+    by_repo = {m.repo.gh.lower().split("/")[1]: m.repo for m in models}
+    problems = []
+    for m in models:
+        r = m.repo
+        for n in sorted(r.prs):
+            pr = r.prs[n]
+            owner = pr["owner"].lower()
+            branch = pr["headRefName"].replace("/", "-")
+            names = {f"{r.dir_name}-fork-{owner}-branch-{branch}", f"{r.dir_name}-fork-{owner}"}
+            if owner == r.owner.lower():
+                names |= {f"{r.dir_name}-branch-{branch}", r.dir_name}
+            names = {name.lower() for name in names}
+            problems += [
+                f"{d}: the working copy of {r.ref(n)} should be named "
+                f"{r.dir_name}-fork-{pr['owner']}-branch-{branch}"
+                for d in pr_directories(r, pr, base)
+                if d.lower() not in names
+            ]
+    for d, info in scan_directories(base).items():
+        r = by_repo.get(info[2]) if info[0] == "git" else None
+        if r is None or info[1] != r.owner.lower() or info[3] in (r.default_branch, ""):
+            continue
+        prs = prs_with_head(r, info[3])
+        if any(head_owner(p) == info[1] for p in prs):
+            continue
+        problems += [
+            f"{d}: its origin is {r.gh}, but the branch {info[3]} of the {pr_state(p)} "
+            f"{r.ref(p['number'])} is in {head_owner(p)}/{info[2]}"
+            for p in sorted(prs, key=operator.itemgetter("number"))
+            if head_owner(p)
+        ]
+    return problems
+
+
 # ---------- unblocked documents ----------
 
 
@@ -1438,35 +1533,17 @@ def gen_directories(models, cfg, base):
                 state = f"upstream {branch}" if info[1] == r.owner.lower() else f"a fork's {branch}"
                 groups[state, "none"].append(d)
                 continue
-            found = json.loads(
-                run(
-                    [
-                        "gh",
-                        "pr",
-                        "list",
-                        "-R",
-                        r.gh,
-                        "--state",
-                        "all",
-                        "--head",
-                        info[3],
-                        "--json",
-                        "number,state,headRepositoryOwner",
-                    ]
-                )
-            )
-            found = [
-                p
-                for p in found
-                if (p.get("headRepositoryOwner") or {}).get("login", "").lower()
-                in (info[1], r.owner.lower())
-            ]
+            prs = prs_with_head(r, info[3])
+            found = [p for p in prs if head_owner(p) in (info[1], r.owner.lower())]
+            if not found and info[1] == r.owner.lower():
+                # A clone of the upstream repository that holds a fork's branch, which
+                # directory_problems reports.
+                found = [p for p in prs if head_owner(p)]
             if not found:
                 groups["a branch with no PR", "unknown"].append(d)
                 continue
             p = max(found, key=operator.itemgetter("number"))
-            state = {"MERGED": "landed", "CLOSED": "closed"}.get(p["state"], p["state"].lower())
-            landed[r.name, state].append((d, r.ref(p["number"])))
+            landed[r.name, pr_state(p)].append((d, r.ref(p["number"])))
     for (status, rel), dirs in groups.items():
         if status.startswith("a symbolic link"):
             rows += [([d], status, rel) for d in dirs]
@@ -1954,6 +2031,11 @@ def main():
         print("## PRs that depend on themselves, through a cycle of dependencies")
         for m in cycles:
             print(m.repo.refs(m.cyclic))
+    problems = directory_problems(models, base)
+    if problems:
+        print("## Directories whose name or origin does not match their branch's PR")
+        for line in problems:
+            print(line)
     for m, n, error in failed_updates:
         detail = error.stderr.strip()
         print(
