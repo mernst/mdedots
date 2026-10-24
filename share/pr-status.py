@@ -1048,16 +1048,8 @@ def gen_status(models):
         conflicting = sorted(r.master_conflicts)
         if conflicting:
             lines.append(
-                f"* Every {r.label} PR merges with `{r.default_branch}` cleanly,"
-                f" except {r.refs(conflicting)}."
+                f"* {r.label} PRs that conflict with `{r.default_branch}`: {r.refs(conflicting)}."
             )
-        else:
-            lines.append(f"* Every {r.label} PR merges with `{r.default_branch}` cleanly.")
-    where = (
-        ", in both repositories,"
-        if len(models) == 2
-        else (", in every repository," if len(models) > 2 else "")
-    )
     behind = []
     for m in models:
         r = m.repo
@@ -1075,14 +1067,9 @@ def gen_status(models):
                 parts.append(f"every commit of {r.refs(none)}")
             if parts:
                 behind.append(f"  * {r.ref(n)} lacks {and_list(parts)}.")
-    contains = (
-        f"* Every dependent branch{where} contains its immediate prerequisites' current commits"
-    )
     if behind:
-        lines.append(contains + ", except:")
+        lines.append("* Dependent branches that lack their prerequisites' current commits:")
         lines += behind
-    else:
-        lines.append(contains + ".")
     return lines
 
 
