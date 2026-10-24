@@ -18,12 +18,13 @@ from pathlib import Path
 
 
 def main() -> None:
+    """Print the shuffled student names and write them to a PDF file."""
     if len(sys.argv) != 2:
         sys.exit(f"Usage: {sys.argv[0]} students.csv")
     csv_path = Path(sys.argv[1])
     # "utf-8-sig" discards a byte-order mark, which would otherwise be
     # prepended to the first column name.
-    with open(csv_path, newline="", encoding="utf-8-sig") as f:
+    with csv_path.open(newline="", encoding="utf-8-sig") as f:
         rows = list(csv.DictReader(f))
 
     names = [f"{row['FirstName'].strip()} {row['LastName'].strip()}" for row in rows]
@@ -36,9 +37,21 @@ def main() -> None:
 def write_pdf(text: str, pdf_path: Path) -> None:
     """Write the text to a PDF file, in 24-point Helvetica with no page headers."""
     postscript = subprocess.run(
-        ["enscript", "-q", "-B", "-f", "Helvetica24", "-M", "Letter",
-         "--margins=54:54:54:54", "-o", "-"],
-        input=text.encode("latin-1"), capture_output=True, check=True,
+        [
+            "enscript",
+            "-q",
+            "-B",
+            "-f",
+            "Helvetica24",
+            "-M",
+            "Letter",
+            "--margins=54:54:54:54",
+            "-o",
+            "-",
+        ],
+        input=text.encode("latin-1"),
+        capture_output=True,
+        check=True,
     ).stdout
     subprocess.run(["ps2pdf", "-", str(pdf_path)], input=postscript, check=True)
 
