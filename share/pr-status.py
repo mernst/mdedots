@@ -99,7 +99,7 @@ class Repo:
         self.contains = set()  # (a, b): a contains all non-merge commits of b
         self.pair_conflicts = {}  # (a, b) with a < b -> list of files
         self.closed_state = {}  # number -> "landed" | "closed" | None (not a PR)
-        # number -> list of (reviewer, outdated), one per unresolved review thread;
+        # number -> list of whether each unresolved review thread is outdated;
         # None until load_review_threads runs.
         self.review_threads = None
 
@@ -202,7 +202,7 @@ def load_repo(repo, pairwise=True):
             repo.pair_conflicts[int(m[1]), int(m[2])] = m[3].split()
 
 
-REVIEW_THREAD_FIELDS = "isResolved isOutdated comments(first: 1) { nodes { author { login } } }"
+REVIEW_THREAD_FIELDS = "isResolved isOutdated"
 
 REVIEW_THREADS_QUERY = """
 query($owner: String!, $name: String!, $endCursor: String) {
@@ -260,10 +260,7 @@ def review_thread_query(repo, query, jq, *fields):
 
 
 def load_review_threads(repo):
-    """Read the unresolved review threads of the open PRs into repo.review_threads.
-
-    A thread's reviewer is the author of its first comment.
-    """
+    """Read the unresolved review threads of the open PRs into repo.review_threads."""
     if repo.review_threads is not None:
         return
     repo.review_threads = {}
@@ -280,12 +277,7 @@ def load_review_threads(repo):
                 f"number={pr['number']}",
             )
         repo.review_threads[pr["number"]] = [
-            (
-                ((t["comments"]["nodes"] or [{}])[0].get("author") or {}).get("login", "ghost"),
-                t["isOutdated"],
-            )
-            for t in threads
-            if not t["isResolved"]
+            t["isOutdated"] for t in threads if not t["isResolved"]
         ]
 
 
@@ -610,6 +602,20 @@ class Model:
             The PR's assignees, as an English list.
         """
         return and_list(self.assignees(n))
+
+    def unresolved_threads(self, n):
+        """Return the "Unresolved threads" cell of PR n.
+
+        Returns:
+            The number of the PR's unresolved review threads and how many of them are
+            outdated, or "" if it has none.
+        """
+        load_review_threads(self.repo)
+        threads = self.repo.review_threads.get(n, [])
+        if not threads:
+            return ""
+        outdated = sum(threads)
+        return str(len(threads)) + (f" ({outdated} outdated)" if outdated else "")
 
     def head_status(self, a, b):
         """Return whether a's branch has b's current commits.
@@ -1070,6 +1076,7 @@ def unblocked_doc(models, cfg, base, doc, as_of):
             "PR",
             *(["Author"] if show_author else []),
             "Assigned to",
+            "Unresolved threads",
             "Title",
             "Directory",
             "Needed by",
@@ -1089,6 +1096,7 @@ def unblocked_doc(models, cfg, base, doc, as_of):
                 r.link(n),
                 *author,
                 m.assigned_to(n),
+                m.unresolved_threads(n),
                 title(m, cfg, n),
                 pr_directory(r, n, base),
                 needed_by(m, n),
@@ -1366,8 +1374,8 @@ def gen_independent(model, cfg):
     r = model.repo
     notes = cfg["repos"][r.name].get("independent_notes", {})
     lines = [
-        "| PR | Assigned to | Title | Textual conflicts | Notes |",
-        "| --- | --- | --- | --- | --- |",
+        "| PR | Assigned to | Unresolved threads | Title | Textual conflicts | Notes |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for n in model.independent():
         note = notes.get(str(n), "")
@@ -1376,6 +1384,7 @@ def gen_independent(model, cfg):
         cells = [
             r.link(n),
             model.assigned_to(n),
+            model.unresolved_threads(n),
             title(model, cfg, n),
             textual_conflicts(model, cfg, n),
             note,
@@ -1388,8 +1397,8 @@ def pr_table(model, cfg, base, heading, rows):
     """Generate a table of PRs.
 
     The table's first columns are PR, Author (if the repository shows authors), Assigned to,
-    Title, and Directory; heading names the remaining columns, and rows maps each PR to the
-    cells of its remaining columns.
+    Unresolved threads, Title, and Directory; heading names the remaining columns, and rows
+    maps each PR to the cells of its remaining columns.
 
     Returns:
         The table's lines.
@@ -1399,6 +1408,7 @@ def pr_table(model, cfg, base, heading, rows):
         "PR",
         *(["Author"] if r.show_author else []),
         "Assigned to",
+        "Unresolved threads",
         "Title",
         "Directory",
         *heading,
@@ -1410,6 +1420,7 @@ def pr_table(model, cfg, base, heading, rows):
             r.link(n),
             *author,
             model.assigned_to(n),
+            model.unresolved_threads(n),
             title(model, cfg, n),
             pr_directory(r, n, base),
             *cells,
@@ -1456,40 +1467,6 @@ def gen_blocked(model, cfg, base):
         ["Depends on", "Stated in description", "Branch contains prerequisites' commits", "Notes"],
         [(n, [*dependency_cells(model, n), detail_notes(model, cfg, n)]) for n in model.blocked()],
     )
-
-
-def review_cells(model, n):
-    """Return the review cells of PR n.
-
-    Returns:
-        The "Unresolved threads" cell, which counts the PR's unresolved review threads and
-        how many of them are outdated, and the "Reviewers" cell, which gives the number of
-        those threads that each reviewer started.
-    """
-    threads = model.repo.review_threads.get(n, [])
-    outdated = sum(o for _, o in threads)
-    count = str(len(threads)) + (f" ({outdated} outdated)" if outdated else "")
-    by_reviewer = Counter(reviewer for reviewer, _ in threads)
-    reviewers = and_list(
-        f"{reviewer} ({k})"
-        for reviewer, k in sorted(by_reviewer.items(), key=lambda kv: (-kv[1], kv[0]))
-    )
-    return [count, reviewers]
-
-
-def gen_review_comments(model, cfg, base):
-    """Generate the "review-comments-REPO" section.
-
-    Returns:
-        The section's lines:  a table of the PRs that have unresolved review threads.
-    """
-    load_review_threads(model.repo)
-    rows = [
-        (n, review_cells(model, n)) for n in sorted(model.open) if model.repo.review_threads.get(n)
-    ]
-    if not rows:
-        return [f"No open {model.repo.label} PR has an unresolved review thread."]
-    return pr_table(model, cfg, base, ["Unresolved threads", "Reviewers"], rows)
 
 
 def gen_directories(models, cfg, base):
@@ -1607,7 +1584,6 @@ def section_generators(models, cfg, base):
         generators[f"independent-{name}"] = lambda m=m: gen_independent(m, cfg)
         generators[f"unblocked-{name}"] = lambda m=m: gen_unblocked(m, cfg, base)
         generators[f"blocked-{name}"] = lambda m=m: gen_blocked(m, cfg, base)
-        generators[f"review-comments-{name}"] = lambda m=m: gen_review_comments(m, cfg, base)
     return generators
 
 
@@ -1809,8 +1785,12 @@ def report_changes(models, old, new):
             removed = sorted(set(o["unblocked"]) - set(n["unblocked"]))
             if added:
                 out.append(f"newly unblocked: {r.refs(added)}")
-            if removed:
-                out.append(f"no longer unblocked (blocked or gone): {r.refs(removed)}")
+            blocked = [k for k in removed if k in m.open]
+            gone = [k for k in removed if k not in m.open]
+            if blocked:
+                out.append(f"newly blocked: {r.refs(blocked)}")
+            if gone:
+                out.append(f"no longer unblocked (gone): {r.refs(gone)}")
     return out
 
 
@@ -1980,12 +1960,6 @@ def default_dependency_document(models):
             f"## Blocked PRs{heading}",
             "",
             *generated(f"blocked-{name}"),
-            "",
-            f"## PRs with unaddressed review comments{heading}",
-            "",
-            "Each of these PRs has a review thread that is not resolved.",
-            "",
-            *generated(f"review-comments-{name}"),
         ]
     lines += [
         "",
