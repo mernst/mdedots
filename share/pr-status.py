@@ -17,14 +17,16 @@ Each run:
     config says so,
   * updates each modeled PR description's "Land after" and "Land before" lines,
   * prints what changed since the previous snapshot (input for the summary),
-  * renames the working copies whose name does not match their branch's PR, when
-    doing so loses no information,
+  * renames the working copies whose name does not match their branch's PR, and
+    re-creates the ones whose origin is not the PR's head repository as working trees
+    of a clone of that repository, when doing so loses no information,
   * prints the directories whose name or origin does not match their branch's PR,
   * rewrites the unblocked documents entirely, and the parts of the dependency
     document between <!-- BEGIN GENERATED: name --> and <!-- END GENERATED: name -->
     (or creates the dependency document, if it does not exist).
 """
 
+import argparse
 import datetime as dt
 import hashlib
 import itertools
@@ -32,6 +34,7 @@ import json
 import operator
 import pathlib
 import re
+import shlex
 import subprocess
 import sys
 from collections import Counter, defaultdict
@@ -57,6 +60,15 @@ def succeeds(cmd):
         Whether the command succeeded.
     """
     return subprocess.run(cmd, check=False, capture_output=True).returncode == 0
+
+
+def command_failure(error):
+    """Describe a command that run raised error for.
+
+    Returns:
+        One line:  the command and its standard error.
+    """
+    return f"{shlex.join(error.cmd)} failed: {' '.join(error.stderr.split())}"
 
 
 def and_list(items):
@@ -502,11 +514,11 @@ class Model:
                 deps[m].add(n)
         # A stacked PR depends on the PR whose branch is its base branch.
         self.base_pr = {}
-        by_head = {(pr["owner"], pr["headRefName"]): m for m, pr in repo.prs.items()}
+        by_head = {(pr["owner"].lower(), pr["headRefName"]): m for m, pr in repo.prs.items()}
         for n in open_prs:
             base = repo.prs[n]["baseRefName"]
             if base != repo.default_branch:
-                m = by_head.get((repo.owner, base))
+                m = by_head.get((repo.owner.lower(), base))
                 if m in open_prs:
                     deps[n].add(m)
                     self.base_pr[n] = m
@@ -982,35 +994,141 @@ def pr_state(pr):
     return {"MERGED": "landed", "CLOSED": "closed"}.get(pr["state"], pr["state"].lower())
 
 
-def rename_obstacle(base, d, new, owner):
-    """Return why renaming entry d of base to new might lose information.
+def worktree_paths(path):
+    """Return the working trees of the repository whose working tree is path.
 
     Returns:
-        The reason, or None if d can be renamed:  d's origin is owner's repository, no entry of
-        base is named new or links to d, and d's repository has no other working tree.
+        The paths of the working trees, the main one first.
+    """
+    out = run(["git", "-C", str(path), "worktree", "list", "--porcelain"])
+    return [
+        line.removeprefix("worktree ") for line in out.splitlines() if line.startswith("worktree ")
+    ]
+
+
+def is_linked_worktree(path):
+    """Return whether path is a linked working tree, which `git worktree add` created.
+
+    Returns:
+        True if path/.git is a file rather than a directory.
+    """
+    return pathlib.Path(path, ".git").is_file()
+
+
+def fork_clone(base, owner, name):
+    """Find a clone of owner's repository name, in which to create a working tree.
+
+    Returns:
+        An entry of base whose origin is owner/name, or None.
+    """
+    clones = [
+        d
+        for d, info in scan_directories(base).items()
+        if info[0] == "git" and info[1:3] == (owner, name)
+    ]
+    return clones[0] if clones else None
+
+
+def rename_obstacle(models, base, d, new, owner):
+    """Return why fix_directory cannot rename entry d of base to new without losing information.
+
+    If d's origin is not owner's repository, fix_directory re-creates d as a working tree of
+    a clone of owner's repository; then d must be a linked working tree with no staged
+    changes, and base must contain such a clone.
+
+    Returns:
+        The reason, or None if d can be renamed.
     """
     path = pathlib.Path(base, d)
     info = scan_directories(base)[d]
+    if any(pathlib.Path(m.repo.clone).resolve() == path.resolve() for m in models):
+        return "it is the clone that pr-status.py analyzes"
+    if new != d:
+        if pathlib.Path(base, new).exists() or pathlib.Path(base, new).is_symlink():
+            return f"{new} exists"
+        for e, other in scan_directories(base).items():
+            if other[0] == "link" and pathlib.Path(base, other[1]).resolve() == path.resolve():
+                return f"{e} links to it"
     if info[1] != owner:
-        return f"its origin is {info[1]}/{info[2]}"
-    if pathlib.Path(base, new).exists() or pathlib.Path(base, new).is_symlink():
-        return f"{new} exists"
-    for e, other in scan_directories(base).items():
-        if other[0] == "link" and pathlib.Path(base, other[1]).resolve() == path.resolve():
-            return f"{e} links to it"
-    worktrees = run(["git", "-C", str(path), "worktree", "list", "--porcelain"])
-    if sum(line.startswith("worktree ") for line in worktrees.splitlines()) > 1:
-        return "its repository has another working tree"
+        if not is_linked_worktree(path):
+            return f"its origin is {info[1]}/{info[2]}, and it is not a linked working tree"
+        if fork_clone(base, owner, info[2]) is None:
+            return (
+                f"its origin is {info[1]}/{info[2]}, and no entry is a clone of {owner}/{info[2]}"
+            )
+        if not succeeds(["git", "-C", str(path), "diff", "--cached", "--quiet"]):
+            return f"its origin is {info[1]}/{info[2]}, and it has staged changes"
     return None
 
 
-def rename_directory(base, d, new):
-    """Rename entry d of base to new, and record the rename in the result of scan_directories."""
+def record_directory(base, d, new, info):
+    """Record in the result of scan_directories that entry d of base is now new, with info."""
     global DIRECTORIES
-    pathlib.Path(base, d).rename(pathlib.Path(base, new))
     entries = scan_directories(base)
-    entries[new] = entries.pop(d)
+    del entries[d]
+    entries[new] = info
     DIRECTORIES = dict(sorted(entries.items()))
+
+
+def fix_directory(base, d, new, owner):
+    """Rename entry d of base to new, and make its origin owner's repository.
+
+    If d's origin is another repository, re-create d as a working tree of a clone of owner's
+    repository, retaining every file in d, including untracked and ignored ones.  Otherwise,
+    rename d, which may be a main or a linked working tree.  rename_obstacle must have
+    returned None.
+
+    Returns:
+        None, or a problem that prevented completing the fix.
+    """
+    info = scan_directories(base)[d]
+    path, new_path = pathlib.Path(base, d), pathlib.Path(base, new)
+    if info[1] == owner:
+        if is_linked_worktree(path):
+            run(["git", "-C", str(path), "worktree", "move", str(path), str(new_path)])
+        else:
+            path.rename(new_path)
+            if len(worktree_paths(new_path)) > 1:
+                # Each linked working tree refers to the main one by its path.
+                run(["git", "-C", str(new_path), "worktree", "repair"])
+        record_directory(base, d, new, info)
+        return None
+    branch = info[3]
+    old = ["git", "-C", str(path)]
+    fork = ["git", "-C", str(pathlib.Path(base, fork_clone(base, owner, info[2])))]
+    head = run([*old, "rev-parse", "HEAD"])
+    status = run([*old, "status", "--porcelain"])
+    created = run([*old, "config", "--default", "", f"branch.{branch}.createdforbranchdirectory"])
+    # Fetching fails if it would lose commits of the fork's branch, or if the fork's branch is
+    # checked out.  Nothing has changed yet.
+    run([*fork, "fetch", str(path), f"refs/heads/{branch}:refs/heads/{branch}"])
+    if succeeds([*fork, "fetch", "--quiet", "origin", branch]):
+        run([*fork, "branch", "--quiet", f"--set-upstream-to=origin/{branch}", branch])
+    if created.strip():
+        run([*fork, "config", f"branch.{branch}.createdforbranchdirectory", created.strip()])
+    main_worktree = worktree_paths(path)[0]
+    # A name that starts with "." is not an entry for scan_directories.
+    holder = pathlib.Path(base, f".pr-status-{d}")
+    run([*old, "worktree", "move", str(path), str(holder)])
+    new_git = ["git", "-C", str(new_path)]
+    try:
+        run([*fork, "worktree", "add", "--quiet", "--no-checkout", str(new_path), branch])
+        for entry in holder.iterdir():
+            if entry.name != ".git":
+                entry.rename(new_path / entry.name)
+        run([*new_git, "reset", "--quiet"])
+        record_directory(base, d, new, ("git", owner, info[2], branch))
+        if (
+            run([*new_git, "rev-parse", "HEAD"]) != head
+            or run([*new_git, "status", "--porcelain"]) != status
+        ):
+            return f"the git status of {new} differs from that of {d}, which is now {holder}"
+    except subprocess.CalledProcessError as error:
+        return f"{command_failure(error)}; {d} is now {holder}"
+    except OSError as error:
+        return f"{error}; {d} is now {holder}"
+    run(["git", "-C", main_worktree, "worktree", "remove", "--force", str(holder)])
+    return None
 
 
 def directory_problems(models, base, fix=False):
@@ -1021,16 +1139,36 @@ def directory_problems(models, base, fix=False):
     repository's owner may also be in PROJECT-branch-BRANCH (or PROJECT).  A "/" in BRANCH is
     written as "-".
 
-    If fix is true, rename each misnamed working copy to PROJECT-fork-OWNER-branch-BRANCH,
-    unless it is the working copy of more than one PR or renaming it might lose information
-    (see rename_obstacle).
+    If fix is true, rename each misnamed working copy to PROJECT-fork-OWNER-branch-BRANCH, and
+    re-create each working copy whose origin is not OWNER's repository as a working tree of a
+    clone of OWNER's repository (see fix_directory), unless it is the working copy of more
+    than one PR or fixing it might lose information (see rename_obstacle).
 
     Returns:
-        A pair:  one line for each problem, and one line for each rename.
+        A pair:  one line for each problem, and one line for each fix.
     """
     by_repo = {m.repo.gh.lower().split("/")[1]: m.repo for m in models}
     problems = []
     renames = []
+
+    def fix_or_report(d, ref, new, owner, problem):
+        """Fix entry d of base, the working copy of ref; report problem if that fails."""
+        obstacle = rename_obstacle(models, base, d, new, owner)
+        if obstacle is None:
+            info = scan_directories(base)[d]
+            clone = fork_clone(base, owner, info[2]) if info[1] != owner else None
+            try:
+                obstacle = fix_directory(base, d, new, owner)
+            except subprocess.CalledProcessError as error:
+                obstacle = command_failure(error)
+            if obstacle is None:
+                fixed = d if new == d else f"{d} -> {new}"
+                if clone:
+                    fixed += f", now a working tree of {clone}"
+                renames.append(f"{fixed} (the working copy of {ref})")
+                return
+        problems.append(f"{problem}; not fixed: {obstacle}")
+
     wanted = defaultdict(list)  # directory -> [(PR reference, new name, PR owner)]
     for m in models:
         r = m.repo
@@ -1049,29 +1187,33 @@ def directory_problems(models, base, fix=False):
     for d, prs in sorted(wanted.items()):
         if fix and len(prs) == 1:
             ref, new, owner = prs[0]
-            obstacle = rename_obstacle(base, d, new, owner)
-            if obstacle is None:
-                rename_directory(base, d, new)
-                renames.append(f"{d} -> {new} (the working copy of {ref})")
-                continue
-            problems.append(
-                f"{d}: the working copy of {ref} should be named {new}; not renamed: {obstacle}"
+            fix_or_report(
+                d, ref, new, owner, f"{d}: the working copy of {ref} should be named {new}"
             )
             continue
         problems += [f"{d}: the working copy of {ref} should be named {new}" for ref, new, _ in prs]
-    for d, info in scan_directories(base).items():
+    for d, info in list(scan_directories(base).items()):
         r = by_repo.get(info[2]) if info[0] == "git" else None
         if r is None or info[1] != r.owner.lower() or info[3] in (r.default_branch, ""):
             continue
         prs = prs_with_head(r, info[3])
         if any(head_owner(p) == info[1] for p in prs):
             continue
-        problems += [
+        prs = sorted((p for p in prs if head_owner(p)), key=operator.itemgetter("number"))
+        lines = [
             f"{d}: its origin is {r.gh}, but the branch {info[3]} of the {pr_state(p)} "
             f"{r.ref(p['number'])} is in {head_owner(p)}/{info[2]}"
-            for p in sorted(prs, key=operator.itemgetter("number"))
-            if head_owner(p)
+            for p in prs
         ]
+        owners = {head_owner(p) for p in prs}
+        # A misnamed directory has already been fixed, or reported, above.
+        if fix and len(owners) == 1 and d not in wanted:
+            (owner,) = owners
+            new = f"{r.dir_name}-fork-{owner}-branch-{info[3].replace('/', '-')}"
+            ref = r.refs(p["number"] for p in prs)
+            fix_or_report(d, ref, new, owner, "; ".join(lines))
+            continue
+        problems += lines
     return problems, renames
 
 
@@ -2023,7 +2165,15 @@ def default_dependency_document(models):
 
 def main():
     """Report changes and regenerate the documents."""
-    check_only = "--check" in sys.argv[1:]
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="report changes, but change no document, snapshot, PR description, or directory",
+    )
+    check_only = parser.parse_args().check
     base = str(pathlib.Path.cwd())
     if pathlib.Path(CONFIG).exists():
         with pathlib.Path(CONFIG).open() as f:
@@ -2058,7 +2208,7 @@ def main():
             print(m.repo.refs(m.cyclic))
     problems, renames = directory_problems(models, base, fix=not check_only)
     if renames:
-        print("## Renamed directories, to match their branch's PR")
+        print("## Fixed directories, to match their branch's PR")
         for line in renames:
             print(line)
     if problems:
@@ -2080,7 +2230,6 @@ def main():
                     f"{m.repo.ref(n)}: "
                     + ", ".join(f"{m.repo.ref(k)} ({s})" for k, s in m.stated_closed[n])
                 )
-        sys.exit(1)
     if updates and check_only:
         print("## GitHub PR descriptions need updates")
         for m, n, _ in updates:
@@ -2103,6 +2252,8 @@ def main():
         f"## Wrote {', '.join(d['file'] for d in docs['unblocked'])}, the generated sections of "
         f"{docs['dependencies']}, and {SNAPSHOT}"
     )
+    if failed_updates:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
