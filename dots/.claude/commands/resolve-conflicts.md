@@ -1,6 +1,6 @@
 # Resolve conflicts among dependent PRs
 
-Run @$HOME/bin/share/pr-status.py .
+Run @$HOME/bin/share/pr-status.py
 
 See @pr-dependencies.md section "Dependency chains with conflicts".  Where there is a conflict between dependent branches (including with master), merge it and push the result.  Merge in dependency sequence.
 
