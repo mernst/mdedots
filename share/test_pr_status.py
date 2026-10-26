@@ -191,14 +191,10 @@ class PushChainsTest(unittest.TestCase):
 class SectionGeneratorsTest(unittest.TestCase):
     """Tests for section_generators."""
 
-    def test_configures_conflicting_commands_section(self):
-        """The conflict-only section is opt-in for each dependency document."""
-        without = pr_status.section_generators([], {"documents": {}}, "/base")
-        with_conflicts = pr_status.section_generators(
-            [], {"documents": {"conflicting_push_commands": True}}, "/base"
-        )
-        self.assertNotIn("conflicting-push-commands", without)
-        self.assertIn("conflicting-push-commands", with_conflicts)
+    def test_generates_conflicting_commands_section(self):
+        """The conflict-only section is generated without any configuration."""
+        generators = pr_status.section_generators([], {"documents": {}}, "/base")
+        self.assertIn("conflicting-push-commands", generators)
 
 
 if __name__ == "__main__":
