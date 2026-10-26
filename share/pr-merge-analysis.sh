@@ -46,7 +46,10 @@ fi
 # The ref is named "master" whatever the default branch, so that callers need not know it.
 REFSPECS=("+refs/heads/$DEFAULT_BRANCH:refs/remotes/csm/master")
 for n in $P; do REFSPECS+=("+refs/pull/$n/head:refs/remotes/pr/$n"); done
-$G fetch -q "https://github.com/$2.git" "${REFSPECS[@]}" || exit 1
+# Authenticate as gh does, so that a private repository can be fetched, and never
+# prompt for a username.
+GIT_TERMINAL_PROMPT=0 $G -c credential.helper= -c 'credential.helper=!gh auth git-credential' \
+  fetch -q "https://github.com/$2.git" "${REFSPECS[@]}" || exit 1
 MSHA=$($G rev-parse refs/remotes/csm/master)
 
 declare -A SHA CACHED CURRENT
