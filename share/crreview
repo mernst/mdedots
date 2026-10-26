@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Usage: crreview [<interval>]
+# Ask CodeRabbit to review the current branch's PR,
+# optionally waiting the interval (passed to `sleep`) first.
+
+if [ "$#" -gt 1 ]; then
+  echo "crreview: pass at most one argument; received $*" >&2
+  exit 2
+fi
+if [ "$#" -eq 1 ]; then
+  # Validate the number, after removing any suffix.
+  case "${1%[smhd]}" in
+    '' | . | *[!0-9.]* | *.*.*)
+      echo "crreview: the argument must be a sleep interval such as 30 or 5m; received $1" >&2
+      exit 2
+      ;;
+  esac
+fi
+# Find the PR now, so that an error is reported rather than discarded by the background job.
+url=$(gh pr view --json url --jq .url) || exit 1
+if [ "$#" -eq 1 ]; then
+  # shellcheck disable=SC2016 # "$1" and "$2" are expanded by the inner shell, not by this one
+  nohup sh -c 'sleep "$1" && gh pr comment "$2" --body "@coderabbitai review"' sh "$1" "$url" > /dev/null 2>&1 &
+  exit 0
+fi
+gh pr comment "$url" --body "@coderabbitai review"

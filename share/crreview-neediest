@@ -1,0 +1,162 @@
+#!/bin/bash
+
+# Usage: crreview-neediest [--dry-run] [--verbose]
+#
+# Comment "@coderabbitai review" on one open, non-draft pull request: of the
+# PRs that involve me (authored, assigned, commented, mentioned, reviewed, or
+# with a review requested), the one with the most non-merge commits that
+# CodeRabbit has not reviewed.  Merge commits and merge conflicts are ignored.  It is
+# intended to be run hourly from cron, because CodeRabbit limits how many
+# reviews it performs per hour.
+#
+#   --dry-run  do not comment; just report which PR would be chosen
+#   --verbose  list every PR that is ignored because CodeRabbit is not enabled
+#              on it, and every PR that has unreviewed non-merge commits
+#
+# A PR is considered only if CodeRabbit is enabled on it, as shown by its having
+# commented on or reviewed the PR.
+# A PR is skipped if CodeRabbit's most recent reply to a review request says
+# that the PR has too many files.  A PR is also skipped if a review was
+# requested after its last commit, unless CodeRabbit replied that it was rate
+# limited or that the PR changed.  Thus, each head commit is requested at most
+# once, plus retries after those transient failures.
+#
+# The last commit that CodeRabbit reviewed is the latest one (among the PR's
+# last 100 commits) indicated by any of:
+#  * a PR review by CodeRabbit (made only when it has comments),
+#  * the markers in CodeRabbit's summary comment, or
+#  * a reply of "Review finished" or "Already reviewed the last commit" to a
+#    review request; this indicates the last commit committed before the reply.
+
+set -o errexit -o nounset -o pipefail
+
+dry_run=false
+verbose=false
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry_run=true ;;
+    --verbose) verbose=true ;;
+    *)
+      echo "crreview-neediest: unknown argument $arg" >&2
+      exit 2
+      ;;
+  esac
+done
+
+# Run the command, retrying if it fails, as GitHub's GraphQL API sometimes does.
+# Each attempt's output is buffered so that a failed attempt produces no output.
+retry() {
+  local attempt=1 output
+  until output=$("$@"); do
+    if [ "$attempt" -eq 3 ]; then
+      return 1
+    fi
+    sleep $((attempt * 30))
+    attempt=$((attempt + 1))
+  done
+  printf '%s\n' "$output"
+}
+
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
+
+# The first comments include CodeRabbit's summary comment; only its id is
+# fetched here, because the summary comment is large.  The last comments
+# include requests for reviews and CodeRabbit's replies to them.
+# shellcheck disable=SC2016 # "$q" and "$endCursor" are GraphQL variables
+search_query='query($q: String!, $endCursor: String) {
+  search(query: $q, type: ISSUE, first: 20, after: $endCursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      ... on PullRequest {
+        id
+        url
+        locked
+        commits(last: 100) { nodes { commit { oid committedDate parents { totalCount } } } }
+        reviews(last: 20, author: "coderabbitai[bot]") { nodes { commit { oid } } }
+        firstComments: comments(first: 100) { nodes { id author { login } } }
+        lastComments: comments(last: 30) { nodes { author { login } createdAt body } }
+      }
+    }
+  }
+}'
+for qualifier in involves reviewed-by review-requested; do
+  retry gh api graphql --paginate -f q="is:pr is:open draft:false archived:false $qualifier:@me" -f query="$search_query"
+done | jq -s '[.[].data.search.nodes[]] | unique_by(.id)' > "$tmpdir/prs.json"
+
+# Fetch the bodies of CodeRabbit's summary comments, 100 per request.
+jq -c '[.[].firstComments.nodes[] | select(.author.login == "coderabbitai") | .id]
+       | . as $ids | range(0; length; 100) | $ids[.:. + 100]
+       | {query: "query($ids: [ID!]!) { nodes(ids: $ids) { ... on IssueComment { id body } } }",
+          variables: {ids: .}}' "$tmpdir/prs.json" > "$tmpdir/summary-requests.jsonl"
+while IFS= read -r request; do
+  printf '%s\n' "$request" > "$tmpdir/request.json"
+  retry gh api graphql --input "$tmpdir/request.json"
+done < "$tmpdir/summary-requests.jsonl" |
+  jq -s '[.[].data.nodes[]] | map({(.id): .body}) | add // {}' > "$tmpdir/summaries.json"
+
+# CodeRabbit is enabled on a PR if CodeRabbit has commented on or reviewed the PR.
+jq 'map(.coderabbit_enabled = ((.reviews.nodes | length) > 0
+          or any(.firstComments.nodes[], .lastComments.nodes[]; .author.login == "coderabbitai")))' \
+  "$tmpdir/prs.json" > "$tmpdir/prs-coderabbit-enabled.json"
+if [ "$verbose" = true ]; then
+  jq -r 'sort_by(.url)[] | select(.coderabbit_enabled | not)
+         | "Ignoring \(.url): CodeRabbit is not enabled on it (it has never commented or reviewed)"' \
+    "$tmpdir/prs-coderabbit-enabled.json"
+fi
+
+# Output: an array of {url, count, oldest}, neediest first.
+jq --slurpfile summaries "$tmpdir/summaries.json" '
+  $summaries[0] as $summary_bodies
+  # The commits that a summary comment says CodeRabbit has reviewed.
+  | def summary_reviewed_oids:
+      (scan("final_review_risk_coverage:(\\{[^}]*\\})")[0]
+        | fromjson? | select(.kind == "reviewed") | .coveredCommitId),
+      (scan("(?s)<!-- recent_review_start -->(.*?)<!-- recent_review_end -->")[0]
+        | [scan("between [0-9a-f]{40} and ([0-9a-f]{40})")[0]] | last // empty),
+      (scan("Last reviewed commit: ([0-9a-f]{40})")[0]);
+  [ .[]
+    | select(.coderabbit_enabled and (.locked | not))
+    | ([.firstComments.nodes[] | select(.author.login == "coderabbitai")][0].id) as $summary_id
+    | [.lastComments.nodes[]
+        | select(.author.login == "coderabbitai"
+                 and (.body | test("Action performed|Action not completed")))] as $replies
+    | select(($replies | last | .body // "") | test("exceed the limit") | not)
+    | [.commits.nodes[].commit] as $commits
+    # The last review request made after the head commit.
+    | ([.lastComments.nodes[]
+        | select((.body | test("^\\s*@coderabbitai (full )?review\\s*$"))
+                 and .createdAt > $commits[-1].committedDate)] | last) as $request
+    | select($request == null
+             or (([$replies[] | select(.createdAt >= $request.createdAt)][0].body // "")
+                 | test("rate limited|base or head changed")))
+    | ([.reviews.nodes[].commit.oid]
+       + [($summary_bodies[$summary_id // ""] // "") | summary_reviewed_oids]) as $reviewed_oids
+    | ([$replies[] | select(.body | test("Review finished|Already reviewed the last commit"))
+        | .createdAt]) as $reviewed_times
+    | ([($commits | to_entries[] | select(.value.oid as $oid | $reviewed_oids | index($oid)) | .key),
+        ($reviewed_times[] as $time
+         | $commits | to_entries | map(select(.value.committedDate <= $time)) | last | .key // empty)]
+       | max // -1) as $last_reviewed
+    | [$commits[$last_reviewed + 1:][] | select(.parents.totalCount == 1)] as $unreviewed
+    | select($unreviewed | length > 0)
+    | {url, count: ($unreviewed | length), oldest: $unreviewed[0].committedDate} ]
+  # Most unreviewed commits first; among ties, the one that has waited longest.
+  | sort_by(-.count, .oldest)
+' "$tmpdir/prs-coderabbit-enabled.json" > "$tmpdir/needy.json"
+
+if [ "$verbose" = true ]; then
+  jq -r '.[] | "\(.count)\t\(.url)"' "$tmpdir/needy.json"
+fi
+
+url=$(jq -r '.[0].url // empty' "$tmpdir/needy.json")
+if [ -z "$url" ]; then
+  exit 0
+fi
+count=$(jq -r '.[0].count' "$tmpdir/needy.json")
+if [ "$dry_run" = true ]; then
+  echo "Would request a CodeRabbit review of $url ($count unreviewed non-merge commits)"
+  exit 0
+fi
+gh pr comment "$url" --body "@coderabbitai review" > /dev/null
+echo "Requested a CodeRabbit review of $url ($count unreviewed non-merge commits)"

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Regenerate the PR status documents in the current directory.
 
-Usage (run in the directory that holds the documents):
+Usage (run in the directory that holds the documents and the working copies, which
+must not itself be in a git working copy, or pass that directory with -C):
   pr-status.py            # snapshot, report changes, regenerate the documents
   pr-status.py --check    # snapshot and report changes, but write no document
+  pr-status.py -C DIR     # work in DIR instead of the current directory
 
 Inputs:
-  pr-status-config.json   hand-maintained:  repositories, notes, labels, decisions
-                          (optional; see default_config for the default)
-  pr-status-snapshot.json written by the previous run; compared with this run
+  pr-status-config.json    hand-maintained:  repositories, notes, labels, decisions
+                           (optional; see default_config for the default)
+  .pr-status-snapshot.json written by the previous run; compared with this run
 Each run:
   * reads the open PRs with gh,
   * runs pr-merge-analysis.sh (cached) on them, for each repository,
@@ -17,24 +19,31 @@ Each run:
     config says so,
   * updates each modeled PR description's "Land after" and "Land before" lines,
   * prints what changed since the previous snapshot (input for the summary),
+  * renames the working copies whose name does not match their branch's PR, and
+    re-creates the ones whose origin is not the PR's head repository as working trees
+    of a clone of that repository, when doing so loses no information,
+  * prints the directories whose name or origin does not match their branch's PR,
   * rewrites the unblocked documents entirely, and the parts of the dependency
     document between <!-- BEGIN GENERATED: name --> and <!-- END GENERATED: name -->
     (or creates the dependency document, if it does not exist).
 """
 
+import argparse
 import datetime as dt
 import hashlib
 import itertools
 import json
 import operator
+import os
 import pathlib
 import re
+import shlex
 import subprocess
 import sys
 from collections import Counter, defaultdict
 
 CONFIG = "pr-status-config.json"
-SNAPSHOT = "pr-status-snapshot.json"
+SNAPSHOT = ".pr-status-snapshot.json"
 ANALYSIS = str(pathlib.Path("~/bin/share/pr-merge-analysis.sh").expanduser())
 
 
@@ -54,6 +63,15 @@ def succeeds(cmd):
         Whether the command succeeded.
     """
     return subprocess.run(cmd, check=False, capture_output=True).returncode == 0
+
+
+def command_failure(error):
+    """Describe a command that run raised error for.
+
+    Returns:
+        One line:  the command and its standard error.
+    """
+    return f"{shlex.join(error.cmd)} failed: {' '.join(error.stderr.split())}"
 
 
 def and_list(items):
@@ -98,6 +116,9 @@ class Repo:
         self.contains = set()  # (a, b): a contains all non-merge commits of b
         self.pair_conflicts = {}  # (a, b) with a < b -> list of files
         self.closed_state = {}  # number -> "landed" | "closed" | None (not a PR)
+        # number -> list of whether each unresolved review thread is outdated;
+        # None until load_review_threads runs.
+        self.review_threads = None
 
     def ref(self, n):
         """Return how documents refer to PR n.
@@ -122,6 +143,14 @@ class Repo:
             The PRs' references, in numeric order, as an English list.
         """
         return and_list(self.ref(n) for n in sorted(ns))
+
+    def links(self, ns):
+        """Return Markdown links to the PRs ns.
+
+        Returns:
+            The PRs' links, in numeric order, as an English list.
+        """
+        return and_list(self.link(n) for n in sorted(ns))
 
     def state_of(self, n):
         """Return the state of PR n, which is not open.
@@ -198,6 +227,85 @@ def load_repo(repo, pairwise=True):
             repo.pair_conflicts[int(m[1]), int(m[2])] = m[3].split()
 
 
+REVIEW_THREAD_FIELDS = "isResolved isOutdated"
+
+REVIEW_THREADS_QUERY = """
+query($owner: String!, $name: String!, $endCursor: String) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(states: OPEN, first: 50, after: $endCursor) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number
+        reviewThreads(first: 100) { pageInfo { hasNextPage } nodes { FIELDS } }
+      }
+    }
+  }
+}
+""".replace("FIELDS", REVIEW_THREAD_FIELDS)
+
+PR_REVIEW_THREADS_QUERY = """
+query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100, after: $endCursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes { FIELDS }
+      }
+    }
+  }
+}
+""".replace("FIELDS", REVIEW_THREAD_FIELDS)
+
+
+def review_thread_query(repo, query, jq, *fields):
+    """Run a paginated GraphQL query about repo, whose variables are $owner, $name, and fields.
+
+    Returns:
+        The objects that the jq filter jq yields from each page of the result.
+    """
+    owner, name = repo.gh.split("/")
+    out = run(
+        [
+            "gh",
+            "api",
+            "graphql",
+            "--paginate",
+            "-f",
+            f"owner={owner}",
+            "-f",
+            f"name={name}",
+            *(arg for field in fields for arg in ("-F", field)),
+            "-f",
+            f"query={query}",
+            "--jq",
+            jq,
+        ]
+    )
+    return [json.loads(line) for line in out.splitlines()]
+
+
+def load_review_threads(repo):
+    """Read the unresolved review threads of the open PRs into repo.review_threads."""
+    if repo.review_threads is not None:
+        return
+    repo.review_threads = {}
+    for pr in review_thread_query(
+        repo, REVIEW_THREADS_QUERY, ".data.repository.pullRequests.nodes[]"
+    ):
+        threads = pr["reviewThreads"]["nodes"]
+        if pr["reviewThreads"]["pageInfo"]["hasNextPage"]:
+            # Query the PR's threads on their own, because --paginate pages only through PRs.
+            threads = review_thread_query(
+                repo,
+                PR_REVIEW_THREADS_QUERY,
+                ".data.repository.pullRequest.reviewThreads.nodes[]",
+                f"number={pr['number']}",
+            )
+        repo.review_threads[pr["number"]] = [
+            t["isOutdated"] for t in threads if not t["isResolved"]
+        ]
+
+
 PR_STATES = {"OPEN": "open", "MERGED": "landed", "CLOSED": "closed"}
 
 
@@ -218,6 +326,16 @@ def external_state(ref):
         except subprocess.CalledProcessError:
             EXTERNAL_STATE[ref] = None
     return EXTERNAL_STATE[ref]
+
+
+def external_link(ref):
+    """Return a Markdown link to a PR "owner/repo#N" in another repository.
+
+    Returns:
+        A link whose text is ref and whose target is the PR on GitHub.
+    """
+    gh, n = ref.split("#")
+    return f"[{ref}](https://github.com/{gh}/pull/{n})"
 
 
 def query_pr_states(refs):
@@ -417,11 +535,11 @@ class Model:
                 deps[m].add(n)
         # A stacked PR depends on the PR whose branch is its base branch.
         self.base_pr = {}
-        by_head = {(pr["owner"], pr["headRefName"]): m for m, pr in repo.prs.items()}
+        by_head = {(pr["owner"].lower(), pr["headRefName"]): m for m, pr in repo.prs.items()}
         for n in open_prs:
             base = repo.prs[n]["baseRefName"]
             if base != repo.default_branch:
-                m = by_head.get((repo.owner, base))
+                m = by_head.get((repo.owner.lower(), base))
                 if m in open_prs:
                     deps[n].add(m)
                     self.base_pr[n] = m
@@ -520,6 +638,20 @@ class Model:
         """
         return and_list(self.assignees(n))
 
+    def unresolved_threads(self, n):
+        """Return the "Unresolved threads" cell of PR n.
+
+        Returns:
+            The number of the PR's unresolved review threads and how many of them are
+            outdated, or "" if it has none.
+        """
+        load_review_threads(self.repo)
+        threads = self.repo.review_threads.get(n, [])
+        if not threads:
+            return ""
+        outdated = sum(threads)
+        return str(len(threads)) + (f" ({outdated} outdated)" if outdated else "")
+
     def head_status(self, a, b):
         """Return whether a's branch has b's current commits.
 
@@ -539,7 +671,7 @@ class Model:
         return "none" if len(missing) == len(own) else "newest"
 
     def levels(self):
-        """Compute each PR's step in the merge order.
+        """Compute each PR's level in the dependency graph.
 
         Returns:
             A map from each PR in the dependency graph to 1 plus the largest level of its
@@ -652,10 +784,10 @@ def needed_by(model, n):
     if not direct:
         return ""
     r = model.repo
-    text = r.refs(direct)
+    text = r.links(direct)
     more = model.all_dependents[n] - direct
     if more:
-        text += f" (and transitively {r.refs(more)})"
+        text += f" (and transitively {r.links(more)})"
     return text
 
 
@@ -666,11 +798,13 @@ def depends_on(model, n):
         The PR's direct prerequisites, followed by its transitive ones.
     """
     r = model.repo
-    items = [r.ref(d) for d in sorted(model.direct[n])] + model.external[n]
+    items = [r.link(d) for d in sorted(model.direct[n])] + [
+        external_link(e) for e in model.external[n]
+    ]
     text = and_list(items)
     more = model.all_deps[n] - model.direct[n]
     if more:
-        text += f" (and transitively {r.refs(more)})"
+        text += f" (and transitively {r.links(more)})"
     return text
 
 
@@ -686,11 +820,11 @@ def auto_notes(model, n, master=True):
     r = model.repo
     notes = []
     if n in model.base_pr:
-        notes.append(f"its base branch is {r.ref(model.base_pr[n])}'s branch")
+        notes.append(f"its base branch is {r.link(model.base_pr[n])}'s branch")
     landed = [m for m, s in model.stated_closed[n] if s == "landed"]
     if landed:
         notes.append(
-            f"its description still names the landed {r.refs(landed)} as "
+            f"its description still names the landed {r.links(landed)} as "
             + ("a prerequisite" if len(landed) == 1 else "prerequisites")
         )
     if master and n in r.master_conflicts:
@@ -834,6 +968,278 @@ def pr_directory(repo, n, base):
     return ", ".join(f"`{base}/{d}/`" for d in dirs) if dirs else "(none)"
 
 
+PRS_WITH_HEAD = {}  # (GitHub repository, branch) -> gh JSON of every PR with that head branch
+
+
+def prs_with_head(repo, branch):
+    """Find the PRs, in any state and from any fork, whose head branch is branch.
+
+    Returns:
+        The gh JSON of each PR:  its number, state, and head repository's owner.
+    """
+    key = repo.gh, branch
+    if key not in PRS_WITH_HEAD:
+        PRS_WITH_HEAD[key] = json.loads(
+            run(
+                [
+                    "gh",
+                    "pr",
+                    "list",
+                    "-R",
+                    repo.gh,
+                    "--state",
+                    "all",
+                    "--head",
+                    branch,
+                    "--json",
+                    "number,state,headRepositoryOwner",
+                ]
+            )
+        )
+    return PRS_WITH_HEAD[key]
+
+
+def head_owner(pr):
+    """Return the lowercase owner of a PR's head repository, from gh JSON.
+
+    Returns:
+        The owner, or "" if the head repository has been deleted.
+    """
+    return (pr.get("headRepositoryOwner") or {}).get("login", "").lower()
+
+
+def pr_state(pr):
+    """Return the state of a PR, from gh JSON.
+
+    Returns:
+        "landed", "closed", or "open".
+    """
+    return {"MERGED": "landed", "CLOSED": "closed"}.get(pr["state"], pr["state"].lower())
+
+
+def worktree_paths(path):
+    """Return the working trees of the repository whose working tree is path.
+
+    Returns:
+        The paths of the working trees, the main one first.
+    """
+    out = run(["git", "-C", str(path), "worktree", "list", "--porcelain"])
+    return [
+        line.removeprefix("worktree ") for line in out.splitlines() if line.startswith("worktree ")
+    ]
+
+
+def is_linked_worktree(path):
+    """Return whether path is a linked working tree, which `git worktree add` created.
+
+    Returns:
+        True if path/.git is a file rather than a directory.
+    """
+    return pathlib.Path(path, ".git").is_file()
+
+
+def fork_clone(base, owner, name):
+    """Find a clone of owner's repository name, in which to create a working tree.
+
+    Returns:
+        An entry of base whose origin is owner/name, or None.
+    """
+    clones = [
+        d
+        for d, info in scan_directories(base).items()
+        if info[0] == "git" and info[1:3] == (owner, name)
+    ]
+    return clones[0] if clones else None
+
+
+def rename_obstacle(models, base, d, new, owner):
+    """Return why fix_directory cannot rename entry d of base to new without losing information.
+
+    If d's origin is not owner's repository, fix_directory re-creates d as a working tree of
+    a clone of owner's repository; then d must be a linked working tree with no staged
+    changes, and base must contain such a clone.
+
+    Returns:
+        The reason, or None if d can be renamed.
+    """
+    path = pathlib.Path(base, d)
+    info = scan_directories(base)[d]
+    if any(pathlib.Path(m.repo.clone).resolve() == path.resolve() for m in models):
+        return "it is the clone that pr-status.py analyzes"
+    if new != d:
+        if pathlib.Path(base, new).exists() or pathlib.Path(base, new).is_symlink():
+            return f"{new} exists"
+        for e, other in scan_directories(base).items():
+            if other[0] == "link" and pathlib.Path(base, other[1]).resolve() == path.resolve():
+                return f"{e} links to it"
+    if info[1] != owner:
+        if not is_linked_worktree(path):
+            return f"its origin is {info[1]}/{info[2]}, and it is not a linked working tree"
+        if fork_clone(base, owner, info[2]) is None:
+            return (
+                f"its origin is {info[1]}/{info[2]}, and no entry is a clone of {owner}/{info[2]}"
+            )
+        if not succeeds(["git", "-C", str(path), "diff", "--cached", "--quiet"]):
+            return f"its origin is {info[1]}/{info[2]}, and it has staged changes"
+    return None
+
+
+def record_directory(base, d, new, info):
+    """Record in the result of scan_directories that entry d of base is now new, with info."""
+    global DIRECTORIES
+    entries = scan_directories(base)
+    del entries[d]
+    entries[new] = info
+    DIRECTORIES = dict(sorted(entries.items()))
+
+
+def fix_directory(base, d, new, owner):
+    """Rename entry d of base to new, and make its origin owner's repository.
+
+    If d's origin is another repository, re-create d as a working tree of a clone of owner's
+    repository, retaining every file in d, including untracked and ignored ones.  Otherwise,
+    rename d, which may be a main or a linked working tree.  rename_obstacle must have
+    returned None.
+
+    Returns:
+        None, or a problem that prevented completing the fix.
+    """
+    info = scan_directories(base)[d]
+    path, new_path = pathlib.Path(base, d), pathlib.Path(base, new)
+    if info[1] == owner:
+        if is_linked_worktree(path):
+            run(["git", "-C", str(path), "worktree", "move", str(path), str(new_path)])
+        else:
+            path.rename(new_path)
+            if len(worktree_paths(new_path)) > 1:
+                # Each linked working tree refers to the main one by its path.
+                run(["git", "-C", str(new_path), "worktree", "repair"])
+        record_directory(base, d, new, info)
+        return None
+    branch = info[3]
+    old = ["git", "-C", str(path)]
+    fork = ["git", "-C", str(pathlib.Path(base, fork_clone(base, owner, info[2])))]
+    head = run([*old, "rev-parse", "HEAD"])
+    status = run([*old, "status", "--porcelain"])
+    created = run([*old, "config", "--default", "", f"branch.{branch}.createdforbranchdirectory"])
+    # Fetching fails if it would lose commits of the fork's branch, or if the fork's branch is
+    # checked out.  Nothing has changed yet.
+    run([*fork, "fetch", str(path), f"refs/heads/{branch}:refs/heads/{branch}"])
+    if succeeds([*fork, "fetch", "--quiet", "origin", branch]):
+        run([*fork, "branch", "--quiet", f"--set-upstream-to=origin/{branch}", branch])
+    if created.strip():
+        run([*fork, "config", f"branch.{branch}.createdforbranchdirectory", created.strip()])
+    main_worktree = worktree_paths(path)[0]
+    # A name that starts with "." is not an entry for scan_directories.
+    holder = pathlib.Path(base, f".pr-status-{d}")
+    run([*old, "worktree", "move", str(path), str(holder)])
+    new_git = ["git", "-C", str(new_path)]
+    try:
+        run([*fork, "worktree", "add", "--quiet", "--no-checkout", str(new_path), branch])
+        for entry in holder.iterdir():
+            if entry.name != ".git":
+                entry.rename(new_path / entry.name)
+        run([*new_git, "reset", "--quiet"])
+        record_directory(base, d, new, ("git", owner, info[2], branch))
+        if (
+            run([*new_git, "rev-parse", "HEAD"]) != head
+            or run([*new_git, "status", "--porcelain"]) != status
+        ):
+            return f"the git status of {new} differs from that of {d}, which is now {holder}"
+    except subprocess.CalledProcessError as error:
+        return f"{command_failure(error)}; {d} is now {holder}"
+    except OSError as error:
+        return f"{error}; {d} is now {holder}"
+    run(["git", "-C", main_worktree, "worktree", "remove", "--force", str(holder)])
+    return None
+
+
+def directory_problems(models, base, fix=False):
+    """Find the directories that do not follow the naming and remote conventions.
+
+    A working copy of a PR's branch from OWNER is named PROJECT-fork-OWNER-branch-BRANCH (or
+    PROJECT-fork-OWNER), and its origin is OWNER's repository.  A PR from the upstream
+    repository's owner may also be in PROJECT-branch-BRANCH (or PROJECT).  A "/" in BRANCH is
+    written as "-".
+
+    If fix is true, rename each misnamed working copy to PROJECT-fork-OWNER-branch-BRANCH, and
+    re-create each working copy whose origin is not OWNER's repository as a working tree of a
+    clone of OWNER's repository (see fix_directory), unless it is the working copy of more
+    than one PR or fixing it might lose information (see rename_obstacle).
+
+    Returns:
+        A pair:  one line for each problem, and one line for each fix.
+    """
+    by_repo = {m.repo.gh.lower().split("/")[1]: m.repo for m in models}
+    problems = []
+    renames = []
+
+    def fix_or_report(d, ref, new, owner, problem):
+        """Fix entry d of base, the working copy of ref; report problem if that fails."""
+        obstacle = rename_obstacle(models, base, d, new, owner)
+        if obstacle is None:
+            info = scan_directories(base)[d]
+            clone = fork_clone(base, owner, info[2]) if info[1] != owner else None
+            try:
+                obstacle = fix_directory(base, d, new, owner)
+            except subprocess.CalledProcessError as error:
+                obstacle = command_failure(error)
+            if obstacle is None:
+                fixed = d if new == d else f"{d} -> {new}"
+                if clone:
+                    fixed += f", now a working tree of {clone}"
+                renames.append(f"{fixed} (the working copy of {ref})")
+                return
+        problems.append(f"{problem}; not fixed: {obstacle}")
+
+    wanted = defaultdict(list)  # directory -> [(PR reference, new name, PR owner)]
+    for m in models:
+        r = m.repo
+        for n in sorted(r.prs):
+            pr = r.prs[n]
+            owner = pr["owner"].lower()
+            branch = pr["headRefName"].replace("/", "-")
+            names = {f"{r.dir_name}-fork-{owner}-branch-{branch}", f"{r.dir_name}-fork-{owner}"}
+            if owner == r.owner.lower():
+                names |= {f"{r.dir_name}-branch-{branch}", r.dir_name}
+            names = {name.lower() for name in names}
+            for d in pr_directories(r, pr, base):
+                if d.lower() not in names:
+                    new = f"{r.dir_name}-fork-{pr['owner']}-branch-{branch}"
+                    wanted[d].append((r.ref(n), new, owner))
+    for d, prs in sorted(wanted.items()):
+        if fix and len(prs) == 1:
+            ref, new, owner = prs[0]
+            fix_or_report(
+                d, ref, new, owner, f"{d}: the working copy of {ref} should be named {new}"
+            )
+            continue
+        problems += [f"{d}: the working copy of {ref} should be named {new}" for ref, new, _ in prs]
+    for d, info in list(scan_directories(base).items()):
+        r = by_repo.get(info[2]) if info[0] == "git" else None
+        if r is None or info[1] != r.owner.lower() or info[3] in (r.default_branch, ""):
+            continue
+        prs = prs_with_head(r, info[3])
+        if any(head_owner(p) == info[1] for p in prs):
+            continue
+        prs = sorted((p for p in prs if head_owner(p)), key=operator.itemgetter("number"))
+        lines = [
+            f"{d}: its origin is {r.gh}, but the branch {info[3]} of the {pr_state(p)} "
+            f"{r.ref(p['number'])} is in {head_owner(p)}/{info[2]}"
+            for p in prs
+        ]
+        owners = {head_owner(p) for p in prs}
+        # A misnamed directory has already been fixed, or reported, above.
+        if fix and len(owners) == 1 and d not in wanted:
+            (owner,) = owners
+            new = f"{r.dir_name}-fork-{owner}-branch-{info[3].replace('/', '-')}"
+            ref = r.refs(p["number"] for p in prs)
+            fix_or_report(d, ref, new, owner, "; ".join(lines))
+            continue
+        problems += lines
+    return problems, renames
+
+
 # ---------- unblocked documents ----------
 
 
@@ -885,6 +1291,7 @@ def unblocked_doc(models, cfg, base, doc, as_of):
             "PR",
             *(["Author"] if show_author else []),
             "Assigned to",
+            "Unresolved threads",
             "Title",
             "Directory",
             "Needed by",
@@ -904,6 +1311,7 @@ def unblocked_doc(models, cfg, base, doc, as_of):
                 r.link(n),
                 *author,
                 m.assigned_to(n),
+                m.unresolved_threads(n),
                 title(m, cfg, n),
                 pr_directory(r, n, base),
                 needed_by(m, n),
@@ -920,8 +1328,10 @@ def unblocked_doc(models, cfg, base, doc, as_of):
     for m in models:
         items = []
         for n in m.blocked():
-            on = [m.repo.ref(d) for d in sorted(m.direct[n])] + m.external[n]
-            items.append(f"{m.repo.ref(n)} (on {', '.join(on)})")
+            on = [m.repo.link(d) for d in sorted(m.direct[n])] + [
+                external_link(e) for e in m.external[n]
+            ]
+            items.append(f"{m.repo.link(n)} (on {', '.join(on)})")
         if items:
             lines.append(f"* {m.repo.label}: {', '.join(items)}.")
     if flt != "all":
@@ -937,7 +1347,7 @@ def unblocked_doc(models, cfg, base, doc, as_of):
                 if not keep(m, n, flt):
                     by[", ".join(m.assignees(n))].append(n)
             if by:
-                groups = [f"{m.repo.refs(ns)} ({who})" for who, ns in sorted(by.items())]
+                groups = [f"{m.repo.links(ns)} ({who})" for who, ns in sorted(by.items())]
                 lines.append(f"* {m.repo.label}: {'; '.join(groups)}.")
     return "\n".join(fix_empty_cells(lines)) + "\n"
 
@@ -958,16 +1368,8 @@ def gen_status(models):
         conflicting = sorted(r.master_conflicts)
         if conflicting:
             lines.append(
-                f"* Every {r.label} PR merges with `{r.default_branch}` cleanly,"
-                f" except {r.refs(conflicting)}."
+                f"* {r.label} PRs that conflict with `{r.default_branch}`: {r.links(conflicting)}."
             )
-        else:
-            lines.append(f"* Every {r.label} PR merges with `{r.default_branch}` cleanly.")
-    where = (
-        ", in both repositories,"
-        if len(models) == 2
-        else (", in every repository," if len(models) > 2 else "")
-    )
     behind = []
     for m in models:
         r = m.repo
@@ -977,22 +1379,17 @@ def gen_status(models):
             parts = []
             if newest:
                 parts.append(
-                    f"the newest commits of {r.refs(newest)}"
+                    f"the newest commits of {r.links(newest)}"
                     if len(newest) > 1
-                    else f"{r.ref(newest[0])}'s newest commits"
+                    else f"{r.link(newest[0])}'s newest commits"
                 )
             if none:
-                parts.append(f"every commit of {r.refs(none)}")
+                parts.append(f"every commit of {r.links(none)}")
             if parts:
-                behind.append(f"  * {r.ref(n)} lacks {and_list(parts)}.")
-    contains = (
-        f"* Every dependent branch{where} contains its immediate prerequisites' current commits"
-    )
+                behind.append(f"  * {r.link(n)} lacks {and_list(parts)}.")
     if behind:
-        lines.append(contains + ", except:")
+        lines.append("* Dependent branches that lack their prerequisites' current commits:")
         lines += behind
-    else:
-        lines.append(contains + ".")
     return lines
 
 
@@ -1007,12 +1404,11 @@ def gen_clusters(models, cfg):
         names = cfg["repos"][m.repo.name].get("cluster_names", {})
         comps = m.components()
         if not comps:
-            lines.append(f"* {m.repo.label} has no dependency clusters.")
             continue
         lines.append(f"* {m.repo.label} has these dependency clusters:")
         for comp in comps:
             name = next((names[str(n)] for n in comp if str(n) in names), None)
-            members = m.repo.refs(comp)
+            members = m.repo.links(comp)
             lines.append(f"  * {name} ({members})" if name else f"  * {members}")
     return lines
 
@@ -1046,31 +1442,6 @@ def gen_graph(models, cfg):
     return lines
 
 
-def gen_merge_order(models):
-    """Generate the "merge-order" section.
-
-    Returns:
-        The section's lines:  for each repository, the PRs grouped by their level.
-    """
-    lines = []
-    for i, m in enumerate(models):
-        r = m.repo
-        level = m.levels()
-        heading = f"{r.label} (independent of the {models[0].repo.label} order)" if i else r.label
-        if not level:
-            lines += [f"{heading}:  any order, because no PR depends on another.", ""]
-            continue
-        lines += [f"{heading}:", ""]
-        for k in range(1, max(level.values()) + 1):
-            prs = sorted(n for n, v in level.items() if v == k)
-            extra = " (and any independent PR)" if k == 1 else ""
-            lines.append(f"{k}. {', '.join(r.ref(n) for n in prs)}{extra}")
-        lines.append("")
-    if lines and lines[-1] == "":
-        lines.pop()
-    return lines
-
-
 def dependency_cells(model, n):
     """Return the dependency cells of PR n, which has a prerequisite.
 
@@ -1081,10 +1452,12 @@ def dependency_cells(model, n):
     r = model.repo
     direct = sorted(model.direct[n])
     stated = [
-        r.ref(d) for d in direct if d in model.stated[n] or n in model.stated_dependents[d]
-    ] + model.external[n]
+        r.link(d) for d in direct if d in model.stated[n] or n in model.stated_dependents[d]
+    ] + [external_link(e) for e in model.external[n]]
     unstated = [
-        r.ref(d) for d in direct if d not in model.stated[n] and n not in model.stated_dependents[d]
+        r.link(d)
+        for d in direct
+        if d not in model.stated[n] and n not in model.stated_dependents[d]
     ]
     if not unstated:
         stated_text = "yes"
@@ -1103,12 +1476,12 @@ def dependency_cells(model, n):
         parts = []
         if newest:
             parts.append(
-                f"lacks the newest commits of {r.refs(newest)}"
+                f"lacks the newest commits of {r.links(newest)}"
                 if len(newest) > 1
-                else f"lacks {r.ref(newest[0])}'s newest commits"
+                else f"lacks {r.link(newest[0])}'s newest commits"
             )
         if none:
-            parts.append(f"lacks every commit of {r.refs(none)}")
+            parts.append(f"lacks every commit of {r.links(none)}")
         contains = f"no ({'; '.join(parts)})"
     return [depends_on(model, n), stated_text, contains]
 
@@ -1158,7 +1531,7 @@ def gen_prerequisites(model):
         who = model.assignees(n)
         if who:
             extra.append("assigned to " + and_list(who))
-        items.append(f"{r.ref(n)} ({'; '.join(extra)})")
+        items.append(f"{r.link(n)} ({'; '.join(extra)})")
     return [f"Prerequisites with no prerequisite of their own: {and_list(items)}."] if items else []
 
 
@@ -1198,7 +1571,7 @@ def textual_conflicts(model, cfg, n):
         by_partners[frozenset(partners)].append(f)
 
     def partner_list(partners):
-        prs = [r.ref(m) for m in sorted(partners - {None})]
+        prs = [r.link(m) for m in sorted(partners - {None})]
         return and_list(([f"`{r.default_branch}`"] if None in partners else []) + prs)
 
     conflicts = "; ".join(
@@ -1220,8 +1593,8 @@ def gen_independent(model, cfg):
     r = model.repo
     notes = cfg["repos"][r.name].get("independent_notes", {})
     lines = [
-        "| PR | Assigned to | Title | Textual conflicts | Notes |",
-        "| --- | --- | --- | --- | --- |",
+        "| PR | Assigned to | Unresolved threads | Title | Textual conflicts | Notes |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for n in model.independent():
         note = notes.get(str(n), "")
@@ -1230,6 +1603,7 @@ def gen_independent(model, cfg):
         cells = [
             r.link(n),
             model.assigned_to(n),
+            model.unresolved_threads(n),
             title(model, cfg, n),
             textual_conflicts(model, cfg, n),
             note,
@@ -1242,8 +1616,8 @@ def pr_table(model, cfg, base, heading, rows):
     """Generate a table of PRs.
 
     The table's first columns are PR, Author (if the repository shows authors), Assigned to,
-    Title, and Directory; heading names the remaining columns, and rows maps each PR to the
-    cells of its remaining columns.
+    Unresolved threads, Title, and Directory; heading names the remaining columns, and rows
+    maps each PR to the cells of its remaining columns.
 
     Returns:
         The table's lines.
@@ -1253,6 +1627,7 @@ def pr_table(model, cfg, base, heading, rows):
         "PR",
         *(["Author"] if r.show_author else []),
         "Assigned to",
+        "Unresolved threads",
         "Title",
         "Directory",
         *heading,
@@ -1264,6 +1639,7 @@ def pr_table(model, cfg, base, heading, rows):
             r.link(n),
             *author,
             model.assigned_to(n),
+            model.unresolved_threads(n),
             title(model, cfg, n),
             pr_directory(r, n, base),
             *cells,
@@ -1353,35 +1729,17 @@ def gen_directories(models, cfg, base):
                 state = f"upstream {branch}" if info[1] == r.owner.lower() else f"a fork's {branch}"
                 groups[state, "none"].append(d)
                 continue
-            found = json.loads(
-                run(
-                    [
-                        "gh",
-                        "pr",
-                        "list",
-                        "-R",
-                        r.gh,
-                        "--state",
-                        "all",
-                        "--head",
-                        info[3],
-                        "--json",
-                        "number,state,headRepositoryOwner",
-                    ]
-                )
-            )
-            found = [
-                p
-                for p in found
-                if (p.get("headRepositoryOwner") or {}).get("login", "").lower()
-                in (info[1], r.owner.lower())
-            ]
+            prs = prs_with_head(r, info[3])
+            found = [p for p in prs if head_owner(p) in (info[1], r.owner.lower())]
+            if not found and info[1] == r.owner.lower():
+                # A clone of the upstream repository that holds a fork's branch, which
+                # directory_problems reports.
+                found = [p for p in prs if head_owner(p)]
             if not found:
                 groups["a branch with no PR", "unknown"].append(d)
                 continue
             p = max(found, key=operator.itemgetter("number"))
-            state = {"MERGED": "landed", "CLOSED": "closed"}.get(p["state"], p["state"].lower())
-            landed[r.name, state].append((d, r.ref(p["number"])))
+            landed[r.name, pr_state(p)].append((d, r.link(p["number"])))
     for (status, rel), dirs in groups.items():
         if status.startswith("a symbolic link"):
             rows += [([d], status, rel) for d in dirs]
@@ -1434,14 +1792,10 @@ def section_generators(models, cfg, base):
         "status": lambda: gen_status(models),
         "clusters": lambda: gen_clusters(models, cfg),
         "graph": lambda: gen_graph(models, cfg),
-        "merge-order": lambda: gen_merge_order(models),
         "directories": lambda: gen_directories(models, cfg, base),
         "push-commands": lambda: gen_push_commands(models, base),
+        "conflicting-push-commands": lambda: gen_push_commands(models, base, conflicts_only=True),
     }
-    if cfg["documents"].get("conflicting_push_commands"):
-        generators["conflicting-push-commands"] = lambda: gen_push_commands(
-            models, base, conflicts_only=True
-        )
     for m in models:
         name = m.repo.name
         generators[f"details-{name}"] = lambda m=m: gen_details(m, cfg)
@@ -1532,6 +1886,8 @@ def push_commands(models, base, conflicts_only=False):
         The commands' lines, and notes about what the commands omit.
     """
     lines = [f"cd {base} && \\"]
+    if conflicts_only:
+        lines.insert(0, "# Run this and fix merge commits until it succeeds:")
     notes = []
     for m in models:
         r = m.repo
@@ -1541,7 +1897,7 @@ def push_commands(models, base, conflicts_only=False):
             lines[-1] += " && \\"
         if missing:
             notes.append(
-                f"{r.label} PRs with no working copy, which these commands omit: {r.refs(missing)}"
+                f"{r.label} PRs with no working copy, which these commands omit: {r.links(missing)}"
             )
         if chains and not has_upstream:
             notes.append(
@@ -1648,8 +2004,13 @@ def report_changes(models, old, new):
             removed = sorted(set(o["unblocked"]) - set(n["unblocked"]))
             if added:
                 out.append(f"newly unblocked: {r.refs(added)}")
-            if removed:
-                out.append(f"no longer unblocked (blocked or gone): {r.refs(removed)}")
+            blocked = [k for k in removed if k in m.open]
+            # A landed PR is already reported as landed.
+            gone = [k for k in removed if k not in m.open and r.state_of(k) != "landed"]
+            if blocked:
+                out.append(f"newly blocked: {r.refs(blocked)}")
+            if gone:
+                out.append(f"no longer unblocked (gone): {r.refs(gone)}")
     return out
 
 
@@ -1663,7 +2024,7 @@ def default_config(base):
     are clones of (or, if there is none, the one that the most clones are clones of), or its
     upstream if that repository is a fork with the same name.  Clones are grouped by
     repository name, so the clones of a repository and of its forks are counted together.
-    The config has no notes or decisions, and its documents are unblocked-prs.md and
+    The config has no notes or decisions, and its documents are pr-unblocked.md and
     pr-dependencies.md.
 
     Returns:
@@ -1733,9 +2094,7 @@ def default_config(base):
         "order": list(repos),
         "repos": repos,
         "documents": {
-            "unblocked": [
-                {"file": "unblocked-prs.md", "title": f"Unblocked {and_list(repos)} PRs"}
-            ],
+            "unblocked": [{"file": "pr-unblocked.md", "title": f"Unblocked {and_list(repos)} PRs"}],
             "dependencies": "pr-dependencies.md",
         },
         "directories": [],
@@ -1757,6 +2116,10 @@ def default_dependency_document(models):
     Returns:
         The text of a dependency document whose generated sections are empty.
     """
+    if len(models) == 1:
+        upstream = f"upstream `{models[0].repo.default_branch}`"
+    else:
+        upstream = "the upstream default branch"
     lines = [
         "# PR dependencies",
         "",
@@ -1782,11 +2145,28 @@ def default_dependency_document(models):
         "",
         *generated("clusters"),
         "",
-        *generated("graph"),
+        "## Updating branches",
         "",
-        "## Merge order",
+        "Each command updates one dependency chain.",
+        (
+            f"It starts with {upstream}, then pushes each PR's branch into the branches of the PRs"
+            " that directly depend on it, prerequisites first."
+        ),
+        f"A chain may consist of {upstream} and a single PR that has no prerequisite or dependent.",
+        "`git-push-to` merges, compiles, and pushes; see its documentation.",
         "",
-        *generated("merge-order"),
+        "### Dependency chains with conflicts",
+        "",
+        (
+            "This subset repeats a whole dependency chain if at least one merge in the chain"
+            " would result in a textual conflict."
+        ),
+        "",
+        *generated("conflicting-push-commands"),
+        "",
+        "### All dependency chains",
+        "",
+        *generated("push-commands"),
     ]
     for m in models:
         name = m.repo.name
@@ -1803,10 +2183,6 @@ def default_dependency_document(models):
         ]
     lines += [
         "",
-        "## Commands that update dependent branches",
-        "",
-        *generated("push-commands"),
-        "",
         "## Other directories",
         "",
         *generated("directories"),
@@ -1816,8 +2192,37 @@ def default_dependency_document(models):
 
 def main():
     """Report changes and regenerate the documents."""
-    check_only = "--check" in sys.argv[1:]
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="report changes, but change no document, snapshot, PR description, or directory",
+    )
+    parser.add_argument(
+        "-C",
+        "--directory",
+        metavar="DIR",
+        help="change to DIR before doing anything else",
+    )
+    args = parser.parse_args()
+    check_only = args.check
+    if args.directory is not None:
+        try:
+            os.chdir(args.directory)
+        except OSError as error:
+            sys.exit(f"pr-status.py: cannot change to directory {args.directory}: {error.strerror}")
     base = str(pathlib.Path.cwd())
+    # The current directory holds the working copies; it is not one of them.
+    toplevel = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], check=False, capture_output=True, text=True
+    )
+    if toplevel.returncode == 0:
+        sys.exit(
+            f"pr-status.py: {base} is in the git working copy {toplevel.stdout.strip()}; "
+            "run pr-status.py in the directory that holds the working copies"
+        )
     if pathlib.Path(CONFIG).exists():
         with pathlib.Path(CONFIG).open() as f:
             cfg = json.load(f)
@@ -1849,6 +2254,15 @@ def main():
         print("## PRs that depend on themselves, through a cycle of dependencies")
         for m in cycles:
             print(m.repo.refs(m.cyclic))
+    problems, renames = directory_problems(models, base, fix=not check_only)
+    if renames:
+        print("## Fixed directories, to match their branch's PR")
+        for line in renames:
+            print(line)
+    if problems:
+        print("## Directories whose name or origin does not match their branch's PR")
+        for line in problems:
+            print(line)
     for m, n, error in failed_updates:
         detail = error.stderr.strip()
         print(
@@ -1864,7 +2278,6 @@ def main():
                     f"{m.repo.ref(n)}: "
                     + ", ".join(f"{m.repo.ref(k)} ({s})" for k, s in m.stated_closed[n])
                 )
-        sys.exit(1)
     if updates and check_only:
         print("## GitHub PR descriptions need updates")
         for m, n, _ in updates:
@@ -1887,6 +2300,8 @@ def main():
         f"## Wrote {', '.join(d['file'] for d in docs['unblocked'])}, the generated sections of "
         f"{docs['dependencies']}, and {SNAPSHOT}"
     )
+    if failed_updates:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

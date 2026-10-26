@@ -23,8 +23,10 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(jdee-server-dir (expand-file-name "~/.emacs.d/jdee-server"))
+ '(package-selected-packages nil)
  '(package-vc-selected-packages
-   '((atomic-chrome :url "https://github.com/KarimAziev/atomic-chrome"))))
+   '((atomic-chrome :url "https://github.com/KarimAziev/atomic-chrome")))
+ '(tramp-password-prompt-regexp "^.*\\([pP]assword\\|passphrase\\|Response\\).*:\0? *"))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

@@ -349,6 +349,12 @@ DONT-REMOVE-GITIGNORED is as in `diff-clean'."
   (interactive "P")
   (diff-clean-more-files ".*\\.json" dont-remove-gitignored))
 
+(defun diff-clean-tests (&optional dont-remove-gitignored)
+  "Like `diff-clean', but also removes test files.
+DONT-REMOVE-GITIGNORED is as in `diff-clean'."
+  (interactive "P")
+  (diff-clean-more-files ".*/tests?/.*" dont-remove-gitignored))
+
 (defun diff-clean-gitignored-filenames ()
   "Return the filenames in the current buffer's diff that git ignores.
 Each is a filename as it appears in the diff, except that a file named by an
