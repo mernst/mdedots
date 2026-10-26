@@ -142,6 +142,14 @@ class Repo:
         """
         return and_list(self.ref(n) for n in sorted(ns))
 
+    def links(self, ns):
+        """Return Markdown links to the PRs ns.
+
+        Returns:
+            The PRs' links, in numeric order, as an English list.
+        """
+        return and_list(self.link(n) for n in sorted(ns))
+
     def state_of(self, n):
         """Return the state of PR n, which is not open.
 
@@ -316,6 +324,16 @@ def external_state(ref):
         except subprocess.CalledProcessError:
             EXTERNAL_STATE[ref] = None
     return EXTERNAL_STATE[ref]
+
+
+def external_link(ref):
+    """Return a Markdown link to a PR "owner/repo#N" in another repository.
+
+    Returns:
+        A link whose text is ref and whose target is the PR on GitHub.
+    """
+    gh, n = ref.split("#")
+    return f"[{ref}](https://github.com/{gh}/pull/{n})"
 
 
 def query_pr_states(refs):
@@ -764,10 +782,10 @@ def needed_by(model, n):
     if not direct:
         return ""
     r = model.repo
-    text = r.refs(direct)
+    text = r.links(direct)
     more = model.all_dependents[n] - direct
     if more:
-        text += f" (and transitively {r.refs(more)})"
+        text += f" (and transitively {r.links(more)})"
     return text
 
 
@@ -778,11 +796,13 @@ def depends_on(model, n):
         The PR's direct prerequisites, followed by its transitive ones.
     """
     r = model.repo
-    items = [r.ref(d) for d in sorted(model.direct[n])] + model.external[n]
+    items = [r.link(d) for d in sorted(model.direct[n])] + [
+        external_link(e) for e in model.external[n]
+    ]
     text = and_list(items)
     more = model.all_deps[n] - model.direct[n]
     if more:
-        text += f" (and transitively {r.refs(more)})"
+        text += f" (and transitively {r.links(more)})"
     return text
 
 
@@ -798,11 +818,11 @@ def auto_notes(model, n, master=True):
     r = model.repo
     notes = []
     if n in model.base_pr:
-        notes.append(f"its base branch is {r.ref(model.base_pr[n])}'s branch")
+        notes.append(f"its base branch is {r.link(model.base_pr[n])}'s branch")
     landed = [m for m, s in model.stated_closed[n] if s == "landed"]
     if landed:
         notes.append(
-            f"its description still names the landed {r.refs(landed)} as "
+            f"its description still names the landed {r.links(landed)} as "
             + ("a prerequisite" if len(landed) == 1 else "prerequisites")
         )
     if master and n in r.master_conflicts:
@@ -1306,8 +1326,10 @@ def unblocked_doc(models, cfg, base, doc, as_of):
     for m in models:
         items = []
         for n in m.blocked():
-            on = [m.repo.ref(d) for d in sorted(m.direct[n])] + m.external[n]
-            items.append(f"{m.repo.ref(n)} (on {', '.join(on)})")
+            on = [m.repo.link(d) for d in sorted(m.direct[n])] + [
+                external_link(e) for e in m.external[n]
+            ]
+            items.append(f"{m.repo.link(n)} (on {', '.join(on)})")
         if items:
             lines.append(f"* {m.repo.label}: {', '.join(items)}.")
     if flt != "all":
@@ -1323,7 +1345,7 @@ def unblocked_doc(models, cfg, base, doc, as_of):
                 if not keep(m, n, flt):
                     by[", ".join(m.assignees(n))].append(n)
             if by:
-                groups = [f"{m.repo.refs(ns)} ({who})" for who, ns in sorted(by.items())]
+                groups = [f"{m.repo.links(ns)} ({who})" for who, ns in sorted(by.items())]
                 lines.append(f"* {m.repo.label}: {'; '.join(groups)}.")
     return "\n".join(fix_empty_cells(lines)) + "\n"
 
@@ -1344,7 +1366,7 @@ def gen_status(models):
         conflicting = sorted(r.master_conflicts)
         if conflicting:
             lines.append(
-                f"* {r.label} PRs that conflict with `{r.default_branch}`: {r.refs(conflicting)}."
+                f"* {r.label} PRs that conflict with `{r.default_branch}`: {r.links(conflicting)}."
             )
     behind = []
     for m in models:
@@ -1355,14 +1377,14 @@ def gen_status(models):
             parts = []
             if newest:
                 parts.append(
-                    f"the newest commits of {r.refs(newest)}"
+                    f"the newest commits of {r.links(newest)}"
                     if len(newest) > 1
-                    else f"{r.ref(newest[0])}'s newest commits"
+                    else f"{r.link(newest[0])}'s newest commits"
                 )
             if none:
-                parts.append(f"every commit of {r.refs(none)}")
+                parts.append(f"every commit of {r.links(none)}")
             if parts:
-                behind.append(f"  * {r.ref(n)} lacks {and_list(parts)}.")
+                behind.append(f"  * {r.link(n)} lacks {and_list(parts)}.")
     if behind:
         lines.append("* Dependent branches that lack their prerequisites' current commits:")
         lines += behind
@@ -1384,7 +1406,7 @@ def gen_clusters(models, cfg):
         lines.append(f"* {m.repo.label} has these dependency clusters:")
         for comp in comps:
             name = next((names[str(n)] for n in comp if str(n) in names), None)
-            members = m.repo.refs(comp)
+            members = m.repo.links(comp)
             lines.append(f"  * {name} ({members})" if name else f"  * {members}")
     return lines
 
@@ -1428,10 +1450,12 @@ def dependency_cells(model, n):
     r = model.repo
     direct = sorted(model.direct[n])
     stated = [
-        r.ref(d) for d in direct if d in model.stated[n] or n in model.stated_dependents[d]
-    ] + model.external[n]
+        r.link(d) for d in direct if d in model.stated[n] or n in model.stated_dependents[d]
+    ] + [external_link(e) for e in model.external[n]]
     unstated = [
-        r.ref(d) for d in direct if d not in model.stated[n] and n not in model.stated_dependents[d]
+        r.link(d)
+        for d in direct
+        if d not in model.stated[n] and n not in model.stated_dependents[d]
     ]
     if not unstated:
         stated_text = "yes"
@@ -1450,12 +1474,12 @@ def dependency_cells(model, n):
         parts = []
         if newest:
             parts.append(
-                f"lacks the newest commits of {r.refs(newest)}"
+                f"lacks the newest commits of {r.links(newest)}"
                 if len(newest) > 1
-                else f"lacks {r.ref(newest[0])}'s newest commits"
+                else f"lacks {r.link(newest[0])}'s newest commits"
             )
         if none:
-            parts.append(f"lacks every commit of {r.refs(none)}")
+            parts.append(f"lacks every commit of {r.links(none)}")
         contains = f"no ({'; '.join(parts)})"
     return [depends_on(model, n), stated_text, contains]
 
@@ -1505,7 +1529,7 @@ def gen_prerequisites(model):
         who = model.assignees(n)
         if who:
             extra.append("assigned to " + and_list(who))
-        items.append(f"{r.ref(n)} ({'; '.join(extra)})")
+        items.append(f"{r.link(n)} ({'; '.join(extra)})")
     return [f"Prerequisites with no prerequisite of their own: {and_list(items)}."] if items else []
 
 
@@ -1545,7 +1569,7 @@ def textual_conflicts(model, cfg, n):
         by_partners[frozenset(partners)].append(f)
 
     def partner_list(partners):
-        prs = [r.ref(m) for m in sorted(partners - {None})]
+        prs = [r.link(m) for m in sorted(partners - {None})]
         return and_list(([f"`{r.default_branch}`"] if None in partners else []) + prs)
 
     conflicts = "; ".join(
@@ -1713,7 +1737,7 @@ def gen_directories(models, cfg, base):
                 groups["a branch with no PR", "unknown"].append(d)
                 continue
             p = max(found, key=operator.itemgetter("number"))
-            landed[r.name, pr_state(p)].append((d, r.ref(p["number"])))
+            landed[r.name, pr_state(p)].append((d, r.link(p["number"])))
     for (status, rel), dirs in groups.items():
         if status.startswith("a symbolic link"):
             rows += [([d], status, rel) for d in dirs]
@@ -1871,7 +1895,7 @@ def push_commands(models, base, conflicts_only=False):
             lines[-1] += " && \\"
         if missing:
             notes.append(
-                f"{r.label} PRs with no working copy, which these commands omit: {r.refs(missing)}"
+                f"{r.label} PRs with no working copy, which these commands omit: {r.links(missing)}"
             )
         if chains and not has_upstream:
             notes.append(
