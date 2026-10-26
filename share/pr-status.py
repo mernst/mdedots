@@ -2,9 +2,10 @@
 """Regenerate the PR status documents in the current directory.
 
 Usage (run in the directory that holds the documents and the working copies, which
-must not itself be in a git working copy):
+must not itself be in a git working copy, or pass that directory with -C):
   pr-status.py            # snapshot, report changes, regenerate the documents
   pr-status.py --check    # snapshot and report changes, but write no document
+  pr-status.py -C DIR     # work in DIR instead of the current directory
 
 Inputs:
   pr-status-config.json    hand-maintained:  repositories, notes, labels, decisions
@@ -33,6 +34,7 @@ import hashlib
 import itertools
 import json
 import operator
+import os
 import pathlib
 import re
 import shlex
@@ -2198,7 +2200,19 @@ def main():
         action="store_true",
         help="report changes, but change no document, snapshot, PR description, or directory",
     )
-    check_only = parser.parse_args().check
+    parser.add_argument(
+        "-C",
+        "--directory",
+        metavar="DIR",
+        help="change to DIR before doing anything else",
+    )
+    args = parser.parse_args()
+    check_only = args.check
+    if args.directory is not None:
+        try:
+            os.chdir(args.directory)
+        except OSError as error:
+            sys.exit(f"pr-status.py: cannot change to directory {args.directory}: {error.strerror}")
     base = str(pathlib.Path.cwd())
     # The current directory holds the working copies; it is not one of them.
     toplevel = subprocess.run(
