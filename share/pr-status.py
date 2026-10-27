@@ -131,13 +131,21 @@ class Repo:
         """
         return f"{self.prefix}{n}"
 
+    def url(self, n):
+        """Return the URL of PR n.
+
+        Returns:
+            The URL of PR n on GitHub.
+        """
+        return f"https://github.com/{self.gh}/pull/{n}"
+
     def link(self, n):
         """Return a Markdown link to PR n.
 
         Returns:
             A link whose text is the PR's reference and whose target is the PR on GitHub.
         """
-        return f"[{self.ref(n)}](https://github.com/{self.gh}/pull/{n})"
+        return f"[{self.ref(n)}]({self.url(n)})"
 
     def refs(self, ns):
         """Return how documents refer to the PRs ns.
@@ -917,7 +925,7 @@ def description_updates(models):
             body = model.repo.prs[n]["body"]
             for line in malformed_landing_lines(body):
                 print(
-                    f"pr-status.py: warning: {model.repo.gh}#{n}:"
+                    f"pr-status.py: warning: {model.repo.url(n)}:"
                     f" malformed landing-order line: {line}",
                     file=sys.stderr,
                 )
