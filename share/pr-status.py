@@ -118,8 +118,10 @@ class Repo:
         self.pair_conflicts = {}  # (a, b) with a < b -> list of files
         self.closed_state = {}  # number -> "landed" | "closed" | None (not a PR)
         # number -> list of whether each unresolved review thread is outdated;
-        # None until load_review_threads runs.
+        # None until load_reviews_and_ci runs.
         self.review_threads = None
+        # The numbers of the PRs whose CI failed; None until load_reviews_and_ci runs.
+        self.ci_failed = None
 
     def ref(self, n):
         """Return how documents refer to PR n.
@@ -238,6 +240,20 @@ query($owner: String!, $name: String!, $endCursor: String) {
       nodes {
         number
         reviewThreads(first: 100) { pageInfo { hasNextPage } nodes { FIELDS } }
+        commits(last: 1) {
+          nodes {
+            commit {
+              statusCheckRollup {
+                contexts(first: 100) {
+                  nodes {
+                    ... on CheckRun { status conclusion }
+                    ... on StatusContext { state }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -285,11 +301,32 @@ def review_thread_query(repo, query, jq, *fields):
     return [json.loads(line) for line in out.splitlines()]
 
 
-def load_review_threads(repo):
-    """Read the unresolved review threads of the open PRs into repo.review_threads."""
+# The conclusions of a completed check run, and the states of a commit status, that mean failure.
+# A cancelled check run is not a failure.
+CHECK_FAILURES = {"ACTION_REQUIRED", "FAILURE", "STARTUP_FAILURE", "TIMED_OUT"}
+STATUS_FAILURES = {"ERROR", "FAILURE"}
+
+
+def ci_failed(checks):
+    """Return whether CI failed, given the checks of a commit.
+
+    Returns:
+        True if some check failed, even if other checks are still running.
+    """
+    return any(
+        c.get("conclusion") in CHECK_FAILURES or c.get("state") in STATUS_FAILURES for c in checks
+    )
+
+
+def load_reviews_and_ci(repo):
+    """Read the unresolved review threads and the CI results of the open PRs.
+
+    Sets repo.review_threads and repo.ci_failed.
+    """
     if repo.review_threads is not None:
         return
     repo.review_threads = {}
+    repo.ci_failed = set()
     for pr in review_thread_query(
         repo, REVIEW_THREADS_QUERY, ".data.repository.pullRequests.nodes[]"
     ):
@@ -305,6 +342,10 @@ def load_review_threads(repo):
         repo.review_threads[pr["number"]] = [
             t["isOutdated"] for t in threads if not t["isResolved"]
         ]
+        commits = pr["commits"]["nodes"]
+        rollup = commits[0]["commit"]["statusCheckRollup"] if commits else None
+        if rollup and ci_failed(rollup["contexts"]["nodes"]):
+            repo.ci_failed.add(pr["number"])
 
 
 PR_STATES = {"OPEN": "open", "MERGED": "landed", "CLOSED": "closed"}
@@ -682,14 +723,17 @@ class Model:
 
         Returns:
             The number of the PR's unresolved review threads and how many of them are
-            outdated, or "" if it has none.
+            outdated, followed by a red X if the PR's CI failed; or "" if neither applies.
         """
-        load_review_threads(self.repo)
+        load_reviews_and_ci(self.repo)
         threads = self.repo.review_threads.get(n, [])
-        if not threads:
-            return ""
-        outdated = sum(threads)
-        return str(len(threads)) + (f" ({outdated} outdated)" if outdated else "")
+        cell = []
+        if threads:
+            outdated = sum(threads)
+            cell.append(str(len(threads)) + (f" ({outdated} outdated)" if outdated else ""))
+        if n in self.repo.ci_failed:
+            cell.append("❌")
+        return " ".join(cell)
 
     def head_status(self, a, b):
         """Return whether a's branch has b's current commits.
@@ -1888,13 +1932,30 @@ def replace_sections(text, generators):
     )
 
 
-def section_generators(models, cfg, base):
+def add_as_of_section(text):
+    """Add an empty "as-of" generated section after the title of text, if text lacks one.
+
+    Returns:
+        text, with an "as-of" generated section.
+    """
+    if "<!-- BEGIN GENERATED: as-of -->" in text:
+        return text
+    section = "\n".join(generated("as-of")) + "\n"
+    if text.startswith("# "):
+        title, _, rest = text.partition("\n")
+        rest = rest.lstrip("\n")
+        return title + "\n\n" + section + ("\n" + rest if rest else "")
+    return section + "\n" + text
+
+
+def section_generators(models, cfg, base, as_of):
     """Return the generators of the generated sections.
 
     Returns:
         A map from each generated section name to a function that returns the section's lines.
     """
     generators = {
+        "as-of": lambda: [f"As of {as_of}."],
         "status": lambda: gen_status(models),
         "clusters": lambda: gen_clusters(models, cfg),
         "graph": lambda: gen_graph(models, cfg),
@@ -2229,6 +2290,8 @@ def default_dependency_document(models):
     lines = [
         "# PR dependencies",
         "",
+        *generated("as-of"),
+        "",
         (
             "Generated sections are regenerated by `~/bin/share/pr-status.py`;"
             " text outside them is retained."
@@ -2397,7 +2460,8 @@ def main():
         text = dependencies.read_text()
     else:
         text = default_dependency_document(models)
-    text = replace_sections(text, section_generators(models, cfg, base))
+    text = add_as_of_section(text)
+    text = replace_sections(text, section_generators(models, cfg, base, as_of))
     pathlib.Path(docs["dependencies"]).write_text(text)
     with pathlib.Path(SNAPSHOT).open("w") as f:
         json.dump({"time": now.isoformat(timespec="seconds"), "facts": new}, f, indent=1)
