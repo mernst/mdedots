@@ -207,6 +207,8 @@ def azure_headers():
 def circleci_headers():
     """Determine how to authenticate to CircleCI.
 
+    If there is no token, warns that CircleCI will refuse to cancel workflows.
+
     Returns:
         The HTTP headers that authenticate to CircleCI, or no headers if there is no token.
     """
@@ -218,6 +220,14 @@ def circleci_headers():
         if cli_yml.exists():
             match = re.search(r"^token:\s*(\S+)", cli_yml.read_text(), re.MULTILINE)
             token = match and match[1]
+    if not token:
+        print(
+            "cancel-blocked-ci.py: no CircleCI token found in $CIRCLECI_CLI_TOKEN or in "
+            + " or ".join(CIRCLECI_CONFIGS)
+            + ", so CircleCI will refuse to cancel workflows;"
+            " create a personal API token and run `circleci setup`",
+            file=sys.stderr,
+        )
     return {"Circle-Token": token} if token else {}
 
 
