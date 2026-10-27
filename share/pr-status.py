@@ -15,8 +15,9 @@ Each run:
   * reads the open PRs with gh,
   * runs pr-merge-analysis.sh (cached) on them, for each repository,
   * computes the dependencies:  a PR depends on another if its description says
-    so, if its branch contains all of the other PR's non-merge commits (unless the
-    description of either PR says to land it with the other), or if the config says so,
+    so, if its branch contains all of the other PR's non-merge commits, or if the
+    config says so; PRs that land together (possibly in different repositories) are one
+    unit, whose members depend on each other's prerequisites but not on each other,
   * updates each modeled PR description's "Land after" and "Land before" lines,
   * prints what changed since the previous snapshot (input for the summary),
   * renames the working copies whose name does not match their branch's PR, and
@@ -408,11 +409,13 @@ def stated_prerequisites(body, repo):
     Returns:
         A set of numbers in repo and a set of "owner/repo#N" in other repositories, which
         are prerequisites, a set of numbers in repo, which are dependents, and a set of
-        numbers in repo, which are land-with partners.
+        numbers in repo and a set of "owner/repo#N" in other repositories, which are
+        land-with partners.
     """
     keywords = BASE_KEYWORDS + repo.keywords
     pattern = re.compile(r"\b(" + "|".join(re.escape(k) for k in keywords) + r")\b", re.IGNORECASE)
-    numbers, external, dependents, partners = set(), set(), set(), set()
+    numbers, external, dependents = set(), set(), set()
+    partners, external_partners = set(), set()
     # A colon does not end a sentence, so "Merge with:" and the list that follows stay together.
     for sentence in re.split(r"(?<=[.;])\s+|\n\s*\n(?!\s*https?://)", body):
         for m in pattern.finditer(sentence):
@@ -444,10 +447,11 @@ def stated_prerequisites(body, repo):
                     dependents |= ns
                 elif preposition == "with":
                     partners |= ns
+                    external_partners |= ext
                 else:
                     numbers |= ns
                     external |= ext
-    return numbers, external, dependents, partners
+    return numbers, external, dependents, partners, external_partners
 
 
 def updated_pr_description(body, prerequisites, dependents):
@@ -498,7 +502,10 @@ class Model:
     """The dependencies among the open PRs of a repository."""
 
     def __init__(self, repo, cfg):
-        """Compute the dependencies among the open PRs of repo, which load_repo has read."""
+        """Find the dependencies among the open PRs of repo, which load_repo has read.
+
+        unite_partners must be called before the dependency graph is used.
+        """
         self.repo = repo
         rc = cfg["repos"][repo.name]
         self.excluded = set(rc.get("excluded", {}).get("prs", []))
@@ -508,15 +515,18 @@ class Model:
         self.stated = {}
         self.stated_dependents = {}
         self.stated_partners = {}
+        self.external_partners = {}
         self.stated_closed = {}
         self.external = {}
         prereqs = {n: stated_prerequisites(repo.prs[n]["body"], repo) for n in open_prs}
         # Look up all the states at once; state_of and external_state look up any that remain.
-        external = {e for _, ext, _, _ in prereqs.values() for e in ext} | {
+        external = {e for _, ext, _, _, _ in prereqs.values() for e in ext} | {
             e for refs in rc.get("extra_external_dependencies", {}).values() for e in refs
         }
         internal = {
-            f"{repo.gh}#{m}" for names, _, _, _ in prereqs.values() for m in names - set(repo.prs)
+            f"{repo.gh}#{m}"
+            for names, _, _, _, _ in prereqs.values()
+            for m in names - set(repo.prs)
         }
         for ref, state in query_pr_states((external - set(EXTERNAL_STATE)) | internal).items():
             if ref in external:
@@ -524,11 +534,12 @@ class Model:
             else:
                 repo.closed_state[int(ref.split("#")[1])] = state if state != "open" else None
         for n in open_prs:
-            names, external, dependents, partners = prereqs[n]
+            names, external, dependents, partners, external_partners = prereqs[n]
             names -= {n}
             self.stated[n] = names & open_prs
             self.stated_dependents[n] = (dependents - {n}) & open_prs
             self.stated_partners[n] = (partners - {n}) & open_prs
+            self.external_partners[n] = external_partners
             self.stated_closed[n] = sorted(
                 (m, repo.state_of(m)) for m in names - set(repo.prs) if repo.state_of(m)
             )
@@ -553,21 +564,12 @@ class Model:
                 if m in open_prs:
                     deps[n].add(m)
                     self.base_pr[n] = m
-        # Each PR's land-with partners, whichever of the two descriptions names the other.
-        self.partners = defaultdict(set)
-        for n in open_prs:
-            for m in self.stated_partners[n]:
-                self.partners[n].add(m)
-                self.partners[m].add(n)
-        # A PR does not depend on a land-with partner, even if its branch contains the
-        # partner's commits.
         for a, b in repo.contains:
             if (
                 a in open_prs
                 and b in open_prs
                 and b not in not_prereq
                 and (b, a) not in repo.contains
-                and b not in self.partners[a]
             ):
                 deps[a].add(b)
         self.extra = defaultdict(set)
@@ -575,21 +577,29 @@ class Model:
             if a in open_prs and b in open_prs:
                 deps[a].add(b)
                 self.extra[a].add(b)
+        self.deps = deps
+        # The members, in this repository, of each PR's land-with unit.
+        self.unit = {n: {n} for n in open_prs}
+        # The external prerequisites that each PR has because of its land-with unit.
+        self.inherited_external = {}
+
+    def compute_graph(self):
+        """Compute the dependency graph from the dependencies that unite_partners set."""
+        open_prs, deps = self.open, self.deps
         self.all_deps = {n: self.closure(deps, n) for n in open_prs}
-        # Each PR that depends on itself, such as two PRs whose descriptions say to land each
-        # after the other.
-        self.cyclic = sorted(n for n in open_prs if any(n in self.all_deps[d] for d in deps[n]))
-        # The land-with partners whose commits each PR's branch contains, but not vice versa.
+        # Each PR that depends on its own unit, such as two PRs whose descriptions say to land
+        # each after the other.
+        self.cyclic = sorted(
+            n for n in open_prs if any(self.unit[n] & self.all_deps[d] for d in deps[n])
+        )
+        # The unit members whose commits each PR's branch contains, but not vice versa.
+        contains = self.repo.contains
         covered = {
-            n: {
-                m
-                for m in self.partners[n]
-                if (n, m) in repo.contains and (m, n) not in repo.contains
-            }
+            n: {m for m in self.unit[n] - {n} if (n, m) in contains and (m, n) not in contains}
             for n in open_prs
         }
         # Direct dependencies:  the transitive reduction, in which a dependency on a PR also
-        # covers the land-with partners whose commits its branch contains.
+        # covers the unit members whose commits its branch contains.
         self.direct = {}
         for n in open_prs:
             indirect = (
@@ -742,6 +752,75 @@ class Model:
         return comps
 
 
+def unite_partners(models):
+    """Make each set of land-with partners one unit, and compute each model's graph.
+
+    The partners of a PR are the PRs that its description says to land with it, and the
+    PRs whose descriptions say to land with it, in any of the models' repositories.  A unit
+    is a set of PRs that are connected by the partner relation.  Each member of a unit
+    depends on every prerequisite of every member, and on no member.
+    """
+    by_gh = {m.repo.gh.lower(): m for m in models}
+    neighbors = defaultdict(set)  # (model, PR number) -> partners
+    for model in models:
+        for n in model.open:
+            partners = {(model, m) for m in model.stated_partners[n]}
+            for ref in model.external_partners[n]:
+                gh, m = ref.split("#")
+                other = by_gh.get(gh.lower())
+                if other and int(m) in other.open:
+                    partners.add((other, int(m)))
+            for p in partners:
+                neighbors[model, n].add(p)
+                neighbors[p].add((model, n))
+    seen = set()
+    for start in list(neighbors):
+        if start in seen:
+            continue
+        unit, todo = set(), [start]
+        while todo:
+            member = todo.pop()
+            if member not in unit:
+                unit.add(member)
+                todo.extend(neighbors[member])
+        seen |= unit
+        # The prerequisites of the unit:  a map from (lowercase repository, PR number) to the
+        # PR's reference.
+        prereqs = {}
+        for model, n in unit:
+            gh = model.repo.gh
+            prereqs.update({(gh.lower(), d): f"{gh}#{d}" for d in model.deps[n]})
+            for ref in model.external[n]:
+                g, d = ref.split("#")
+                prereqs[g.lower(), int(d)] = ref
+        members = {(model.repo.gh.lower(), n) for model, n in unit}
+        prereqs = {key: ref for key, ref in prereqs.items() if key not in members}
+        for model, n in unit:
+            gh = model.repo.gh.lower()
+            model.unit[n] = {m for other, m in unit if other is model}
+            model.deps[n] = {d for (g, d) in prereqs if g == gh and d in model.open}
+            inherited = {ref for (g, _), ref in prereqs.items() if g != gh} - set(model.external[n])
+            model.inherited_external[n] = inherited
+            model.external[n] = sorted(set(model.external[n]) | inherited)
+    for model in models:
+        model.compute_graph()
+
+
+def load_models(cfg, pairwise=True):
+    """Read the open PRs of each repository that cfg describes, and model their dependencies.
+
+    Returns:
+        The model of each repository, in the order that cfg gives.
+    """
+    models = []
+    for name in cfg["order"]:
+        repo = Repo(cfg["repos"][name])
+        load_repo(repo, pairwise=pairwise)
+        models.append(Model(repo, cfg))
+    unite_partners(models)
+    return models
+
+
 def description_updates(models):
     """Find the PR descriptions whose conventional landing-order lines are stale.
 
@@ -771,17 +850,21 @@ def description_updates(models):
 def refresh_description_facts(model, cfg, n):
     """Refresh the facts derived from one locally updated PR description."""
     r = model.repo
-    names, external, dependents, partners = stated_prerequisites(r.prs[n]["body"], r)
+    names, external, dependents, partners, external_partners = stated_prerequisites(
+        r.prs[n]["body"], r
+    )
     names -= {n}
     model.stated[n] = names & model.open
     model.stated_dependents[n] = (dependents - {n}) & model.open
     model.stated_partners[n] = (partners - {n}) & model.open
+    model.external_partners[n] = external_partners
     model.stated_closed[n] = sorted(
         (m, state) for m in names - set(r.prs) if (state := r.state_of(m))
     )
     configured = cfg["repos"][r.name].get("extra_external_dependencies", {}).get(str(n), [])
     model.external[n] = sorted(
         {ref for ref in external | set(configured) if external_state(ref) == "open"}
+        | model.inherited_external.get(n, set())
     )
 
 
@@ -2165,8 +2248,9 @@ def default_dependency_document(models):
             " if its base branch is the other PR's branch,"
             " if its branch contains all of the other PR's non-merge commits,"
             f" or if `{CONFIG}` says so."
-            ' "Land with #N" does not make either PR depend on the other,'
-            " even if one PR's branch contains the other's commits."
+            ' PRs that land together, as "Land with #N" says, are one unit,'
+            " which may span repositories:  each member depends on every prerequisite of every"
+            " member, and on no member, even if its branch contains another member's commits."
         ),
         "",
         "## Status",
@@ -2260,11 +2344,7 @@ def main():
             cfg = json.load(f)
     else:
         cfg = default_config(base)
-    models = []
-    for name in cfg["order"]:
-        repo = Repo(cfg["repos"][name])
-        load_repo(repo)
-        models.append(Model(repo, cfg))
+    models = load_models(cfg)
     updates = description_updates(models)
     failed_updates = []
     if not check_only:

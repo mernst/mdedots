@@ -105,14 +105,21 @@ class StatedPrerequisitesTest(unittest.TestCase):
         """A land-with PR is a partner, not a prerequisite."""
         self.assertEqual(
             pr_status.stated_prerequisites("Land with #5.", self.repo),
-            (set(), set(), set(), {5}),
+            (set(), set(), set(), {5}, set()),
         )
 
     def test_after_with_before(self):
         """One sentence can name a prerequisite, a partner, and a dependent."""
         self.assertEqual(
             pr_status.stated_prerequisites("Land it after #1, with #2, and before #3.", self.repo),
-            ({1}, set(), {3}, {2}),
+            ({1}, set(), {3}, {2}, set()),
+        )
+
+    def test_land_with_other_repository(self):
+        """A land-with PR in another repository is an external partner."""
+        self.assertEqual(
+            pr_status.stated_prerequisites("Land with other/repo#5.", self.repo),
+            (set(), set(), set(), set(), {"other/repo#5"}),
         )
 
 
@@ -120,8 +127,10 @@ class ModelTest(unittest.TestCase):
     """Tests for Model."""
 
     @staticmethod
-    def model(bodies, contains):
-        """Build a model of open PRs with the given descriptions and branch containment.
+    def raw_model(bodies, contains, gh="owner/repo"):
+        """Build a model, without its graph, of open PRs.
+
+        The PRs have the given descriptions and branch containment.
 
         Returns:
             The model.
@@ -131,9 +140,9 @@ class ModelTest(unittest.TestCase):
             for n, body in bodies.items()
         }
         repo = types.SimpleNamespace(
-            name="repo",
-            gh="owner/repo",
-            owner="owner",
+            name=gh,
+            gh=gh,
+            owner=gh.split("/")[0],
             default_branch="master",
             keywords=[],
             prs=prs,
@@ -141,7 +150,17 @@ class ModelTest(unittest.TestCase):
             closed_state={},
             state_of=lambda _: None,
         )
-        return pr_status.Model(repo, {"repos": {"repo": {}}})
+        return pr_status.Model(repo, {"repos": {gh: {}}})
+
+    def model(self, bodies, contains):
+        """Build a model of open PRs with the given descriptions and branch containment.
+
+        Returns:
+            The model.
+        """
+        model = self.raw_model(bodies, contains)
+        pr_status.unite_partners([model])
+        return model
 
     def test_containment_is_dependency(self):
         """A PR whose branch contains another's commits depends on it."""
@@ -159,6 +178,24 @@ class ModelTest(unittest.TestCase):
         model = self.model({1: "Land with #2.", 2: "", 3: ""}, {(1, 2), (3, 1), (3, 2)})
         self.assertEqual(model.direct[3], {1})
         self.assertEqual(model.all_deps[3], {1, 2})
+
+    def test_unit_members_share_prerequisites(self):
+        """Each member of a unit depends on the prerequisites of every member."""
+        model = self.model({1: "Land with #2.", 2: "Land with #3.", 3: "", 4: ""}, {(3, 4)})
+        self.assertEqual(model.blocked(), [1, 2, 3])
+        self.assertEqual(model.direct, {1: {4}, 2: {4}, 3: {4}, 4: set()})
+
+    def test_unit_spans_repositories(self):
+        """A unit's members in different repositories share their prerequisites."""
+        a = self.raw_model({1: "Land with other/repo#5.", 2: ""}, set())
+        b = self.raw_model(
+            {5: "Land after #6.", 6: "", 7: "Land with owner/repo#2."}, set(), "other/repo"
+        )
+        pr_status.unite_partners([a, b])
+        self.assertEqual(a.blocked(), [1])
+        self.assertEqual(a.external[1], ["other/repo#6"])
+        self.assertEqual(b.blocked(), [5])
+        self.assertEqual(b.external[7], [])
 
 
 class ApplyDescriptionUpdatesTest(unittest.TestCase):

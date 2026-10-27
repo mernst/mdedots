@@ -50,13 +50,10 @@ def blocked_from_config():
     """
     with pathlib.Path(pr_status.CONFIG).open() as f:
         cfg = json.load(f)
-    result = []
-    for name in cfg["order"]:
-        repo = pr_status.Repo(cfg["repos"][name])
-        pr_status.load_repo(repo, pairwise=False)
-        blocked = [(repo.ref(n), repo.prs[n]) for n in pr_status.Model(repo, cfg).blocked()]
-        result.append((repo.label, repo.gh, blocked))
-    return result
+    return [
+        (m.repo.label, m.repo.gh, [(m.repo.ref(n), m.repo.prs[n]) for n in m.blocked()])
+        for m in pr_status.load_models(cfg, pairwise=False)
+    ]
 
 
 def blocked_from_document():
