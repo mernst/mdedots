@@ -829,18 +829,11 @@ def description_updates(models):
     """
     updates = []
     for model in models:
-        with_prs = defaultdict(set)
-        for n in model.open:
-            for line in model.repo.prs[n]["body"].splitlines():
-                match = LANDING_LINE.fullmatch(line)
-                if match and match[1] == "with" and int(match[2]) in model.open:
-                    other = int(match[2])
-                    with_prs[n].add(other)
-                    with_prs[other].add(n)
         for n in sorted(model.open):
             body = model.repo.prs[n]["body"]
+            unit = model.unit[n]
             updated = updated_pr_description(
-                body, model.direct[n] - with_prs[n], model.dependents[n] - with_prs[n]
+                body, model.direct[n] - unit, model.dependents[n] - unit
             )
             if updated != body:
                 updates.append((model, n, updated))

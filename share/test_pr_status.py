@@ -92,6 +92,7 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
             open={1, 2},
             direct={1: {2}, 2: set()},
             dependents={1: set(), 2: {1}},
+            unit={1: {1, 2}, 2: {1, 2}},
         )
         self.assertEqual(pr_status.description_updates([model]), [])
 
