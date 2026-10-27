@@ -114,10 +114,10 @@ def changed_since(directory: pathlib.Path, cutoff: float) -> bool:
         True if the directory or any file under it changed after `cutoff`, which is
         in seconds since the epoch.
     """
-    for dirpath, dirnames, filenames in os.walk(directory):
+    for dirpath, dirnames, filenames in directory.walk():
         for name in [".", *dirnames, *filenames]:
             try:
-                st = pathlib.Path(dirpath, name).lstat()
+                st = (dirpath / name).lstat()
             except OSError:
                 continue
             if max(st.st_mtime, st.st_ctime) > cutoff:
