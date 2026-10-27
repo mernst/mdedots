@@ -420,7 +420,7 @@ def query_pr_states(refs):
 
 BASE_KEYWORDS = ["depends on", "depend on", "builds on", "land", "merge"]
 
-LANDING_LINE = re.compile(r"Land (after|with|before) #(\d+)\.[ \t]*")
+LANDING_LINE = re.compile(r"Land (after|with|before) ((?:[\w.-]+/[\w.-]+)?#\d+)\.[ \t]*")
 
 
 def pr_refs(text, repo):
@@ -495,11 +495,15 @@ def stated_prerequisites(body, repo):
     return numbers, external, dependents, partners, external_partners
 
 
-def updated_pr_description(body, prerequisites, dependents):
+def updated_pr_description(body, prerequisites, dependents, external_prerequisites=()):
     """Update the conventional landing-order lines in a PR description.
 
-    Existing ``Land with #N.`` lines are retained between the generated "Land after"
-    and "Land before" groups.
+    prerequisites and dependents are PR numbers in the PR's repository, and
+    external_prerequisites are "owner/repo#N" in other repositories.
+
+    Existing ``Land with`` lines are retained between the generated "Land after"
+    and "Land before" groups, and existing "Land before" lines that name a PR in another
+    repository are retained after the generated "Land before" group.
 
     Returns:
         The updated description.
@@ -509,11 +513,25 @@ def updated_pr_description(body, prerequisites, dependents):
     landing = [(i, LANDING_LINE.fullmatch(line)) for i, line in enumerate(lines)]
     landing = [(i, match) for i, match in landing if match]
     with_lines = [lines[i] for i, match in landing if match[1] == "with"]
-    with_prs = {int(match[2]) for _, match in landing if match[1] == "with"}
+    with_refs = {match[2] for _, match in landing if match[1] == "with"}
+    with_prs = {int(ref[1:]) for ref in with_refs if ref.startswith("#")}
+    external_before_lines = [
+        lines[i] for i, match in landing if match[1] == "before" and not match[2].startswith("#")
+    ]
+
+    def ref_key(ref):
+        gh, n = ref.split("#")
+        return gh.lower(), int(n)
+
     replacement = [
         *(f"Land after #{n}." for n in sorted(set(prerequisites) - with_prs)),
+        *(
+            f"Land after {ref}."
+            for ref in sorted(set(external_prerequisites) - with_refs, key=ref_key)
+        ),
         *with_lines,
         *(f"Land before #{n}." for n in sorted(set(dependents) - with_prs)),
+        *external_before_lines,
     ]
 
     if landing:
@@ -877,7 +895,7 @@ def description_updates(models):
             body = model.repo.prs[n]["body"]
             unit = model.unit[n]
             updated = updated_pr_description(
-                body, model.direct[n] - unit, model.dependents[n] - unit
+                body, model.direct[n] - unit, model.dependents[n] - unit, model.external[n]
             )
             if updated != body:
                 updates.append((model, n, updated))

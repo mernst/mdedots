@@ -93,8 +93,35 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
             direct={1: {2}, 2: set()},
             dependents={1: set(), 2: {1}},
             unit={1: {1, 2}, 2: {1, 2}},
+            external={1: [], 2: []},
         )
         self.assertEqual(pr_status.description_updates([model]), [])
+
+    def test_replaces_external_prerequisites(self):
+        """A PR in another repository that is no longer a prerequisite is removed."""
+        body = "Land after other/repo#1592.\nLand after other/repo#1625.\n\nDescription.\n"
+        self.assertEqual(
+            pr_status.updated_pr_description(body, set(), set(), ["other/repo#1625"]),
+            "Land after other/repo#1625.\n\nDescription.\n",
+        )
+
+    def test_adds_sorted_external_prerequisites(self):
+        """External prerequisites follow the prerequisites in the PR's own repository."""
+        self.assertEqual(
+            pr_status.updated_pr_description(
+                "Description.", {10}, set(), ["other/repo#1000", "other/repo#999", "a/b#5"]
+            ),
+            "Description.\n\nLand after #10.\nLand after a/b#5.\n"
+            "Land after other/repo#999.\nLand after other/repo#1000.",
+        )
+
+    def test_retains_external_land_with_and_land_before(self):
+        """External land-with and land-before lines are retained."""
+        body = "Land before other/repo#3.\nLand with other/repo#2.\nLand after other/repo#1."
+        self.assertEqual(
+            pr_status.updated_pr_description(body, set(), set(), ["other/repo#2"]),
+            "Land with other/repo#2.\nLand before other/repo#3.",
+        )
 
 
 class StatedPrerequisitesTest(unittest.TestCase):
