@@ -43,12 +43,25 @@ class TableRowTest(unittest.TestCase):
 class UpdatedPrDescriptionTest(unittest.TestCase):
     """Tests for updated_pr_description."""
 
-    def test_adds_sorted_lines_after_body(self):
-        """New landing-order lines follow the existing description."""
+    def test_adds_sorted_lines_before_body(self):
+        """New landing-order lines precede the existing description."""
         self.assertEqual(
             pr_status.updated_pr_description("Description.", {30, 10}, {40, 20}),
-            "Description.\n\nLand after #10.\nLand after #30.\nLand before #20.\nLand before #40.",
+            "Land after #10.\nLand after #30.\nLand before #20.\nLand before #40.\n\nDescription.",
         )
+
+    def test_moves_final_block_to_beginning(self):
+        """A landing-order block that ends the description moves to its beginning."""
+        body = "Description.\n\nMore.\n\nLand after #10.\n\nLand before #30.\n\n"
+        self.assertEqual(
+            pr_status.updated_pr_description(body, {10}, {30}),
+            "Land after #10.\nLand before #30.\n\nDescription.\n\nMore.\n",
+        )
+
+    def test_retains_block_within_body(self):
+        """A landing-order block that is followed by other text stays where it is."""
+        body = "Description.\n\nLand after #10.\n\nDetails.\n"
+        self.assertEqual(pr_status.updated_pr_description(body, {10}, set()), body)
 
     def test_replaces_lines_and_retains_land_with(self):
         """All 3 groups use the conventional order."""
@@ -81,7 +94,7 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
 
     def test_idempotent(self):
         """An up-to-date description is unchanged."""
-        body = "Description.\n\nLand after #10.\nLand with #20.\nLand before #30."
+        body = "Land after #10.\nLand with #20.\nLand before #30.\n\nDescription."
         self.assertEqual(pr_status.updated_pr_description(body, {10}, {30}), body)
 
     def test_land_with_takes_precedence_in_both_descriptions(self):
@@ -111,8 +124,8 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
             pr_status.updated_pr_description(
                 "Description.", {10}, set(), ["other/repo#1000", "other/repo#999", "a/b#5"]
             ),
-            "Description.\n\nLand after #10.\nLand after a/b#5.\n"
-            "Land after other/repo#999.\nLand after other/repo#1000.",
+            "Land after #10.\nLand after a/b#5.\n"
+            "Land after other/repo#999.\nLand after other/repo#1000.\n\nDescription.",
         )
 
     def test_retains_external_land_with_and_land_before(self):
@@ -121,6 +134,30 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
         self.assertEqual(
             pr_status.updated_pr_description(body, set(), set(), ["other/repo#2"]),
             "Land with other/repo#2.\nLand before other/repo#3.",
+        )
+
+
+class MalformedLandingLinesTest(unittest.TestCase):
+    """Tests for malformed_landing_lines."""
+
+    def test_finds_malformed_lines(self):
+        """Only lines that start like a landing-order line but are not one are found."""
+        body = (
+            "Land after #10.\nLand after #10 and #20.\nLand with #30\nLand before PR 40.\n"
+            "Land after\nLand with#50.\nLand before\t#60.\n"
+            "Land before other/repo#5.\nPlease land after #10.\nLanding after #10.\n"
+            "Land without #70.\nLand afterwards.\n"
+        )
+        self.assertEqual(
+            pr_status.malformed_landing_lines(body),
+            [
+                "Land after #10 and #20.",
+                "Land with #30",
+                "Land before PR 40.",
+                "Land after",
+                "Land with#50.",
+                "Land before\t#60.",
+            ],
         )
 
 
