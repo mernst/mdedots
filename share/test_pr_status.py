@@ -96,6 +96,71 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
         self.assertEqual(pr_status.description_updates([model]), [])
 
 
+class StatedPrerequisitesTest(unittest.TestCase):
+    """Tests for stated_prerequisites."""
+
+    repo = types.SimpleNamespace(gh="owner/repo", keywords=[])
+
+    def test_land_with_is_partner(self):
+        """A land-with PR is a partner, not a prerequisite."""
+        self.assertEqual(
+            pr_status.stated_prerequisites("Land with #5.", self.repo),
+            (set(), set(), set(), {5}),
+        )
+
+    def test_after_with_before(self):
+        """One sentence can name a prerequisite, a partner, and a dependent."""
+        self.assertEqual(
+            pr_status.stated_prerequisites("Land it after #1, with #2, and before #3.", self.repo),
+            ({1}, set(), {3}, {2}),
+        )
+
+
+class ModelTest(unittest.TestCase):
+    """Tests for Model."""
+
+    @staticmethod
+    def model(bodies, contains):
+        """Build a model of open PRs with the given descriptions and branch containment.
+
+        Returns:
+            The model.
+        """
+        prs = {
+            n: {"body": body, "baseRefName": "master", "owner": "owner", "headRefName": f"b{n}"}
+            for n, body in bodies.items()
+        }
+        repo = types.SimpleNamespace(
+            name="repo",
+            gh="owner/repo",
+            owner="owner",
+            default_branch="master",
+            keywords=[],
+            prs=prs,
+            contains=contains,
+            closed_state={},
+            state_of=lambda _: None,
+        )
+        return pr_status.Model(repo, {"repos": {"repo": {}}})
+
+    def test_containment_is_dependency(self):
+        """A PR whose branch contains another's commits depends on it."""
+        model = self.model({1: "", 2: ""}, {(1, 2)})
+        self.assertEqual(model.blocked(), [1])
+
+    def test_land_with_containment_is_not_dependency(self):
+        """A PR does not depend on its land-with partner, even if it contains its commits."""
+        for bodies in ({1: "Land with #2.", 2: ""}, {1: "", 2: "Land with #1."}):
+            model = self.model(bodies, {(1, 2)})
+            self.assertEqual(model.blocked(), [])
+
+    def test_dependency_on_pr_covers_its_land_with_partner(self):
+        """A dependency on a land-with partner is not direct if the PR contains the partner."""
+        model = self.model({1: "Land with #2.", 2: "", 3: ""}, {(1, 2), (3, 1), (3, 2)})
+        self.assertEqual(model.direct[3], {1})
+        self.assertEqual(model.all_deps[3], {1, 2})
+
+
 class ApplyDescriptionUpdatesTest(unittest.TestCase):
     """Tests for apply_description_updates."""
 

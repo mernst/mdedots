@@ -15,8 +15,8 @@ Each run:
   * reads the open PRs with gh,
   * runs pr-merge-analysis.sh (cached) on them, for each repository,
   * computes the dependencies:  a PR depends on another if its description says
-    so, if its branch contains all of the other PR's non-merge commits, or if the
-    config says so,
+    so, if its branch contains all of the other PR's non-merge commits (unless the
+    description of either PR says to land it with the other), or if the config says so,
   * updates each modeled PR description's "Land after" and "Land before" lines,
   * prints what changed since the previous snapshot (input for the summary),
   * renames the working copies whose name does not match their branch's PR, and
@@ -400,15 +400,19 @@ def pr_refs(text, repo):
 
 
 def stated_prerequisites(body, repo):
-    """Find the PRs that a description names as prerequisites or as dependents of its PR.
+    """Find the PRs that a description names as related to its PR.
+
+    A land-with partner, as in "Land with #N", lands together with the PR.  It is neither a
+    prerequisite nor a dependent.
 
     Returns:
         A set of numbers in repo and a set of "owner/repo#N" in other repositories, which
-        are prerequisites, and a set of numbers in repo, which are dependents.
+        are prerequisites, a set of numbers in repo, which are dependents, and a set of
+        numbers in repo, which are land-with partners.
     """
     keywords = BASE_KEYWORDS + repo.keywords
     pattern = re.compile(r"\b(" + "|".join(re.escape(k) for k in keywords) + r")\b", re.IGNORECASE)
-    numbers, external, dependents = set(), set(), set()
+    numbers, external, dependents, partners = set(), set(), set(), set()
     # A colon does not end a sentence, so "Merge with:" and the list that follows stay together.
     for sentence in re.split(r"(?<=[.;])\s+|\n\s*\n(?!\s*https?://)", body):
         for m in pattern.finditer(sentence):
@@ -430,16 +434,20 @@ def stated_prerequisites(body, repo):
                 )
             ):
                 continue
-            # In "Land it after #A and before #B", #A is a prerequisite and #B is a dependent.
+            # In "Land it after #A, with #B, and before #C", #A is a prerequisite, #B is a
+            # land-with partner, and #C is a dependent.
             parts = re.split(r"\b(after|before|with)\b", rest, flags=re.IGNORECASE)
             for i in range(0, len(parts), 2):
                 ns, ext = pr_refs(parts[i], repo)
-                if i and parts[i - 1].lower() == "before":
+                preposition = parts[i - 1].lower() if i else None
+                if preposition == "before":
                     dependents |= ns
+                elif preposition == "with":
+                    partners |= ns
                 else:
                     numbers |= ns
                     external |= ext
-    return numbers, external, dependents
+    return numbers, external, dependents, partners
 
 
 def updated_pr_description(body, prerequisites, dependents):
@@ -499,15 +507,16 @@ class Model:
         self.open = open_prs
         self.stated = {}
         self.stated_dependents = {}
+        self.stated_partners = {}
         self.stated_closed = {}
         self.external = {}
         prereqs = {n: stated_prerequisites(repo.prs[n]["body"], repo) for n in open_prs}
         # Look up all the states at once; state_of and external_state look up any that remain.
-        external = {e for _, ext, _ in prereqs.values() for e in ext} | {
+        external = {e for _, ext, _, _ in prereqs.values() for e in ext} | {
             e for refs in rc.get("extra_external_dependencies", {}).values() for e in refs
         }
         internal = {
-            f"{repo.gh}#{m}" for names, _, _ in prereqs.values() for m in names - set(repo.prs)
+            f"{repo.gh}#{m}" for names, _, _, _ in prereqs.values() for m in names - set(repo.prs)
         }
         for ref, state in query_pr_states((external - set(EXTERNAL_STATE)) | internal).items():
             if ref in external:
@@ -515,10 +524,11 @@ class Model:
             else:
                 repo.closed_state[int(ref.split("#")[1])] = state if state != "open" else None
         for n in open_prs:
-            names, external, dependents = prereqs[n]
+            names, external, dependents, partners = prereqs[n]
             names -= {n}
             self.stated[n] = names & open_prs
             self.stated_dependents[n] = (dependents - {n}) & open_prs
+            self.stated_partners[n] = (partners - {n}) & open_prs
             self.stated_closed[n] = sorted(
                 (m, repo.state_of(m)) for m in names - set(repo.prs) if repo.state_of(m)
             )
@@ -543,12 +553,21 @@ class Model:
                 if m in open_prs:
                     deps[n].add(m)
                     self.base_pr[n] = m
+        # Each PR's land-with partners, whichever of the two descriptions names the other.
+        self.partners = defaultdict(set)
+        for n in open_prs:
+            for m in self.stated_partners[n]:
+                self.partners[n].add(m)
+                self.partners[m].add(n)
+        # A PR does not depend on a land-with partner, even if its branch contains the
+        # partner's commits.
         for a, b in repo.contains:
             if (
                 a in open_prs
                 and b in open_prs
                 and b not in not_prereq
                 and (b, a) not in repo.contains
+                and b not in self.partners[a]
             ):
                 deps[a].add(b)
         self.extra = defaultdict(set)
@@ -558,13 +577,23 @@ class Model:
                 self.extra[a].add(b)
         self.all_deps = {n: self.closure(deps, n) for n in open_prs}
         # Each PR that depends on itself, such as two PRs whose descriptions say to land each
-        # with the other.
+        # after the other.
         self.cyclic = sorted(n for n in open_prs if any(n in self.all_deps[d] for d in deps[n]))
-        # Direct dependencies:  the transitive reduction.
+        # The land-with partners whose commits each PR's branch contains, but not vice versa.
+        covered = {
+            n: {
+                m
+                for m in self.partners[n]
+                if (n, m) in repo.contains and (m, n) not in repo.contains
+            }
+            for n in open_prs
+        }
+        # Direct dependencies:  the transitive reduction, in which a dependency on a PR also
+        # covers the land-with partners whose commits its branch contains.
         self.direct = {}
         for n in open_prs:
             indirect = (
-                set().union(*(self.all_deps[d] for d in self.all_deps[n]))
+                set().union(*(self.all_deps[d] | covered[d] for d in self.all_deps[n]))
                 if self.all_deps[n]
                 else set()
             )
@@ -742,10 +771,11 @@ def description_updates(models):
 def refresh_description_facts(model, cfg, n):
     """Refresh the facts derived from one locally updated PR description."""
     r = model.repo
-    names, external, dependents = stated_prerequisites(r.prs[n]["body"], r)
+    names, external, dependents, partners = stated_prerequisites(r.prs[n]["body"], r)
     names -= {n}
     model.stated[n] = names & model.open
     model.stated_dependents[n] = (dependents - {n}) & model.open
+    model.stated_partners[n] = (partners - {n}) & model.open
     model.stated_closed[n] = sorted(
         (m, state) for m in names - set(r.prs) if (state := r.state_of(m))
     )
@@ -2135,6 +2165,8 @@ def default_dependency_document(models):
             " if its base branch is the other PR's branch,"
             " if its branch contains all of the other PR's non-merge commits,"
             f" or if `{CONFIG}` says so."
+            ' "Land with #N" does not make either PR depend on the other,'
+            " even if one PR's branch contains the other's commits."
         ),
         "",
         "## Status",
