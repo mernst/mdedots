@@ -159,6 +159,9 @@ alias bigscreen='xrandr -s 1920x1200'
 alias aoeu='if [ $DISPLAY ]; then setxkbmap us; else loadkeys us; fi'
 alias asdf='if [ $DISPLAY ]; then setxkbmap dvorak; else loadkeys dvorak; fi'
 
+alias gterminal='ptyxis --new-window'
+alias gterm=gterminal
+
 ### LLMs
 
 alias claudetrustdir='[ ! -f "$CLAUDE_CONFIG/.claude.json" ] || (jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" "$CLAUDE_CONFIG/.claude.json" > "$CLAUDE_CONFIG/.claude.json.tmp" && mv "$CLAUDE_CONFIG/.claude.json.tmp" "$CLAUDE_CONFIG/.claude.json")'

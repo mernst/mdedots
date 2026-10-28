@@ -131,13 +131,21 @@ class Repo:
         """
         return f"{self.prefix}{n}"
 
+    def url(self, n):
+        """Return the URL of PR n.
+
+        Returns:
+            The URL of PR n on GitHub.
+        """
+        return f"https://github.com/{self.gh}/pull/{n}"
+
     def link(self, n):
         """Return a Markdown link to PR n.
 
         Returns:
             A link whose text is the PR's reference and whose target is the PR on GitHub.
         """
-        return f"[{self.ref(n)}](https://github.com/{self.gh}/pull/{n})"
+        return f"[{self.ref(n)}]({self.url(n)})"
 
     def refs(self, ns):
         """Return how documents refer to the PRs ns.
@@ -495,6 +503,20 @@ def stated_prerequisites(body, repo):
     return numbers, external, dependents, partners, external_partners
 
 
+def malformed_landing_lines(body):
+    """Find the lines of a description that look like landing-order lines but are not.
+
+    Returns:
+        The lines that start with the word "Land" followed by the word "after", "with", or
+        "before", but do not have the conventional format, such as "Land after #N.".
+    """
+    return [
+        line
+        for line in body.splitlines()
+        if re.match(r"Land (after|with|before)\b", line) and not LANDING_LINE.fullmatch(line)
+    ]
+
+
 def updated_pr_description(body, prerequisites, dependents, external_prerequisites=()):
     """Update the conventional landing-order lines in a PR description.
 
@@ -504,6 +526,10 @@ def updated_pr_description(body, prerequisites, dependents, external_prerequisit
     Existing ``Land with`` lines are retained between the generated "Land after"
     and "Land before" groups, and existing "Land before" lines that name a PR in another
     repository are retained after the generated "Land before" group.
+
+    The landing-order lines replace the existing ones, where the first of them is, unless
+    they end the description; then, as when there are none, the landing-order lines begin
+    the description.
 
     Returns:
         The updated description.
@@ -534,23 +560,27 @@ def updated_pr_description(body, prerequisites, dependents, external_prerequisit
         *external_before_lines,
     ]
 
-    if landing:
-        landing_indices = {i for i, _ in landing}
+    landing_indices = {i for i, _ in landing}
+    at_end = bool(landing) and all(
+        i in landing_indices or not lines[i].strip() for i in range(landing[0][0], len(lines))
+    )
+    if landing and not at_end:
         insertion = landing[0][0]
         lines = [line for i, line in enumerate(lines) if i not in landing_indices]
         lines[insertion:insertion] = replacement
         if not replacement:
             # Remove one blank line that only separated the landing-order block from the body.
-            if insertion == len(lines) and insertion and not lines[insertion - 1]:
-                lines.pop()
-            elif insertion == 0 and lines and not lines[0]:
+            if insertion == 0 and lines and not lines[0]:
                 lines.pop(0)
             elif 0 < insertion < len(lines) and not lines[insertion - 1] and not lines[insertion]:
                 lines.pop(insertion)
-    elif replacement:
-        if lines and lines[-1]:
-            lines.append("")
-        lines.extend(replacement)
+    elif landing or replacement:
+        lines = lines[: landing[0][0]] if landing else lines
+        # Remove the blank lines that separated a final landing-order block from the body.
+        while lines and not lines[-1].strip():
+            lines.pop()
+        if replacement:
+            lines = replacement + ([""] if lines and lines[0] else []) + lines
     else:
         return body
 
@@ -893,6 +923,12 @@ def description_updates(models):
     for model in models:
         for n in sorted(model.open):
             body = model.repo.prs[n]["body"]
+            for line in malformed_landing_lines(body):
+                print(
+                    f"pr-status.py: warning: {model.repo.url(n)}:"
+                    f" malformed landing-order line: {line}",
+                    file=sys.stderr,
+                )
             unit = model.unit[n]
             updated = updated_pr_description(
                 body, model.direct[n] - unit, model.dependents[n] - unit, model.external[n]
