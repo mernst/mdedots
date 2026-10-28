@@ -24,9 +24,10 @@ Each run:
     re-creates the ones whose origin is not the PR's head repository as working trees
     of a clone of that repository, when doing so loses no information,
   * prints the directories whose name or origin does not match their branch's PR,
-  * rewrites the unblocked documents entirely, and the parts of the dependency
-    document between <!-- BEGIN GENERATED: name --> and <!-- END GENERATED: name -->
-    (or creates the dependency document, if it does not exist).
+  * rewrites the unblocked documents (if the config names any) entirely, and the parts
+    of the dependency document between <!-- BEGIN GENERATED: name --> and
+    <!-- END GENERATED: name --> (or creates the dependency document, if it does not
+    exist).
 """
 
 import argparse
@@ -2282,8 +2283,8 @@ def default_config(base):
     are clones of (or, if there is none, the one that the most clones are clones of), or its
     upstream if that repository is a fork with the same name.  Clones are grouped by
     repository name, so the clones of a repository and of its forks are counted together.
-    The config has no notes or decisions, and its documents are pr-unblocked.md and
-    pr-dependencies.md.
+    The config has no notes or decisions, and its only document is pr-dependencies.md.
+    (Its "Unblocked PRs" sections serve in place of an unblocked document.)
 
     Returns:
         The default config.
@@ -2351,10 +2352,7 @@ def default_config(base):
     return {
         "order": list(repos),
         "repos": repos,
-        "documents": {
-            "unblocked": [{"file": "pr-unblocked.md", "title": f"Unblocked {and_list(repos)} PRs"}],
-            "dependencies": "pr-dependencies.md",
-        },
+        "documents": {"dependencies": "pr-dependencies.md"},
         "directories": [],
     }
 
@@ -2544,7 +2542,8 @@ def main():
     if check_only:
         return
     docs = cfg["documents"]
-    for doc in docs["unblocked"]:
+    unblocked_docs = docs.get("unblocked", [])
+    for doc in unblocked_docs:
         pathlib.Path(doc["file"]).write_text(unblocked_doc(models, cfg, base, doc, as_of))
     dependencies = pathlib.Path(docs["dependencies"])
     if dependencies.exists():
@@ -2556,10 +2555,9 @@ def main():
     pathlib.Path(docs["dependencies"]).write_text(text)
     with pathlib.Path(SNAPSHOT).open("w") as f:
         json.dump({"time": now.isoformat(timespec="seconds"), "facts": new}, f, indent=1)
-    print(
-        f"## Wrote {', '.join(d['file'] for d in docs['unblocked'])}, the generated sections of "
-        f"{docs['dependencies']}, and {SNAPSHOT}"
-    )
+    written = [d["file"] for d in unblocked_docs]
+    written += [f"the generated sections of {docs['dependencies']}", SNAPSHOT]
+    print(f"## Wrote {and_list(written)}")
     if failed_updates:
         sys.exit(1)
 
