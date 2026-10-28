@@ -363,12 +363,12 @@ def error_message(text):
     return text if len(text) <= 200 else text[:200] + "..."
 
 
-def cancel(cancelling):
-    """Call the cancelling function, reporting any failure."""
+def cancel(cancelling, url):
+    """Call the cancelling function, reporting any failure, with the URL of the build."""
     try:
         cancelling()
     except (urllib.error.URLError, subprocess.CalledProcessError) as e:
-        print(f"  failed: {failure(e)}", file=sys.stderr)
+        print(f"  failed to cancel {url}: {failure(e)}", file=sys.stderr)
 
 
 def main():
@@ -398,10 +398,10 @@ def main():
             for status, description, url, cancelling in builds:
                 print(
                     f"{pr_name(label, ref)}: {'would cancel' if dry_run else 'cancelling'}"
-                    f" {status} {description} {url}"
+                    f" {status} {description}"
                 )
                 if not dry_run:
-                    cancel(cancelling)
+                    cancel(cancelling, url)
 
 
 if __name__ == "__main__":
