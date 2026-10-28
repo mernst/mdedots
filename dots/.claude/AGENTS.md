@@ -82,6 +82,8 @@ When creating a new branch, use a new directory or a new clone.
 If a directory is named `<reponame>-fork-<orgname>...`, then it must contain `<orgname>/<reponame>`, not any other fork of `<reponame>`.
 
 Create a branch for a pull request in my fork:  run `git-new-branch` in `<reponame>-fork-mernst` or in one of its `<reponame>-fork-mernst-branch-*` directories.
+The usual command is `git-new-branch --clean NEWBRANCH`; `git-new-branch --help` summarizes its behavior and options.
+The new branch starts at the current commit of the directory where you run it (but on a fork's `master` that lags behind `upstream/master`, it starts at `upstream/master`), so run it in `<reponame>-fork-mernst` for a branch from master, or in the directory of the pull request that the new one depends on.
 Do not create it in a clone of the upstream repository (`<reponame>`, `<reponame>-branch-*`) or of another person's fork.
 The exception is a repository whose pull requests come from branches of the repository itself, such as `plume-lib/manage-git-branches`; there is no `<reponame>-fork-mernst` directory for it.
 If `git-new-branch` refuses because the current clone is the upstream repository of a fork, run it in the fork; do not pass `--allow-upstream`.
