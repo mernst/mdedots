@@ -2174,7 +2174,7 @@ def push_commands(models, base, conflicts_only=False):
             notes.append(
                 f"{r.label} PRs with no working copy, which these commands omit: {r.links(missing)}"
             )
-        if chains and not has_upstream:
+        if not has_upstream and len(missing) < len(m.open):
             notes.append(
                 f"No working copy of upstream {r.label} `{r.default_branch}`,"
                 " so these commands do not push it"
