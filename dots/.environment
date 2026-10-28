@@ -230,9 +230,9 @@ export QUILT_PATCH_OPTS="--reject-format=unified"
 ### CI: continuous integration
 ###
 
-if [ -f "$HOME"/private/AZURE_DEVOPS_EXT_PAT.sh ]; then
+if [ -f "$HOME/private/tokens.sh" ]; then
   # shellcheck disable=SC1091
-  . "$HOME"/private/AZURE_DEVOPS_EXT_PAT.sh
+  . "$HOME/private/tokens.sh"
 fi
 
 

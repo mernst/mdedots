@@ -31,8 +31,8 @@
       "Bash(gh pr list:*)",
       "Bash(gh pr view:*)",
       "Bash(gh repo view:*)",
-      "Bash(git -C * diff:*)",
-      "Bash(git -C * log:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
       "Bash(git add:*)",
       "Bash(git branch:*)",
       "Bash(git checkout:*)",
@@ -92,10 +92,7 @@
       "WebSearch(*)",
       "Write(*)"
     ],
-    "deny": [
-      "Bash(git switch)",
-      "Bash(git switch:*)"
-    ],
+    "deny": ["Bash(git switch)", "Bash(git switch:*)"],
     "ask": []
   },
   "hooks": {
@@ -126,11 +123,7 @@
   },
   "spinnerVerbs": {
     "mode": "replace",
-    "verbs": [
-      "Thinking",
-      "Processing",
-      "Working"
-    ]
+    "verbs": ["Thinking", "Processing", "Working"]
   },
   "modelSettings": {
     "claude-opus-5-5": {
