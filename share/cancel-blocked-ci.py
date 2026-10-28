@@ -69,6 +69,15 @@ AZURE_DEVOPS_RESOURCE = "499b84ac-1321-427f-aa17-267ca6975798"
 CIRCLECI_CONFIGS = ["~/.circleci/cli.yml", "~/snap/circleci/current/.circleci/cli.yml"]
 
 
+def pr_name(label, ref):
+    """Name a PR in output.
+
+    Returns:
+        ref, preceded by the repository's label unless ref already starts with it.
+    """
+    return ref if ref.startswith(label) else f"{label} {ref}"
+
+
 def blocked_from_config():
     """Find the blocked PRs, as pr-status.py computes them from its config.
 
@@ -125,7 +134,7 @@ def blocked_from_document():
         blocked = []
         for ref, n in prs:
             if n not in open_prs:
-                print(f"{label} {ref}: not open; skipping it", file=sys.stderr)
+                print(f"{pr_name(label, ref)}: not open; skipping it", file=sys.stderr)
                 continue
             pr = open_prs[n]
             pr["owner"] = (pr.get("headRepositoryOwner") or {}).get("login", "")
@@ -388,7 +397,7 @@ def main():
             builds += unfinished_other_builds(gh, pr["headRefOid"])
             for status, description, url, cancelling in builds:
                 print(
-                    f"{label} {ref}: {'would cancel' if dry_run else 'cancelling'}"
+                    f"{pr_name(label, ref)}: {'would cancel' if dry_run else 'cancelling'}"
                     f" {status} {description} {url}"
                 )
                 if not dry_run:
