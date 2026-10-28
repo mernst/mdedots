@@ -27,6 +27,8 @@ def load_script() -> types.ModuleType:
 
 pr_status = load_script()
 
+REPO = types.SimpleNamespace(gh="owner/repo", keywords=[])
+
 
 class TableRowTest(unittest.TestCase):
     """Tests for table_row."""
@@ -46,7 +48,7 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
     def test_adds_sorted_lines_before_body(self):
         """New landing-order lines precede the existing description."""
         self.assertEqual(
-            pr_status.updated_pr_description("Description.", {30, 10}, {40, 20}),
+            pr_status.updated_pr_description("Description.", REPO, {30, 10}, {40, 20}),
             "Land after #10.\nLand after #30.\nLand before #20.\nLand before #40.\n\nDescription.",
         )
 
@@ -54,20 +56,20 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
         """A landing-order block that ends the description moves to its beginning."""
         body = "Description.\n\nMore.\n\nLand after #10.\n\nLand before #30.\n\n"
         self.assertEqual(
-            pr_status.updated_pr_description(body, {10}, {30}),
+            pr_status.updated_pr_description(body, REPO, {10}, {30}),
             "Land after #10.\nLand before #30.\n\nDescription.\n\nMore.\n",
         )
 
     def test_retains_block_within_body(self):
         """A landing-order block that is followed by other text stays where it is."""
         body = "Description.\n\nLand after #10.\n\nDetails.\n"
-        self.assertEqual(pr_status.updated_pr_description(body, {10}, set()), body)
+        self.assertEqual(pr_status.updated_pr_description(body, REPO, {10}, set()), body)
 
     def test_replaces_lines_and_retains_land_with(self):
         """All 3 groups use the conventional order."""
         body = "Description.\n\nLand before #90.\nLand with #50.\nLand after #80.\n\nDetails.\n"
         self.assertEqual(
-            pr_status.updated_pr_description(body, {20, 10}, {40, 30}),
+            pr_status.updated_pr_description(body, REPO, {20, 10}, {40, 30}),
             "Description.\n\nLand after #10.\nLand after #20.\nLand with #50.\n"
             "Land before #30.\nLand before #40.\n\nDetails.\n",
         )
@@ -76,30 +78,48 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
         """A land-with relationship is not also written as a before/after relationship."""
         body = "Land with #20."
         self.assertEqual(
-            pr_status.updated_pr_description(body, {10, 20}, {20, 30}),
+            pr_status.updated_pr_description(body, REPO, {10, 20}, {20, 30}),
             "Land after #10.\nLand with #20.\nLand before #30.",
         )
 
     def test_removes_obsolete_block_and_separator(self):
         """Removing a final landing-order block does not leave a blank line."""
         self.assertEqual(
-            pr_status.updated_pr_description("Description.\n\nLand after #10.\n", set(), set()),
+            pr_status.updated_pr_description(
+                "Description.\n\nLand after #10.\n", REPO, set(), set()
+            ),
             "Description.\n",
         )
 
     def test_preserves_unconventional_prose(self):
         """Only complete conventional lines are managed."""
         body = "Please land after #10 because the API changes."
-        self.assertEqual(pr_status.updated_pr_description(body, set(), set()), body)
+        self.assertEqual(pr_status.updated_pr_description(body, REPO, set(), set()), body)
+
+    def test_retains_text_of_lenient_lines(self):
+        """A lenient landing-order line that is still correct is retained verbatim."""
+        body = (
+            "Description.\n\nLand before #30\n"
+            "Land after https://github.com/owner/repo/pull/10.  Until #10 lands, it is here.\n"
+            "Land after #20, which is obsolete.\n\nDetails.\n"
+        )
+        self.assertEqual(
+            pr_status.updated_pr_description(body, REPO, {10}, {30}),
+            "Description.\n\n"
+            "Land after https://github.com/owner/repo/pull/10.  Until #10 lands, it is here.\n"
+            "Land before #30\n\nDetails.\n",
+        )
 
     def test_idempotent(self):
         """An up-to-date description is unchanged."""
         body = "Land after #10.\nLand with #20.\nLand before #30.\n\nDescription."
-        self.assertEqual(pr_status.updated_pr_description(body, {10}, {30}), body)
+        self.assertEqual(pr_status.updated_pr_description(body, REPO, {10}, {30}), body)
 
     def test_land_with_takes_precedence_in_both_descriptions(self):
         """Land-with suppresses a generated line in the other PR's description."""
-        repo = types.SimpleNamespace(prs={1: {"body": "Land with #2."}, 2: {"body": ""}})
+        repo = types.SimpleNamespace(
+            gh="owner/repo", prs={1: {"body": "Land with #2."}, 2: {"body": ""}}
+        )
         model = types.SimpleNamespace(
             repo=repo,
             open={1, 2},
@@ -114,7 +134,7 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
         """A PR in another repository that is no longer a prerequisite is removed."""
         body = "Land after other/repo#1592.\nLand after other/repo#1625.\n\nDescription.\n"
         self.assertEqual(
-            pr_status.updated_pr_description(body, set(), set(), ["other/repo#1625"]),
+            pr_status.updated_pr_description(body, REPO, set(), set(), ["other/repo#1625"]),
             "Land after other/repo#1625.\n\nDescription.\n",
         )
 
@@ -122,7 +142,7 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
         """External prerequisites follow the prerequisites in the PR's own repository."""
         self.assertEqual(
             pr_status.updated_pr_description(
-                "Description.", {10}, set(), ["other/repo#1000", "other/repo#999", "a/b#5"]
+                "Description.", REPO, {10}, set(), ["other/repo#1000", "other/repo#999", "a/b#5"]
             ),
             "Land after #10.\nLand after a/b#5.\n"
             "Land after other/repo#999.\nLand after other/repo#1000.\n\nDescription.",
@@ -132,7 +152,7 @@ class UpdatedPrDescriptionTest(unittest.TestCase):
         """External land-with and land-before lines are retained."""
         body = "Land before other/repo#3.\nLand with other/repo#2.\nLand after other/repo#1."
         self.assertEqual(
-            pr_status.updated_pr_description(body, set(), set(), ["other/repo#2"]),
+            pr_status.updated_pr_description(body, REPO, set(), set(), ["other/repo#2"]),
             "Land with other/repo#2.\nLand before other/repo#3.",
         )
 
@@ -149,15 +169,49 @@ class MalformedLandingLinesTest(unittest.TestCase):
             "Land without #70.\nLand afterwards.\n"
         )
         self.assertEqual(
-            pr_status.malformed_landing_lines(body),
+            pr_status.malformed_landing_lines(body, REPO),
             [
                 "Land after #10 and #20.",
-                "Land with #30",
                 "Land before PR 40.",
                 "Land after",
                 "Land with#50.",
                 "Land before\t#60.",
             ],
+        )
+
+    def test_accepts_lenient_lines(self):
+        """A line may omit its period, and its other text may name only the same PR."""
+        body = (
+            "Land after #10, which changes the API.\n"
+            "Land after https://github.com/owner/repo/pull/20.  Until #20 lands, the diff"
+            " includes #20's changes.\n"
+            "Land with https://github.com/other/repo/pull/30\n"
+            "Land before owner/repo#40\n"
+            "Land after #50, which needs #60.\n"
+            "Land after #70.  See https://github.com/other/repo/pull/70.\n"
+        )
+        self.assertEqual(
+            pr_status.malformed_landing_lines(body, REPO),
+            [
+                "Land after #50, which needs #60.",
+                "Land after #70.  See https://github.com/other/repo/pull/70.",
+            ],
+        )
+
+
+class LandingLineTest(unittest.TestCase):
+    """Tests for landing_line."""
+
+    def test_normalizes_ref(self):
+        """A PR in the same repository is "#N", and others are "owner/repo#N"."""
+        self.assertEqual(pr_status.landing_line("Land after #10.", REPO), ("after", "#10"))
+        self.assertEqual(
+            pr_status.landing_line("Land before https://github.com/owner/repo/pull/20", REPO),
+            ("before", "#20"),
+        )
+        self.assertEqual(
+            pr_status.landing_line("Land with https://github.com/other/repo/pull/30", REPO),
+            ("with", "other/repo#30"),
         )
 
 

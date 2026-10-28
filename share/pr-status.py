@@ -428,7 +428,10 @@ def query_pr_states(refs):
 
 BASE_KEYWORDS = ["depends on", "depend on", "builds on", "land", "merge"]
 
-LANDING_LINE = re.compile(r"Land (after|with|before) ((?:[\w.-]+/[\w.-]+)?#\d+)\.[ \t]*")
+LANDING_START = re.compile(
+    r"Land (after|with|before)"
+    r" (#\d+|[\w.-]+/[\w.-]+#\d+|https://github\.com/[\w.-]+/[\w.-]+/pull/\d+)\b"
+)
 
 
 def pr_refs(text, repo):
@@ -503,25 +506,49 @@ def stated_prerequisites(body, repo):
     return numbers, external, dependents, partners, external_partners
 
 
-def malformed_landing_lines(body):
+def landing_line(line, repo):
+    """Parse a landing-order line of a description of a PR in repo.
+
+    A landing-order line has the conventional format, such as "Land after #N.", except
+    that it may omit the final period and may continue with text that names no other PR.
+    It may name the PR as "owner/repo#N" or by its URL.
+
+    Returns:
+        The word "after", "with", or "before", and the PR that the line names, as "#N" if
+        it is in repo and as "owner/repo#N" otherwise; or None if line is not a
+        landing-order line.
+    """
+    m = LANDING_START.match(line)
+    if not m:
+        return None
+    numbers, external = pr_refs(line, repo)
+    if len(numbers) + len(external) != 1:
+        return None
+    return m[1], (f"#{numbers.pop()}" if numbers else external.pop())
+
+
+def malformed_landing_lines(body, repo):
     """Find the lines of a description that look like landing-order lines but are not.
 
     Returns:
         The lines that start with the word "Land" followed by the word "after", "with", or
-        "before", but do not have the conventional format, such as "Land after #N.".
+        "before", but are not landing-order lines as defined by landing_line.
     """
     return [
         line
         for line in body.splitlines()
-        if re.match(r"Land (after|with|before)\b", line) and not LANDING_LINE.fullmatch(line)
+        if re.match(r"Land (after|with|before)\b", line) and not landing_line(line, repo)
     ]
 
 
-def updated_pr_description(body, prerequisites, dependents, external_prerequisites=()):
-    """Update the conventional landing-order lines in a PR description.
+def updated_pr_description(body, repo, prerequisites, dependents, external_prerequisites=()):
+    """Update the landing-order lines, as defined by landing_line, in a PR description.
 
-    prerequisites and dependents are PR numbers in the PR's repository, and
-    external_prerequisites are "owner/repo#N" in other repositories.
+    prerequisites and dependents are PR numbers in repo, and external_prerequisites are
+    "owner/repo#N" in other repositories.
+
+    A generated line retains the text of an existing landing-order line that says the same
+    thing, and otherwise has the conventional format, such as "Land after #N.".
 
     Existing ``Land with`` lines are retained between the generated "Land after"
     and "Land before" groups, and existing "Land before" lines that name a PR in another
@@ -536,27 +563,33 @@ def updated_pr_description(body, prerequisites, dependents, external_prerequisit
     """
     lines = body.splitlines()
     final_newline = body.endswith("\n")
-    landing = [(i, LANDING_LINE.fullmatch(line)) for i, line in enumerate(lines)]
-    landing = [(i, match) for i, match in landing if match]
-    with_lines = [lines[i] for i, match in landing if match[1] == "with"]
-    with_refs = {match[2] for _, match in landing if match[1] == "with"}
+    landing = [(i, landing_line(line, repo)) for i, line in enumerate(lines)]
+    landing = [(i, parsed) for i, parsed in landing if parsed]
+    existing = {}
+    for i, parsed in landing:
+        existing.setdefault(parsed, lines[i])
+    with_lines = [lines[i] for i, (kind, _) in landing if kind == "with"]
+    with_refs = {ref for _, (kind, ref) in landing if kind == "with"}
     with_prs = {int(ref[1:]) for ref in with_refs if ref.startswith("#")}
     external_before_lines = [
-        lines[i] for i, match in landing if match[1] == "before" and not match[2].startswith("#")
+        lines[i] for i, (kind, ref) in landing if kind == "before" and not ref.startswith("#")
     ]
 
     def ref_key(ref):
         gh, n = ref.split("#")
         return gh.lower(), int(n)
 
+    def generated(kind, ref):
+        return existing.get((kind, ref), f"Land {kind} {ref}.")
+
     replacement = [
-        *(f"Land after #{n}." for n in sorted(set(prerequisites) - with_prs)),
+        *(generated("after", f"#{n}") for n in sorted(set(prerequisites) - with_prs)),
         *(
-            f"Land after {ref}."
+            generated("after", ref)
             for ref in sorted(set(external_prerequisites) - with_refs, key=ref_key)
         ),
         *with_lines,
-        *(f"Land before #{n}." for n in sorted(set(dependents) - with_prs)),
+        *(generated("before", f"#{n}") for n in sorted(set(dependents) - with_prs)),
         *external_before_lines,
     ]
 
@@ -923,7 +956,7 @@ def description_updates(models):
     for model in models:
         for n in sorted(model.open):
             body = model.repo.prs[n]["body"]
-            for line in malformed_landing_lines(body):
+            for line in malformed_landing_lines(body, model.repo):
                 print(
                     f"pr-status.py: warning: {model.repo.url(n)}:"
                     f" malformed landing-order line: {line}",
@@ -931,7 +964,11 @@ def description_updates(models):
                 )
             unit = model.unit[n]
             updated = updated_pr_description(
-                body, model.direct[n] - unit, model.dependents[n] - unit, model.external[n]
+                body,
+                model.repo,
+                model.direct[n] - unit,
+                model.dependents[n] - unit,
+                model.external[n],
             )
             if updated != body:
                 updates.append((model, n, updated))
