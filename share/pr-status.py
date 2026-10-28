@@ -123,6 +123,8 @@ class Repo:
         self.review_threads = None
         # The numbers of the PRs whose CI failed; None until load_reviews_and_ci runs.
         self.ci_failed = None
+        # The numbers of the PRs whose CI completed and passed; None until load_reviews_and_ci runs.
+        self.ci_passed = None
 
     def ref(self, n):
         """Return how documents refer to PR n.
@@ -253,6 +255,7 @@ query($owner: String!, $name: String!, $endCursor: String) {
           nodes {
             commit {
               statusCheckRollup {
+                state
                 contexts(first: 100) {
                   nodes {
                     ... on CheckRun { status conclusion }
@@ -330,12 +333,13 @@ def ci_failed(checks):
 def load_reviews_and_ci(repo):
     """Read the unresolved review threads and the CI results of the open PRs.
 
-    Sets repo.review_threads and repo.ci_failed.
+    Sets repo.review_threads, repo.ci_failed, and repo.ci_passed.
     """
     if repo.review_threads is not None:
         return
     repo.review_threads = {}
     repo.ci_failed = set()
+    repo.ci_passed = set()
     for pr in review_thread_query(
         repo, REVIEW_THREADS_QUERY, ".data.repository.pullRequests.nodes[]"
     ):
@@ -355,6 +359,9 @@ def load_reviews_and_ci(repo):
         rollup = commits[0]["commit"]["statusCheckRollup"] if commits else None
         if rollup and ci_failed(rollup["contexts"]["nodes"]):
             repo.ci_failed.add(pr["number"])
+        # The rollup's state is SUCCESS only if every check has completed and passed.
+        elif rollup and rollup["state"] == "SUCCESS":
+            repo.ci_passed.add(pr["number"])
 
 
 PR_STATES = {"OPEN": "open", "MERGED": "landed", "CLOSED": "closed"}
@@ -811,7 +818,8 @@ class Model:
 
         Returns:
             The number of the PR's unresolved review threads and how many of them are
-            outdated, followed by a red X if the PR's CI failed; or "" if neither applies.
+            outdated, followed by a red X if the PR's CI failed or a green checkmark if it
+            completed and passed; or "" if none of these applies.
         """
         load_reviews_and_ci(self.repo)
         threads = self.repo.review_threads.get(n, [])
@@ -821,6 +829,8 @@ class Model:
             cell.append(str(len(threads)) + (f" ({outdated} outdated)" if outdated else ""))
         if n in self.repo.ci_failed:
             cell.append("❌")
+        elif n in self.repo.ci_passed:
+            cell.append("✅")
         return " ".join(cell)
 
     def head_status(self, a, b):
