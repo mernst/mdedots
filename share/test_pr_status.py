@@ -241,6 +241,23 @@ class StatedPrerequisitesTest(unittest.TestCase):
             (set(), set(), set(), set(), {"other/repo#5"}),
         )
 
+    def test_negation(self):
+        """A negated keyword names no relationship."""
+        none = (set(), set(), set(), set(), set())
+        for body in [
+            "This PR does not depend on any of them:\n* #5 and #6:  refactorings.",
+            "It doesn't depend on #5.",
+            "It doesn\u2019t really depend on #5.",
+            "It no longer builds on #5.",
+            "Do not land after #5.",
+        ]:
+            with self.subTest(body=body):
+                self.assertEqual(pr_status.stated_prerequisites(body, self.repo), none)
+        self.assertEqual(
+            pr_status.stated_prerequisites("It is not new, but it depends on #5.", self.repo),
+            ({5}, set(), set(), set(), set()),
+        )
+
 
 class ModelTest(unittest.TestCase):
     """Tests for Model."""

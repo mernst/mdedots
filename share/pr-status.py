@@ -429,6 +429,10 @@ def query_pr_states(refs):
 
 BASE_KEYWORDS = ["depends on", "depend on", "builds on", "land", "merge"]
 
+# A negation, possibly followed by one word, that ends the text before a keyword, as in
+# "does not depend on", "doesn't actually depend on", or "no longer builds on".
+NEGATION = re.compile(r"(\b(not|never|no longer)|n['\u2019]t)\s+(\w+\s+)?$", re.IGNORECASE)
+
 LANDING_START = re.compile(
     r"Land (after|with|before)"
     r" (#\d+|[\w.-]+/[\w.-]+#\d+|https://github\.com/[\w.-]+/[\w.-]+/pull/\d+)\b"
@@ -472,6 +476,8 @@ def stated_prerequisites(body, repo):
     # A colon does not end a sentence, so "Merge with:" and the list that follows stay together.
     for sentence in re.split(r"(?<=[.;])\s+|\n\s*\n(?!\s*https?://)", body):
         for m in pattern.finditer(sentence):
+            if NEGATION.search(sentence[: m.start()]):
+                continue  # "This PR does not depend on #N" names no relationship
             rest = sentence[m.end() :]
             keyword = m[1].lower()
             if keyword not in ("land", "merge"):
