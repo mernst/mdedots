@@ -2161,8 +2161,6 @@ def push_commands(models, base, conflicts_only=False):
         The commands' lines, and notes about what the commands omit.
     """
     lines = [f"cd {base} && \\"]
-    if conflicts_only:
-        lines.insert(0, "# Run this and fix merge commits until it succeeds:")
     notes = []
     for m in models:
         r = m.repo
