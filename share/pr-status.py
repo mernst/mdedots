@@ -828,10 +828,10 @@ class Model:
             outdated = sum(threads)
             cell.append(str(len(threads)) + (f" ({outdated} outdated)" if outdated else ""))
         if n in self.repo.ci_failed:
-            cell.append("❌")
+            cell.append(" ❌")
         elif n in self.repo.ci_passed:
-            cell.append("✅")
-        return " ".join(cell)
+            cell.append(" ✅")
+        return "".join(cell)
 
     def head_status(self, a, b):
         """Return whether a's branch has b's current commits.
