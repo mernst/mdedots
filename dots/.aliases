@@ -733,6 +733,37 @@ alias gdu=git-diff-upstream
 alias gpdu='cronic --permit-stderr git-pull-upstream && git-diff-upstream'
 alias pdu=gpdu
 alias rmgob='git-orphaned-branches --remove'
+cdslug() {
+  if [ "$#" -ne 1 ] || [[ "$1" != ?*:?* ]] || [[ "$1" == *:*:* ]]; then
+    echo "Usage: cdslug OWNER:BRANCH" >&2
+    return 2
+  fi
+
+  local owner=${1%%:*}
+  local branch=${1#*:}
+  local directory
+  local -a matching_directories=()
+  for directory in *-fork-"$owner"-branch-"$branch"; do
+    if [ -d "$directory" ]; then
+      matching_directories+=("$directory")
+    fi
+  done
+
+  case ${#matching_directories[@]} in
+    0)
+      echo "cdslug: no directory matches $1" >&2
+      return 1
+      ;;
+    1)
+      cd -- "${matching_directories[0]}" || return
+      ;;
+    *)
+      echo "cdslug: multiple directories match $1:"
+      printf '%s\n' "${matching_directories[@]}"
+      return 1
+      ;;
+  esac
+}
 gcbs() {
   for br in "$@"; do
     gcb "${br}"
