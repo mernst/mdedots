@@ -1833,7 +1833,7 @@ def textual_conflicts(model, cfg, n):
         return and_list(([f"`{r.default_branch}`"] if None in partners else []) + prs)
 
     conflicts = "; ".join(
-        (f"{len(files)} files" if len(files) > 4 else and_list(f"`{f}`" for f in sorted(files)))
+        (f"{len(files)}+ files" if len(files) > 4 else and_list(f"`{f}`" for f in sorted(files)))
         + f" with {partner_list(partners)}"
         for partners, files in sorted(
             by_partners.items(), key=lambda kv: (None not in kv[0], sorted(kv[1]))
