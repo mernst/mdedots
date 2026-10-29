@@ -116,6 +116,15 @@ trust_level = "trusted"
 [projects."/home/mernst/research/testing/toast-paper"]
 trust_level = "trusted"
 
+[projects."/home/mernst/research/testing/randoop-fork-mernst-branch-exec-args-verbatim"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/testing/randoop-fork-mernst-branch-agent-jar-path-decode"]
+trust_level = "trusted"
+
+[projects."/home/mernst/research/invariants/daikon-fork-mernst-branch-dyncomp-wide-store-tags"]
+trust_level = "trusted"
+
 [tui]
 screen_reader_detection_done = true
 terminal_title = []
