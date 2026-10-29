@@ -121,12 +121,41 @@ update_fork_with_hosting_and_userid() {
     # Doesn't use `git -C` because multiple git commands will be run in the directory.
     if [ -n "$DEBUG" ]; then
       # Run in the foreground.
-      ( (cd "$dir" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $dir, perhaps in the command: $git_pull_command")
+      ( (cd "$dir" && fast_forward_to_upstream_and_push "git@${hosting}:$org/$repo") || echo "problem with $dir, perhaps in the command: $git_pull_command")
     else
       # Run in the background.
-      ( (cd "$dir" && (git pull -q --ff-only "git@${hosting}:$org/$repo" --tags || (pwd && false)) && git push -q && git remote prune origin > /dev/null 2>&1) || echo "problem with $dir, perhaps in the command: $git_pull_command") &
+      ( (cd "$dir" && fast_forward_to_upstream_and_push "git@${hosting}:$org/$repo") || echo "problem with $dir, perhaps in the command: $git_pull_command") &
     fi
   fi
+}
+
+# Make every merge into the current branch of the clone in the current
+# directory fast-forward-only, including the merge that `git pull` (such as
+# the one that MultiVersionControl runs) performs, so the branch never gets a
+# merge commit.  The setting applies only to that branch, so another branch,
+# even one in a worktree of the same repository, still merges.
+make_merges_fast_forward_only() {
+  branch="$(git symbolic-ref --short HEAD)" \
+    && git config "branch.$branch.mergeoptions" --ff-only
+}
+
+# Fast-forward the current branch of the clone in the current directory to
+# upstream repository $1, then push it.  Fails, without pushing, if the
+# branch cannot be fast-forwarded or if it has commits that upstream lacks.
+# Also makes every later merge into the branch fast-forward-only.
+fast_forward_to_upstream_and_push() {
+  upstream="$1"
+  make_merges_fast_forward_only
+  if ! git pull -q --ff-only "$upstream" --tags; then
+    pwd
+    return 1
+  fi
+  if [ "$(git rev-parse HEAD)" != "$(git rev-parse FETCH_HEAD)" ]; then
+    echo "$(pwd) has commits that $upstream lacks:"
+    git log --oneline FETCH_HEAD..HEAD
+    return 1
+  fi
+  git push -q && git remote prune origin > /dev/null 2>&1
 }
 
 # Use this for non-github repositories.
@@ -135,6 +164,7 @@ update_from() {
   dir=$2
   if [ -d "$dir" ]; then
     (cd "$dir" \
+      && make_merges_fast_forward_only \
       && git pull -q --ff-only \
       && git pull -q --ff-only "$upstream" --tags \
       && git push -q \
@@ -362,6 +392,7 @@ update_fork typetools commons-bcel ~/research/types/libraries
 dir=~/java/kotlin-fork-mernst
 if [ -d $dir ]; then
   (cd $dir \
+    && make_merges_fast_forward_only \
     && git pull -q --ff-only \
     && git pull -q --ff-only "git@github.com:JetBrains/kotlin" \
     && git push -q \
