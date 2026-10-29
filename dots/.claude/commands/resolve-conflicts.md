@@ -1,3 +1,8 @@
+---
+name: resolve-conflicts
+description: Resolve and push merge conflicts across dependent pull-request chains documented in pr-dependencies.md.
+---
+
 # Resolve conflicts among dependent PRs
 
 Run @$HOME/bin/share/pr-status.py .

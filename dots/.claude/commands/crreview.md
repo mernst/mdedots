@@ -1,3 +1,8 @@
+---
+name: crreview
+description: Address CodeRabbitAI review comments on the current pull request.
+---
+
 # Address CodeRabbitAI review comments
 
 Examine the CodeRabbitAI reviews for this pull request.  For each review
