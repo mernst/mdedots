@@ -319,11 +319,11 @@ update_fork uber nullaway ~/java
 update_fork google error-prone ~/java
 dir=~/java/error-prone-branch-gh-pages
 if [ -d $dir ]; then
-  git -C $dir pull -q --ff-only || (pwd && false)
+  git -C $dir pull -q || (pwd && false)
 fi
 dir=~/java/error-prone-fork-mernst-branch-gh-pages
 if [ -d $dir ]; then
-  (git -C $dir pull -q --ff-only $dir && git push) || (echo $dir && false)
+  (git -C $dir pull -q git@github.com:google/error-prone gh-pages && git -C $dir push) || (echo $dir && false)
 fi
 
 update_fork michel-kraemer gradle-download-task ~/bin/src
