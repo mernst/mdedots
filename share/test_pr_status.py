@@ -431,7 +431,9 @@ class SectionGeneratorsTest(unittest.TestCase):
 
     def test_generates_conflicting_commands_section(self):
         """The conflict-only section is generated without any configuration."""
-        generators = pr_status.section_generators([], {"documents": {}}, "/base")
+        generators = pr_status.section_generators(
+            [], {"documents": {}}, "/base", "2026-01-01 00:00 UTC"
+        )
         self.assertIn("conflicting-push-commands", generators)
 
 

@@ -164,9 +164,9 @@ def http_error(status, message="error"):
 class MailReviewTest(unittest.TestCase):
     """Test API queries and browser-opening decisions."""
 
-    @mock.patch.object(mail_review.time, "sleep")
+    @mock.patch.object(mail_review, "TAB_DELAY_SECONDS", 0)
     @mock.patch.object(mail_review.webbrowser, "open")
-    def test_no_accounts_match_opens_no_tabs(self, browser_open, _sleep):
+    def test_no_accounts_match_opens_no_tabs(self, browser_open):
         sessions = (
             session("one@example.com", "0", {}),
             session("two@example.com", "2", {"messages": []}),
@@ -174,9 +174,9 @@ class MailReviewTest(unittest.TestCase):
         mail_review.open_search("subject:none", sessions, mail_review_spam.SPAM_REVIEW)
         browser_open.assert_not_called()
 
-    @mock.patch.object(mail_review.time, "sleep")
+    @mock.patch.object(mail_review, "TAB_DELAY_SECONDS", 0)
     @mock.patch.object(mail_review.webbrowser, "open")
-    def test_only_matching_account_opens_encoded_url(self, browser_open, _sleep):
+    def test_only_matching_account_opens_encoded_url(self, browser_open):
         sessions = (
             session("one@example.com", "0", {}),
             session("two@example.com", "2", {"messages": [{"id": "1"}]}),
@@ -189,9 +189,9 @@ class MailReviewTest(unittest.TestCase):
             "in%3Aspam%20subject%3A%22M%C3%BCller%20test%22%20to%3Aa%40example.com"
         )
 
-    @mock.patch.object(mail_review.time, "sleep")
+    @mock.patch.object(mail_review, "TAB_DELAY_SECONDS", 0)
     @mock.patch.object(mail_review.webbrowser, "open")
-    def test_review_without_prefix_searches_the_term_itself(self, browser_open, _sleep):
+    def test_review_without_prefix_searches_the_term_itself(self, browser_open):
         sessions = (session("one@example.com", "0", {"messages": [{"id": "1"}]}),)
         mail_review.open_search(
             "label:delay-weekly seworld", sessions, mail_review_weekly.WEEKLY_REVIEW
@@ -200,9 +200,9 @@ class MailReviewTest(unittest.TestCase):
             "https://mail.google.com/mail/u/0/#search/label%3Adelay-weekly%20seworld"
         )
 
-    @mock.patch.object(mail_review.time, "sleep")
+    @mock.patch.object(mail_review, "TAB_DELAY_SECONDS", 0)
     @mock.patch.object(mail_review.webbrowser, "open")
-    def test_both_accounts_match_in_account_order(self, browser_open, _sleep):
+    def test_both_accounts_match_in_account_order(self, browser_open):
         sessions = (
             session("one@example.com", "0", {"messages": [{"id": "1"}]}),
             session("two@example.com", "2", {"messages": [{"id": "2"}]}),
@@ -321,9 +321,9 @@ class MailReviewTest(unittest.TestCase):
             },
         )
 
-    @mock.patch.object(mail_review.time, "sleep")
+    @mock.patch.object(mail_review, "TAB_DELAY_SECONDS", 0)
     @mock.patch.object(mail_review.webbrowser, "open")
-    def test_transient_error_opens_tab_with_warning(self, browser_open, _sleep):
+    def test_transient_error_opens_tab_with_warning(self, browser_open):
         with contextlib.redirect_stderr(io.StringIO()) as stderr:
             mail_review.open_search(
                 "subject:test",
@@ -355,9 +355,9 @@ class MailReviewTest(unittest.TestCase):
             mail_review.gmail_folder_url("2", "spam"), "https://mail.google.com/mail/u/2/#spam"
         )
 
-    @mock.patch.object(mail_review.time, "sleep")
+    @mock.patch.object(mail_review, "TAB_DELAY_SECONDS", 0)
     @mock.patch.object(mail_review.webbrowser, "open", return_value=False)
-    def test_unopened_tab_warns(self, _browser_open, _sleep):
+    def test_unopened_tab_warns(self, _browser_open):
         with contextlib.redirect_stderr(io.StringIO()) as stderr:
             mail_review.open_tab("https://mail.google.com/mail/u/0/#spam")
         self.assertIn("no browser accepted", stderr.getvalue())
