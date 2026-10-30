@@ -40,6 +40,11 @@ if [ -f /etc/bashrc ]; then
   # shellcheck disable=SC1091  # file does not exist on some file systems
   . /etc/bashrc
   unset PROMPT_COMMAND
+  # Report the current directory (OSC 7) without setting the title, so that
+  # VTE-based terminals such as Ptyxis show it as the header-bar subtitle.
+  if declare -F __vte_osc7 > /dev/null; then
+    PROMPT_COMMAND=__vte_osc7
+  fi
   # Restore the precedence of the Maven that .profile puts on PATH.
   export PATH=${INSTALLDIR}/apache-maven/bin:${PATH}
 fi
