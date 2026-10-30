@@ -134,6 +134,10 @@ def read_hunk_body(
         line = lines[i]
         if line.startswith("\\") and body:
             body[-1].no_newline = line
+        elif (old_count, new_count) != (1, 1) and starts_file_header(lines, i):
+            # The hunk's header claims more lines than the hunk has.  (If one old line and one
+            # new line remain, the "---" and "+++" lines could be the hunk's last lines.)
+            break
         elif (line.startswith(" ") or line == "") and old_count > 0 and new_count > 0:
             # Some tools strip the space from an empty context line.
             body.append(Line(" ", line[1:]))
@@ -149,6 +153,24 @@ def read_hunk_body(
             break
         i += 1
     return body, i
+
+
+def starts_file_header(lines: list[str], i: int) -> bool:
+    """Return true if lines[i] starts a file's "---" and "+++" lines and its first hunk header.
+
+    Args:
+        lines: the lines of the diff
+        i: an index into lines
+
+    Returns:
+        true if lines[i] starts a file's "---" and "+++" lines and its first hunk header
+    """
+    return (
+        i + 2 < len(lines)
+        and lines[i].startswith("--- ")
+        and lines[i + 1].startswith("+++ ")
+        and HUNK_HEADER.fullmatch(lines[i + 2]) is not None
+    )
 
 
 def hunk_header(

@@ -322,6 +322,21 @@ class ParseTest(unittest.TestCase):
             hunk("@@ -1,2 +1,2 @@", " ", "-a", "+b"),
         )
 
+    def test_overstated_hunk_header(self):
+        """A hunk whose header claims too many lines ends at the next file's header."""
+        next_file = hunk("--- a/g", "+++ b/g", "@@ -1 +1 @@", "-p", "+q")
+        self.assertEqual(
+            diff_simplify.simplify_diff(
+                hunk("--- a/f", "+++ b/f", "@@ -1,5 +1,5 @@", "-x", "+xy", " c") + next_file
+            ),
+            hunk("--- a/f", "+++ b/f", "@@ -1,2 +1,3 @@", " x", "+ y", " c") + next_file,
+        )
+
+    def test_hunk_ends_with_lines_like_file_header(self):
+        """A hunk can end with a "-" line and a "+" line that look like a file's header."""
+        text = hunk("@@ -1,2 +1,2 @@", " a", "--- x", "+++ y", "@@ -9 +9 @@", "-p", "+q")
+        self.assertEqual(diff_simplify.simplify_diff(text), text)
+
     def test_form_feed_is_not_a_line_break(self):
         """A form feed within a line does not end the line."""
         text = hunk("@@ -1 +1 @@", "-a\fb", "+c")
