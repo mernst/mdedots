@@ -467,8 +467,14 @@ Use color if COLOR is non-nil."
     (user-error "Program ps2pdf not found; install Ghostscript"))
   (unless (executable-find difffontify-latin-1-command)
     (user-error "Program %s not found" difffontify-latin-1-command))
-  (let ((buffer (difffontify--prepare color))
-        (ps (make-temp-file "difffontify-" nil ".ps")))
+  (let* ((buffer (difffontify--prepare color))
+         (dir (make-temp-file "difffontify-" t))
+         (ps (expand-file-name "diff.ps" dir))
+         ;; Ghostscript writes the PDF file in the temporary directory, and
+         ;; Emacs moves it into place, because a security policy may forbid
+         ;; Ghostscript to write to PDF's directory.  For example, Ubuntu's
+         ;; AppArmor profile for Ghostscript forbids writing under ~/bin/.
+         (temp-pdf (expand-file-name "diff.pdf" dir)))
     (unwind-protect
         (progn
           (difffontify--write-ps buffer ps title color)
@@ -478,13 +484,14 @@ Use color if COLOR is non-nil."
             (unless (eql 0 (call-process
                             "ps2pdf" nil t nil
                             (format "-sPAPERSIZE=%s" difffontify--paper-type)
-                            ps pdf))
+                            ps temp-pdf))
               (when (file-exists-p pdf)
                 (delete-file pdf))
               (error "Program ps2pdf failed: %s"
-                     (string-trim (buffer-string))))))
+                     (string-trim (buffer-string)))))
+          (rename-file temp-pdf pdf t))
       (kill-buffer buffer)
-      (delete-file ps))))
+      (delete-directory dir t))))
 
 (defun difffontify--write-ps (buffer ps title color)
   "Write BUFFER, prepared by `difffontify--prepare', to PostScript file PS.
