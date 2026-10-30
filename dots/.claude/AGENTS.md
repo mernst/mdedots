@@ -20,6 +20,7 @@ When editing English text (files with extension .txt, .md, .tex, etc.), follow t
 * Retain the fences (three backticks) around fenced code blocks.
 * Use technical writing conventions; for example, punctuation is written inside quotation marks if it belongs to the quote, and punctuation is written outside quotation marks if it belongs to the larger sentence.
 * When editing, fix errors and clumsiness, but do not trade emphasis or precision for brevity.
+* Avoid the term "may", which is ambiguous:  it can mean "might" (a possibility) or "is permitted to".  Use a non-ambiguous term anywhere that you would have used may.
 
 ### LaTeX
 
@@ -38,7 +39,7 @@ When editing English text (files with extension .txt, .md, .tex, etc.), follow t
 
 ### Specifications (user-visible code documentation)
 
-* The documentation for a procedure should focus on what the procedure does.  It usually should not give details about how a specific clients use the procedure; such documentation belongs in the client.
+* As a general rule, the documentation for a procedure should focus on what the procedure does.  It usually should not give details about how a specific clients use the procedure; such documentation belongs in the client.  This rule can sometimes be violated.
 
 ### Java warning suppressions
 
