@@ -22,12 +22,12 @@ The simplifications are:
    such a line is often a coincidental match; but it leaves at least one
    context line before the next change group.
 
- * Show a lengthened line as an addition.  If a run of "-" lines is followed by
-   a run of "+" lines, and the first "+" line starts with all of the (non-blank)
-   first "-" line, then the "-" line becomes a context line, and the common
-   prefix in the "+" line becomes spaces.  So the "+" line shows only the text
-   that was appended.  This makes the new side of the hunk show text that is
-   not in the new file.
+ * Show a lengthened line as an addition.  If, in a change group that is not
+   merged, a run of "-" lines is followed by a run of "+" lines, and the first
+   "+" line starts with all of the (non-blank) first "-" line, then the "-"
+   line becomes a context line, and the common prefix in the "+" line becomes
+   spaces.  So the "+" line shows only the text that was appended.  This
+   makes the new side of the hunk show text that is not in the new file.
 
 Each hunk header's line counts are updated to match the hunk's lines.
 """
@@ -41,6 +41,10 @@ from collections.abc import Iterator
 from pathlib import Path
 
 HUNK_HEADER = re.compile(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)")
+
+# The start of the file name in a "---" or "+++" line:  a prefix such as "a/" (git), /dev/null,
+# or a name followed by a tab and a timestamp (diff -u).
+FILE_HEADER_NAME = re.compile(r"[a-z]/|/dev/null|[^\t]*\t")
 
 # A merge combines at least this many change groups.  Merging only two change groups often hides
 # the context that shows how they relate, such as a method signature between a changed
@@ -135,13 +139,15 @@ def read_hunk_body(
         line = lines[i]
         if line.startswith("\\") and body:
             body[-1].no_newline = line
-        elif (old_count, new_count) != (1, 1) and starts_file_header(lines, i):
-            # The hunk's header claims more lines than the hunk has.  (If one old line and one
-            # new line remain, the "---" and "+++" lines could be the hunk's last lines.)
+        elif ends_hunk(lines, i, old_count, new_count):
             break
-        elif (line.startswith(" ") or line == "") and old_count > 0 and new_count > 0:
-            # Some tools strip the space from an empty context line.
+        elif line.startswith(" ") and old_count > 0 and new_count > 0:
             body.append(Line(" ", line[1:]))
+            old_count -= 1
+            new_count -= 1
+        elif line in {"", "\r"} and old_count > 0 and new_count > 0:
+            # Some tools strip the space from an empty context line.
+            body.append(Line(" ", line))
             old_count -= 1
             new_count -= 1
         elif line.startswith("-") and old_count > 0:
@@ -156,22 +162,51 @@ def read_hunk_body(
     return body, i
 
 
-def starts_file_header(lines: list[str], i: int) -> bool:
-    """Return true if lines[i] starts a file's "---" and "+++" lines and its first hunk header.
+def ends_hunk(lines: list[str], i: int, old_count: int, new_count: int) -> bool:
+    """Return true if lines[i] follows a hunk whose header claims more lines than the hunk has.
+
+    Such a line looks like a hunk line, but it is a file's "---" line, or a separator that is
+    followed by a line that cannot continue the hunk:  a blank line, or the "-- " that precedes
+    the signature of a patch from `git format-patch`.
 
     Args:
         lines: the lines of the diff
-        i: an index into lines
+        i: the index of a line that might be within a hunk
+        old_count: the number of old lines that remain in the hunk, according to its header
+        new_count: the number of new lines that remain in the hunk, according to its header
 
     Returns:
-        true if lines[i] starts a file's "---" and "+++" lines and its first hunk header
+        true if lines[i] follows a hunk whose header claims more lines than the hunk has
     """
-    return (
+    line = lines[i]
+    if (line in {"", "\r"} and (old_count, new_count) != (1, 1)) or (
+        line == "-- " and (old_count, new_count) != (1, 0)
+    ):
+        return i + 1 == len(lines) or not can_be_in_hunk(lines[i + 1])
+    if not (
         i + 2 < len(lines)
-        and lines[i].startswith("--- ")
+        and line.startswith("--- ")
         and lines[i + 1].startswith("+++ ")
         and HUNK_HEADER.fullmatch(lines[i + 2]) is not None
+    ):
+        return False
+    # If one old line and one new line remain, the "---" and "+++" lines could be the hunk's
+    # last lines.  They are a file header only if they name files the way that diff tools do.
+    return (old_count, new_count) != (1, 1) or all(
+        FILE_HEADER_NAME.match(header[4:]) for header in lines[i : i + 2]
     )
+
+
+def can_be_in_hunk(line: str) -> bool:
+    """Return true if a line can be part of a hunk's body.
+
+    Args:
+        line: a line of a diff
+
+    Returns:
+        true if the line can be part of a hunk's body
+    """
+    return line[:1] in {" ", "-", "+", "\\"} or line in {"", "\r"}
 
 
 def hunk_header(
@@ -193,18 +228,6 @@ def hunk_header(
     if old_count == original_old_count and new_count == original_new_count:
         return match[0] + "\n"
     return f"@@ -{match[1]},{old_count} +{match[3]},{new_count} @@{match[5]}\n"
-
-
-def simplify_hunk(body: list[Line]) -> list[Line]:
-    """Simplify the body of a hunk.
-
-    Args:
-        body: the body of a hunk
-
-    Returns:
-        the simplified body
-    """
-    return show_lengthened_lines(consolidate(body))
 
 
 def runs(body: list[Line]) -> Iterator[list[Line]]:
@@ -238,14 +261,18 @@ def is_uniform(group: list[Line]) -> bool:
     return sum(1 for line in group if line.kind == "-") * 2 == len(group)
 
 
-def consolidate(body: list[Line]) -> list[Line]:
-    """Merge change groups that are separated by short context.
+def simplify_hunk(body: list[Line]) -> list[Line]:
+    """Simplify the body of a hunk.
+
+    Merges change groups that are separated by short context, and shows the lengthened lines in
+    each other change group.  A merged region's first old line and first new line can come from
+    different change groups, so they are not compared.
 
     Args:
         body: the body of a hunk
 
     Returns:
-        the body, in which each merged region's old lines precede its new lines
+        the simplified body, in which each merged region's old lines precede its new lines
     """
     parts = list(runs(body))
     result: list[Line] = []
@@ -264,7 +291,7 @@ def consolidate(body: list[Line]) -> list[Line]:
         ):
             j += 2
         if j - i < 2 * (MIN_MERGED_GROUPS - 1):
-            result.extend(parts[i])
+            result.extend(show_lengthened_lines(parts[i]))
             i += 1
             continue
         region = [line for part in parts[i : j + 1] for line in part]
@@ -286,41 +313,43 @@ def consolidate(body: list[Line]) -> list[Line]:
     return result
 
 
-def show_lengthened_lines(body: list[Line]) -> list[Line]:
+def show_lengthened_lines(group: list[Line]) -> list[Line]:
     """Show each line to which text was appended as context plus an addition.
 
     If a run of "-" lines is followed by a run of "+" lines, and the first "+" line starts with
     all of the first "-" line, which is not blank, then the "-" line becomes a context line and
     the common prefix in the "+" line becomes spaces.  A line's trailing carriage return, as in a
-    diff of a file with CRLF line terminators, is not part of the comparison.
+    diff of a file with CRLF line terminators, is not part of the comparison, but the two lines
+    must both have one or both lack one.
 
     Args:
-        body: the body of a hunk
+        group: a change group
 
     Returns:
-        the body, with each lengthened line shown as context plus an addition
+        the change group, with each lengthened line shown as context plus an addition
     """
-    result = list(body)
-    for i, line in enumerate(body):
-        if line.kind != "-" or (i > 0 and body[i - 1].kind == "-"):
+    result = list(group)
+    for i, line in enumerate(group):
+        if line.kind != "-" or (i > 0 and group[i - 1].kind == "-"):
             continue
         first_new = i
-        while first_new < len(body) and body[first_new].kind == "-":
+        while first_new < len(group) and group[first_new].kind == "-":
             first_new += 1
-        if first_new == len(body) or body[first_new].kind != "+":
+        if first_new == len(group) or group[first_new].kind != "+":
             continue
         old = line.content.removesuffix("\r")
-        new = body[first_new].content
+        new = group[first_new].content
         if (
             old.strip()
             and len(new.removesuffix("\r")) > len(old)
             and new.startswith(old)
+            and new.endswith("\r") == line.content.endswith("\r")
             and line.no_newline is None
         ):
             result[i] = line.with_kind(" ")
             padding = re.sub(r"[^\t]", " ", old)
             result[first_new] = dataclasses.replace(
-                body[first_new], content=padding + new[len(old) :]
+                group[first_new], content=padding + new[len(old) :]
             )
     return result
 

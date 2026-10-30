@@ -1,32 +1,18 @@
 """Tests for diff-simplify.py."""
 
-import importlib.machinery
-import importlib.util
 import sys
-import types
 import unittest
 from pathlib import Path
 
+SCRIPT_DIRECTORY = Path(__file__).parent
+if str(SCRIPT_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIRECTORY))
 
-def load_script() -> types.ModuleType:
-    """Import diff-simplify.py, whose name is not a legal module name.
+from script_loader import load_script  # ruff: ignore[module-import-not-at-top-of-file]
 
-    Returns:
-        The imported module.
-    """
-    path = Path(__file__).with_name("diff-simplify.py")
-    loader = importlib.machinery.SourceFileLoader("diff_simplify", str(path))
-    spec = importlib.util.spec_from_loader(loader.name, loader)
-    assert spec is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[loader.name] = module
-    loader.exec_module(module)
-    return module
+diff_simplify = load_script("diff-simplify.py")
 
-
-diff_simplify = load_script()
-
-TESTS_DIR = Path(__file__).with_name("diff-simplify-tests")
+TESTS_DIR = SCRIPT_DIRECTORY / "diff-simplify-tests"
 
 
 def hunk(*lines: str) -> str:
@@ -190,6 +176,41 @@ class ConsolidateTest(unittest.TestCase):
             + second_hunk,
         )
 
+    def test_merged_region_has_no_lengthened_line(self):
+        """A merged region's first old line and first new line are not compared."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(
+                hunk(
+                    "@@ -1,6 +1,6 @@",
+                    "+x = 1;",
+                    "+y",
+                    " x",
+                    "-p",
+                    "-q",
+                    "+r",
+                    " s",
+                    "-t",
+                    "-u",
+                    "+v",
+                )
+            ),
+            hunk(
+                "@@ -1,6 +1,6 @@",
+                "-x",
+                "-p",
+                "-q",
+                "-s",
+                "-t",
+                "-u",
+                "+x = 1;",
+                "+y",
+                "+x",
+                "+r",
+                "+s",
+                "+v",
+            ),
+        )
+
     def test_keeps_context_before_next_group(self):
         """Absorbing closing brackets leaves a context line before the next change group."""
         self.assertEqual(
@@ -271,6 +292,11 @@ class LengthenedLineTest(unittest.TestCase):
         text = hunk("@@ -1 +1 @@", "-abc", "+abc\r")
         self.assertEqual(diff_simplify.simplify_diff(text), text)
 
+    def test_removed_carriage_return(self):
+        """A line from which a carriage return was removed is unchanged."""
+        text = hunk("@@ -1 +1 @@", "-abc\r", "+abcd")
+        self.assertEqual(diff_simplify.simplify_diff(text), text)
+
     def test_partial_prefix(self):
         """A "+" line that starts with only part of the "-" line is unchanged."""
         text = hunk("@@ -1 +1 @@", "-    foo(a);", "+    foo(b);")
@@ -322,6 +348,13 @@ class ParseTest(unittest.TestCase):
             hunk("@@ -1,2 +1,2 @@", " ", "-a", "+b"),
         )
 
+    def test_empty_crlf_context_line_without_space(self):
+        """In a CRLF diff, an empty context line from which a tool stripped the space is context."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(hunk("@@ -1,2 +1,2 @@\r", "\r", "-a\r", "+ab\r")),
+            hunk("@@ -1,2 +1,3 @@\r", " \r", " a\r", "+ b\r"),
+        )
+
     def test_overstated_hunk_header(self):
         """A hunk whose header claims too many lines ends at the next file's header."""
         next_file = hunk("--- a/g", "+++ b/g", "@@ -1 +1 @@", "-p", "+q")
@@ -331,6 +364,39 @@ class ParseTest(unittest.TestCase):
             ),
             hunk("--- a/f", "+++ b/f", "@@ -1,2 +1,3 @@", " x", "+ y", " c") + next_file,
         )
+
+    def test_hunk_header_overstated_by_one_line(self):
+        """A hunk whose header claims one old and one new line too many ends at a file header."""
+        next_file = hunk("--- a/g", "+++ b/g", "@@ -1 +1 @@", "-p", "+q")
+        self.assertEqual(
+            diff_simplify.simplify_diff(
+                hunk("--- a/f", "+++ b/f", "@@ -1,3 +1,3 @@", "-x", "+xy", " c") + next_file
+            ),
+            hunk("--- a/f", "+++ b/f", "@@ -1,2 +1,3 @@", " x", "+ y", " c") + next_file,
+        )
+
+    def test_overstated_hunk_header_before_separator(self):
+        """A hunk whose header claims too many lines ends at a blank line or a signature."""
+        for separator in ["", "-- "]:
+            with self.subTest(separator=separator):
+                self.assertEqual(
+                    diff_simplify.simplify_diff(
+                        hunk("@@ -1,3 +1,3 @@", "-a", "+ab", separator, "2.43.0")
+                    ),
+                    hunk("@@ -1,1 +1,2 @@", " a", "+ b", separator, "2.43.0"),
+                )
+
+    def test_hunk_ends_with_lines_like_separator(self):
+        """A hunk can end with a blank line or a "-- " line."""
+        for header, last, simplified_last in [
+            ("@@ -1,2 +1,1 @@", "", " "),
+            ("@@ -1,2 +1,0 @@", "-- ", "-- "),
+        ]:
+            with self.subTest(last=last):
+                self.assertEqual(
+                    diff_simplify.simplify_diff(hunk(header, "-a", last, "2.43.0")),
+                    hunk(header, "-a", simplified_last, "2.43.0"),
+                )
 
     def test_hunk_ends_with_lines_like_file_header(self):
         """A hunk can end with a "-" line and a "+" line that look like a file's header."""
