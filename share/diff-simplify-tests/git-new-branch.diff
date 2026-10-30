@@ -1,0 +1,397 @@
+diff --git a/git-new-branch b/git-new-branch
+index bb8c529..7e7f5ad 100755
+--- a/git-new-branch
++++ b/git-new-branch
+@@ -27,9 +27,14 @@
+ # example, a program into which the build compiled the pathname of its
+ # installation directory runs the files installed in the current directory,
+ # and a build in the new directory may not recompile it, even after a
+-# reconfiguration.  These modes warn about each file that git does not track
+-# and that contains the current directory's pathname or is a symbolic link
+-# into the current directory.
++# reconfiguration.  These modes warn about each file that git does not track,
++# including such a file in a submodule, and that contains the current
++# directory's pathname or is a symbolic link into the current directory.  They
++# delete such a file instead if it is in a `build/` directory or in Gradle's
++# `.gradle/` directory, at any depth, that git ignores, unless git also
++# ignores the directory that contains that `build/` or `.gradle/` directory,
++# such as a dependency's directory in `node_modules/`, or that directory is a
++# submodule, and they say how many files they deleted.
+ #
+ # The default mode and `--copy` leave out a worktree of this repository that
+ # is nested in the current directory, such as an ignored one in
+@@ -615,17 +620,124 @@ WORKTREE_TO_CLEAN=""
+ WORKTREE_GITDIR_TO_CLEAN=""
+ BRANCH_TO_CLEAN=""
+ 
+-# Usage: warn_about_old_pathname
+-# Warns about each file in ${BRANCHDIR} that git does not track and that
+-# contains the pathname of ${TOPLEVEL}, or is a symbolic link to it or into
+-# it.  The pathname is sought both as ${LOGICAL_TOPLEVEL} and as ${TOPLEVEL}.
+-# Such a file is usually build output that still refers to the files in
+-# ${TOPLEVEL} rather than to their copies, such as a program into which the
+-# build compiled the pathname of its installation directory.  A build in
+-# ${BRANCHDIR} may not recompile it, even after a reconfiguration, because
+-# build tools rarely notice a changed pathname.  Tracked files are not
+-# examined, because they are not build output.
+-warn_about_old_pathname() {
++# Usage: check_ignore PATHNAME
++# Runs `git check-ignore` on PATHNAME, which is relative to ${BRANCHDIR}, in
++# the repository that contains it, which for a file in a submodule is the
++# submodule's.  Returns 0 if git ignores PATHNAME, 1 if it does not, and 128
++# on an error.
++check_ignore() {
++  case "$1" in
++    */*) git -C "${BRANCHDIR}/${1%/*}" check-ignore -q -- "${1##*/}" 2> /dev/null ;;
++    *) git -C "${BRANCHDIR}" check-ignore -q -- "$1" 2> /dev/null ;;
++  esac
++}
++
++# Usage: delete_stale_build_output OLD_NAMES
++# Reads pathnames relative to ${BRANCHDIR}, one per line, from standard input.
++# Deletes each file in a `build/` directory or in Gradle's `.gradle/`
++# directory that git ignores, whether at the top level, in a subproject, or in
++# a submodule.  A build of the project recreates such a file.  No file is
++# deleted from such a directory that git does not ignore, because the
++# directory may hold hand-written files, such as local configuration; nor
++# from one in a directory that git also ignores, such as a dependency's
++# directory in `node_modules/`, because no build of the project recreates
++# it; nor from one that is a submodule, whose files are not in a `build/` or
++# `.gradle/` directory of their own repository.  Prints each other pathname,
++# and each one that cannot be deleted.  Says on standard error
++# how many files it deleted, which contained the pathname OLD_NAMES or were
++# symbolic links into it.
++# This is a function, rather than code in the command substitution of
++# `delete_or_warn_about_old_pathname`, because bash 3.2, which is /bin/sh on
++# macOS, ends a command substitution at the ")" of a `case` pattern within it.
++delete_stale_build_output() {
++  stale_count=0
++  stale_in_build=''
++  stale_in_gradle=''
++  stale_last_dir=''
++  while IFS= read -r stale_file; do
++    # ${stale_dir} is the outermost `build/` or `.gradle/` directory that
++    # contains the file, and ${stale_owner} is the directory that contains
++    # ${stale_dir}, or is empty for ${BRANCHDIR}, which git never ignores.
++    case "${stale_file}" in
++      '') continue ;;
++      build/*) stale_owner='' stale_dir=build ;;
++      .gradle/*) stale_owner='' stale_dir=.gradle ;;
++      */build/* | */.gradle/*)
++        stale_owner="${stale_file%%/build/*}"
++        stale_dir="${stale_owner}/build"
++        stale_gradle_owner="${stale_file%%/.gradle/*}"
++        if [ "${#stale_gradle_owner}" -lt "${#stale_owner}" ]; then
++          stale_owner="${stale_gradle_owner}"
++          stale_dir="${stale_owner}/.gradle"
++        fi
++        ;;
++      *)
++        printf '%s\n' "${stale_file}"
++        continue
++        ;;
++    esac
++    # The files in a directory usually arrive one after another, so the
++    # directory's status is computed only when it differs from the previous
++    # file's.  ${stale_delete} is "yes" if the files in ${stale_dir} are
++    # deleted and "no" if they are not.
++    if [ "${stale_dir}" != "${stale_last_dir}" ]; then
++      stale_last_dir="${stale_dir}"
++      if [ -e "${BRANCHDIR}/${stale_dir}/.git" ]; then
++        stale_delete=no
++      elif [ -n "${stale_owner}" ] && {
++        check_ignore "${stale_owner}"
++        [ $? -ne 1 ]
++      }; then
++        stale_delete=no
++      elif check_ignore "${stale_dir}"; then
++        stale_delete=yes
++      else
++        stale_delete=no
++      fi
++    fi
++    if [ "${stale_delete}" = yes ] \
++      && rm -f -- "${BRANCHDIR}/${stale_file}" 2> /dev/null; then
++      stale_count=$((stale_count + 1))
++      if [ "${stale_dir##*/}" = build ]; then
++        stale_in_build=yes
++      else
++        stale_in_gradle=yes
++      fi
++      continue
++    fi
++    printf '%s\n' "${stale_file}"
++  done
++  if [ "${stale_count}" -gt 0 ]; then
++    if [ "${stale_count}" -eq 1 ]; then
++      stale_files='1 file'
++    else
++      stale_files="${stale_count} files"
++    fi
++    if [ -z "${stale_in_gradle}" ]; then
++      stale_dirs="\`build/\`"
++    elif [ -z "${stale_in_build}" ]; then
++      stale_dirs="\`.gradle/\`"
++    else
++      stale_dirs="\`build/\` and \`.gradle/\`"
++    fi
++    echo "${SCRIPT_NAME}: deleted build output in ${BRANCHDIR} that contained the pathname of $1 or was a symbolic link into it: ${stale_files} in ${stale_dirs}.  A build recreates build output, but a build directory that a tool such as CMake or autotools configured may need to be reconfigured." >&2
++  fi
++}
++
++# Usage: delete_or_warn_about_old_pathname
++# Deletes or warns about each file in ${BRANCHDIR} that git does not track
++# and that contains the pathname of ${TOPLEVEL}, or is a symbolic link to it
++# or into it.  The pathname is sought both as ${LOGICAL_TOPLEVEL} and as
++# ${TOPLEVEL}.  Such a file is usually build output that still refers to the
++# files in ${TOPLEVEL} rather than to their copies, such as a program into
++# which the build compiled the pathname of its installation directory.  A
++# build in ${BRANCHDIR} may not recompile it, even after a reconfiguration,
++# because build tools rarely notice a changed pathname.  Tracked files are not
++# examined, because they are not build output.  Files in submodules are
++# examined too.  Such a file that a build of the project recreates is
++# deleted, as `delete_stale_build_output` describes; each other one is warned
++# about.
++delete_or_warn_about_old_pathname() {
+   # The pattern matches the pathname where it ends, or where it continues
+   # with a character other than a letter, digit, "-", "_", or ".", such as
+   # "/", a quotation mark, or a NUL.  So a sibling directory whose name
+@@ -650,7 +762,16 @@ warn_about_old_pathname() {
+   warn_old_files="$(
+     exec 2> /dev/null
+     cd -- "${BRANCHDIR}" || exit
+-    git ls-files -z --others \
++    # Lists each file that git does not track, in ${BRANCHDIR} and in its
++    # submodules, by its pathname relative to ${BRANCHDIR}, each followed by
++    # a NUL.  `git ls-files --others` does not descend into a submodule.
++    list_untracked() {
++      git ls-files -z --others
++      # shellcheck disable=SC2016 # The shells that git and xargs run expand the scripts.
++      git submodule --quiet foreach --recursive \
++        'git ls-files -z --others | xargs -0 sh -c '\''for file; do printf "%s/%s\000" "$0" "${file}"; done'\'' "${displaypath}"'
++    }
++    list_untracked \
+       | LC_ALL=C xargs -0 sh -c '
+         pattern="$1"
+         shift
+@@ -659,7 +780,7 @@ warn_about_old_pathname() {
+             printf "%s\n" "${file}"
+           fi
+         done' sh "${warn_old_pattern}"
+-    git ls-files -z --others \
++    list_untracked \
+       | xargs -0 sh -c '
+         for file; do
+           if [ ! -L "${file}" ]; then
+@@ -674,14 +795,15 @@ warn_about_old_pathname() {
+         done' sh \
+       | LC_ALL=C xargs -0 grep -l -E -e "${warn_old_pattern}" --
+   )"
+-  if [ -z "${warn_old_files}" ]; then
+-    return
+-  fi
+   if [ "${LOGICAL_TOPLEVEL}" = "${TOPLEVEL}" ]; then
+     warn_old_names="${TOPLEVEL}"
+   else
+     warn_old_names="${LOGICAL_TOPLEVEL} (also ${TOPLEVEL})"
+   fi
++  warn_old_files="$(printf '%s\n' "${warn_old_files}" | delete_stale_build_output "${warn_old_names}")"
++  if [ -z "${warn_old_files}" ]; then
++    return
++  fi
+   echo "${SCRIPT_NAME}: warning: these files in ${BRANCHDIR}, which git does not track, contain the pathname of ${warn_old_names} or are symbolic links into it:" >&2
+   printf '%s\n' "${warn_old_files}" | head -n 5 | sed 's/^/  /' >&2
+   warn_old_count="$(printf '%s\n' "${warn_old_files}" | wc -l | tr -d ' ')"
+@@ -695,7 +817,7 @@ warn_about_old_pathname() {
+   fi
+ }
+ if [ "${MODE}" != 'clean' ]; then
+-  warn_about_old_pathname
++  delete_or_warn_about_old_pathname
+ fi
+ 
+ echo "Success: created ${BRANCHDIR}"
+diff --git a/tests/test-git-new-branch.sh b/tests/test-git-new-branch.sh
+index 148df02..fa49e32 100755
+--- a/tests/test-git-new-branch.sh
++++ b/tests/test-git-new-branch.sh
+@@ -907,20 +907,20 @@ ln -s "${stale_parent}" "${stale_link}" || exit 1
+ stale="${stale_parent}/stale-branch-main"
+ stale_logical="${stale_link}/stale-branch-main"
+ make_repo "${stale}" || exit 1
+-printf 'build/\n' > "${stale}/.gitignore"
++printf 'out/\n' > "${stale}/.gitignore"
+ git -C "${stale}" add .gitignore
+ git -C "${stale}" commit -q -m 'Ignore build output'
+ stale_top="$(git -C "${stale}" rev-parse --show-toplevel)"
+-mkdir "${stale}/build"
+-printf 'launcher\000%s/inst/libexec\000' "${stale_top}" > "${stale}/build/launcher"
+-printf 'prefix\000%s\000' "${stale_top}" > "${stale}/build/prefix.bin"
+-printf '#define PREFIX "%s"\n' "${stale_top}" > "${stale}/build/config.h"
+-printf 'SRCDIR = %s/src\n' "${stale_logical}" > "${stale}/build/Makefile"
+-ln -s "${stale_top}/build" "${stale}/build/current" || exit 1
++mkdir "${stale}/out"
++printf 'launcher\000%s/inst/libexec\000' "${stale_top}" > "${stale}/out/launcher"
++printf 'prefix\000%s\000' "${stale_top}" > "${stale}/out/prefix.bin"
++printf '#define PREFIX "%s"\n' "${stale_top}" > "${stale}/out/config.h"
++printf 'SRCDIR = %s/src\n' "${stale_logical}" > "${stale}/out/Makefile"
++ln -s "${stale_top}/out" "${stale}/out/current" || exit 1
+ printf '%s-other/file %s.bak/file\n' "${stale_top}" "${stale_top}" > "${stale}/sibling.txt"
+-printf '%s/lib\n' "${stale_top}" > "${stale}/build/library.jar"
+-mkfifo "${stale}/build/fifo" || exit 1
+-ln -s fifo "${stale}/build/fifo-link" || exit 1
++printf '%s/lib\n' "${stale_top}" > "${stale}/out/library.jar"
++mkfifo "${stale}/out/fifo" || exit 1
++ln -s fifo "${stale}/out/fifo-link" || exit 1
+ for mode in '' --copy; do
+   branch="stale${mode#--}"
+   if ! out="$(cd "${stale_logical}" && "${GIT_NEW_BRANCH}" ${mode} "${branch}" 2>&1)"; then
+@@ -930,7 +930,7 @@ for mode in '' --copy; do
+     *"warning: these files in ${stale_parent}/stale-branch-${branch}, which git does not track, contain the pathname of ${stale_logical} (also ${stale_top}) or are symbolic links into it:"*) ;;
+     *) fail "${mode:-the default mode} did not warn about build output that contains the source's pathname: ${out}" ;;
+   esac
+-  for stale_file in build/launcher build/prefix.bin build/config.h build/Makefile build/current; do
++  for stale_file in out/launcher out/prefix.bin out/config.h out/Makefile out/current; do
+     case "${out}" in
+       *"  ${stale_file}
+ "*) ;;
+@@ -953,6 +953,139 @@ case "${out}" in
+   *"contain the pathname"*) fail "--clean warned about build output that it does not copy: ${out}" ;;
+ esac
+ 
++# Such a file that git ignores in a `build/` directory or in Gradle's
++# `.gradle/` directory, at the top level or below it, is deleted from the new
++# directory rather than named.  A file outside `build/` and `.gradle/`, a file
++# in a `build/` directory that git does not ignore, whether or not git ignores
++# the file, and a file in a `build/` directory within an ignored directory is
++# named, and a file in `build/` that does not contain the source's pathname is
++# kept.
++deleted="${stale_parent}/deleted-branch-main"
++make_repo "${deleted}" || exit 1
++printf 'build/\n!tools/build/\nlocal.properties\n.gradle/\nout/\nnode_modules/\n' \
++  > "${deleted}/.gitignore"
++git -C "${deleted}" add .gitignore
++git -C "${deleted}" commit -q -m 'Ignore build output'
++deleted_top="$(git -C "${deleted}" rev-parse --show-toplevel)"
++mkdir -p "${deleted}/build/classes" "${deleted}/sub/build" "${deleted}/out" \
++  "${deleted}/.gradle/8.14/executionHistory" "${deleted}/.gradle/buildOutputCleanup" \
++  "${deleted}/sub/.gradle/8.14/executionHistory" "${deleted}/tools/build" \
++  "${deleted}/node_modules/addon/build" || exit 1
++printf '%s/src\n' "${deleted_top}" > "${deleted}/tools/build/deploy.conf"
++printf 'sdk.dir=%s/sdk\n' "${deleted_top}" > "${deleted}/tools/build/local.properties"
++printf '%s/src\n' "${deleted_top}" > "${deleted}/node_modules/addon/build/config.gypi"
++printf '%s/src\n' "${deleted_top}" > "${deleted}/build/classes/Main.class"
++ln -s "${deleted_top}/build" "${deleted}/build/current" || exit 1
++printf 'no pathname\n' > "${deleted}/build/unrelated.txt"
++printf 'history\000%s/src\000' "${deleted_top}" \
++  > "${deleted}/.gradle/8.14/executionHistory/executionHistory.bin"
++printf 'outputs\000%s/build\000' "${deleted_top}" \
++  > "${deleted}/.gradle/buildOutputCleanup/outputFiles.bin"
++printf '%s/src\n' "${deleted_top}" > "${deleted}/sub/build/output.txt"
++printf 'history\000%s/src\000' "${deleted_top}" \
++  > "${deleted}/sub/.gradle/8.14/executionHistory/executionHistory.bin"
++printf '%s/src\n' "${deleted_top}" > "${deleted}/out/output.txt"
++for mode in '' --copy; do
++  branch="deleted${mode#--}"
++  deleted_new="${stale_parent}/deleted-branch-${branch}"
++  if ! out="$(cd "${deleted}" && "${GIT_NEW_BRANCH}" ${mode} "${branch}" 2>&1)"; then
++    fail "nonzero exit status for ${mode:-the default mode} with build output to delete: ${out}"
++  fi
++  case "${out}" in
++    *": 6 files in \`build/\` and \`.gradle/\`."*) ;;
++    *) fail "${mode:-the default mode} did not say that it deleted 6 files: ${out}" ;;
++  esac
++  for deleted_file in out/output.txt \
++    tools/build/deploy.conf tools/build/local.properties \
++    node_modules/addon/build/config.gypi; do
++    case "${out}" in
++      *"  ${deleted_file}
++"*) ;;
++      *) fail "${mode:-the default mode} did not name ${deleted_file}: ${out}" ;;
++    esac
++    if [ ! -f "${deleted_new}/${deleted_file}" ]; then
++      fail "${mode:-the default mode} deleted ${deleted_file}"
++    fi
++  done
++  for deleted_file in build/classes/Main.class build/current \
++    .gradle/8.14/executionHistory/executionHistory.bin \
++    .gradle/buildOutputCleanup/outputFiles.bin sub/build/output.txt \
++    sub/.gradle/8.14/executionHistory/executionHistory.bin; do
++    case "${out}" in
++      *"  ${deleted_file}
++"*) fail "${mode:-the default mode} named ${deleted_file} rather than deleting it: ${out}" ;;
++    esac
++    if [ -e "${deleted_new}/${deleted_file}" ] || [ -L "${deleted_new}/${deleted_file}" ]; then
++      fail "${mode:-the default mode} did not delete ${deleted_file}"
++    fi
++    if [ ! -e "${deleted}/${deleted_file}" ] && [ ! -L "${deleted}/${deleted_file}" ]; then
++      fail "${mode:-the default mode} deleted ${deleted_file} from the source"
++    fi
++  done
++  if [ ! -f "${deleted_new}/build/unrelated.txt" ]; then
++    fail "${mode:-the default mode} deleted a file in build/ that does not contain the source's pathname"
++  fi
++done
++
++# Files in a submodule are examined too, and the submodule's `build/` and
++# `.gradle/` directories are treated like the superproject's.  A submodule at
++# `build/` is not a `build/` directory, so a file in it that the submodule
++# ignores is named.
++subdeleted_parent="${tmpdir}/subdeleted"
++mkdir -p "${subdeleted_parent}" || exit 1
++subdeleted_parent="$(CDPATH='' cd -- "${subdeleted_parent}" && pwd -P)" || exit 1
++make_submodule_superproject "${subdeleted_parent}" || exit 1
++subdeleted="${subdeleted_parent}/super-branch-main"
++(
++  cd "${subdeleted}" || exit 1
++  git -c protocol.file.allow=always submodule add -q ../submodule-origin build || exit 1
++  git commit -q -m 'Add a submodule at build'
++) || exit 1
++printf 'build/\n.gradle/\n' > "${subdeleted}/sub/.gitignore"
++printf 'out/\n' > "${subdeleted}/build/.gitignore"
++mkdir -p "${subdeleted}/build/out" || exit 1
++printf '%s/src\n' "${subdeleted}" > "${subdeleted}/build/out/tool.txt"
++mkdir -p "${subdeleted}/sub/build/classes" \
++  "${subdeleted}/sub/.gradle/8.14/executionHistory" || exit 1
++printf '%s/src\n' "${subdeleted}" > "${subdeleted}/sub/build/classes/Main.class"
++printf 'history\000%s/src\000' "${subdeleted}" \
++  > "${subdeleted}/sub/.gradle/8.14/executionHistory/executionHistory.bin"
++printf '%s/src\n' "${subdeleted}" > "${subdeleted}/sub/notes.txt"
++for mode in '' --copy; do
++  branch="subdeleted${mode#--}"
++  subdeleted_new="${subdeleted_parent}/super-branch-${branch}"
++  if ! out="$(cd "${subdeleted}" && "${GIT_NEW_BRANCH}" ${mode} "${branch}" 2>&1)"; then
++    fail "nonzero exit status for ${mode:-the default mode} with build output to delete in a submodule: ${out}"
++  fi
++  case "${out}" in
++    *": 2 files in \`build/\` and \`.gradle/\`."*) ;;
++    *) fail "${mode:-the default mode} did not say that it deleted 2 files in a submodule: ${out}" ;;
++  esac
++  for named_file in sub/notes.txt build/out/tool.txt; do
++    case "${out}" in
++      *"  ${named_file}
++"*) ;;
++      *) fail "${mode:-the default mode} did not name ${named_file}: ${out}" ;;
++    esac
++    if [ ! -f "${subdeleted_new}/${named_file}" ]; then
++      fail "${mode:-the default mode} deleted ${named_file}"
++    fi
++  done
++  for deleted_file in sub/build/classes/Main.class \
++    sub/.gradle/8.14/executionHistory/executionHistory.bin; do
++    case "${out}" in
++      *"  ${deleted_file}
++"*) fail "${mode:-the default mode} named ${deleted_file} rather than deleting it: ${out}" ;;
++    esac
++    if [ -e "${subdeleted_new}/${deleted_file}" ]; then
++      fail "${mode:-the default mode} did not delete ${deleted_file}"
++    fi
++    if [ ! -e "${subdeleted}/${deleted_file}" ]; then
++      fail "${mode:-the default mode} deleted ${deleted_file} from the source"
++    fi
++  done
++done
++
+ # The wrong number of arguments is an error.
+ if (cd "${repo}" && "${GIT_NEW_BRANCH}" > /dev/null 2>&1); then
+   fail "zero exit status when given no argument"
