@@ -35,6 +35,7 @@ Each hunk header's line counts are updated to match the hunk's lines.
 import argparse
 import dataclasses
 import re
+import signal
 import sys
 from collections.abc import Iterator
 from pathlib import Path
@@ -326,6 +327,8 @@ def show_lengthened_lines(body: list[Line]) -> list[Line]:
 
 def main() -> None:
     """Simplify the diff named on the command line, or the one on standard input."""
+    # Exit quietly, rather than with a traceback, when a reader such as `head` or `less` exits.
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     parser = argparse.ArgumentParser(description="Simplify a unified diff, for reading.")
     parser.add_argument("file", nargs="?", help="the diff file (default: standard input)")
     args = parser.parse_args()
