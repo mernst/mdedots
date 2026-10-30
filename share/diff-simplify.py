@@ -19,7 +19,8 @@ The simplifications are:
    one region.  A merged region is written as all of its old lines, then all
    of its new lines.  It also absorbs each following context line that
    consists only of closing brackets and punctuation, such as "}", because
-   such a line is often a coincidental match.
+   such a line is often a coincidental match; but it leaves at least one
+   context line before the next change group.
 
  * Show a lengthened line as an addition.  If a run of "-" lines is followed by
    a run of "+" lines, and the first "+" line starts with all of the (non-blank)
@@ -108,7 +109,7 @@ def simplify_diff(text: str) -> str:
         new_count = int(match[4] or "1")
         body, i = read_hunk_body(lines, i + 1, old_count, new_count)
         body = simplify_hunk(body)
-        result.append(hunk_header(match, body))
+        result.append(hunk_header(match, old_count, new_count, body))
         result.extend(line.text() for line in body)
     return "".join(result)
 
@@ -150,11 +151,15 @@ def read_hunk_body(
     return body, i
 
 
-def hunk_header(match: re.Match[str], body: list[Line]) -> str:
+def hunk_header(
+    match: re.Match[str], original_old_count: int, original_new_count: int, body: list[Line]
+) -> str:
     """Return the header of a hunk, with line counts that match its body.
 
     Args:
         match: the match of HUNK_HEADER against the hunk's original header
+        original_old_count: the number of old lines, according to the original header
+        original_new_count: the number of new lines, according to the original header
         body: the hunk's body
 
     Returns:
@@ -162,7 +167,7 @@ def hunk_header(match: re.Match[str], body: list[Line]) -> str:
     """
     old_count = sum(1 for line in body if line.kind != "+")
     new_count = sum(1 for line in body if line.kind != "-")
-    if old_count == int(match[2] or "1") and new_count == int(match[4] or "1"):
+    if old_count == original_old_count and new_count == original_new_count:
         return match[0] + "\n"
     return f"@@ -{match[1]},{old_count} +{match[3]},{new_count} @@{match[5]}\n"
 
@@ -240,6 +245,8 @@ def consolidate(body: list[Line]) -> list[Line]:
             i += 1
             continue
         region = [line for part in parts[i : j + 1] for line in part]
+        # The context lines that follow the region and that it does not absorb.
+        rest: list[Line] = []
         if j + 1 < len(parts):
             context = parts[j + 1]
             # Leave at least one context line before the next change group.
@@ -248,10 +255,11 @@ def consolidate(body: list[Line]) -> list[Line]:
             while absorbed < limit and CLOSING_LINE.fullmatch(context[absorbed].content):
                 absorbed += 1
             region.extend(context[:absorbed])
-            parts[j + 1] = context[absorbed:]
+            rest = context[absorbed:]
         result.extend(line.with_kind("-") for line in region if line.kind != "+")
         result.extend(line.with_kind("+") for line in region if line.kind != "-")
-        i = j + 1
+        result.extend(rest)
+        i = j + 2
     return result
 
 
@@ -260,7 +268,8 @@ def show_lengthened_lines(body: list[Line]) -> list[Line]:
 
     If a run of "-" lines is followed by a run of "+" lines, and the first "+" line starts with
     all of the first "-" line, which is not blank, then the "-" line becomes a context line and
-    the common prefix in the "+" line becomes spaces.
+    the common prefix in the "+" line becomes spaces.  A line's trailing carriage return, as in a
+    diff of a file with CRLF line terminators, is not part of the comparison.
 
     Args:
         body: the body of a hunk
@@ -277,9 +286,14 @@ def show_lengthened_lines(body: list[Line]) -> list[Line]:
             first_new += 1
         if first_new == len(body) or body[first_new].kind != "+":
             continue
-        old = line.content
+        old = line.content.removesuffix("\r")
         new = body[first_new].content
-        if old.strip() and len(new) > len(old) and new.startswith(old) and line.no_newline is None:
+        if (
+            old.strip()
+            and len(new.removesuffix("\r")) > len(old)
+            and new.startswith(old)
+            and line.no_newline is None
+        ):
             result[i] = line.with_kind(" ")
             padding = re.sub(r"[^\t]", " ", old)
             result[first_new] = dataclasses.replace(

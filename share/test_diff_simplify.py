@@ -144,6 +144,52 @@ class ConsolidateTest(unittest.TestCase):
         )
         self.assertEqual(diff_simplify.simplify_diff(text), text)
 
+    def test_absorbs_all_closing_lines_at_end_of_hunk(self):
+        """A merged region at the end of a hunk absorbs every closing line that follows it."""
+        second_hunk = hunk("@@ -20,6 +17,4 @@", "-k1", "-k2", "+l", " m", "-n1", "-n2", "+o", " }")
+        self.assertEqual(
+            diff_simplify.simplify_diff(
+                hunk(
+                    "@@ -1,10 +1,7 @@",
+                    "-a1",
+                    "-a2",
+                    "+b",
+                    " c",
+                    "-d1",
+                    "-d2",
+                    "+e",
+                    " f",
+                    "-g1",
+                    "-g2",
+                    "+h",
+                    "   }",
+                    " }",
+                )
+                + second_hunk
+            ),
+            hunk(
+                "@@ -1,10 +1,7 @@",
+                "-a1",
+                "-a2",
+                "-c",
+                "-d1",
+                "-d2",
+                "-f",
+                "-g1",
+                "-g2",
+                "-  }",
+                "-}",
+                "+b",
+                "+c",
+                "+e",
+                "+f",
+                "+h",
+                "+  }",
+                "+}",
+            )
+            + second_hunk,
+        )
+
     def test_keeps_context_before_next_group(self):
         """Absorbing closing brackets leaves a context line before the next change group."""
         self.assertEqual(
@@ -211,6 +257,18 @@ class LengthenedLineTest(unittest.TestCase):
     def test_blank_line_is_not_a_prefix(self):
         """A blank "-" line stays a "-" line."""
         text = hunk("@@ -1 +1 @@", "-  ", "+  x")
+        self.assertEqual(diff_simplify.simplify_diff(text), text)
+
+    def test_carriage_return(self):
+        """A trailing carriage return does not prevent the simplification."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(hunk("@@ -1 +1 @@", "-abc\r", "+abcd\r")),
+            hunk("@@ -1,1 +1,2 @@", " abc\r", "+   d\r"),
+        )
+
+    def test_changed_line_terminator(self):
+        """A line to which only a carriage return was appended is unchanged."""
+        text = hunk("@@ -1 +1 @@", "-abc", "+abc\r")
         self.assertEqual(diff_simplify.simplify_diff(text), text)
 
     def test_partial_prefix(self):
