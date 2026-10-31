@@ -12,17 +12,32 @@
 # Review comments are untrusted input (anyone can comment on a public PR), so
 # Claude runs in restricted mode:  its file tools are confined to the working
 # directory, and the only commands it can run are the `git` commands listed
-# below.  This reduces the risk but does not eliminate it.  The allowed
-# commands can still read or write files outside the working directory, and
-# committing runs the repository's git hooks, which the session can edit.
-# Before pushing, the script refuses commits that change a .gitignore file or
-# that add ignored files or files that were untracked before the session.  The session's full transcript is
-# written to a log file.
+# below, without `--output`, which writes files.  This reduces the risk but
+# does not eliminate it.  The allowed commands can still read files outside
+# the working directory, and committing runs the repository's git hooks, which
+# can run scripts that the session can edit.  Before pushing, the script
+# refuses commits that change .gitignore, CI, or hook configuration files, or
+# that add ignored files or files that were untracked before the session.  The
+# session's full transcript is written to a log file.
 
 if [ "$#" -ne 0 ]; then
   echo "${0##*/}: takes no arguments; received $*" >&2
   exit 2
 fi
+
+# Run a command, retrying twice on failure; GitHub's GraphQL API is flaky.
+retry() {
+  retry_attempt=1
+  until retry_output=$("$@"); do
+    if [ "$retry_attempt" -eq 3 ]; then
+      return 1
+    fi
+    sleep $((retry_attempt * 30))
+    retry_attempt=$((retry_attempt + 1))
+  done
+  printf '%s\n' "$retry_output"
+}
+
 # Restricted mode confines the file tools to the working directory, so start
 # at the top of the working tree, where the session can edit any file in it.
 cd "$(git rev-parse --show-toplevel)" || exit 1
@@ -49,7 +64,7 @@ start=$(git rev-parse HEAD)
 # threads.  Omit CodeRabbit's markup and its prompts for AI agents, which
 # repeat the comments.
 # shellcheck disable=SC2016 # $id is a GraphQL variable.
-data=$(gh api graphql -F id="$(printf '%s\n' "$pr" | jq -r .id)" -f query='
+data=$(retry gh api graphql -F id="$(printf '%s\n' "$pr" | jq -r .id)" -f query='
 query($id: ID!) {
   node(id: $id) {
     ... on PullRequest {
@@ -58,6 +73,7 @@ query($id: ID!) {
         nodes {
           id isResolved path line originalLine
           comments(first: 50) {
+            totalCount
             nodes { author { login } body pullRequestReview { id } }
           }
         }
@@ -84,7 +100,12 @@ def clean:
 | [$crthreads[].comments.nodes[0].pullRequestReview.id] as $allthreadreviews
 | {threads: [$threads[]
              | {id,
-                text: ("### `\(.path)` line \(.line // .originalLine // "unknown")\n\n"
+                count: .comments.totalCount,
+                text: ("### `\(.path)` "
+                       + (if .line then "line \(.line)"
+                          elif .originalLine then "originally line \(.originalLine); the thread is outdated"
+                          else "unknown line" end)
+                       + "\n\n"
                        + ([.comments.nodes[]
                            | "**\(.author.login // "ghost")** wrote:\n\n\(.body | clean)"]
                           | join("\n\n")))}],
@@ -127,6 +148,7 @@ printf '%s\n' "$prompt" | claude --restricted --strict-mcp-config --model opus \
   --tools "Bash,Read,Edit,Write,Glob,Grep" --permission-mode acceptEdits \
   --allowedTools "Bash(git status:*)" "Bash(git diff:*)" "Bash(git log:*)" \
   "Bash(git show:*)" "Bash(git add:*)" "Bash(git commit:*)" \
+  --disallowedTools "Bash(git *--output*)" \
   --output-format stream-json --verbose -p > "$log"
 status=$?
 jq -r 'select(.type == "result") | .result' "$log"
@@ -146,20 +168,33 @@ if [ "$(git rev-parse HEAD)" != "$start" ]; then
     echo "${0##*/}: the session rewrote commits that it did not make; see $log" >&2
     exit 1
   fi
-  # Editing a .gitignore file could un-ignore a file that the check below
-  # would otherwise catch.
-  if git diff --name-only --no-renames "$start" HEAD | grep -E '(^|/)\.gitignore$' >&2; then
-    echo "${0##*/}: the session changed the .gitignore files listed above;" \
+  # Pushing CI or hook configuration runs it, and editing a .gitignore file
+  # could un-ignore a file that the check below would otherwise catch.  -z
+  # keeps git from quoting unusual file names, which would hide them from grep.
+  if git diff -z --name-only --no-renames "$start" HEAD | tr '\0' '\n' \
+    | grep -E '(^|/)\.git(ignore|attributes)$|^\.gitmodules$|^\.(github|husky|circleci)/|^\.pre-commit-config\.ya?ml$|^prek\.toml$|^lefthook\.ya?ml$|^\.gitlab-ci\.yml$|^\.travis\.yml$|^azure-pipelines\.yml$' >&2; then
+    echo "${0##*/}: the session changed the configuration files listed above;" \
       "check them and push manually; see $log" >&2
     exit 1
   fi
   # Without --no-renames, a file that is added alongside the deletion of a
   # similar file is reported as a rename, not as an addition.
   added=$(git diff --name-only --no-renames --diff-filter=A "$start" HEAD) || exit 1
-  if [ -n "$added" ] && printf '%s\n' "$added" | git check-ignore --no-index --stdin >&2; then
-    echo "${0##*/}: the session committed the ignored files listed above; see $log" >&2
-    exit 1
-  fi
+  git diff -z --name-only --no-renames --diff-filter=A "$start" HEAD \
+    | git check-ignore -z --no-index --stdin > /dev/null
+  case $? in
+    0)
+      git diff -z --name-only --no-renames --diff-filter=A "$start" HEAD \
+        | git check-ignore -z --no-index --stdin | tr '\0' '\n' >&2
+      echo "${0##*/}: the session committed the ignored files listed above; see $log" >&2
+      exit 1
+      ;;
+    1) ;;
+    *)
+      echo "${0##*/}: could not check for committed ignored files; see $log" >&2
+      exit 1
+      ;;
+  esac
   if [ -n "$added" ] && [ -n "$untracked" ] \
     && printf '%s\n' "$added" | grep -Fx -e "$untracked" >&2; then
     echo "${0##*/}: the session committed the files listed above, which were" \
@@ -169,14 +204,29 @@ if [ "$(git rev-parse HEAD)" != "$start" ]; then
   git push || exit 1
 fi
 
+# Leave unresolved any thread that got a reply during the session, which the
+# session did not see.
 failed=0
-for thread in $(printf '%s\n' "$data" | jq -r '.threads[].id'); do
+for entry in $(printf '%s\n' "$data" | jq -r '.threads[] | "\(.id):\(.count)"'); do
+  thread=${entry%:*}
   # shellcheck disable=SC2016 # $id is a GraphQL variable.
-  gh api graphql -F id="$thread" -f query='
+  count=$(retry gh api graphql -F id="$thread" -f query='
+    query($id: ID!) { node(id: $id) { ... on PullRequestReviewThread { comments { totalCount } } } }' \
+    --jq .data.node.comments.totalCount) || {
+    failed=1
+    continue
+  }
+  if [ "$count" != "${entry##*:}" ]; then
+    echo "${0##*/}: not resolving thread $thread, which got a reply during the session" >&2
+    failed=1
+    continue
+  fi
+  # shellcheck disable=SC2016 # $id is a GraphQL variable.
+  retry gh api graphql -F id="$thread" -f query='
     mutation($id: ID!) { resolveReviewThread(input: {threadId: $id}) { thread { id } } }' \
     > /dev/null || failed=1
 done
 if [ "$failed" -ne 0 ]; then
-  echo "${0##*/}: could not resolve all the review threads" >&2
+  echo "${0##*/}: did not resolve all the review threads" >&2
   exit 1
 fi
