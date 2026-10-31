@@ -1,0 +1,59 @@
+#!/bin/sh
+
+# Usage: crreview-resolve
+# Run Claude Code non-interactively to address the CodeRabbit review comments
+# on the current branch's PR, resolve their threads, and commit and push.
+#
+# Review comments are untrusted input (anyone can comment on a public PR), so
+# Claude runs in restricted mode:  file edits are confined to the working
+# directory, and the only commands it can run are the `git` and `gh` commands
+# listed below.  The session's full transcript is written to a log file.
+
+if [ "$#" -ne 0 ]; then
+  echo "${0##*/}: takes no arguments; received $*" >&2
+  exit 2
+fi
+# Restricted mode does not load user skills, so pass the skill's text as the prompt.
+skill="$HOME/.agents/skills/crreview-resolve/SKILL.md"
+if [ ! -r "$skill" ]; then
+  echo "${0##*/}: cannot read $skill" >&2
+  exit 1
+fi
+# Find the PR before starting a Claude session, which is costly.
+gh pr view --json url --jq .url > /dev/null || exit 1
+# The session commits its changes, which must not include unrelated ones.
+if [ -n "$(git status --porcelain)" ]; then
+  echo "${0##*/}: the working tree is not clean:" >&2
+  git status --short >&2
+  exit 1
+fi
+if [ -n "${CLAUDE_CONFIG:-}" ]; then
+  export CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG"
+fi
+
+log="$(git rev-parse --absolute-git-dir)/crreview-resolve-$(date +%Y%m%d-%H%M%S).jsonl"
+echo "${0##*/}: logging to $log"
+# Print the skill's body, omitting its front matter.
+prompt=$(awk 'dashes >= 2; /^---$/ { dashes++ }' "$skill")
+# Restricted mode ignores the user settings file, so set its commit attribution here.
+claude --restricted --model opus \
+  --settings '{"attribution": {"commit": "", "pr": ""}}' \
+  --tools "Bash,Read,Edit,Write,Glob,Grep" --permission-mode acceptEdits \
+  --allowedTools "Bash(gh pr view:*)" "Bash(gh pr diff:*)" "Bash(gh api:*)" \
+  "Bash(git status:*)" "Bash(git diff:*)" "Bash(git log:*)" "Bash(git show:*)" \
+  "Bash(git add:*)" "Bash(git commit:*)" "Bash(git push)" \
+  --output-format stream-json --verbose -p "$prompt" > "$log"
+status=$?
+jq -r 'select(.type == "result") | .result' "$log"
+if [ "$status" -ne 0 ] || jq -e 'select(.type == "result") | .is_error' "$log" > /dev/null; then
+  echo "${0##*/}: the Claude session failed; see $log" >&2
+  exit 1
+fi
+if [ -n "$(git status --porcelain)" ]; then
+  echo "${0##*/}: the session left uncommitted changes; see $log" >&2
+  exit 1
+fi
+if [ -n "$(git rev-list '@{upstream}..HEAD')" ]; then
+  echo "${0##*/}: the session did not push all its commits; see $log" >&2
+  exit 1
+fi

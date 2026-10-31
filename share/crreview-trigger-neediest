@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: crreview-neediest [--dry-run] [--verbose]
+# Usage: crreview-trigger-neediest [--dry-run] [--verbose]
 #
 # Comment "@coderabbitai review" on one open, non-draft pull request: of the
 # PRs that involve me (authored, assigned, commented, mentioned, reviewed, or
@@ -37,7 +37,7 @@ for arg in "$@"; do
     --dry-run) dry_run=true ;;
     --verbose) verbose=true ;;
     *)
-      echo "crreview-neediest: unknown argument $arg" >&2
+      echo "${0##*/}: unknown argument $arg" >&2
       exit 2
       ;;
   esac
