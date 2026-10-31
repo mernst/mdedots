@@ -46,7 +46,7 @@ class ConsolidateTest(unittest.TestCase):
     """Tests for consolidating interleaved changes."""
 
     def test_merges_three_groups(self):
-        """Three non-uniform change groups separated by short context are merged."""
+        """Three unbalanced change groups separated by short context are merged."""
         self.assertEqual(
             diff_simplify.simplify_diff(
                 hunk(
@@ -92,7 +92,7 @@ class ConsolidateTest(unittest.TestCase):
         text = hunk("@@ -1,4 +1,4 @@", "-a", "+b", "+c", " d", "-e", "-f", "+g")
         self.assertEqual(diff_simplify.simplify_diff(text), text)
 
-    def test_uniform_groups_are_not_merged(self):
+    def test_balanced_groups_are_not_merged(self):
         """Line-for-line edits stay interleaved with their context."""
         text = hunk(
             "@@ -1,7 +1,7 @@",
@@ -176,7 +176,49 @@ class ConsolidateTest(unittest.TestCase):
             + second_hunk,
         )
 
-    def test_merged_region_has_no_lengthened_line(self):
+    def test_absorbs_closing_line_with_colon(self):
+        """A merged region absorbs a closing line that ends a Python signature, such as "):"."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(
+                hunk(
+                    "@@ -1,8 +1,9 @@",
+                    "-a",
+                    "+b",
+                    "+c",
+                    " d",
+                    "+e",
+                    "+f",
+                    " g",
+                    "-h",
+                    "-i",
+                    "-j",
+                    "+k",
+                    "    ):",
+                    " last",
+                )
+            ),
+            hunk(
+                "@@ -1,8 +1,9 @@",
+                "-a",
+                "-d",
+                "-g",
+                "-h",
+                "-i",
+                "-j",
+                "-   ):",
+                "+b",
+                "+c",
+                "+d",
+                "+e",
+                "+f",
+                "+g",
+                "+k",
+                "+   ):",
+                " last",
+            ),
+        )
+
+    def test_merged_region_has_no_common_prefix(self):
         """A merged region's first old line and first new line are not compared."""
         self.assertEqual(
             diff_simplify.simplify_diff(
@@ -256,11 +298,11 @@ class ConsolidateTest(unittest.TestCase):
         )
 
 
-class LengthenedLineTest(unittest.TestCase):
-    """Tests for showing a lengthened line as an addition."""
+class BlankCommonPrefixTest(unittest.TestCase):
+    """Tests for blanking out a common prefix."""
 
-    def test_appended_text(self):
-        """A line to which text was appended shows only the appended text."""
+    def test_common_prefix(self):
+        """The prefix that a "+" line shares with the "-" line that it extends is blanked out."""
         self.assertEqual(
             diff_simplify.simplify_diff(
                 hunk("@@ -1,3 +1,3 @@", " a", "-# one two", "-three", "+# one two, and", "+four")
@@ -273,6 +315,20 @@ class LengthenedLineTest(unittest.TestCase):
         self.assertEqual(
             diff_simplify.simplify_diff(hunk("@@ -1 +1 @@", "-\tx = 1;", "+\tx = 1; // one")),
             hunk("@@ -1,1 +1,2 @@", " \tx = 1;", "+\t       // one"),
+        )
+
+    def test_wide_characters(self):
+        """A wide character in the common prefix becomes two spaces."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(hunk("@@ -1 +1 @@", "-日本", "+日本語")),
+            hunk("@@ -1,1 +1,2 @@", " 日本", "+    語"),
+        )
+
+    def test_combining_marks(self):
+        """A combining mark in the common prefix becomes no spaces."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(hunk("@@ -1 +1 @@", "-e\u0301", "+e\u0301!")),
+            hunk("@@ -1,1 +1,2 @@", " e\u0301", "+ !"),
         )
 
     def test_blank_line_is_not_a_prefix(self):
