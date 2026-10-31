@@ -15,8 +15,8 @@
 # below.  This reduces the risk but does not eliminate it.  The allowed
 # commands can still read or write files outside the working directory, and
 # committing runs the repository's git hooks, which the session can edit.
-# Before pushing, the script refuses commits that add ignored files or files
-# that were untracked before the session.  The session's full transcript is
+# Before pushing, the script refuses commits that change a .gitignore file or
+# that add ignored files or files that were untracked before the session.  The session's full transcript is
 # written to a log file.
 
 if [ "$#" -ne 0 ]; then
@@ -42,15 +42,19 @@ start=$(git rev-parse HEAD)
 
 # Select the unresolved review threads that CodeRabbit started, and the
 # "Outside diff range comments" of each CodeRabbit review that has such a
-# thread and of the last CodeRabbit review if it has no threads.  Omit
-# CodeRabbit's markup and its prompts for AI agents, which repeat the comments.
+# thread and of the last CodeRabbit review if it has no threads.  This is the
+# selection rule of the crreview-resolve skill
+# (dots/.agents/skills/crreview-resolve/SKILL.md); keep the two consistent.
+# Ignore CodeRabbit reviews with empty bodies, which hold only replies in
+# threads.  Omit CodeRabbit's markup and its prompts for AI agents, which
+# repeat the comments.
 # shellcheck disable=SC2016 # $id is a GraphQL variable.
 data=$(gh api graphql -F id="$(printf '%s\n' "$pr" | jq -r .id)" -f query='
 query($id: ID!) {
   node(id: $id) {
     ... on PullRequest {
       reviews(last: 100) { nodes { id author { login } body } }
-      reviewThreads(first: 100) {
+      reviewThreads(last: 100) {
         nodes {
           id isResolved path line originalLine
           comments(first: 50) {
@@ -71,7 +75,8 @@ def clean:
   | gsub("\n{3,}"; "\n\n")
   | sub("^\\s+"; "") | sub("\\s+$"; "");
 .data.node
-| [.reviews.nodes[] | select(.author.login == "coderabbitai")] as $reviews
+| [.reviews.nodes[]
+   | select(.author.login == "coderabbitai" and (.body | test("\\S")))] as $reviews
 | [.reviewThreads.nodes[]
    | select(.comments.nodes[0].author.login == "coderabbitai")] as $crthreads
 | [$crthreads[] | select(.isResolved | not)] as $threads
@@ -91,7 +96,8 @@ def clean:
              | .value.body
              | capture("Outside diff range comments[^\n]*\n(?<o>(?:>[^\n]*\n)*)").o
              | gsub("(?m)^> ?"; "")
-             | clean]}') || exit 1
+             | clean
+             | select(. != "")]}') || exit 1
 comments=$(printf '%s\n' "$data" | jq -r '
 [if .threads != [] then "## Review threads\n\n" + (.threads | map(.text) | join("\n\n")) else empty end,
  if .outside != [] then "## Outside diff range comments\n\n" + (.outside | join("\n\n")) else empty end]
@@ -115,26 +121,41 @@ or create.  Do not push.
 
 $comments"
 # Restricted mode ignores the user settings file, so set its commit attribution here.
-claude --restricted --strict-mcp-config --model opus \
+# Pass the prompt on standard input, because Linux limits one argument to 128 KiB.
+printf '%s\n' "$prompt" | claude --restricted --strict-mcp-config --model opus \
   --settings '{"attribution": {"commit": "", "pr": ""}}' \
   --tools "Bash,Read,Edit,Write,Glob,Grep" --permission-mode acceptEdits \
   --allowedTools "Bash(git status:*)" "Bash(git diff:*)" "Bash(git log:*)" \
   "Bash(git show:*)" "Bash(git add:*)" "Bash(git commit:*)" \
-  --output-format stream-json --verbose -p "$prompt" > "$log"
+  --output-format stream-json --verbose -p > "$log"
 status=$?
 jq -r 'select(.type == "result") | .result' "$log"
 if [ "$status" -ne 0 ] || jq -e 'select(.type == "result") | .is_error' "$log" > /dev/null; then
   echo "${0##*/}: the Claude session failed; see $log" >&2
   exit 1
 fi
+# An untracked file that is not in "$untracked" is one that the session created.
 if [ -n "$(git status --porcelain --untracked-files=no)" ] \
-  || [ "$(git ls-files --others --exclude-standard)" != "$untracked" ]; then
+  || git ls-files --others --exclude-standard | grep -qFxv -e "$untracked"; then
   echo "${0##*/}: the session left uncommitted changes; see $log" >&2
   exit 1
 fi
 
 if [ "$(git rev-parse HEAD)" != "$start" ]; then
-  added=$(git diff --name-only --diff-filter=A "$start" HEAD) || exit 1
+  if ! git merge-base --is-ancestor "$start" HEAD; then
+    echo "${0##*/}: the session rewrote commits that it did not make; see $log" >&2
+    exit 1
+  fi
+  # Editing a .gitignore file could un-ignore a file that the check below
+  # would otherwise catch.
+  if git diff --name-only --no-renames "$start" HEAD | grep -E '(^|/)\.gitignore$' >&2; then
+    echo "${0##*/}: the session changed the .gitignore files listed above;" \
+      "check them and push manually; see $log" >&2
+    exit 1
+  fi
+  # Without --no-renames, a file that is added alongside the deletion of a
+  # similar file is reported as a rename, not as an addition.
+  added=$(git diff --name-only --no-renames --diff-filter=A "$start" HEAD) || exit 1
   if [ -n "$added" ] && printf '%s\n' "$added" | git check-ignore --no-index --stdin >&2; then
     echo "${0##*/}: the session committed the ignored files listed above; see $log" >&2
     exit 1

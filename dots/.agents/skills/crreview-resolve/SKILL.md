@@ -5,6 +5,9 @@ description: Address CodeRabbitAI review comments on the current pull request.
 
 # Address CodeRabbitAI review comments
 
+<!-- The script share/crreview-resolve implements the same rule for which
+comments to act on; keep the two consistent. -->
+
 Examine the CodeRabbitAI reviews for this pull request.
 
 For each CodeRabbitAI review with an unresolved review thread (and also for
