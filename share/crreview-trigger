@@ -5,14 +5,14 @@
 # optionally waiting the interval (passed to `sleep`) first.
 
 if [ "$#" -gt 1 ]; then
-  echo "crreview: pass at most one argument; received $*" >&2
+  echo "${0##*/}: pass at most one argument; received $*" >&2
   exit 2
 fi
 if [ "$#" -eq 1 ]; then
   # Validate the number, after removing any suffix.
   case "${1%[smhd]}" in
     '' | '.' | *[!0-9.]* | *.*.*)
-      echo "crreview: the argument must be a sleep interval such as 30 or 5m; received $1" >&2
+      echo "${0##*/}: the argument must be a sleep interval such as 30 or 5m; received $1" >&2
       exit 2
       ;;
   esac

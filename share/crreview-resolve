@@ -1,3 +1,18 @@
 #!/bin/sh
 
-clade -p /crreview-resolve
+# Usage: crreview-resolve
+# Run Claude Code non-interactively to address the CodeRabbit review comments
+# on the current branch's PR, resolve their threads, and commit and push.
+
+if [ "$#" -ne 0 ]; then
+  echo "${0##*/}: takes no arguments; received $*" >&2
+  exit 2
+fi
+# Find the PR before starting a Claude session, which is costly.
+gh pr view --json url --jq .url > /dev/null || exit 1
+if [ -n "${CLAUDE_CONFIG:-}" ]; then
+  export CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG"
+fi
+# Without --dangerously-skip-permissions, -p mode denies the edits, `gh api`
+# calls, and `git push` that the skill needs.
+exec claude --model opus --dangerously-skip-permissions -p /crreview-resolve

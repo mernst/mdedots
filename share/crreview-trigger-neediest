@@ -37,7 +37,7 @@ for arg in "$@"; do
     --dry-run) dry_run=true ;;
     --verbose) verbose=true ;;
     *)
-      echo "crreview-neediest: unknown argument $arg" >&2
+      echo "${0##*/}: unknown argument $arg" >&2
       exit 2
       ;;
   esac
