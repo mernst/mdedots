@@ -221,6 +221,17 @@ class StatedPrerequisitesTest(unittest.TestCase):
             ({1}, set(), {3}, {2}, set()),
         )
 
+    def test_this_pr_as_object(self):
+        """In "land after it", the named PRs land after this PR."""
+        self.assertEqual(
+            pr_status.stated_prerequisites("To land after it: #1 and #2.", self.repo),
+            (set(), set(), {1, 2}, set(), set()),
+        )
+        self.assertEqual(
+            pr_status.stated_prerequisites("To land before this PR: #3.", self.repo),
+            ({3}, set(), set(), set(), set()),
+        )
+
     def test_land_with_other_repository(self):
         """A land-with PR in another repository is an external partner."""
         self.assertEqual(
@@ -320,6 +331,25 @@ class ModelTest(unittest.TestCase):
         self.assertEqual(b.blocked(), [5])
         self.assertEqual(b.external[7], [])
 
+    def test_cycle_affects_its_dependents(self):
+        """A cycle affects its members and the PRs that depend on them, but no prerequisite."""
+        model = self.model(
+            {1: "Land after #2.", 2: "Land after #1.", 3: "Land after #1.", 4: ""}, {(1, 4)}
+        )
+        self.assertEqual(model.cyclic, [1, 2])
+        self.assertEqual(model.cycle_affected, {1, 2, 3})
+
+    def test_cycle_is_blocked(self):
+        """The PRs in or after a cycle are blocked, even with no direct prerequisite."""
+        model = self.model(
+            {1: "Land after #2.", 2: "Land after #3.", 3: "Land after #1.", 4: "Land after #1."},
+            set(),
+        )
+        self.assertEqual(model.direct, {1: set(), 2: set(), 3: set(), 4: set()})
+        self.assertEqual(model.blocked(), [1, 2, 3, 4])
+        self.assertEqual(model.unblocked(), [])
+        self.assertEqual(model.independent(), [])
+
 
 class ApplyDescriptionUpdatesTest(unittest.TestCase):
     """Tests for apply_description_updates."""
@@ -365,7 +395,9 @@ class PushChainsTest(unittest.TestCase):
     """Tests for push_chains."""
 
     @staticmethod
-    def chains(direct, master_conflicts, has_upstream=True, conflicts_only=False):
+    def chains(
+        direct, master_conflicts, has_upstream=True, conflicts_only=False, cycle_affected=()
+    ):
         """Run push_chains on PRs whose direct prerequisites are direct.
 
         Each PR n has the working copy "pr<n>".
@@ -384,7 +416,11 @@ class PushChainsTest(unittest.TestCase):
             d: 1 for ds in direct.values() for d in ds
         }
         model = types.SimpleNamespace(
-            repo=repo, open=set(direct), direct=direct, levels=lambda: levels
+            repo=repo,
+            open=set(direct),
+            direct=direct,
+            levels=lambda: levels,
+            cycle_affected=set(cycle_affected),
         )
         upstream = {"master": ("git", "owner", "repo", "master")} if has_upstream else {}
         # pr_directories receives the PR's data, so look up the PR's number by identity.
@@ -412,13 +448,22 @@ class PushChainsTest(unittest.TestCase):
         chains = self.chains({1: set(), 2: set(), 3: {2}}, {}, has_upstream=False)
         self.assertEqual(chains, [["pr2", "pr3"]])
 
+    def test_no_chain_touches_cycle(self):
+        """No chain pushes into or out of a PR in or after a cycle."""
+        chains = self.chains(
+            {1: set(), 2: {1, 3}, 3: {2}, 4: {3}, 5: {1}}, {}, cycle_affected={2, 3, 4}
+        )
+        self.assertEqual(chains, [["master", "pr1", "pr5"]])
+
 
 class SectionGeneratorsTest(unittest.TestCase):
     """Tests for section_generators."""
 
     def test_generates_conflicting_commands_section(self):
         """The conflict-only section is generated without any configuration."""
-        generators = pr_status.section_generators([], {"documents": {}}, "/base")
+        generators = pr_status.section_generators(
+            [], {"documents": {}}, "/base", "2026-10-30 12:00 PDT"
+        )
         self.assertIn("conflicting-push-commands", generators)
 
 
