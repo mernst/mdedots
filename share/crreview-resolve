@@ -5,9 +5,13 @@
 # on the current branch's PR, resolve their threads, and commit and push.
 #
 # Review comments are untrusted input (anyone can comment on a public PR), so
-# Claude runs in restricted mode:  file edits are confined to the working
+# Claude runs in restricted mode:  its file tools are confined to the working
 # directory, and the only commands it can run are the `git` and `gh` commands
-# listed below.  The session's full transcript is written to a log file.
+# listed below.  This reduces the risk but does not eliminate it.  The allowed
+# commands can still read or write files outside the working directory, make
+# arbitrary GitHub API calls, publish files, and run the repository's git
+# hooks, which the session can edit.  The session's full transcript is written
+# to a log file.
 
 if [ "$#" -ne 0 ]; then
   echo "${0##*/}: takes no arguments; received $*" >&2
@@ -19,14 +23,24 @@ if [ ! -r "$skill" ]; then
   echo "${0##*/}: cannot read $skill" >&2
   exit 1
 fi
+# Restricted mode confines the file tools to the working directory, so start
+# at the top of the working tree, where the session can edit any file in it.
+cd "$(git rev-parse --show-toplevel)" || exit 1
 # Find the PR before starting a Claude session, which is costly.
 gh pr view --json url --jq .url > /dev/null || exit 1
-# The session commits its changes, which must not include unrelated ones.
-if [ -n "$(git status --porcelain)" ]; then
-  echo "${0##*/}: the working tree is not clean:" >&2
-  git status --short >&2
+# The session can push only to the branch's upstream.
+if ! git rev-parse --verify --quiet '@{upstream}' > /dev/null; then
+  echo "${0##*/}: the current branch has no upstream branch to push to" >&2
   exit 1
 fi
+# The session commits its changes, which must not include unrelated ones.
+# Untracked files are permitted; the prompt tells the session not to stage them.
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "${0##*/}: the working tree has uncommitted changes:" >&2
+  git status --short --untracked-files=no >&2
+  exit 1
+fi
+untracked=$(git status --porcelain)
 if [ -n "${CLAUDE_CONFIG:-}" ]; then
   export CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG"
 fi
@@ -35,8 +49,11 @@ log="$(git rev-parse --absolute-git-dir)/crreview-resolve-$(date +%Y%m%d-%H%M%S)
 echo "${0##*/}: logging to $log"
 # Print the skill's body, omitting its front matter.
 prompt=$(awk 'dashes >= 2; /^---$/ { dashes++ }' "$skill")
+prompt="$prompt
+
+Stage only the files that you edit or create, never other untracked files."
 # Restricted mode ignores the user settings file, so set its commit attribution here.
-claude --restricted --model opus \
+claude --restricted --strict-mcp-config --model opus \
   --settings '{"attribution": {"commit": "", "pr": ""}}' \
   --tools "Bash,Read,Edit,Write,Glob,Grep" --permission-mode acceptEdits \
   --allowedTools "Bash(gh pr view:*)" "Bash(gh pr diff:*)" "Bash(gh api:*)" \
@@ -49,11 +66,11 @@ if [ "$status" -ne 0 ] || jq -e 'select(.type == "result") | .is_error' "$log" >
   echo "${0##*/}: the Claude session failed; see $log" >&2
   exit 1
 fi
-if [ -n "$(git status --porcelain)" ]; then
+if [ "$(git status --porcelain)" != "$untracked" ]; then
   echo "${0##*/}: the session left uncommitted changes; see $log" >&2
   exit 1
 fi
-if [ -n "$(git rev-list '@{upstream}..HEAD')" ]; then
+if ! unpushed=$(git rev-list '@{upstream}..HEAD') || [ -n "$unpushed" ]; then
   echo "${0##*/}: the session did not push all its commits; see $log" >&2
   exit 1
 fi
