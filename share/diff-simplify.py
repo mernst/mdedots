@@ -22,7 +22,7 @@ The simplifications are:
    such a line is often a coincidental match; but it leaves at least one
    context line before the next change group.
 
- * Show a lengthened line as an addition.  If, in a change group that is not
+ * Isolate the text appended to a line.  If, in a change group that is not
    merged, a run of "-" lines is followed by a run of "+" lines, and the first
    "+" line starts with all of the (non-blank) first "-" line, then the "-"
    line becomes a context line, and the common prefix in the "+" line becomes
@@ -37,7 +37,6 @@ import dataclasses
 import re
 import signal
 import sys
-from collections.abc import Iterator
 from pathlib import Path
 
 HUNK_HEADER = re.compile(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)")
@@ -113,7 +112,7 @@ def simplify_diff(text: str) -> str:
         old_count = int(match[2] or "1")
         new_count = int(match[4] or "1")
         body, i = read_hunk_body(lines, i + 1, old_count, new_count)
-        body = simplify_hunk(body)
+        body = merge_change_groups(body)
         result.append(hunk_header(match, old_count, new_count, body))
         result.extend(line.text() for line in body)
     return "".join(result)
@@ -167,7 +166,8 @@ def ends_hunk(lines: list[str], i: int, old_count: int, new_count: int) -> bool:
 
     Such a line looks like a hunk line, but it is a file's "---" line, or a separator that is
     followed by a line that cannot continue the hunk:  a blank line, or the "-- " that precedes
-    the signature of a patch from `git format-patch`.
+    the signature of a patch from `git format-patch`.  A line that does not look like a hunk line,
+    such as an "@@" hunk header, needs no check here, because read_hunk_body already stops at it.
 
     Args:
         lines: the lines of the diff
@@ -230,23 +230,22 @@ def hunk_header(
     return f"@@ -{match[1]},{old_count} +{match[3]},{new_count} @@{match[5]}\n"
 
 
-def runs(body: list[Line]) -> Iterator[list[Line]]:
+def runs(body: list[Line]) -> list[list[Line]]:
     """Split a hunk's body into alternating context runs and change groups.
 
     Args:
         body: the body of a hunk
 
-    Yields:
-        each maximal run of context lines, and each maximal run of "-" and "+" lines
+    Returns:
+        each maximal run of context lines, and each maximal run of "-" and "+" lines, in order
     """
-    run: list[Line] = []
+    result: list[list[Line]] = []
     for line in body:
-        if run and (run[-1].kind == " ") != (line.kind == " "):
-            yield run
-            run = []
-        run.append(line)
-    if run:
-        yield run
+        if result and (result[-1][-1].kind == " ") == (line.kind == " "):
+            result[-1].append(line)
+        else:
+            result.append([line])
+    return result
 
 
 def is_uniform(group: list[Line]) -> bool:
@@ -261,12 +260,12 @@ def is_uniform(group: list[Line]) -> bool:
     return sum(1 for line in group if line.kind == "-") * 2 == len(group)
 
 
-def simplify_hunk(body: list[Line]) -> list[Line]:
-    """Simplify the body of a hunk.
+def merge_change_groups(body: list[Line]) -> list[Line]:
+    """Merge a hunk's change groups that are separated by short context.
 
-    Merges change groups that are separated by short context, and shows the lengthened lines in
-    each other change group.  A merged region's first old line and first new line can come from
-    different change groups, so they are not compared.
+    Also, in each change group that is not merged, rewrites each line to which text was appended as
+    context plus the appended text.  A merged region's first old line and first new line can come
+    from different change groups, so they are not compared.
 
     Args:
         body: the body of a hunk
@@ -274,7 +273,8 @@ def simplify_hunk(body: list[Line]) -> list[Line]:
     Returns:
         the simplified body, in which each merged region's old lines precede its new lines
     """
-    parts = list(runs(body))
+    # Alternating context runs and change groups.
+    parts = runs(body)
     result: list[Line] = []
     i = 0
     while i < len(parts):
@@ -291,7 +291,7 @@ def simplify_hunk(body: list[Line]) -> list[Line]:
         ):
             j += 2
         if j - i < 2 * (MIN_MERGED_GROUPS - 1):
-            result.extend(show_lengthened_lines(parts[i]))
+            result.extend(isolate_appended_text(parts[i]))
             i += 1
             continue
         region = [line for part in parts[i : j + 1] for line in part]
@@ -313,8 +313,8 @@ def simplify_hunk(body: list[Line]) -> list[Line]:
     return result
 
 
-def show_lengthened_lines(group: list[Line]) -> list[Line]:
-    """Show each line to which text was appended as context plus an addition.
+def isolate_appended_text(group: list[Line]) -> list[Line]:
+    """Rewrite each line to which text was appended as context plus the appended text.
 
     If a run of "-" lines is followed by a run of "+" lines, and the first "+" line starts with
     all of the first "-" line, which is not blank, then the "-" line becomes a context line and
@@ -326,7 +326,8 @@ def show_lengthened_lines(group: list[Line]) -> list[Line]:
         group: a change group
 
     Returns:
-        the change group, with each lengthened line shown as context plus an addition
+        the change group, with each line to which text was appended rewritten as context plus
+        the appended text
     """
     result = list(group)
     for i, line in enumerate(group):
