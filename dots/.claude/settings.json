@@ -93,7 +93,10 @@
       "WebSearch(*)",
       "Write(*)"
     ],
-    "deny": ["Bash(git switch)", "Bash(git switch:*)"],
+    "deny": [
+      "Bash(git switch)",
+      "Bash(git switch:*)"
+    ],
     "ask": []
   },
   "hooks": {
@@ -124,7 +127,11 @@
   },
   "spinnerVerbs": {
     "mode": "replace",
-    "verbs": ["Thinking", "Processing", "Working"]
+    "verbs": [
+      "Thinking",
+      "Processing",
+      "Working"
+    ]
   },
   "modelSettings": {
     "claude-opus-5-5": {
