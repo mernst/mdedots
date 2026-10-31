@@ -37,6 +37,9 @@ fi
 
 # shellcheck disable=SC2086
 mdevccommit ${DEBUG}
+# `mdevcupdate` also removes worktree registrations and branches, so the
+# removals above must finish first, lest both remove the same ones.
+wait
 # shellcheck disable=SC2086
 mdevcupdate ${DEBUG}
 

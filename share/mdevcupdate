@@ -162,64 +162,120 @@ fast_forward_to_upstream_and_push() {
 # `git branch -a` shows little more than the branches of its remotes.
 # Like `git-orphaned-branches`, it treats a branch that is gone from its
 # remote as done.  It:
-#  * runs `git remote prune` on each remote, which deletes each
-#    remote-tracking ref whose branch is gone from the remote.
-#  * removes each linked worktree whose directory is gone, if the worktree has
-#    a detached HEAD or its branch is gone from its remote.
-#    `git-remove-branch-directory` removes the registration, deletes the
-#    branch if `git-new-branch` or `git-checkout-branch` created it, and
-#    refuses if that would lose commits.
+#  * runs `git remote prune` on each remote except the one that `git fetch`
+#    with no arguments fetches.  The caller is expected to have fetched that
+#    remote with `--prune`, as `MultiVersionControl pull` and
+#    `git pull --prune` do.  `git remote prune` deletes each remote-tracking
+#    ref whose branch is gone from the remote.  Each remote is pruned
+#    separately, so that a remote that cannot be reached does not keep the
+#    others from being pruned.
+#  * deletes each ref under `refs/remotes/` that belongs to no configured
+#    remote and that no remote's fetch refspec names, such as
+#    `refs/remotes/pr/123`, unless its reflog says that it was updated within
+#    the last day, as when a tool such as `pr-merge-analysis.sh` is using it.
+#    `git remote prune` never deletes such a ref.
 #  * deletes each local branch that is gone from its remote and that no
 #    worktree has checked out, if every commit on it is on some other ref or
-#    if its changes have landed, as `git-outgoing --omitted` decides.  Another
-#    branch that this step would delete does not count as such a ref.
-#  * deletes each ref under `refs/remotes/` that belongs to no configured
-#    remote, such as `refs/remotes/pr/123`.  `git remote prune` never deletes
-#    such a ref.
+#    if its changes have landed, as `git-outgoing --omitted` decides.  Neither
+#    another branch that this step would delete nor a ref that the previous
+#    step kept only because it is recent counts as such a ref.
+#  * removes each linked worktree whose directory is gone and whose branch is
+#    gone from its remote.  `git-remove-branch-directory` removes the
+#    registration, deletes the branch if `git-new-branch` or
+#    `git-checkout-branch` created it, and refuses if that would lose commits.
+#    A worktree with a detached HEAD is left alone, because nothing indicates
+#    that its work is done:  it might have been moved with `mv` and not yet
+#    repaired, and removing its registration would make the repair
+#    impossible.
 # Fails if any step fails.
 prune_stale_branches() {
   prune_status=0
 
-  # shellcheck disable=SC2046 # each remote is an argument
-  git remote prune $(git remote) > /dev/null || prune_status=1
+  # `git fetch` with no arguments fetches the remote of the current branch,
+  # or origin if the current branch has none.
+  fetched_remote="$(git config "branch.$(git symbolic-ref --short -q HEAD).remote" 2> /dev/null)" \
+    || fetched_remote=origin
+  for remote in $(git remote); do
+    if [ "$remote" != "$fetched_remote" ]; then
+      git remote prune "$remote" > /dev/null || prune_status=1
+    fi
+  done
 
-  # Each line is "BRANCH PATH" for a worktree whose directory is gone.
-  # BRANCH is "-", which is not a valid branch name, for a detached HEAD.
-  git worktree list --porcelain | awk '
-    /^worktree / { path = substr($0, 10); branch = "-"; prunable = 0 }
-    /^branch refs\/heads\// { branch = substr($0, 19) }
-    /^prunable/ { prunable = 1 }
-    /^$/ { if (prunable) print branch " " path; prunable = 0 }
-    END { if (prunable) print branch " " path }' \
-    | {
-      remove_status=0
-      while read -r branch path; do
-        if [ "$branch" = "-" ] \
-          || [ "$(git for-each-ref --format='%(upstream:track)' "refs/heads/$branch")" = "[gone]" ]; then
-          git-remove-branch-directory --repository . -- "$path" || remove_status=1
-        fi
-      done
-      exit "$remove_status"
-    } || prune_status=1
+  # The destinations of the remotes' fetch refspecs, such as
+  # "refs/remotes/origin/*".
+  fetch_destinations="$(git config --get-regexp '^remote\..*\.fetch$' \
+    | sed -n 's/^[^ ]* +\{0,1\}[^:]*:\(.*\)$/\1/p')"
+  orphan_refs="$(git for-each-ref --format='%(refname)' refs/remotes \
+    | remotes="$(git remote)" destinations="$fetch_destinations" awk '
+      BEGIN {
+        n = split(ENVIRON["remotes"], remote, "\n")
+        m = split(ENVIRON["destinations"], destination, "\n")
+      }
+      {
+        for (i = 1; i <= n; i++) {
+          if (index($0, "refs/remotes/" remote[i] "/") == 1) next
+        }
+        for (i = 1; i <= m; i++) {
+          star = index(destination[i], "*")
+          if (star == 0) {
+            if ($0 == destination[i]) next
+            continue
+          }
+          prefix = substr(destination[i], 1, star - 1)
+          suffix = substr(destination[i], star + 1)
+          if (length($0) >= length(prefix) + length(suffix) &&
+            index($0, prefix) == 1 &&
+            substr($0, length($0) - length(suffix) + 1) == suffix) next
+        }
+        print
+      }')"
+  now="$(date +%s)"
+  stale_orphan_refs=""
+  recent_orphan_refs=""
+  for ref in $orphan_refs; do
+    # `%gd` is "NAME@{TIME}".
+    updated="$(git reflog show -1 --date=unix --format=%gd "$ref" -- 2> /dev/null \
+      | sed -n 's/.*@{\([0-9]*\)}$/\1/p')"
+    if [ -n "$updated" ] && [ $((now - updated)) -lt 86400 ]; then
+      recent_orphan_refs="$recent_orphan_refs $ref"
+    else
+      stale_orphan_refs="$stale_orphan_refs $ref"
+    fi
+  done
+  if [ -n "$stale_orphan_refs" ]; then
+    # shellcheck disable=SC2086 # $stale_orphan_refs is a list of refs
+    printf 'delete %s\n' $stale_orphan_refs \
+      | git update-ref --no-deref --stdin || prune_status=1
+  fi
 
-  # A branch that a worktree has checked out yields an empty line.
+  # A branch that a worktree has checked out, even a worktree whose directory
+  # is gone, yields an empty line.
   gone_branches="$(git for-each-ref \
-    --format='%(if)%(worktreepath)%(then)%(else)%(refname:short) %(upstream:track)%(end)' \
+    --format='%(if)%(worktreepath)%(then)%(else)%(refname:lstrip=2) %(upstream:track)%(end)' \
     refs/heads | awk '$2 == "[gone]" { print $1 }')"
   if [ -n "$gone_branches" ]; then
-    gone_excludes="$(printf '%s\n' "$gone_branches" | sed 's|^|--exclude=refs/heads/|')"
+    unheld_excludes=""
+    for branch in $gone_branches; do
+      unheld_excludes="$unheld_excludes --exclude=refs/heads/$branch"
+    done
+    for ref in $recent_orphan_refs; do
+      unheld_excludes="$unheld_excludes --exclude=$ref"
+    done
     unheld_branches=""
     for branch in $gone_branches; do
-      # shellcheck disable=SC2086 # $gone_excludes is a list of arguments
-      if [ "$(git rev-list --count "refs/heads/$branch" --not $gone_excludes --all)" != 0 ]; then
+      # shellcheck disable=SC2086 # $unheld_excludes is a list of arguments
+      if [ "$(git rev-list --count "refs/heads/$branch" --not $unheld_excludes --all)" != 0 ]; then
         unheld_branches="$unheld_branches $branch"
       fi
     done
     landed_branches=""
     if [ -n "$unheld_branches" ]; then
       # shellcheck disable=SC2046,SC2086 # each word is an argument
-      landed_branches="$(git-outgoing $(printf ' --only-branch=%s' $unheld_branches) --omitted \
-        | sed 's|^refs/heads/||')"
+      if outgoing="$(git-outgoing $(printf ' --only-branch=%s' $unheld_branches) --omitted)"; then
+        landed_branches="$(printf '%s\n' "$outgoing" | sed 's|^refs/heads/||')"
+      else
+        prune_status=1
+      fi
     fi
     deletable_branches=""
     for branch in $gone_branches; do
@@ -236,16 +292,23 @@ prune_stale_branches() {
     fi
   fi
 
-  git for-each-ref --format='%(refname)' refs/remotes \
-    | remotes="$(git remote)" awk '
-      BEGIN { n = split(ENVIRON["remotes"], remote, "\n") }
-      {
-        for (i = 1; i <= n; i++) {
-          if (index($0, "refs/remotes/" remote[i] "/") == 1) next
-        }
-        print "delete " $0
-      }' \
-    | git update-ref --no-deref --stdin || prune_status=1
+  # Each line is "BRANCH PATH" for a worktree whose directory is gone and that
+  # has a branch checked out.
+  git worktree list --porcelain | awk '
+    /^worktree / { path = substr($0, 10); branch = ""; prunable = 0 }
+    /^branch refs\/heads\// { branch = substr($0, 19) }
+    /^prunable/ { prunable = 1 }
+    /^$/ { if (prunable && branch != "") print branch " " path; prunable = 0 }
+    END { if (prunable && branch != "") print branch " " path }' \
+    | {
+      remove_status=0
+      while read -r branch path; do
+        if [ "$(git for-each-ref --format='%(upstream:track)' "refs/heads/$branch")" = "[gone]" ]; then
+          git-remove-branch-directory --repository . -- "$path" || remove_status=1
+        fi
+      done
+      exit "$remove_status"
+    } || prune_status=1
 
   return "$prune_status"
 }
@@ -257,7 +320,7 @@ update_from() {
   if [ -d "$dir" ]; then
     (cd "$dir" \
       && make_merges_fast_forward_only \
-      && git pull -q --ff-only \
+      && git pull -q --ff-only --prune \
       && git pull -q --ff-only "$upstream" --tags \
       && git push -q \
       && prune_stale_branches) || (echo "$dir" && false)
@@ -485,7 +548,7 @@ dir=~/java/kotlin-fork-mernst
 if [ -d $dir ]; then
   (cd $dir \
     && make_merges_fast_forward_only \
-    && git pull -q --ff-only \
+    && git pull -q --ff-only --prune \
     && git pull -q --ff-only "git@github.com:JetBrains/kotlin" \
     && git push -q \
     && prune_stale_branches) || (echo "$dir" && false)
@@ -497,3 +560,7 @@ update_from https://gitlab.ow2.org/asm/asm.git ~/java/asm-fork-mernst
 # shellcheck disable=SC2154 # $t should be defined.
 update_from https://gitlab.ow2.org/asm/asm.git "$t"/libraries/asm-fork-typetools
 update_from git@gitlab.cs.washington.edu:lab/simple-courseweb-template.git ~/class/simple-courseweb-template-fork-mernst
+
+# Wait for the background jobs, so that their pruning does not overlap with
+# whatever runs in the same clones after this script.
+wait
