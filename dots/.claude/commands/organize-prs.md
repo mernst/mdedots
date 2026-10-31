@@ -1,0 +1,1 @@
+../../.agents/skills/organize-prs/SKILL.md

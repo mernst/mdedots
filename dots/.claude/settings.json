@@ -1,5 +1,6 @@
 {
   "env": {
+    "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
     "CLAUDE_CODE_SCROLL_SPEED": "4"
   },
   "attribution": {
@@ -27,11 +28,12 @@
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
       "Bash(gh pr create:*)",
+      "Bash(gh pr diff:*)",
       "Bash(gh pr list:*)",
       "Bash(gh pr view:*)",
       "Bash(gh repo view:*)",
-      "Bash(git -C * diff:*)",
-      "Bash(git -C * log:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
       "Bash(git add:*)",
       "Bash(git branch:*)",
       "Bash(git checkout:*)",
@@ -97,37 +99,6 @@
     ],
     "ask": []
   },
-  "enabledPlugins": {
-    "clangd-lsp@claude-plugins-official": true,
-    "claude-code-setup@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
-    "jdtls-lsp@claude-plugins-official": true,
-    "playground@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true,
-    "cc-plugin-you-should-know@builtin": true,
-    "pyright-lsp@claude-plugins-official": true,
-    "rust-analyzer-lsp@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true
-  },
-  "spinnerVerbs": {
-    "mode": "replace",
-    "verbs": [
-      "Thinking",
-      "Processing",
-      "Working"
-    ]
-  },
-  "tui": "fullscreen",
-  "voice": {
-    "enabled": true,
-    "mode": "hold"
-  },
-  "skipDangerousModePermissionPrompt": true,
-  "theme": "auto",
-  "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
-  "voiceEnabled": true,
   "hooks": {
     "Notification": [
       {
@@ -140,5 +111,41 @@
         ]
       }
     ]
-  }
+  },
+  "enabledPlugins": {
+    "clangd-lsp@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "jdtls-lsp@claude-plugins-official": true,
+    "playground@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "cc-plugin-you-should-know@builtin": false,
+    "pyright-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
+  },
+  "spinnerVerbs": {
+    "mode": "replace",
+    "verbs": [
+      "Thinking",
+      "Processing",
+      "Working"
+    ]
+  },
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "high"
+    }
+  },
+  "tui": "fullscreen",
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "auto",
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true,
+  "voiceEnabled": true
 }

@@ -1192,7 +1192,9 @@ After running this, run from the shell:  print-mail bulk." t)
   (if (consp elt)
       (cons (anchor-directory (car elt))
             (concat (cdr elt) "/"))
-    (cons (anchor-directory (substitute-in-file-name elt))
+    ;; The buffer menu shows file names with the home directory abbreviated
+    ;; to "~", so the regexp must match that form.
+    (cons (anchor-directory (regexp-quote (abbreviate-file-name (substitute-in-file-name elt))))
           (concat elt "/"))))
 
 
@@ -1423,8 +1425,8 @@ After running this, run from the shell:  print-mail bulk." t)
 (setq diff-switches
       `("-u" "-b" "-r"
         ,(substitute-in-file-name "--exclude-from=$HOME/dots/diff-exclude-patterns.txt")
-        "--minimal"                     ; smaller diffs, but slower execution time
         "--unidirectional-new-file"
+        ;; don't specify a diff algorithm (such as minimal or patience)
         ))
 (setq vc-diff-switches '("-u" "-b" "--unidirectional-new-file"))
 (setq svn-status-default-diff-arguments '("-x" "--ignore-eol-style" "-x" "--ignore-space-change"))

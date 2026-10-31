@@ -1,0 +1,92 @@
+⟨diff-file-header|diff -u -b -r old/foo.el new/foo.el⟩
+⟨diff-file-header|--- old/foo.el	2026-10-20 09:25:24.321526618 -0700⟩
+⟨diff-file-header|+++ new/foo.el	2026-10-20 09:25:24.323526609 -0700⟩
+@@ -1,5 +1,6 @@
+⟨diff-context| ⟩⟨comment-delimiter+diff-context|;;; ⟩⟨comment+diff-context|foo.el --- A demonstration  -*- lexical-binding: t -*-⟩
+⟨diff-context| ⟩
+⟨diff-context| (⟩⟨keyword+diff-context|defun⟩⟨diff-context| ⟩⟨function-name+diff-context|foo-double⟩⟨diff-context| (n)⟩
+⟨diff-indicator-removed|-⟩⟨diff-removed|  ⟩⟨doc+diff-removed|"Return twice N."⟩
+⟨diff-indicator-removed|-⟩⟨diff-removed|  (* 2 n))⟩
+⟨diff-indicator-added|+⟩⟨diff-added|  ⟩⟨doc+diff-added|"Return twice N.⟩
+⟨diff-indicator-added|+⟩⟨doc+diff-added|N must be a number."⟩
+⟨diff-indicator-added|+⟩⟨diff-added|  (+ n n))⟩
+⟨diff-file-header|diff -u -b -r old/Foo.java new/Foo.java⟩
+⟨diff-file-header|--- old/Foo.java	2026-10-20 09:25:24.284526786 -0700⟩
+⟨diff-file-header|+++ new/Foo.java	2026-10-20 09:25:24.288526768 -0700⟩
+@@ -10,7 +10,7 @@
+⟨diff-context| ⟩⟨comment+diff-context| * License line 9.⟩
+⟨diff-context| ⟩⟨comment+diff-context| * License line 10.⟩
+⟨diff-context| ⟩⟨comment+diff-context| * License line 11.⟩
+⟨diff-indicator-removed|-⟩⟨comment+diff-removed| * License line 12.⟩
+⟨diff-indicator-added|+⟩⟨comment+diff-added| * License line 12, revised.⟩
+⟨diff-context| ⟩⟨comment+diff-context| * License line 13.⟩
+⟨diff-context| ⟩⟨comment+diff-context| * License line 14.⟩
+⟨diff-context| ⟩⟨comment-delimiter+diff-context| */⟩
+@@ -18,14 +18,14 @@
+⟨diff-context| ⟩
+⟨diff-context| ⟩⟨doc+diff-context|/** A demonstration class. */⟩
+⟨diff-context| ⟩⟨keyword+diff-context|public⟩⟨diff-context| ⟩⟨keyword+diff-context|class⟩⟨diff-context| ⟩⟨type+diff-context|Foo⟩⟨diff-context| {⟩
+⟨diff-indicator-removed|-⟩⟨diff-removed|  ⟩⟨keyword+diff-removed|private⟩⟨diff-removed| ⟩⟨type+diff-removed|int⟩⟨diff-removed| count = 0;⟩
+⟨diff-indicator-added|+⟩⟨diff-added|  ⟩⟨keyword+diff-added|private⟩⟨diff-added| ⟩⟨type+diff-added|long⟩⟨diff-added| count = 0;⟩
+⟨diff-context| ⟩
+⟨diff-context|   ⟩⟨doc+diff-context|/** Returns the count. */⟩
+⟨diff-indicator-removed|-⟩⟨diff-removed|  ⟩⟨keyword+diff-removed|public⟩⟨diff-removed| ⟩⟨type+diff-removed|int⟩⟨diff-removed| ⟩⟨function-name+diff-removed|count⟩⟨diff-removed|() {⟩
+⟨diff-indicator-added|+⟩⟨diff-added|  ⟩⟨keyword+diff-added|public⟩⟨diff-added| ⟩⟨type+diff-added|long⟩⟨diff-added| ⟩⟨function-name+diff-added|count⟩⟨diff-added|() {⟩
+⟨diff-context|     ⟩⟨keyword+diff-context|return⟩⟨diff-context| count;⟩
+⟨diff-context|   }⟩
+⟨diff-context| ⟩
+⟨diff-context|   ⟩⟨keyword+diff-context|public⟩⟨diff-context| ⟩⟨type+diff-context|void⟩⟨diff-context| ⟩⟨function-name+diff-context|log⟩⟨diff-context|() {⟩
+⟨diff-indicator-removed|-⟩⟨diff-removed|    System.out.println("This line is long enough that the printed diff must wrap it.");⟩
+⟨diff-indicator-added|+⟩⟨diff-added|    System.out.println("This line is long enough that the printed diff must wrap it onto a second ⟩   \
+⟨diff-indicator-added|»⟩⟨diff-added|printed line, with continuation marks.");⟩
+⟨diff-context|   }⟩
+⟨diff-context| }⟩
+⟨diff-file-header|diff -u -b -r old/foo.py new/foo.py⟩
+⟨diff-file-header|--- old/foo.py	2026-10-20 09:25:24.293526745 -0700⟩
+⟨diff-file-header|+++ new/foo.py	2026-10-20 09:25:24.296526732 -0700⟩
+@@ -2,7 +2,7 @@
+⟨diff-context|     ⟩⟨doc+diff-context|"""Return a greeting.⟩
+⟨diff-context| ⟩
+⟨diff-context| ⟩⟨doc+diff-context|    The greeting is in English.⟩
+⟨diff-indicator-removed|-⟩⟨doc+diff-removed|    It is suitable for most purposes.⟩
+⟨diff-indicator-added|+⟩⟨doc+diff-added|    It is suitable -- "mostly" -- for all purposes.⟩
+⟨diff-context| ⟩⟨doc+diff-context|    """⟩
+⟨diff-indicator-removed|-⟩⟨diff-removed|    ⟩⟨comment-delimiter+diff-removed|# ⟩⟨comment+diff-removed|Résumé: naïve⟩
+⟨diff-indicator-added|+⟩⟨diff-added|    ⟩⟨comment-delimiter+diff-added|# ⟩⟨comment+diff-added|Résumé: naïve; forall x in S, lambda -> yes⟩
+⟨diff-context|     ⟩⟨keyword+diff-context|return⟩⟨diff-context| f"Hello, {name}!"⟩
+⟨diff-file-header|diff -u -b -r old/foo.sh new/foo.sh⟩
+⟨diff-file-header|--- old/foo.sh	2026-10-20 09:25:24.308526677 -0700⟩
+⟨diff-file-header|+++ new/foo.sh	2026-10-20 09:25:24.311526664 -0700⟩
+@@ -2,6 +2,8 @@
+⟨diff-context| ⟩⟨comment-delimiter+diff-context|# ⟩⟨comment+diff-context|Print a message.⟩
+⟨diff-context| ⟩⟨keyword+diff-context|if⟩⟨diff-context| [ -n "$1" ]; ⟩⟨keyword+diff-context|then⟩
+⟨diff-context|     ⟩⟨builtin+diff-context|echo⟩⟨diff-context| "Hello, $1"⟩
+⟨diff-indicator-added|+⟩⟨keyword+diff-added|else⟩
+⟨diff-indicator-added|+⟩⟨diff-added|  ⟩⟨builtin+diff-added|echo⟩⟨diff-added| "Hello, world"⟩
+⟨diff-context| ⟩⟨keyword+diff-context|fi⟩
+⟨diff-context| cat <<END⟩
+⟨diff-context| A heredoc line.⟩
+⟨diff-file-header|diff -u -b -r old/foo.tex new/foo.tex⟩
+⟨diff-file-header|--- old/foo.tex	2026-10-20 09:25:24.315526646 -0700⟩
+⟨diff-file-header|+++ new/foo.tex	2026-10-20 09:25:24.318526632 -0700⟩
+@@ -1,6 +1,6 @@
+⟨diff-context| ⟩⟨keyword+diff-context|\section⟩⟨diff-context|{⟩⟨function-name+diff-context|Introduction⟩⟨diff-context|}⟩
+⟨diff-context| ⟩⟨comment-delimiter+diff-context|% ⟩⟨comment+diff-context|A comment.⟩
+⟨diff-indicator-removed|-⟩⟨diff-removed|The value is $x + y$.⟩
+⟨diff-indicator-added|+⟩⟨diff-added|The value is $x - y$, ⟩⟨keyword+diff-added|\emph⟩⟨diff-added|{not} $x + y$.⟩
+⟨diff-context| ⟩⟨keyword+diff-context|\begin⟩⟨diff-context|{⟩⟨function-name+diff-context|equation⟩⟨diff-context|}⟩
+⟨diff-context|   E = m c^2⟩
+⟨diff-context| ⟩⟨keyword+diff-context|\end⟩⟨diff-context|{⟩⟨function-name+diff-context|equation⟩⟨diff-context|}⟩
+⟨diff-file-header|diff -u -b -r old/Makefile new/Makefile⟩
+⟨diff-file-header|--- old/Makefile	2026-10-20 09:25:24.318526632 -0700⟩
+⟨diff-file-header|+++ new/Makefile	2026-10-20 09:25:34.632661000 -0700⟩
+@@ -1,6 +1,7 @@
+⟨diff-context| CC = gcc⟩
+⟨diff-indicator-added|+⟩⟨diff-added|CFLAGS = -O2 -Wall⟩
+⟨diff-context| ⟩
+⟨diff-context| ⟩⟨function-name+diff-context|all⟩⟨diff-context|: foo⟩
+⟨diff-context| ⟩
+⟨diff-context| ⟩⟨function-name+diff-context|foo⟩⟨diff-context|: foo.c⟩
+⟨diff-indicator-removed|-⟩⟨diff-removed|	$(CC) -o foo foo.c⟩
+⟨diff-indicator-added|+⟩⟨diff-added|	$(CC) $(CFLAGS) -o foo foo.c -lm -lpthread -ldl -lrt -lz -lssl -lcrypto -lcurl -lxml2 -lyaml ⟩ \
+⟨diff-indicator-added|»⟩⟨diff-added|-lsqlite3 -lpng⟩

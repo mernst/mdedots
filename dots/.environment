@@ -80,6 +80,9 @@ export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${HOME}/.local/li
 # Limit the background subagent execution wait time to 60 minutes (default 10 minutes).
 export CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=3600000
 export CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1
+# Claude Code's default temporary directory is under /tmp, which may be a tmpfs (in RAM).
+# Claude Code creates this directory if it does not exist.
+export CLAUDE_CODE_TMPDIR="$HOME"/.cache/claude-tmp
 
 ###
 ### Shell
@@ -222,6 +225,16 @@ export QUILT_PATCHES=debian/patches
 export QUILT_DIFF_ARGS="--no-timestamps --no-index -pab"
 export QUILT_REFRESH_ARGS="--no-timestamps --no-index -pab"
 export QUILT_PATCH_OPTS="--reject-format=unified"
+
+###
+### CI: continuous integration
+###
+
+if [ -f "$HOME/private/tokens.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$HOME/private/tokens.sh"
+fi
+
 
 ###########################################################################
 ### Directories

@@ -330,6 +330,11 @@ Uses Magit."
 (autoload 'Buffer-menu-revert "bdiff" "Revert buffer under point from file, then select it." t)
 (autoload 'Buffer-menu-revert-select "bdiff" "Select this line's buffer, after replacing its text with disk file contents." t)
 
+(autoload 'difffontify-pdf "difffontify"
+  "Write the current buffer's diff, with syntax highlighting, to a PDF file." t)
+(autoload 'difffontify-print "difffontify"
+  "Print the diff in the current buffer, with syntax highlighting." t)
+
 (autoload 'conflict-resolve "conflict-resolve"
   "Resolve diffs in the current buffer." t)
 (autoload 'tags-conflict-resolve "conflict-resolve"
