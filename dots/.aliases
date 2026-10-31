@@ -173,6 +173,7 @@ if [ -z "$CLAUDE_CONFIG" ]; then
 fi
 alias claude='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model opus --dangerously-skip-permissions'
 alias claudemax='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model fable --effort max'
+alias claude-review='claude /review $(pr-number)'
 
 alias agytrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.agy.json > ~/.agy.json.tmp && mv ~/.agy.json.tmp ~/.agy.json'
 alias agy='agytrustdir && \agy --dangerously-skip-permissions'
