@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Usage: crreview [<interval>]
+# Usage: crreview-trigger [<interval>]
 # Ask CodeRabbit to review the current branch's PR,
 # optionally waiting the interval (passed to `sleep`) first.
 

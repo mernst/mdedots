@@ -1,5 +1,5 @@
 ---
-name: crreview
+name: crreview-resolve
 description: Address CodeRabbitAI review comments on the current pull request.
 ---
 
