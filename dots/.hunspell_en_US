@@ -127,6 +127,7 @@ Clousot
 Clousot's
 CodeQL
 CodeRabbit
+CodeRabbit's
 CodeSonar
 CollectionFieldDestructor
 Comcast
@@ -713,6 +714,8 @@ Wellesley
 Werner
 Werner's
 Wetherall
+Weyuker
+Weyuker's
 WhenIsGood
 Whitespace
 Wikipedia
@@ -912,6 +915,7 @@ desugars
 deterministically
 developers'
 diagnosability
+diagonalization
 dialog's
 diff
 differencing
@@ -953,6 +957,7 @@ exfiltration
 expectedExceptions
 experimentalist
 extensibility
+extremal
 fMRI
 facto
 filesystem
@@ -1162,6 +1167,7 @@ precomputed
 predicate's
 prefetcher
 prefill
+preorders
 prepend
 prepends
 preprints
@@ -1424,9 +1430,3 @@ workspace
 writeups
 x86
 xml
-CodeRabbit's
-Weyuker
-preorders
-extremal
-Weyuker's
-diagonalization
