@@ -18,6 +18,8 @@ Each run:
     so, if its branch contains all of the other PR's non-merge commits, or if the
     config says so; PRs that land together (possibly in different repositories) are one
     unit, whose members depend on each other's prerequisites but not on each other,
+  * warns about each cycle of dependencies, and omits from the generated push commands
+    the PRs in a cycle and the PRs that depend on them,
   * updates each modeled PR description's "Land after" and "Land before" lines,
   * prints what changed since the previous snapshot (input for the summary),
   * renames the working copies whose name does not match their branch's PR, and
@@ -509,6 +511,11 @@ def stated_prerequisites(body, repo):
             for i in range(0, len(parts), 2):
                 ns, ext = pr_refs(parts[i], repo)
                 preposition = parts[i - 1].lower() if i else None
+                # In "To land after it:  #A", this PR is the object, so #A is a dependent.
+                if preposition in ("after", "before") and re.match(
+                    r"\s*(this|it)\b", parts[i], re.IGNORECASE
+                ):
+                    preposition = "before" if preposition == "after" else "after"
                 if preposition == "before":
                     dependents |= ns
                 elif preposition == "with":
@@ -749,6 +756,10 @@ class Model:
             for d in self.direct[n]:
                 self.dependents[d].add(n)
         self.all_dependents = {n: {m for m in open_prs if n in self.all_deps[m]} for n in open_prs}
+        # The PRs in a cycle, and the PRs that depend on one.  A cycle makes their direct
+        # dependencies wrong:  each member of a cycle covers the others, so a dependent of
+        # the cycle can have no direct prerequisite at all.
+        self.cycle_affected = set(self.cyclic).union(*(self.all_dependents[n] for n in self.cyclic))
 
     @staticmethod
     def closure(deps, n):
@@ -773,21 +784,30 @@ class Model:
         """
         return bool(self.direct[n] or self.dependents[n])
 
+    def is_blocked(self, n):
+        """Return whether PR n depends on another open PR.
+
+        Returns:
+            True if PR n has a prerequisite, in this or another repository, or is in or after
+            a cycle of dependencies.
+        """
+        return bool(self.direct[n] or self.external[n] or n in self.cycle_affected)
+
     def unblocked(self):
         """Return the PRs that depend on no other open PR.
 
         Returns:
-            The sorted numbers of the PRs with no prerequisite, in this or another repository.
+            The sorted numbers of the PRs that are not blocked.
         """
-        return sorted(n for n in self.open if not self.direct[n] and not self.external[n])
+        return sorted(n for n in self.open if not self.is_blocked(n))
 
     def blocked(self):
         """Return the PRs that depend on another open PR.
 
         Returns:
-            The sorted numbers of the PRs with a prerequisite, in this or another repository.
+            The sorted numbers of the blocked PRs.
         """
-        return sorted(n for n in self.open if self.direct[n] or self.external[n])
+        return sorted(n for n in self.open if self.is_blocked(n))
 
     def independent(self):
         """Return the PRs that have no prerequisite and no dependent.
@@ -795,7 +815,7 @@ class Model:
         Returns:
             The sorted numbers of the PRs that are unrelated to every other open PR.
         """
-        return sorted(n for n in self.open if not self.in_graph(n) and not self.external[n])
+        return sorted(n for n in self.open if not self.in_graph(n) and not self.is_blocked(n))
 
     def assignees(self, n):
         """Return the assignees of PR n.
@@ -1059,8 +1079,11 @@ def depends_on(model, n):
     items = [r.link(d) for d in sorted(model.direct[n])] + [
         external_link(e) for e in model.external[n]
     ]
-    text = and_list(items)
     more = model.all_deps[n] - model.direct[n]
+    if not items:
+        # In a cycle of dependencies, a PR can have no direct prerequisite.
+        return r.links(more)
+    text = and_list(items)
     if more:
         text += f" (and transitively {r.links(more)})"
     return text
@@ -1077,6 +1100,10 @@ def auto_notes(model, n, master=True):
     """
     r = model.repo
     notes = []
+    if n in model.cyclic:
+        notes.append("it is in a cycle of dependencies")
+    elif n in model.cycle_affected:
+        notes.append("it depends on a cycle of dependencies")
     if n in model.base_pr:
         notes.append(f"its base branch is {r.link(model.base_pr[n])}'s branch")
     landed = [m for m, s in model.stated_closed[n] if s == "landed"]
@@ -1589,7 +1616,8 @@ def unblocked_doc(models, cfg, base, doc, as_of):
             on = [m.repo.link(d) for d in sorted(m.direct[n])] + [
                 external_link(e) for e in m.external[n]
             ]
-            items.append(f"{m.repo.link(n)} (on {', '.join(on)})")
+            # In a cycle of dependencies, a PR can have no direct prerequisite.
+            items.append(f"{m.repo.link(n)} (on {', '.join(on) or depends_on(m, n)})")
         if items:
             lines.append(f"* {m.repo.label}: {', '.join(items)}.")
     if flt != "all":
@@ -1617,12 +1645,18 @@ def gen_status(models):
     """Generate the "status" section.
 
     Returns:
-        The section's lines:  which PRs conflict with the default branch, and which dependent
-        branches lack their prerequisites' current commits.
+        The section's lines:  which PRs are in a cycle of dependencies, which PRs conflict with
+        the default branch, and which dependent branches lack their prerequisites' current
+        commits.
     """
     lines = []
     for m in models:
         r = m.repo
+        if m.cyclic:
+            lines.append(
+                f"* {r.label} PRs in a cycle of dependencies, which the push commands omit"
+                f" along with the PRs that depend on them: {r.links(m.cyclic)}."
+            )
         conflicting = sorted(r.master_conflicts)
         if conflicting:
             lines.append(
@@ -2110,6 +2144,7 @@ def push_chains(model, base, conflicts_only=False):
     directory's prerequisites.
     If conflicts_only is true, retain a whole chain only if merging it would encounter a
     conflict between 2 of its PRs, or between upstream and one of its PRs.
+    No chain contains a PR that is in, or depends on, a cycle of dependencies.
 
     Returns:
         The chains, the PRs that have no working copy, and whether there is a working copy of
@@ -2124,7 +2159,8 @@ def push_chains(model, base, conflicts_only=False):
     ][:1]
     dirs = {n: pr_directories(r, r.prs[n], base) for n in model.open}
     missing = sorted(n for n in model.open if not dirs[n])
-    edges = {(d, n) for n in model.open for d in model.direct[n] if dirs[d] and dirs[n]}
+    pushable = {n for n in model.open if dirs[n] and n not in model.cycle_affected}
+    edges = {(d, n) for n in pushable for d in model.direct[n] if d in pushable}
     in_edge = {n for e in edges for n in e}
     level = model.levels()
     pr_chains = []
@@ -2142,7 +2178,7 @@ def push_chains(model, base, conflicts_only=False):
             chain.append(nxt)
         pr_chains.append(chain)
     if upstream:
-        pr_chains += [[n] for n in sorted(model.open) if dirs[n] and n not in in_edge]
+        pr_chains += [[n] for n in sorted(pushable) if n not in in_edge]
     # A stable sort, which retains the order of the chains that start at the same level.
     # A PR that is not in the dependency graph has no level; it would be at level 1.
     pr_chains.sort(key=lambda chain: level.get(chain[0], 1))
@@ -2171,6 +2207,11 @@ def push_commands(models, base, conflicts_only=False):
         if missing:
             notes.append(
                 f"{r.label} PRs with no working copy, which these commands omit: {r.links(missing)}"
+            )
+        if m.cycle_affected:
+            notes.append(
+                f"{r.label} PRs in or after a cycle of dependencies, which these commands omit:"
+                f" {r.links(sorted(m.cycle_affected))}"
             )
         if not has_upstream and len(missing) < len(m.open):
             notes.append(
@@ -2520,11 +2561,13 @@ def main():
         print(f"## Changes since the previous snapshot ({old.get('time', 'none')})")
         for line in changes:
             print(line)
-    cycles = [m for m in models if m.cyclic]
-    if cycles:
-        print("## PRs that depend on themselves, through a cycle of dependencies")
-        for m in cycles:
-            print(m.repo.refs(m.cyclic))
+    for m in models:
+        if m.cyclic:
+            print(
+                f"pr-status.py: warning: a cycle of dependencies contains {m.repo.refs(m.cyclic)};"
+                " the push commands omit the cycle and the PRs that depend on it",
+                file=sys.stderr,
+            )
     problems, renames = directory_problems(models, base, fix=not check_only)
     if renames:
         print("## Fixed directories, to match their branch's PR")
