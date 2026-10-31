@@ -1,31 +1,18 @@
 """Tests for pr-status.py that do not access GitHub or local repositories."""
 
-import importlib.machinery
-import importlib.util
 import sys
 import types
 import unittest
 from pathlib import Path
 from unittest import mock
 
+SCRIPT_DIRECTORY = Path(__file__).parent
+if str(SCRIPT_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIRECTORY))
 
-def load_script() -> types.ModuleType:
-    """Import pr-status.py, whose name is not a legal module name.
+from script_loader import load_script  # ruff: ignore[module-import-not-at-top-of-file]
 
-    Returns:
-        The imported module.
-    """
-    path = Path(__file__).with_name("pr-status.py")
-    loader = importlib.machinery.SourceFileLoader("pr_status", str(path))
-    spec = importlib.util.spec_from_loader(loader.name, loader)
-    assert spec is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[loader.name] = module
-    loader.exec_module(module)
-    return module
-
-
-pr_status = load_script()
+pr_status = load_script("pr-status.py")
 
 REPO = types.SimpleNamespace(gh="owner/repo", keywords=[])
 

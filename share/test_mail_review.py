@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import base64
 import contextlib
-import importlib.machinery
-import importlib.util
 import io
 import stat
 import sys
@@ -23,23 +21,7 @@ if str(SCRIPT_DIRECTORY) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIRECTORY))
 
 import mail_review  # ruff: ignore[module-import-not-at-top-of-file]
-
-
-def load_script(file_name: str) -> types.ModuleType:
-    """Import one of the review scripts, whose name is not a legal module name.
-
-    Returns:
-        The imported module.
-    """
-    module_name = Path(file_name).stem.replace("-", "_")
-    loader = importlib.machinery.SourceFileLoader(module_name, str(SCRIPT_DIRECTORY / file_name))
-    spec = importlib.util.spec_from_loader(loader.name, loader)
-    assert spec is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[loader.name] = module
-    loader.exec_module(module)
-    return module
-
+from script_loader import load_script  # ruff: ignore[module-import-not-at-top-of-file]
 
 mail_review_spam = load_script("mail-review-spam.py")
 mail_review_weekly = load_script("mail-review-weekly.py")
