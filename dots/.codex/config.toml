@@ -131,6 +131,12 @@ trust_level = "trusted"
 [projects."/home/mernst/research/invariants/fjalar-fork-mernst-branch-sysv-return-classification"]
 trust_level = "trusted"
 
+[projects."/home/mernst/bin/src/mdedots-branch-crreviewresolve-script"]
+trust_level = "trusted"
+
+[projects."/home/mernst/.cache/claude-tmp/claude-1000/-home-mernst-bin-src-mdedots-branch-crreviewresolve-script/a89a99ae-36aa-4416-9f1d-4718bdb574aa/scratchpad/sbtest"]
+trust_level = "trusted"
+
 [tui]
 screen_reader_detection_done = true
 terminal_title = []
