@@ -167,7 +167,6 @@ alias gterm=gterminal
 alias claude-review='claude "/review $(pr-number)"'
 alias claude-fix-ci='claude "Fix CI failure, commit, and push."'
 alias claude-ci=claude-fix-ci
-alias claude-coderabbit='claude "/crreview"'
 #
 alias claude='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model opus --dangerously-skip-permissions'
 alias claudemax='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model fable --effort max'
