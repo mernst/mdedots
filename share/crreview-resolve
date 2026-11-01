@@ -20,14 +20,16 @@
 #    the working directory and temporary directories, and they have no network
 #    access.  Codex can run any command, though.  The sandbox makes `.git`
 #    read-only, so Codex cannot commit; instead, the script commits Codex's
-#    changes, with Codex's final message as the commit message.  Git hooks
-#    would run outside the sandbox, so the script disables them when it
-#    commits and pushes.  The script keeps its temporary files in the
-#    read-only git directory, where the session cannot replace them with
-#    symbolic links.
-# Before pushing, the script refuses commits that change .gitignore, CI, hook,
-# or agent configuration files, or that add ignored files or files that were
-# untracked before the session.
+#    changes, with Codex's final message as the commit message.  The script
+#    keeps its temporary files in the read-only git directory, where the
+#    session cannot replace them with symbolic links.
+# For both agents, git runs without hooks, whose scripts the session can edit,
+# and without entering submodules, whose git configuration the session can
+# plant.  Before pushing, the script refuses commits that change .gitignore,
+# CI, hook, or agent configuration files, or that add ignored files or files
+# that were untracked before the session.  After a run that does not push the
+# session's commits, later runs refuse to start until those commits are pushed
+# or removed.
 #
 # These measures reduce the risk but do not eliminate it.  Remaining risks:
 #  * The session can read files outside the working directory (Claude with,
@@ -38,8 +40,6 @@
 #  * CI runs more than its configuration files, such as build scripts and
 #    tests, and the list of configuration files is not exhaustive.  Pushing a
 #    change to such a file runs it in CI, with the repository's secrets.
-#  * After a Claude session, committing and pushing run the repository's git
-#    hooks, which can run scripts that the session can edit.
 #  * If Claude's file tools can write `.git/config`, a planted setting such as
 #    `core.fsmonitor` or `core.sshCommand` runs whenever git does, including
 #    the git commands that the script runs after the session.
@@ -95,13 +95,38 @@ untracked_files() {
   git ls-files -z --others --exclude-standard | tr '\0' '\n'
 }
 
+# Set git configuration variable $1 to $2 for the rest of the script and for
+# the session, after any that the environment already sets.
+set_git_config() {
+  n=${GIT_CONFIG_COUNT:-0}
+  export "GIT_CONFIG_KEY_$n=$1" "GIT_CONFIG_VALUE_$n=$2" GIT_CONFIG_COUNT=$((n + 1))
+}
+
 # Restricted mode confines the file tools to the working directory, so start
 # at the top of the working tree, where the session can edit any file in it.
 cd "$(git rev-parse --show-toplevel)" || exit 1
+# Hooks and submodules run commands outside Codex's sandbox and outside the
+# commands that Claude can run.  The session can edit hook scripts, and it can
+# create a submodule whose git directory sets, for example, core.fsmonitor,
+# which `git status` would run.
+set_git_config core.hooksPath /dev/null
+set_git_config diff.ignoreSubmodules all
 pr=$(gh pr view --json id,baseRefName) || exit 1
 if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
   echo "${0##*/}: \`git push\` has no destination for the current branch" >&2
   exit 1
+fi
+# The commit that a run left unpushed after the session committed, so that a
+# later run does not push the session's commits without checking them.
+unpushed_file="$(git rev-parse --absolute-git-dir)/crreview-resolve-unpushed"
+if unpushed=$(cat "$unpushed_file" 2> /dev/null); then
+  if git merge-base --is-ancestor "$unpushed" HEAD 2> /dev/null \
+    && ! git merge-base --is-ancestor "$unpushed" '@{push}' 2> /dev/null; then
+    echo "${0##*/}: an earlier run did not push its session's commits, through" \
+      "$unpushed; check them and push them manually, or remove them" >&2
+    exit 1
+  fi
+  rm -f "$unpushed_file"
 fi
 # The session commits its changes, which must not include unrelated ones.
 if [ -n "$(tracked_changes)" ]; then
@@ -109,17 +134,8 @@ if [ -n "$(tracked_changes)" ]; then
   git status --short --untracked-files=no >&2
   exit 1
 fi
-# The sandbox lets Codex write the system's temporary directories, so keep
-# the script's temporary files in the git directory, which it makes read-only.
-tmp=$(mktemp -d "$(git rev-parse --absolute-git-dir)/crreview-resolve.XXXXXX") || exit 1
-trap 'rm -rf "$tmp"' EXIT
-git ls-files -z --others --exclude-standard > "$tmp/untracked" || exit 1
 untracked=$(untracked_files)
 start=$(git rev-parse HEAD)
-# `git push` sends every commit that the push destination lacks, including
-# ones that an earlier run refused to push, so the pre-push checks examine
-# all of them.
-unpushed_base=$(git merge-base '@{push}' HEAD) || exit 1
 # The IDs of the reviews whose "Outside diff range comments" an earlier run
 # addressed, one per line.
 handled_file="$(git rev-parse --path-format=absolute --git-common-dir)/crreview-resolve-handled-reviews"
@@ -211,6 +227,19 @@ if [ -z "$comments" ]; then
   exit 0
 fi
 
+# The sandbox lets Codex write the system's temporary directories, so keep
+# the script's temporary files in the git directory, which it makes read-only.
+tmp=$(mktemp -d "$(git rev-parse --absolute-git-dir)/crreview-resolve.XXXXXX") || exit 1
+# Some shells do not run the EXIT trap when a signal kills the script.
+cleanup() {
+  if [ -n "${session_ran:-}" ] && [ -z "${pushed:-}" ] \
+    && head=$(git rev-parse HEAD) && [ "$head" != "$start" ]; then
+    printf '%s\n' "$head" > "$unpushed_file"
+  fi
+  rm -rf "$tmp"
+}
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
 log="$(git rev-parse --absolute-git-dir)/crreview-resolve-$(date +%Y%m%d-%H%M%S).jsonl"
 echo "${0##*/}: logging to $log"
 base=$(printf '%s\n' "$pr" | jq -r .baseRefName)
@@ -232,6 +261,7 @@ check_session() {
     exit 1
   fi
 }
+session_ran=1
 if [ "$agent" = claude ]; then
   if [ -n "${CLAUDE_CONFIG:-}" ]; then
     export CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG"
@@ -257,7 +287,10 @@ else
   prompt "Do not commit or push; your changes will be committed for you.  Your \
 final message becomes the commit message for your changes, verbatim, so make \
 it only a one-line summary, a blank line, and a description of the changes, \
-with no other text and no Markdown code fence around it." \
+with no other text and no Markdown code fence around it.  Every new file that \
+you leave and that git does not ignore will be committed, so delete the files \
+that you create but that do not belong in the commit, such as build outputs, \
+logs, and scratch files." \
     | codex exec --ignore-user-config --ignore-rules \
       --ephemeral --sandbox workspace-write -c 'approval_policy="never"' \
       --json --output-last-message "$tmp/message" - > "$log"
@@ -268,21 +301,21 @@ with no other text and no Markdown code fence around it." \
   fi
   check_session Codex "$status" 'any(.[]; .type == "turn.completed") and all(.[]; .type != "turn.failed")'
 
-  # Hooks run outside the sandbox, and the session could have edited them.
-  # Disable them for the rest of the script, which commits and pushes.
-  export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null
   if ! grep -q '[^[:space:]]' "$tmp/message" 2> /dev/null; then
     echo "${0##*/}: Codex gave no commit message; using a default one" >&2
     echo "Address CodeRabbit review comments" > "$tmp/message"
   fi
   # Commit the changes to tracked files and the untracked files that the
-  # session created:  stage everything, then unstage the files that were
-  # untracked before the session.  An empty pathspec file would unstage
-  # everything.  --cleanup=whitespace keeps lines that start with "#", such
-  # as Markdown headings, in the message.
-  git add --all || exit 1
-  if [ -s "$tmp/untracked" ]; then
-    git --literal-pathspecs reset --quiet --pathspec-from-file="$tmp/untracked" \
+  # session created.  The file names stay NUL-terminated, so that names that
+  # contain newlines are not split.  --cleanup=whitespace keeps lines that
+  # start with "#", such as Markdown headings, in the message.
+  git add --update || exit 1
+  git ls-files -z --others --exclude-standard \
+    | grep -zFxv -e "$untracked" > "$tmp/created"
+  if [ -s "$tmp/created" ]; then
+    echo "${0##*/}: committing the files that the session created:"
+    tr '\0' '\n' < "$tmp/created"
+    git --literal-pathspecs add --pathspec-from-file="$tmp/created" \
       --pathspec-file-nul || exit 1
   fi
   if ! git diff --cached --quiet \
@@ -303,17 +336,18 @@ if [ "$(git rev-parse HEAD)" != "$start" ]; then
     exit 1
   fi
   # Pushing CI or hook configuration runs it, pushing agent configuration or
-  # instructions steers later agent sessions, and editing a .gitignore file
-  # could un-ignore a file that the check below would otherwise catch.
-  if git diff -z --name-only --no-renames "$unpushed_base" HEAD | tr '\0' '\n' \
-    | grep -E '(^|/)\.git(ignore|attributes)$|^\.gitmodules$|^\.(github|husky|circleci)/|^\.pre-commit-config\.ya?ml$|^prek\.toml$|^lefthook\.ya?ml$|^\.gitlab-ci\.yml$|^\.travis\.yml$|^azure-pipelines\.yml$|(^|/)\.(agents|claude|codex)/|(^|/)(AGENTS|CLAUDE)[^/]*\.md$|(^|/)\.mcp\.json$' >&2; then
+  # instructions steers later agent sessions, .lfsconfig directs where the
+  # push sends large files, and editing a .gitignore file could un-ignore a
+  # file that the check below would otherwise catch.
+  if git diff -z --name-only --no-renames "$start" HEAD | tr '\0' '\n' \
+    | grep -E '(^|/)\.git(ignore|attributes)$|^\.gitmodules$|^\.(github|husky|circleci)/|^\.pre-commit-config\.ya?ml$|^prek\.toml$|^lefthook\.ya?ml$|^\.gitlab-ci\.yml$|^\.travis\.yml$|^azure-pipelines\.yml$|(^|/)\.(agents|claude|codex)/|(^|/)(AGENTS|CLAUDE)[^/]*\.md$|(^|/)\.mcp\.json$|^\.lfsconfig$' >&2; then
     echo "${0##*/}: the session changed the configuration files listed above;" \
       "check them and push manually; see $log" >&2
     exit 1
   fi
   # Without --no-renames, a file that is added alongside the deletion of a
   # similar file is reported as a rename, not as an addition.
-  git diff -z --name-only --no-renames --diff-filter=A "$unpushed_base" HEAD > "$tmp/added" || exit 1
+  git diff -z --name-only --no-renames --diff-filter=A "$start" HEAD > "$tmp/added" || exit 1
   git check-ignore -z --no-index --stdin < "$tmp/added" > "$tmp/ignored"
   case $? in
     0)
@@ -332,7 +366,14 @@ if [ "$(git rev-parse HEAD)" != "$start" ]; then
       "untracked before it started; see $log" >&2
     exit 1
   fi
+  # Hooks are disabled, so upload the Git LFS objects, as Git LFS's pre-push
+  # hook would.
+  if command -v git-lfs > /dev/null && [ -n "$(git lfs ls-files --name-only HEAD)" ]; then
+    git lfs push "$(git for-each-ref --format='%(push:remotename)' "$(git symbolic-ref HEAD)")" \
+      "$(git symbolic-ref --short HEAD)" || exit 1
+  fi
   git push || exit 1
+  pushed=1
 fi
 printf '%s\n' "$data" | jq -r '.outside[].id' >> "$handled_file"
 
