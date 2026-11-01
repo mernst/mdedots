@@ -1,5 +1,9 @@
 # LLM agent personalization
 
+## Questions you ask me
+
+* Do not infer "yes" or "no" to a question that you asked unless my reply contains an explicit textual clue that answers it.  A reply that gives some other instruction leaves the question open:  take no action on the question, and ask it again if the answer still matters.  For example, if you ask whether to apply a proposed edit and I reply "commit and push", commit only the changes that already exist.
+
 ## Files on disk
 
 * Before responding to a user query, re-read any files that you previously read but have changed since then.
