@@ -53,6 +53,7 @@ When editing English text (files with extension .txt, .md, .tex, etc.), follow t
 * Call a GitHub repository's "ORG/REPO" its "GitHub slug", not its "GitHub name", and give the example "ORG/REPO".
 * The summary description should usually not use the indefinite article "a" or "an", as in "Return the state of an Azure Pipelines build."  Rather, it should be specific about which one:  "Return the state of the given Azure Pipelines build."
 * In the documentation of a procedure's formal parameters, at least one parameter should use an indefinite article, as in "a pipeline's id", not "the pipeline's id".  Each other parameter should use a definite article if another parameter constrains it, and an indefinite article if not.  For example, `build_state(subject, build)` documents "build: a Build." and "subject: what the build tests".  The parameter that uses an indefinite article can come after the parameters that refer to it.
+* The documentation of a regular expression should start with "Matches ...", not with just a description of what is matched.
 
 ### Names
 
