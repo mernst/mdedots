@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: crreview-neediest [--dry-run] [--verbose]
+# Usage: crreview-trigger-neediest [--dry-run] [--verbose]
 #
 # Comment "@coderabbitai review" on one open, non-draft pull request: of the
 # PRs that involve me (authored, assigned, commented, mentioned, reviewed, or
@@ -37,25 +37,14 @@ for arg in "$@"; do
     --dry-run) dry_run=true ;;
     --verbose) verbose=true ;;
     *)
-      echo "crreview-neediest: unknown argument $arg" >&2
+      echo "${0##*/}: unknown argument $arg" >&2
       exit 2
       ;;
   esac
 done
 
-# Run the command, retrying if it fails, as GitHub's GraphQL API sometimes does.
-# Each attempt's output is buffered so that a failed attempt produces no output.
-retry() {
-  local attempt=1 output
-  until output=$("$@"); do
-    if [ "$attempt" -eq 3 ]; then
-      return 1
-    fi
-    sleep $((attempt * 30))
-    attempt=$((attempt + 1))
-  done
-  printf '%s\n' "$output"
-}
+# shellcheck source=retry.sh
+. "$(dirname "$0")/retry.sh"
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
