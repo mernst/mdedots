@@ -47,7 +47,9 @@
 #    and `$TMPDIR`), where it can plant files that other programs read or run.
 #  * If Claude's file tools can write `.git/config`, a planted setting such as
 #    `core.fsmonitor` or `core.sshCommand` runs whenever git does, including
-#    the git commands that the script runs after the session.
+#    the git commands that the script runs after the session.  Likewise, a
+#    rewritten `.git/crreview-resolve-unchecked` can make a later run skip
+#    checking the session's commits.
 #
 # The session's full transcript is written to a log file.
 
@@ -90,11 +92,9 @@ retry_sh=$(dirname "$0")/retry.sh
 # shellcheck source=retry.sh
 . "$retry_sh"
 
-# Print the changes to tracked files.  `git status` ignores submodules (see
-# below), so also print the staged changes to submodules.
+# Print the changes to tracked files.
 tracked_changes() {
   git status --porcelain --untracked-files=no
-  git diff --cached --name-only --ignore-submodules=none
 }
 # Print the untracked files that are not ignored, one per line.  -z keeps git
 # from quoting unusual file names, which would hide them from grep.
@@ -102,8 +102,10 @@ untracked_files() {
   git ls-files -z --others --exclude-standard | tr '\0' '\n'
 }
 # Print the untracked files that are not ignored and that are not in
-# "$untracked", which lists the ones that existed before the session, each
-# followed by a NUL, so that names that contain newlines are not split.
+# "$untracked", which lists the ones that existed before the session, one per
+# line.  Each output name is followed by a NUL, so that a name that contains a
+# newline is not split.  grep splits "$untracked" at newlines, so none of the
+# names in it can contain a newline.
 created_files() {
   git ls-files -z --others --exclude-standard | grep -zFxv -e "$untracked"
 }
@@ -122,9 +124,11 @@ git_dir=$(git rev-parse --absolute-git-dir) || exit 1
 # Hooks and submodules run commands outside Codex's sandbox and outside the
 # commands that Claude can run.  The session can edit hook scripts, and it can
 # create a submodule whose git directory sets, for example, core.fsmonitor,
-# which `git status` would run.
+# which `git status` would run in the submodule's working tree.  "dirty" keeps
+# git out of submodules' working trees but still reports changes to the
+# commits that submodules point to.
 set_git_config core.hooksPath /dev/null
-set_git_config diff.ignoreSubmodules all
+set_git_config diff.ignoreSubmodules dirty
 pr=$(gh pr view --json id,baseRefName) || exit 1
 if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
   echo "${0##*/}: \`git push\` has no destination for the current branch" >&2
@@ -136,6 +140,13 @@ if [ -n "$(tracked_changes)" ]; then
   git status --short --untracked-files=no >&2
   exit 1
 fi
+# "$untracked" separates the names by newlines.
+newlines=$(git ls-files -z --others --exclude-standard | tr -cd '\n' | wc -l)
+if [ "$((newlines))" -ne 0 ]; then
+  echo "${0##*/}: the name of an untracked file contains a newline;" \
+    "rename, remove, or ignore the file" >&2
+  exit 1
+fi
 untracked=$(untracked_files)
 start=$(git rev-parse HEAD)
 # The pre-push checks examine the commits after $checked.  The script records
@@ -143,16 +154,18 @@ start=$(git rev-parse HEAD)
 # after it pushes.  If a run stops in between, even without running its EXIT
 # trap, the next run's checks start at the earlier run's $checked, or at the
 # last pushed commit if that is later, and so cover the earlier session's
-# commits.
+# commits.  If the earlier $checked is no longer an ancestor of HEAD, because
+# a session or the user rewrote the commits, the checks start at the last
+# pushed commit.
 checked=$start
 unchecked_file=$git_dir/crreview-resolve-unchecked
-if earlier=$(cat "$unchecked_file" 2> /dev/null) \
-  && git merge-base --is-ancestor "$earlier" HEAD 2> /dev/null; then
+if earlier=$(cat "$unchecked_file" 2> /dev/null); then
   pushed_base=$(git merge-base '@{push}' HEAD) || exit 1
-  if git merge-base --is-ancestor "$earlier" "$pushed_base"; then
-    checked=$pushed_base
-  else
+  if git merge-base --is-ancestor "$earlier" HEAD 2> /dev/null \
+    && ! git merge-base --is-ancestor "$earlier" "$pushed_base"; then
     checked=$earlier
+  else
+    checked=$pushed_base
   fi
 fi
 # The IDs of the reviews whose "Outside diff range comments" an earlier run
@@ -328,7 +341,7 @@ logs, and scratch files." \
     git --literal-pathspecs add --pathspec-from-file="$tmp/created" \
       --pathspec-file-nul || exit 1
   fi
-  if ! git diff --cached --quiet --ignore-submodules=none \
+  if ! git diff --cached --quiet \
     && ! git commit --quiet --cleanup=whitespace --file="$tmp/message"; then
     echo "${0##*/}: could not commit the session's changes; see $log" >&2
     exit 1
@@ -344,14 +357,12 @@ if ! git merge-base --is-ancestor "$start" HEAD; then
   echo "${0##*/}: the session rewrote commits that it did not make; see $log" >&2
   exit 1
 fi
-# The checks pass --ignore-submodules=none, which overrides the
-# diff.ignoreSubmodules setting above.
 if [ "$(git rev-parse HEAD)" != "$checked" ]; then
   # Pushing CI or hook configuration runs it, pushing agent configuration or
   # instructions steers later agent sessions, .lfsconfig directs where the
   # push sends large files, and editing a .gitignore file could un-ignore a
   # file that the check below would otherwise catch.
-  if git diff -z --name-only --no-renames --ignore-submodules=none "$checked" HEAD | tr '\0' '\n' \
+  if git diff -z --name-only --no-renames "$checked" HEAD | tr '\0' '\n' \
     | grep -E '(^|/)\.git(ignore|attributes)$|^\.gitmodules$|^\.(github|husky|circleci)/|^\.pre-commit-config\.ya?ml$|^prek\.toml$|^lefthook\.ya?ml$|^\.gitlab-ci\.yml$|^\.travis\.yml$|^azure-pipelines\.yml$|(^|/)\.(agents|claude|codex)/|(^|/)(AGENTS|CLAUDE)[^/]*\.md$|(^|/)\.mcp\.json$|^\.lfsconfig$' >&2; then
     echo "${0##*/}: the session changed the configuration files listed above;" \
       "check them and push manually; see $log" >&2
@@ -359,7 +370,7 @@ if [ "$(git rev-parse HEAD)" != "$checked" ]; then
   fi
   # A submodule's commit is not checked, and Codex's sandbox does not protect
   # a nested repository's `.git`.
-  if git diff --raw --no-renames --ignore-submodules=none "$checked" HEAD \
+  if git diff --raw --no-renames "$checked" HEAD \
     | grep -E '^:(160000 [0-7]+|[0-7]+ 160000) ' >&2; then
     echo "${0##*/}: the session added or changed the submodules listed above;" \
       "check them and push manually; see $log" >&2
@@ -367,7 +378,7 @@ if [ "$(git rev-parse HEAD)" != "$checked" ]; then
   fi
   # Without --no-renames, a file that is added alongside the deletion of a
   # similar file is reported as a rename, not as an addition.
-  git diff -z --name-only --no-renames --diff-filter=A --ignore-submodules=none "$checked" HEAD > "$tmp/added" || exit 1
+  git diff -z --name-only --no-renames --diff-filter=A "$checked" HEAD > "$tmp/added" || exit 1
   git check-ignore -z --no-index --stdin < "$tmp/added" > "$tmp/ignored"
   case $? in
     0)
