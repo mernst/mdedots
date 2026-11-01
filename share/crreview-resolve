@@ -129,6 +129,10 @@ git_dir=$(git rev-parse --absolute-git-dir) || exit 1
 # commits that submodules point to.
 set_git_config core.hooksPath /dev/null
 set_git_config diff.ignoreSubmodules dirty
+# Some commands, such as `git add --update`, still run `git status` in
+# submodules.  The environment's settings apply there too and override the
+# submodule's own git configuration.
+set_git_config core.fsmonitor false
 pr=$(gh pr view --json id,baseRefName) || exit 1
 if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
   echo "${0##*/}: \`git push\` has no destination for the current branch" >&2
@@ -331,14 +335,19 @@ logs, and scratch files." \
     echo "Address CodeRabbit review comments" > "$tmp/message"
   fi
   # Commit the changes to tracked files and the untracked files that the
-  # session created.  --cleanup=whitespace keeps lines that start with "#",
-  # such as Markdown headings, in the message.
-  git add --update || exit 1
+  # session created.  Unlike `git add --update`, `git diff-files
+  # --ignore-submodules=all` does not run `git status` in submodules.
+  # --cleanup=whitespace keeps lines that start with "#", such as Markdown
+  # headings, in the message.
+  git diff-files -z --name-only --ignore-submodules=all > "$tmp/changed" || exit 1
   created_files > "$tmp/created"
   if [ -s "$tmp/created" ]; then
     echo "${0##*/}: committing the files that the session created:"
     tr '\0' '\n' < "$tmp/created"
-    git --literal-pathspecs add --pathspec-from-file="$tmp/created" \
+  fi
+  cat "$tmp/changed" "$tmp/created" > "$tmp/staged"
+  if [ -s "$tmp/staged" ]; then
+    git --literal-pathspecs add --pathspec-from-file="$tmp/staged" \
       --pathspec-file-nul || exit 1
   fi
   if ! git diff --cached --quiet \
