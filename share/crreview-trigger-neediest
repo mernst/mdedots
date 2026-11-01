@@ -43,7 +43,7 @@ for arg in "$@"; do
   esac
 done
 
-# shellcheck source=share/retry.sh
+# shellcheck source=retry.sh
 . "$(dirname "$0")/retry.sh"
 
 tmpdir=$(mktemp -d)

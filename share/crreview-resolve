@@ -36,8 +36,18 @@ if [ "$#" -ne 0 ]; then
   echo "${0##*/}: takes no arguments; received $*" >&2
   exit 2
 fi
-# shellcheck source=share/retry.sh
+# shellcheck source=retry.sh
 . "$(dirname "$0")/retry.sh"
+
+# Print the changes to tracked files.
+tracked_changes() {
+  git status --porcelain --untracked-files=no
+}
+# Print the untracked files that are not ignored, one per line.  -z keeps git
+# from quoting unusual file names, which would hide them from grep.
+untracked_files() {
+  git ls-files -z --others --exclude-standard | tr '\0' '\n'
+}
 
 # Restricted mode confines the file tools to the working directory, so start
 # at the top of the working tree, where the session can edit any file in it.
@@ -48,15 +58,21 @@ if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
   exit 1
 fi
 # The session commits its changes, which must not include unrelated ones.
-if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+if [ -n "$(tracked_changes)" ]; then
   echo "${0##*/}: the working tree has uncommitted changes:" >&2
   git status --short --untracked-files=no >&2
   exit 1
 fi
-# -z keeps git from quoting unusual file names, which would hide them from
-# grep and from `git check-ignore`.
-untracked=$(git ls-files -z --others --exclude-standard | tr '\0' '\n')
+untracked=$(untracked_files)
 start=$(git rev-parse HEAD)
+# `git push` sends every commit that the push destination lacks, including
+# ones that an earlier run refused to push, so the pre-push checks examine
+# all of them.
+unpushed_base=$(git merge-base '@{push}' HEAD) || exit 1
+# The IDs of the reviews whose "Outside diff range comments" an earlier run
+# addressed, one per line.
+handled_file="$(git rev-parse --path-format=absolute --git-common-dir)/crreview-resolve-handled-reviews"
+handled=$(cat "$handled_file" 2> /dev/null)
 
 # Select the unresolved review threads that CodeRabbit started, and the
 # "Outside diff range comments" of each CodeRabbit review that has such a
@@ -64,14 +80,16 @@ start=$(git rev-parse HEAD)
 # selection rule of the crreview-resolve skill
 # (dots/.agents/skills/crreview-resolve/SKILL.md); keep the two consistent.
 # Ignore CodeRabbit reviews with empty bodies, which hold only replies in
-# threads.  Omit CodeRabbit's markup and its prompts for AI agents, which
+# threads.  Unlike the skill, skip outside-diff comments that an earlier run
+# addressed.  Omit CodeRabbit's markup and its prompts for AI agents, which
 # repeat the comments.
+pr_id=$(printf '%s\n' "$pr" | jq -r .id)
 # shellcheck disable=SC2016 # $id is a GraphQL variable.
-data=$(retry gh api graphql -F id="$(printf '%s\n' "$pr" | jq -r .id)" -f query='
+data=$(retry gh api graphql -F id="$pr_id" -f query='
 query($id: ID!) {
   node(id: $id) {
     ... on PullRequest {
-      reviews(last: 100) { nodes { id author { login } body } }
+      reviews(last: 100, author: "coderabbitai[bot]") { nodes { id author { login } body } }
       reviewThreads(last: 100) {
         nodes {
           id isResolved path line originalLine
@@ -84,7 +102,7 @@ query($id: ID!) {
     }
   }
 }') || exit 1
-data=$(printf '%s\n' "$data" | jq '
+data=$(printf '%s\n' "$data" | jq --arg handled "$handled" '
 def clean:
   gsub("<!--[\\s\\S]*?-->"; "")
   | gsub("<picture>[\\s\\S]*?</picture>"; "")
@@ -102,6 +120,21 @@ def clean:
 | [$crthreads[] | select(.isResolved | not)] as $threads
 | [$threads[].comments.nodes[0].pullRequestReview.id] as $threadreviews
 | [$crthreads[].comments.nodes[0].pullRequestReview.id] as $allthreadreviews
+| ($handled | split("\n")) as $handledreviews
+| [$reviews
+   | to_entries[]
+   | select((.value.id | IN($threadreviews[]))
+            or (.key == ($reviews | length) - 1
+                and (.value.id | IN($allthreadreviews[]) | not)))
+   | .value
+   | select((.id | IN($handledreviews[]) | not)
+            and (.body | test("Outside diff range comments")))
+   | {id,
+      text: ((.body
+              | capture("Outside diff range comments[^\n]*\n(?<o>(?:>[^\n]*\n)*(?:>[^\n]*)?)").o)
+             // ""
+             | gsub("(?m)^> ?"; "")
+             | clean)}] as $outside
 | {threads: [$threads[]
              | {id,
                 count: .comments.totalCount,
@@ -113,19 +146,14 @@ def clean:
                        + ([.comments.nodes[]
                            | "**\(.author.login // "ghost")** wrote:\n\n\(.body | clean)"]
                           | join("\n\n")))}],
-   outside: [$reviews
-             | to_entries[]
-             | select((.value.id | IN($threadreviews[]))
-                      or (.key == ($reviews | length) - 1
-                          and (.value.id | IN($allthreadreviews[]) | not)))
-             | .value.body
-             | capture("Outside diff range comments[^\n]*\n(?<o>(?:>[^\n]*\n)*(?:>[^\n]*)?)").o
-             | gsub("(?m)^> ?"; "")
-             | clean
-             | select(. != "")]}') || exit 1
+   outside: [$outside[] | select(.text != "")],
+   unparsed: [$outside[] | select(.text == "") | .id]}') || exit 1
+for review in $(printf '%s\n' "$data" | jq -r '.unparsed[]'); do
+  echo "${0##*/}: could not find the outside-diff comments in CodeRabbit review $review" >&2
+done
 comments=$(printf '%s\n' "$data" | jq -r '
 [if .threads != [] then "## Review threads\n\n" + (.threads | map(.text) | join("\n\n")) else empty end,
- if .outside != [] then "## Outside diff range comments\n\n" + (.outside | join("\n\n")) else empty end]
+ if .outside != [] then "## Outside diff range comments\n\n" + (.outside | map(.text) | join("\n\n")) else empty end]
 | join("\n\n")')
 if [ -z "$comments" ]; then
   echo "${0##*/}: there are no CodeRabbit comments to address"
@@ -162,8 +190,7 @@ if [ "$status" -ne 0 ] \
   exit 1
 fi
 # An untracked file that is not in "$untracked" is one that the session created.
-if [ -n "$(git status --porcelain --untracked-files=no)" ] \
-  || git ls-files -z --others --exclude-standard | tr '\0' '\n' | grep -qFxv -e "$untracked"; then
+if [ -n "$(tracked_changes)" ] || untracked_files | grep -qFxv -e "$untracked"; then
   echo "${0##*/}: the session left uncommitted changes; see $log" >&2
   exit 1
 fi
@@ -175,7 +202,7 @@ if [ "$(git rev-parse HEAD)" != "$start" ]; then
   fi
   # Pushing CI or hook configuration runs it, and editing a .gitignore file
   # could un-ignore a file that the check below would otherwise catch.
-  if git diff -z --name-only --no-renames "$start" HEAD | tr '\0' '\n' \
+  if git diff -z --name-only --no-renames "$unpushed_base" HEAD | tr '\0' '\n' \
     | grep -E '(^|/)\.git(ignore|attributes)$|^\.gitmodules$|^\.(github|husky|circleci)/|^\.pre-commit-config\.ya?ml$|^prek\.toml$|^lefthook\.ya?ml$|^\.gitlab-ci\.yml$|^\.travis\.yml$|^azure-pipelines\.yml$' >&2; then
     echo "${0##*/}: the session changed the configuration files listed above;" \
       "check them and push manually; see $log" >&2
@@ -185,7 +212,7 @@ if [ "$(git rev-parse HEAD)" != "$start" ]; then
   # similar file is reported as a rename, not as an addition.
   tmp=$(mktemp -d) || exit 1
   trap 'rm -rf "$tmp"' EXIT
-  git diff -z --name-only --no-renames --diff-filter=A "$start" HEAD > "$tmp/added" || exit 1
+  git diff -z --name-only --no-renames --diff-filter=A "$unpushed_base" HEAD > "$tmp/added" || exit 1
   git check-ignore -z --no-index --stdin < "$tmp/added" > "$tmp/ignored"
   case $? in
     0)
@@ -206,32 +233,37 @@ if [ "$(git rev-parse HEAD)" != "$start" ]; then
   fi
   git push || exit 1
 fi
+printf '%s\n' "$data" | jq -r '.outside[].id' >> "$handled_file"
 
 # Leave unresolved any thread that got a reply during the session, which the
-# session did not see.  Query and resolve all the threads at once.
-ids=$(printf '%s\n' "$data" | jq -r '.threads[].id')
-if [ -z "$ids" ]; then
+# session did not see, or that was deleted.  Query and resolve all the threads
+# at once.
+if [ "$(printf '%s\n' "$data" | jq '.threads | length')" -eq 0 ]; then
   exit 0
 fi
-set --
-for thread in $ids; do
-  set -- "$@" -f "ids[]=$thread"
-done
-# shellcheck disable=SC2016 # $ids is a GraphQL variable.
-current=$(retry gh api graphql "$@" -f query='
-  query($ids: [ID!]!) { nodes(ids: $ids) { ... on PullRequestReviewThread { id comments { totalCount } } } }') || {
+# shellcheck disable=SC2016 # $id is a GraphQL variable.
+current=$(retry gh api graphql -F id="$pr_id" -f query='
+  query($id: ID!) {
+    node(id: $id) {
+      ... on PullRequest { reviewThreads(last: 100) { nodes { id comments { totalCount } } } }
+    }
+  }') || {
   echo "${0##*/}: could not read the review threads" >&2
   exit 1
 }
-counts=$(printf '%s\n' "$current" \
-  | jq '.data.nodes | map({key: .id, value: .comments.totalCount}) | from_entries')
-replied=$(printf '%s\n' "$data" | jq -r --argjson counts "$counts" '.threads[] | select($counts[.id] != .count) | .id')
-unreplied=$(printf '%s\n' "$data" | jq -r --argjson counts "$counts" '.threads[] | select($counts[.id] == .count) | .id')
+statuses=$(printf '%s\n' "$data" | jq -r --argjson current "$current" '
+  ($current.data.node.reviewThreads.nodes
+   | map({key: .id, value: .comments.totalCount}) | from_entries) as $counts
+  | .threads[]
+  | "\(if $counts[.id] == .count then "unchanged" else "changed" end) \(.id)"') || {
+  echo "${0##*/}: could not compare the review threads" >&2
+  exit 1
+}
 set --
 variables=""
 fields=""
 i=0
-for thread in $unreplied; do
+for thread in $(printf '%s\n' "$statuses" | sed -n 's/^unchanged //p'); do
   variables="$variables \$t$i: ID!"
   fields="$fields t$i: resolveReviewThread(input: {threadId: \$t$i}) { thread { id } }"
   set -- "$@" -f "t$i=$thread"
@@ -243,9 +275,10 @@ if [ "$i" -ne 0 ]; then
     exit 1
   }
 fi
-if [ -n "$replied" ]; then
-  for thread in $replied; do
-    echo "${0##*/}: did not resolve thread $thread, which got a reply during the session" >&2
+changed=$(printf '%s\n' "$statuses" | sed -n 's/^changed //p')
+if [ -n "$changed" ]; then
+  for thread in $changed; do
+    echo "${0##*/}: did not resolve thread $thread, which got a reply or was deleted during the session" >&2
   done
   exit 1
 fi
