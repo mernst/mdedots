@@ -27,9 +27,9 @@
 # and without entering submodules, whose git configuration the session can
 # plant.  Before pushing, the script refuses commits that change .gitignore,
 # CI, hook, or agent configuration files, or that add ignored files or files
-# that were untracked before the session.  After a run that does not push the
-# session's commits, later runs refuse to start until those commits are pushed
-# or removed.
+# that were untracked before the session, or that add or change submodules.
+# If a run stops without pushing the session's commits, later runs check those
+# commits too.
 #
 # These measures reduce the risk but do not eliminate it.  Remaining risks:
 #  * The session can read files outside the working directory (Claude with,
@@ -40,6 +40,11 @@
 #  * CI runs more than its configuration files, such as build scripts and
 #    tests, and the list of configuration files is not exhaustive.  Pushing a
 #    change to such a file runs it in CI, with the repository's secrets.
+#  * The session can delete or overwrite untracked and ignored files, such as
+#    `.env`, which git cannot restore, and the script does not notice.  (Codex
+#    can do both with any command; Claude can overwrite with its file tools.)
+#  * Codex's sandbox lets it write the system's temporary directories (`/tmp`
+#    and `$TMPDIR`), where it can plant files that other programs read or run.
 #  * If Claude's file tools can write `.git/config`, a planted setting such as
 #    `core.fsmonitor` or `core.sshCommand` runs whenever git does, including
 #    the git commands that the script runs after the session.
@@ -85,9 +90,11 @@ retry_sh=$(dirname "$0")/retry.sh
 # shellcheck source=retry.sh
 . "$retry_sh"
 
-# Print the changes to tracked files.
+# Print the changes to tracked files.  `git status` ignores submodules (see
+# below), so also print the staged changes to submodules.
 tracked_changes() {
   git status --porcelain --untracked-files=no
+  git diff --cached --name-only --ignore-submodules=none
 }
 # Print the untracked files that are not ignored, one per line.  -z keeps git
 # from quoting unusual file names, which would hide them from grep.
@@ -116,18 +123,6 @@ if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
   echo "${0##*/}: \`git push\` has no destination for the current branch" >&2
   exit 1
 fi
-# The commit that a run left unpushed after the session committed, so that a
-# later run does not push the session's commits without checking them.
-unpushed_file="$(git rev-parse --absolute-git-dir)/crreview-resolve-unpushed"
-if unpushed=$(cat "$unpushed_file" 2> /dev/null); then
-  if git merge-base --is-ancestor "$unpushed" HEAD 2> /dev/null \
-    && ! git merge-base --is-ancestor "$unpushed" '@{push}' 2> /dev/null; then
-    echo "${0##*/}: an earlier run did not push its session's commits, through" \
-      "$unpushed; check them and push them manually, or remove them" >&2
-    exit 1
-  fi
-  rm -f "$unpushed_file"
-fi
 # The session commits its changes, which must not include unrelated ones.
 if [ -n "$(tracked_changes)" ]; then
   echo "${0##*/}: the working tree has uncommitted changes:" >&2
@@ -136,6 +131,23 @@ if [ -n "$(tracked_changes)" ]; then
 fi
 untracked=$(untracked_files)
 start=$(git rev-parse HEAD)
+# The pre-push checks examine the commits after $checked.  The script records
+# $checked in $unchecked_file before the session, and removes the file only
+# after it pushes.  If a run stops in between, even without running its EXIT
+# trap, the next run's checks start at the earlier run's $checked, or at the
+# last pushed commit if that is later, and so cover the earlier session's
+# commits.
+checked=$start
+unchecked_file="$(git rev-parse --absolute-git-dir)/crreview-resolve-unchecked"
+if earlier=$(cat "$unchecked_file" 2> /dev/null) \
+  && git merge-base --is-ancestor "$earlier" HEAD 2> /dev/null; then
+  pushed_base=$(git merge-base '@{push}' HEAD) || exit 1
+  if git merge-base --is-ancestor "$earlier" "$pushed_base"; then
+    checked=$pushed_base
+  else
+    checked=$earlier
+  fi
+fi
 # The IDs of the reviews whose "Outside diff range comments" an earlier run
 # addressed, one per line.
 handled_file="$(git rev-parse --path-format=absolute --git-common-dir)/crreview-resolve-handled-reviews"
@@ -230,15 +242,8 @@ fi
 # The sandbox lets Codex write the system's temporary directories, so keep
 # the script's temporary files in the git directory, which it makes read-only.
 tmp=$(mktemp -d "$(git rev-parse --absolute-git-dir)/crreview-resolve.XXXXXX") || exit 1
+trap 'rm -rf "$tmp"' EXIT
 # Some shells do not run the EXIT trap when a signal kills the script.
-cleanup() {
-  if [ -n "${session_ran:-}" ] && [ -z "${pushed:-}" ] \
-    && head=$(git rev-parse HEAD) && [ "$head" != "$start" ]; then
-    printf '%s\n' "$head" > "$unpushed_file"
-  fi
-  rm -rf "$tmp"
-}
-trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
 log="$(git rev-parse --absolute-git-dir)/crreview-resolve-$(date +%Y%m%d-%H%M%S).jsonl"
 echo "${0##*/}: logging to $log"
@@ -261,7 +266,7 @@ check_session() {
     exit 1
   fi
 }
-session_ran=1
+printf '%s\n' "$checked" > "$unchecked_file" || exit 1
 if [ "$agent" = claude ]; then
   if [ -n "${CLAUDE_CONFIG:-}" ]; then
     export CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG"
@@ -318,7 +323,7 @@ logs, and scratch files." \
     git --literal-pathspecs add --pathspec-from-file="$tmp/created" \
       --pathspec-file-nul || exit 1
   fi
-  if ! git diff --cached --quiet \
+  if ! git diff --cached --quiet --ignore-submodules=none \
     && ! git commit --quiet --cleanup=whitespace --file="$tmp/message"; then
     echo "${0##*/}: could not commit the session's changes; see $log" >&2
     exit 1
@@ -330,24 +335,34 @@ if [ -n "$(tracked_changes)" ] || untracked_files | grep -qFxv -e "$untracked"; 
   exit 1
 fi
 
-if [ "$(git rev-parse HEAD)" != "$start" ]; then
-  if ! git merge-base --is-ancestor "$start" HEAD; then
-    echo "${0##*/}: the session rewrote commits that it did not make; see $log" >&2
-    exit 1
-  fi
+if ! git merge-base --is-ancestor "$start" HEAD; then
+  echo "${0##*/}: the session rewrote commits that it did not make; see $log" >&2
+  exit 1
+fi
+# The checks pass --ignore-submodules=none, which overrides the
+# diff.ignoreSubmodules setting above.
+if [ "$(git rev-parse HEAD)" != "$checked" ]; then
   # Pushing CI or hook configuration runs it, pushing agent configuration or
   # instructions steers later agent sessions, .lfsconfig directs where the
   # push sends large files, and editing a .gitignore file could un-ignore a
   # file that the check below would otherwise catch.
-  if git diff -z --name-only --no-renames "$start" HEAD | tr '\0' '\n' \
+  if git diff -z --name-only --no-renames --ignore-submodules=none "$checked" HEAD | tr '\0' '\n' \
     | grep -E '(^|/)\.git(ignore|attributes)$|^\.gitmodules$|^\.(github|husky|circleci)/|^\.pre-commit-config\.ya?ml$|^prek\.toml$|^lefthook\.ya?ml$|^\.gitlab-ci\.yml$|^\.travis\.yml$|^azure-pipelines\.yml$|(^|/)\.(agents|claude|codex)/|(^|/)(AGENTS|CLAUDE)[^/]*\.md$|(^|/)\.mcp\.json$|^\.lfsconfig$' >&2; then
     echo "${0##*/}: the session changed the configuration files listed above;" \
       "check them and push manually; see $log" >&2
     exit 1
   fi
+  # A submodule's commit is not checked, and Codex's sandbox does not protect
+  # a nested repository's `.git`.
+  if git diff --raw --no-renames --ignore-submodules=none "$checked" HEAD \
+    | grep -E '^:(160000 [0-7]+|[0-7]+ 160000) ' >&2; then
+    echo "${0##*/}: the session added or changed the submodules listed above;" \
+      "check them and push manually; see $log" >&2
+    exit 1
+  fi
   # Without --no-renames, a file that is added alongside the deletion of a
   # similar file is reported as a rename, not as an addition.
-  git diff -z --name-only --no-renames --diff-filter=A "$start" HEAD > "$tmp/added" || exit 1
+  git diff -z --name-only --no-renames --diff-filter=A --ignore-submodules=none "$checked" HEAD > "$tmp/added" || exit 1
   git check-ignore -z --no-index --stdin < "$tmp/added" > "$tmp/ignored"
   case $? in
     0)
@@ -368,13 +383,18 @@ if [ "$(git rev-parse HEAD)" != "$start" ]; then
   fi
   # Hooks are disabled, so upload the Git LFS objects, as Git LFS's pre-push
   # hook would.
-  if command -v git-lfs > /dev/null && [ -n "$(git lfs ls-files --name-only HEAD)" ]; then
+  if git grep -q -e 'filter=lfs' HEAD -- ':(glob)**/.gitattributes'; then
+    if ! command -v git-lfs > /dev/null; then
+      echo "${0##*/}: the repository uses Git LFS, which is not installed;" \
+        "push manually after installing it" >&2
+      exit 1
+    fi
     git lfs push "$(git for-each-ref --format='%(push:remotename)' "$(git symbolic-ref HEAD)")" \
       "$(git symbolic-ref --short HEAD)" || exit 1
   fi
   git push || exit 1
-  pushed=1
 fi
+rm -f "$unchecked_file"
 printf '%s\n' "$data" | jq -r '.outside[].id' >> "$handled_file"
 
 # Leave unresolved any thread that got a reply during the session, which the
