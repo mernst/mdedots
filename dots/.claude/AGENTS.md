@@ -44,6 +44,21 @@ When editing English text (files with extension .txt, .md, .tex, etc.), follow t
 ### Specifications (user-visible code documentation)
 
 * As a general rule, the documentation for a procedure should focus on what the procedure does.  It usually should not give details about how a specific clients use the procedure; such documentation belongs in the client.  This rule can sometimes be violated.
+* A procedure's documentation should say what the procedure does with the thing that it computes.  For example, begin it with "Return ...", not "Find ...", which says only that the procedure computes the thing.
+* Begin the description of a boolean (a result, a parameter, an attribute, or a variable) with "True if", not "Whether".
+* Describe a failure by its observable behavior, not by internal implementation details.  For example, write "or None if the CI service does not provide them", not "or None if finding them fails" or "or None if the state function raises an exception".
+* If a parameter is used only in diagnostic messages, end its description with "; used for diagnostics."
+* Define each term where you use it, and give an example.  For example, describe an id by its form, as in "a UUID such as ..." or "an integer such as 123 in ...", and distinguish it from similar values, such as a number that is also shown in a URL.
+* Describe a value parsed from JSON concretely, as in "the run, as a dict parsed from the GitHub API's JSON, with keys such as "id" and "status"", not as "the run, as the GitHub API describes it".
+* Call a GitHub repository's "ORG/REPO" its "GitHub slug", not its "GitHub name", and give the example "ORG/REPO".
+* The summary description should usually not use the indefinite article "a" or "an", as in "Return the state of an Azure Pipelines build."  Rather, it should be specific about which one:  "Return the state of the given Azure Pipelines build."
+* In the documentation of a procedure's formal parameters, at least one parameter should use an indefinite article, as in "a pipeline's id", not "the pipeline's id".  Each other parameter should use a definite article if another parameter constrains it, and an indefinite article if not.  For example, `build_state(subject, build)` documents "build: a Build." and "subject: what the build tests".  The parameter that uses an indefinite article can come after the parameters that refer to it.
+
+### Names
+
+* Do not use a term in a sense that conflicts with its usual meaning in programming or with another meaning in the same code.  For example, do not call a tuple an "identifier", and do not call a function a "status function" when "status" already names a different value.
+* Name a predicate and the boolean that it computes consistently, as in `is_on_default_branch` and `on_default_branch`.
+* Prefer a class (such as a Python dataclass or `NamedTuple`) to a tuple of several heterogeneous values that is passed among procedures.  A class lets the documentation name the value, and it can let procedures that create the value be named for their input, as in `Build.from_github_actions_run`.
 
 ### Java warning suppressions
 
@@ -76,6 +91,7 @@ Do not run `coderabbit`, even when user instructions say "consider running coder
 * Never rewrite git history.  For example, do not rebase.
 * When working on a downstream fork of an upstream repository (one that periodically merges from upstream and carries its own changes), strive to minimize the differences from the upstream repository.  That is more important than optimizing the downstream fork.  Examples:  `codespecs/fjalar` (its `valgrind/` subdirectory is downstream of `valgrind`), `typetools/jdk` and `typetools/jdk21u` (of `openjdk/jdk*`), `typetools/stubparser` (of `javaparser/javaparser`), `typetools/guava`, `typetools/asm`, and `codespecs/commons-bcel` (of `apache/commons-bcel`).  `eisop/checker-framework` is downstream of `typetools/checker-framework`, but it intentionally makes design changes, so minimize only incidental differences.  A personal fork that holds only pull-request branches (such as `mernst/daikon`) is not a downstream fork.
 * When creating a new branch, create a new directory for it using `git-checkout-branch`.
+* Write "working copy directories" rather than "working copies" where "working copies" might be ambiguous, as in "the directory that holds the working copy directories".
 
 ### Branches
 

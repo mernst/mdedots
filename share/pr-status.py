@@ -51,6 +51,10 @@ SNAPSHOT = ".pr-status-snapshot.json"
 ANALYSIS = str(pathlib.Path("~/bin/share/pr-merge-analysis.sh").expanduser())
 
 
+class ConfigError(Exception):
+    """There is no config file, and no default config can be constructed."""
+
+
 def run(cmd):
     """Run a command, which must succeed.
 
@@ -2343,12 +2347,16 @@ def default_config(base):
 
     Returns:
         The default config.
+
+    Raises:
+        ConfigError: if base contains no clone of a GitHub repository that gh can view.
     """
     clones = [
         (d, info) for d, info in scan_directories(base).items() if info[0] == "git" and info[1]
     ]
     if not clones:
-        sys.exit(f"pr-status.py: no {CONFIG} and no clone of a GitHub repository in {base}")
+        msg = f"no {CONFIG} and no clone of a GitHub repository in {base}"
+        raise ConfigError(msg)
     counts = Counter(info[2] for _, info in clones).most_common()
     names = [name for name, count in counts if count >= 2] or [counts[0][0]]
     fields = ["--json", "nameWithOwner,parent,defaultBranchRef"]
@@ -2395,7 +2403,8 @@ def default_config(base):
             "default_branch": default_branch,
         }
     if not repos:
-        sys.exit(f"pr-status.py: no {CONFIG} and no GitHub repository that gh can view")
+        msg = f"no {CONFIG} and no GitHub repository that gh can view"
+        raise ConfigError(msg)
     for repo_name, repo in repos.items():
         # With several repositories, a bare "#N" would be ambiguous.
         repo["prefix"] = "#" if len(repos) == 1 else f"{repo_name}#"
@@ -2410,6 +2419,38 @@ def default_config(base):
         "documents": {"dependencies": "pr-dependencies.md"},
         "directories": [],
     }
+
+
+def load_config(program):
+    """Return the config for the current directory, which holds the working copy directories.
+
+    Exit with an error message if the current directory is in a git working copy, or if
+    there is no config file and default_config cannot construct a config.
+
+    Args:
+        program: the name of the running program; used for diagnostics.
+
+    Returns:
+        The config, as the config file holds it or, if there is no config file, as
+        default_config constructs it.
+    """
+    base = str(pathlib.Path.cwd())
+    # The current directory holds the working copy directories; it is not one of them.
+    toplevel = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], check=False, capture_output=True, text=True
+    )
+    if toplevel.returncode == 0:
+        sys.exit(
+            f"{program}: {base} is in the git working copy {toplevel.stdout.strip()}; "
+            f"run {program} in the directory that holds the working copy directories"
+        )
+    if pathlib.Path(CONFIG).exists():
+        with pathlib.Path(CONFIG).open() as f:
+            return json.load(f)
+    try:
+        return default_config(base)
+    except ConfigError as error:
+        sys.exit(f"{program}: {error}")
 
 
 def generated(name):
@@ -2530,20 +2571,7 @@ def main():
         except OSError as error:
             sys.exit(f"pr-status.py: cannot change to directory {args.directory}: {error.strerror}")
     base = str(pathlib.Path.cwd())
-    # The current directory holds the working copies; it is not one of them.
-    toplevel = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"], check=False, capture_output=True, text=True
-    )
-    if toplevel.returncode == 0:
-        sys.exit(
-            f"pr-status.py: {base} is in the git working copy {toplevel.stdout.strip()}; "
-            "run pr-status.py in the directory that holds the working copies"
-        )
-    if pathlib.Path(CONFIG).exists():
-        with pathlib.Path(CONFIG).open() as f:
-            cfg = json.load(f)
-    else:
-        cfg = default_config(base)
+    cfg = load_config("pr-status.py")
     models = load_models(cfg)
     updates = description_updates(models)
     failed_updates = []
