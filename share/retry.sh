@@ -1,4 +1,4 @@
-# shellcheck shell=sh
+#!/bin/sh
 # Source this file to define `retry`, which runs a command and retries it
 # twice if it fails, as GitHub's GraphQL API sometimes does.  Each attempt's
 # output is buffered, so a failed attempt produces no output.

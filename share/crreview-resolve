@@ -36,8 +36,9 @@ if [ "$#" -ne 0 ]; then
   echo "${0##*/}: takes no arguments; received $*" >&2
   exit 2
 fi
+retry_sh=$(dirname "$0")/retry.sh
 # shellcheck source=retry.sh
-. "$(dirname "$0")/retry.sh"
+. "$retry_sh"
 
 # Print the changes to tracked files.
 tracked_changes() {
