@@ -311,9 +311,6 @@ check_session() {
 }
 printf '%s\n' "$checked" > "$unchecked_file" || exit 1
 if [ "$agent" = claude ]; then
-  if [ -n "${CLAUDE_CONFIG:-}" ]; then
-    export CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG"
-  fi
   # Restricted mode ignores the user settings file, so set its commit attribution here.
   prompt "Then commit your changes, staging only the files that you edit or \
 create.  Do not push." \

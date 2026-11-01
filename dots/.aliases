@@ -168,25 +168,25 @@ alias claude-review='claude "/review $(pr-number)"'
 alias claude-fix-ci='claude "Fix CI failure, commit, and push."'
 alias claude-ci=claude-fix-ci
 #
-alias claude='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model opus --dangerously-skip-permissions'
-alias claudemax='claudetrustdir && CLAUDE_CONFIG_DIR="$CLAUDE_CONFIG" \claude --model fable --effort max'
+alias claude='claudetrustdir && \claude --model opus --dangerously-skip-permissions'
+alias claudemax='claudetrustdir && \claude --model fable --effort max'
 #
-alias claudetrustdir='[ ! -f "$CLAUDE_CONFIG/.claude.json" ] || (jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" "$CLAUDE_CONFIG/.claude.json" > "$CLAUDE_CONFIG/.claude.json.tmp" && mv "$CLAUDE_CONFIG/.claude.json.tmp" "$CLAUDE_CONFIG/.claude.json")'
+alias claudetrustdir='[ ! -f "$CLAUDE_CONFIG_DIR/.claude.json" ] || (jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" "$CLAUDE_CONFIG_DIR/.claude.json" > "$CLAUDE_CONFIG_DIR/.claude.json.tmp" && mv "$CLAUDE_CONFIG_DIR/.claude.json.tmp" "$CLAUDE_CONFIG_DIR/.claude.json")'
 #
-alias claude-cse='export CLAUDE_CONFIG=~/.claude-cse'
-alias claude-personal='export CLAUDE_CONFIG=~/claude-personal'
+alias claude-cse='export CLAUDE_CONFIG_DIR=~/.claude-cse'
+alias claude-personal='export CLAUDE_CONFIG_DIR=~/claude-personal'
 # The CSE account is the default until the user says otherwise.
-if [ -z "$CLAUDE_CONFIG" ]; then
+if [ -z "$CLAUDE_CONFIG_DIR" ]; then
   claude-cse
 fi
 
 alias agytrustdir='jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" ~/.agy.json > ~/.agy.json.tmp && mv ~/.agy.json.tmp ~/.agy.json'
 alias agy='agytrustdir && \agy --dangerously-skip-permissions'
-alias agymax='agytrustdir && \agy --model fable --effort max'
+alias agymax='agytrustdir && \agy --model gemini-3.8-flash-high --effort max'
 
 alias codextrustdir='tomlq -i -t ".projects.\"$(pwd)\".trust_level //= \"trusted\"" ~/.codex/config.toml'
 alias codex='codextrustdir && \codex --search'
-alias codexmax='codextrustdir && \codex --search --model fable --effort max'
+alias codexmax='codextrustdir && \codex --search -m gpt-6.1-sol -c model_reasoning_effort=max'
 
 alias prekall='prek -q run --all-files'
 
