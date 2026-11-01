@@ -101,6 +101,12 @@ tracked_changes() {
 untracked_files() {
   git ls-files -z --others --exclude-standard | tr '\0' '\n'
 }
+# Print the untracked files that are not ignored and that are not in
+# "$untracked", which lists the ones that existed before the session, each
+# followed by a NUL, so that names that contain newlines are not split.
+created_files() {
+  git ls-files -z --others --exclude-standard | grep -zFxv -e "$untracked"
+}
 
 # Set git configuration variable $1 to $2 for the rest of the script and for
 # the session, after any that the environment already sets.
@@ -112,6 +118,7 @@ set_git_config() {
 # Restricted mode confines the file tools to the working directory, so start
 # at the top of the working tree, where the session can edit any file in it.
 cd "$(git rev-parse --show-toplevel)" || exit 1
+git_dir=$(git rev-parse --absolute-git-dir) || exit 1
 # Hooks and submodules run commands outside Codex's sandbox and outside the
 # commands that Claude can run.  The session can edit hook scripts, and it can
 # create a submodule whose git directory sets, for example, core.fsmonitor,
@@ -138,7 +145,7 @@ start=$(git rev-parse HEAD)
 # last pushed commit if that is later, and so cover the earlier session's
 # commits.
 checked=$start
-unchecked_file="$(git rev-parse --absolute-git-dir)/crreview-resolve-unchecked"
+unchecked_file=$git_dir/crreview-resolve-unchecked
 if earlier=$(cat "$unchecked_file" 2> /dev/null) \
   && git merge-base --is-ancestor "$earlier" HEAD 2> /dev/null; then
   pushed_base=$(git merge-base '@{push}' HEAD) || exit 1
@@ -241,11 +248,11 @@ fi
 
 # The sandbox lets Codex write the system's temporary directories, so keep
 # the script's temporary files in the git directory, which it makes read-only.
-tmp=$(mktemp -d "$(git rev-parse --absolute-git-dir)/crreview-resolve.XXXXXX") || exit 1
+tmp=$(mktemp -d "$git_dir/crreview-resolve.XXXXXX") || exit 1
 trap 'rm -rf "$tmp"' EXIT
 # Some shells do not run the EXIT trap when a signal kills the script.
 trap 'exit 1' HUP INT TERM
-log="$(git rev-parse --absolute-git-dir)/crreview-resolve-$(date +%Y%m%d-%H%M%S).jsonl"
+log="$git_dir/crreview-resolve-$(date +%Y%m%d-%H%M%S).jsonl"
 echo "${0##*/}: logging to $log"
 base=$(printf '%s\n' "$pr" | jq -r .baseRefName)
 # Print the session's prompt.  $1 says what to do about committing.  The
@@ -311,12 +318,10 @@ logs, and scratch files." \
     echo "Address CodeRabbit review comments" > "$tmp/message"
   fi
   # Commit the changes to tracked files and the untracked files that the
-  # session created.  The file names stay NUL-terminated, so that names that
-  # contain newlines are not split.  --cleanup=whitespace keeps lines that
-  # start with "#", such as Markdown headings, in the message.
+  # session created.  --cleanup=whitespace keeps lines that start with "#",
+  # such as Markdown headings, in the message.
   git add --update || exit 1
-  git ls-files -z --others --exclude-standard \
-    | grep -zFxv -e "$untracked" > "$tmp/created"
+  created_files > "$tmp/created"
   if [ -s "$tmp/created" ]; then
     echo "${0##*/}: committing the files that the session created:"
     tr '\0' '\n' < "$tmp/created"
@@ -329,8 +334,8 @@ logs, and scratch files." \
     exit 1
   fi
 fi
-# An untracked file that is not in "$untracked" is one that the session created.
-if [ -n "$(tracked_changes)" ] || untracked_files | grep -qFxv -e "$untracked"; then
+created_files > "$tmp/created"
+if [ -n "$(tracked_changes)" ] || [ -s "$tmp/created" ]; then
   echo "${0##*/}: the session left uncommitted changes; see $log" >&2
   exit 1
 fi
