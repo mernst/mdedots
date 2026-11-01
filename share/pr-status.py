@@ -51,6 +51,10 @@ SNAPSHOT = ".pr-status-snapshot.json"
 ANALYSIS = str(pathlib.Path("~/bin/share/pr-merge-analysis.sh").expanduser())
 
 
+class ConfigError(Exception):
+    """There is no config file, and no default config can be constructed."""
+
+
 def run(cmd):
     """Run a command, which must succeed.
 
@@ -2343,12 +2347,16 @@ def default_config(base):
 
     Returns:
         The default config.
+
+    Raises:
+        ConfigError: if base contains no clone of a GitHub repository that gh can view.
     """
     clones = [
         (d, info) for d, info in scan_directories(base).items() if info[0] == "git" and info[1]
     ]
     if not clones:
-        sys.exit(f"pr-status.py: no {CONFIG} and no clone of a GitHub repository in {base}")
+        msg = f"no {CONFIG} and no clone of a GitHub repository in {base}"
+        raise ConfigError(msg)
     counts = Counter(info[2] for _, info in clones).most_common()
     names = [name for name, count in counts if count >= 2] or [counts[0][0]]
     fields = ["--json", "nameWithOwner,parent,defaultBranchRef"]
@@ -2395,7 +2403,8 @@ def default_config(base):
             "default_branch": default_branch,
         }
     if not repos:
-        sys.exit(f"pr-status.py: no {CONFIG} and no GitHub repository that gh can view")
+        msg = f"no {CONFIG} and no GitHub repository that gh can view"
+        raise ConfigError(msg)
     for repo_name, repo in repos.items():
         # With several repositories, a bare "#N" would be ambiguous.
         repo["prefix"] = "#" if len(repos) == 1 else f"{repo_name}#"
@@ -2543,7 +2552,10 @@ def main():
         with pathlib.Path(CONFIG).open() as f:
             cfg = json.load(f)
     else:
-        cfg = default_config(base)
+        try:
+            cfg = default_config(base)
+        except ConfigError as error:
+            sys.exit(f"pr-status.py: {error}")
     models = load_models(cfg)
     updates = description_updates(models)
     failed_updates = []
