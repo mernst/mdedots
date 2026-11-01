@@ -5,8 +5,8 @@ description: Address CodeRabbitAI review comments on the current pull request.
 
 # Address CodeRabbitAI review comments
 
-<!-- The script share/crreview-resolve implements the same rule for which
-comments to act on; keep the two consistent. -->
+<!-- This skill should be rarely used.  It is more efficient to use the
+ script `share/crreview-resolve`.  Keep the two consistent. -->
 
 Examine the CodeRabbitAI reviews for this pull request.
 Do not act on, reply to, or resolve a review thread that anyone else started.
