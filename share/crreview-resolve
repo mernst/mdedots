@@ -21,8 +21,9 @@
 #    access.  Codex can run any command, though.  The sandbox makes `.git`
 #    read-only, so Codex cannot commit; instead, the script commits Codex's
 #    changes, with Codex's final message as the commit message.  The script
-#    keeps its temporary files in the read-only git directory, where the
-#    session cannot replace them with symbolic links.
+#    keeps its temporary files where the session cannot replace them with
+#    symbolic links:  in the git directory for Codex, and in the system's
+#    temporary directory for Claude.
 # For both agents, git runs without hooks, whose scripts the session can edit,
 # and without entering submodules, whose git configuration the session can
 # plant.  Before pushing, the script refuses commits that change .gitignore,
@@ -50,6 +51,13 @@
 #    the git commands that the script runs after the session.  Likewise, a
 #    rewritten `.git/crreview-resolve-unchecked` can make a later run skip
 #    checking the session's commits.
+#  * Claude's file tools can create a nested repository, with a git
+#    configuration that runs commands, and a `.gitmodules` file that makes
+#    git enter it.  Claude's own git commands, such as `git status`, then run
+#    those commands.  The script's git commands do not enter submodules.
+#  * Hooks are disabled for the push too, so the repository's pre-push hook
+#    does not run; the script warns about it.  The script does Git LFS's
+#    pre-push work itself.
 #
 # The session's full transcript is written to a log file.
 
@@ -92,14 +100,15 @@ retry_sh=$(dirname "$0")/retry.sh
 # shellcheck source=retry.sh
 . "$retry_sh"
 
-# Print the changes to tracked files.
+# Print the changes to tracked files.  A `.gitmodules` file can override the
+# diff.ignoreSubmodules setting below, but not the command-line option.
 tracked_changes() {
-  git status --porcelain --untracked-files=no
+  git status --porcelain --untracked-files=no --ignore-submodules=dirty
 }
-# Print the untracked files that are not ignored, one per line.  -z keeps git
-# from quoting unusual file names, which would hide them from grep.
+# Print the untracked files that are not ignored, each followed by a NUL.
+# Unlike newline-separated output, -z keeps git from quoting unusual names.
 untracked_files() {
-  git ls-files -z --others --exclude-standard | tr '\0' '\n'
+  git ls-files -z --others --exclude-standard
 }
 # Print the untracked files that are not ignored and that are not in
 # "$untracked", which lists the ones that existed before the session, one per
@@ -107,11 +116,13 @@ untracked_files() {
 # newline is not split.  grep splits "$untracked" at newlines, so none of the
 # names in it can contain a newline.
 created_files() {
-  git ls-files -z --others --exclude-standard | grep -zFxv -e "$untracked"
+  untracked_files | grep -zFxv -e "$untracked"
 }
 
 # Set git configuration variable $1 to $2 for the rest of the script and for
-# the session, after any that the environment already sets.
+# the session, after the ones that the environment sets in GIT_CONFIG_COUNT
+# and its companions.  Settings in GIT_CONFIG_PARAMETERS, which `git -c`
+# sets, still override these.
 set_git_config() {
   n=${GIT_CONFIG_COUNT:-0}
   export "GIT_CONFIG_KEY_$n=$1" "GIT_CONFIG_VALUE_$n=$2" GIT_CONFIG_COUNT=$((n + 1))
@@ -121,6 +132,7 @@ set_git_config() {
 # at the top of the working tree, where the session can edit any file in it.
 cd "$(git rev-parse --show-toplevel)" || exit 1
 git_dir=$(git rev-parse --absolute-git-dir) || exit 1
+pre_push_hook=$(git rev-parse --git-path hooks/pre-push) || exit 1
 # Hooks and submodules run commands outside Codex's sandbox and outside the
 # commands that Claude can run.  The session can edit hook scripts, and it can
 # create a submodule whose git directory sets, for example, core.fsmonitor,
@@ -141,17 +153,30 @@ fi
 # The session commits its changes, which must not include unrelated ones.
 if [ -n "$(tracked_changes)" ]; then
   echo "${0##*/}: the working tree has uncommitted changes:" >&2
-  git status --short --untracked-files=no >&2
+  git status --short --untracked-files=no --ignore-submodules=dirty >&2
   exit 1
 fi
+if [ "$agent" = codex ]; then
+  # The sandbox lets Codex write the system's temporary directories, but not
+  # the git directory.
+  tmp=$(mktemp -d "$git_dir/crreview-resolve.XXXXXX") || exit 1
+else
+  # Claude's file tools can write only the working directory, which can
+  # contain the git directory.
+  tmp=$(mktemp -d) || exit 1
+fi
+trap 'rm -rf "$tmp"' EXIT
+# Some shells do not run the EXIT trap when a signal kills the script.
+trap 'exit 1' HUP INT TERM
+untracked_files > "$tmp/untracked" || exit 1
 # "$untracked" separates the names by newlines.
-newlines=$(git ls-files -z --others --exclude-standard | tr -cd '\n' | wc -l)
+newlines=$(tr -cd '\n' < "$tmp/untracked" | wc -l)
 if [ "$((newlines))" -ne 0 ]; then
   echo "${0##*/}: the name of an untracked file contains a newline;" \
     "rename, remove, or ignore the file" >&2
   exit 1
 fi
-untracked=$(untracked_files)
+untracked=$(tr '\0' '\n' < "$tmp/untracked")
 start=$(git rev-parse HEAD)
 # The pre-push checks examine the commits after $checked.  The script records
 # $checked in $unchecked_file before the session, and removes the file only
@@ -263,12 +288,6 @@ if [ -z "$comments" ]; then
   exit 0
 fi
 
-# The sandbox lets Codex write the system's temporary directories, so keep
-# the script's temporary files in the git directory, which it makes read-only.
-tmp=$(mktemp -d "$git_dir/crreview-resolve.XXXXXX") || exit 1
-trap 'rm -rf "$tmp"' EXIT
-# Some shells do not run the EXIT trap when a signal kills the script.
-trap 'exit 1' HUP INT TERM
 log="$git_dir/crreview-resolve-$(date +%Y%m%d-%H%M%S).jsonl"
 echo "${0##*/}: logging to $log"
 base=$(printf '%s\n' "$pr" | jq -r .baseRefName)
@@ -341,6 +360,13 @@ logs, and scratch files." \
   # headings, in the message.
   git diff-files -z --name-only --ignore-submodules=all > "$tmp/changed" || exit 1
   created_files > "$tmp/created"
+  # `git ls-files` lists a nested repository as its directory name followed
+  # by "/".  Staging one would make it a submodule.
+  if tr '\0' '\n' < "$tmp/created" | grep '/$' >&2; then
+    echo "${0##*/}: the session created the nested repositories listed above;" \
+      "see $log" >&2
+    exit 1
+  fi
   if [ -s "$tmp/created" ]; then
     echo "${0##*/}: committing the files that the session created:"
     tr '\0' '\n' < "$tmp/created"
@@ -407,8 +433,11 @@ if [ "$(git rev-parse HEAD)" != "$checked" ]; then
     exit 1
   fi
   # Hooks are disabled, so upload the Git LFS objects, as Git LFS's pre-push
-  # hook would.
-  if git grep -q -e 'filter=lfs' HEAD -- ':(glob)**/.gitattributes'; then
+  # hook would.  `git check-attr` consults every source of attributes, not
+  # only the .gitattributes files.  Its output is each file name, "filter",
+  # and the value, each followed by a NUL.
+  if git diff -z --name-only --no-renames --diff-filter=d "$checked" HEAD \
+    | git check-attr -z --stdin filter | tr '\0' '\n' | grep -qx lfs; then
     if ! command -v git-lfs > /dev/null; then
       echo "${0##*/}: the repository uses Git LFS, which is not installed;" \
         "push manually after installing it" >&2
@@ -416,6 +445,10 @@ if [ "$(git rev-parse HEAD)" != "$checked" ]; then
     fi
     git lfs push "$(git for-each-ref --format='%(push:remotename)' "$(git symbolic-ref HEAD)")" \
       "$(git symbolic-ref --short HEAD)" || exit 1
+  fi
+  if [ -x "$pre_push_hook" ]; then
+    echo "${0##*/}: not running $pre_push_hook, which could run code that the" \
+      "session edited" >&2
   fi
   git push || exit 1
 fi
