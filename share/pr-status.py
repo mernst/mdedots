@@ -2421,6 +2421,38 @@ def default_config(base):
     }
 
 
+def load_config(program):
+    """Return the config for the current directory, which holds the working copy directories.
+
+    Exit with an error message if the current directory is in a git working copy, or if
+    there is no config file and default_config cannot construct a config.
+
+    Args:
+        program: the name of the running program; used for diagnostics.
+
+    Returns:
+        The config, as the config file holds it or, if there is no config file, as
+        default_config constructs it.
+    """
+    base = str(pathlib.Path.cwd())
+    # The current directory holds the working copy directories; it is not one of them.
+    toplevel = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], check=False, capture_output=True, text=True
+    )
+    if toplevel.returncode == 0:
+        sys.exit(
+            f"{program}: {base} is in the git working copy {toplevel.stdout.strip()}; "
+            f"run {program} in the directory that holds the working copy directories"
+        )
+    if pathlib.Path(CONFIG).exists():
+        with pathlib.Path(CONFIG).open() as f:
+            return json.load(f)
+    try:
+        return default_config(base)
+    except ConfigError as error:
+        sys.exit(f"{program}: {error}")
+
+
 def generated(name):
     """Return an empty generated section.
 
@@ -2539,23 +2571,7 @@ def main():
         except OSError as error:
             sys.exit(f"pr-status.py: cannot change to directory {args.directory}: {error.strerror}")
     base = str(pathlib.Path.cwd())
-    # The current directory holds the working copies; it is not one of them.
-    toplevel = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"], check=False, capture_output=True, text=True
-    )
-    if toplevel.returncode == 0:
-        sys.exit(
-            f"pr-status.py: {base} is in the git working copy {toplevel.stdout.strip()}; "
-            "run pr-status.py in the directory that holds the working copies"
-        )
-    if pathlib.Path(CONFIG).exists():
-        with pathlib.Path(CONFIG).open() as f:
-            cfg = json.load(f)
-    else:
-        try:
-            cfg = default_config(base)
-        except ConfigError as error:
-            sys.exit(f"pr-status.py: {error}")
+    cfg = load_config("pr-status.py")
     models = load_models(cfg)
     updates = description_updates(models)
     failed_updates = []
