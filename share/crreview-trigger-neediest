@@ -43,19 +43,8 @@ for arg in "$@"; do
   esac
 done
 
-# Run the command, retrying if it fails, as GitHub's GraphQL API sometimes does.
-# Each attempt's output is buffered so that a failed attempt produces no output.
-retry() {
-  local attempt=1 output
-  until output=$("$@"); do
-    if [ "$attempt" -eq 3 ]; then
-      return 1
-    fi
-    sleep $((attempt * 30))
-    attempt=$((attempt + 1))
-  done
-  printf '%s\n' "$output"
-}
+# shellcheck source=share/retry.sh
+. "$(dirname "$0")/retry.sh"
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
