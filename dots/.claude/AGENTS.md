@@ -1,5 +1,9 @@
 # LLM agent personalization
 
+## AGENTS-TODO.md file
+
+When a session starts, if there is a file `AGENTS-TODO.md` in the current directory, ask me whether to follow its instructions.
+
 ## Questions you ask me
 
 * Do not infer "yes" or "no" to a question that you asked unless my reply contains an explicit textual clue that answers it.  A reply that gives some other instruction leaves the question open:  take no action on the question, and ask it again if the answer still matters.  For example, if you ask whether to apply a proposed edit and I reply "commit and push", commit only the changes that already exist.
