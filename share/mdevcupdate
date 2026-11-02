@@ -121,11 +121,21 @@ update_fork_with_hosting_and_userid() {
     # Doesn't use `git -C` because multiple git commands will be run in the directory.
     if [ -n "$DEBUG" ]; then
       # Run in the foreground.
-      ( (cd "$dir" && fast_forward_to_upstream_and_push "git@${hosting}:$org/$repo") || echo "problem with $dir, perhaps in the command: $git_pull_command")
+      (cd "$dir" && fast_forward_to_upstream_and_push "git@${hosting}:$org/$repo" --tags)
     else
       # Run in the background.
-      ( (cd "$dir" && fast_forward_to_upstream_and_push "git@${hosting}:$org/$repo") || echo "problem with $dir, perhaps in the command: $git_pull_command") &
+      (cd "$dir" && fast_forward_to_upstream_and_push "git@${hosting}:$org/$repo" --tags) &
     fi
+  fi
+}
+
+# Run the command given by the arguments.  If it fails, print the current
+# directory and the command, and fail.  mdevc updates many clones at once, so
+# the message says which clone, and which step of updating it, failed.
+run_step() {
+  if ! "$@"; then
+    echo "$(pwd): failed: $*" >&2
+    return 1
   fi
 }
 
@@ -140,22 +150,22 @@ make_merges_fast_forward_only() {
 }
 
 # Fast-forward the current branch of the clone in the current directory to
-# upstream repository $1, then push it.  Fails, without pushing, if the
-# branch cannot be fast-forwarded or if it has commits that upstream lacks.
-# Also makes every later merge into the branch fast-forward-only.
+# upstream repository $1, then push it.  Passes the arguments after $1, such
+# as `--tags`, to `git pull`.  Fails, without pushing, if the branch cannot be
+# fast-forwarded or if it has commits that upstream lacks.  Also makes every
+# later merge into the branch fast-forward-only, and prunes stale branches.
+# On failure, prints the directory and the step that failed.
 fast_forward_to_upstream_and_push() {
   upstream="$1"
-  make_merges_fast_forward_only
-  if ! git pull -q --ff-only "$upstream" --tags; then
-    pwd
-    return 1
-  fi
+  shift
+  run_step make_merges_fast_forward_only || return 1
+  run_step git pull -q --ff-only "$upstream" "$@" || return 1
   if [ "$(git rev-parse HEAD)" != "$(git rev-parse FETCH_HEAD)" ]; then
-    echo "$(pwd) has commits that $upstream lacks:"
-    git log --oneline FETCH_HEAD..HEAD
+    echo "$(pwd) has commits that $upstream lacks:" >&2
+    git log --oneline FETCH_HEAD..HEAD >&2
     return 1
   fi
-  git push -q && prune_stale_branches
+  run_step git push -q && run_step prune_stale_branches
 }
 
 # Prunes the repository of the clone in the current directory, so that
@@ -313,17 +323,18 @@ prune_stale_branches() {
   return "$prune_status"
 }
 
-# Use this for non-github repositories.
+# Fast-forward the clone in directory $2 from its own remote, and then from
+# upstream repository $1 as `fast_forward_to_upstream_and_push` does, passing
+# it the arguments after $2.  Does nothing if directory $2 does not exist.
+# Use this for a non-GitHub upstream, or where `update_fork` does not work.
 update_from() {
   upstream=$1
   dir=$2
+  shift 2
   if [ -d "$dir" ]; then
     (cd "$dir" \
-      && make_merges_fast_forward_only \
-      && git pull -q --ff-only --prune \
-      && git pull -q --ff-only "$upstream" --tags \
-      && git push -q \
-      && prune_stale_branches) || (echo "$dir" && false)
+      && run_step git pull -q --ff-only --prune \
+      && fast_forward_to_upstream_and_push "$upstream" "$@")
   fi
 }
 
@@ -543,23 +554,15 @@ update_fork typetools commons-bcel ~/research/types/libraries
 
 ## Weird: using `--tags` causes the pull to fail.
 # update_fork JetBrains kotlin ~/java
-## So do it directly:
-dir=~/java/kotlin-fork-mernst
-if [ -d $dir ]; then
-  (cd $dir \
-    && make_merges_fast_forward_only \
-    && git pull -q --ff-only --prune \
-    && git pull -q --ff-only "git@github.com:JetBrains/kotlin" \
-    && git push -q \
-    && prune_stale_branches) || (echo "$dir" && false)
-fi
+## So do it without `--tags`:
+update_from git@github.com:JetBrains/kotlin ~/java/kotlin-fork-mernst
 
 ### Update from a non-GitHub upstream
 
-update_from https://gitlab.ow2.org/asm/asm.git ~/java/asm-fork-mernst
+update_from https://gitlab.ow2.org/asm/asm.git ~/java/asm-fork-mernst --tags
 # shellcheck disable=SC2154 # $t should be defined.
-update_from https://gitlab.ow2.org/asm/asm.git "$t"/libraries/asm-fork-typetools
-update_from git@gitlab.cs.washington.edu:lab/simple-courseweb-template.git ~/class/simple-courseweb-template-fork-mernst
+update_from https://gitlab.ow2.org/asm/asm.git "$t"/libraries/asm-fork-typetools --tags
+update_from git@gitlab.cs.washington.edu:lab/simple-courseweb-template.git ~/class/simple-courseweb-template-fork-mernst --tags
 
 # Wait for the background jobs, so that their pruning does not overlap with
 # whatever runs in the same clones after this script.
