@@ -476,14 +476,32 @@ Transfer them to source that appears later in the file."
     ))
 
 
+(defun normalize-log-buffer ()
+  "Replace the text of the current buffer by its output from `normalize-log'.
+That script removes the formatting that a CI service or a terminal adds to a
+log, such as escape sequences, carriage returns, and leading timestamps of the
+form \"2026-10-31T13:39:57.3265176Z\".  Signal an error, leaving the buffer
+unchanged, if the script exits with a nonzero status."
+  (let ((source (current-buffer)))
+    (with-temp-buffer
+      (let* ((output (current-buffer))
+             (status (with-current-buffer source
+                       (call-process-region (point-min) (point-max)
+                                            "normalize-log" nil (list output nil)))))
+        (unless (eql status 0)
+          (error "normalize-log failed with status %s" status))
+        (with-current-buffer source
+          (replace-region-contents (point-min) (point-max) output 1))))))
+
 (defun azure-cleanup-output ()
   "Remove extraneous characters from an Azure Pipelines CI log."
   (interactive)
   (save-excursion
+    (normalize-log-buffer)
+
+    ;; Timestamps with a time zone offset, which `normalize-log' retains.
     (goto-char (point-min))
-    (replace-regexp-noninteractive "^20[0-9][0-9]-[01][0-9]-[0-3][0-9]T[012][0-9]:[0-5][0-9]:[0-9][0-9]\\.[0-9][0-9][0-9]\\([0-9][0-9][0-9][0-9]Z\\|-[01][0-9]00\\) " "")
-    (goto-char (point-min))
-    (replace-regexp-noninteractive "^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]\\+[0-9][0-9][0-9][0-9] " "")
+    (replace-regexp-noninteractive "^20[0-9][0-9]-[01][0-9]-[0-3][0-9]T[012][0-9]:[0-5][0-9]:[0-9][0-9]\\.[0-9][0-9][0-9][-+][0-9][0-9][0-9][0-9] " "")
     (goto-char (point-min))
     (query-replace-regexp "at \\(Sun\\|Mon\\|Tue\\|Wed\\|Thu\\|Fri\\|Sat\\) \\(Jan\\|Feb\\|Mar\\|Apr\\|May\\|Jun\\|Jul\\|Aug\\|Sep\\|Oct\\|Nov\\|Dec\\) [0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9] PM" "at DATE")
 
@@ -502,16 +520,7 @@ Transfer them to source that appears later in the file."
     (goto-char (point-min))
     (replace-regexp-noninteractive ", Time elapsed: [0-9.]+ sec" "")
     (goto-char (point-min))
-    (replace-string-noninteractive "[1m" "")
-    (goto-char (point-min))
-    (replace-string-noninteractive "[m" "")
-    (goto-char (point-min))
-    (replace-string-noninteractive "[36;1m" "")
-    (goto-char (point-min))
-    (delete-matching-lines "^##\\[debug\\]")
-    )
-  (uncolorize)
-  )
+    (delete-matching-lines "^##\\[debug\\]")))
 
 (defun maven-cleanup-output ()
   "Clean up Maven output, to make diffing easier."
