@@ -16,7 +16,7 @@ def load_script(file_name: str) -> types.ModuleType:
     "_".
 
     Args:
-        file_name: the script's file name, such as "pr-status.py"
+        file_name: the script's file name, such as "diff-simplify.py"
 
     Returns:
         The imported module.
