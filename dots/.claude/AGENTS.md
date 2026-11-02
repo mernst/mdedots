@@ -2,7 +2,7 @@
 
 ## AGENTS-TODO.md file
 
-When a session starts, if there is a file `AGENTS-TODO.md` in the current directory, ask me whether to follow its instructions.
+When a session starts, if there is a file `AGENT-TODO.md` or `AGENTS-TODO.md` in the current directory, ask me whether to follow its instructions.
 
 ## Questions you ask me
 
