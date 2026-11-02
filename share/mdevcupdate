@@ -172,7 +172,7 @@ fast_forward_to_upstream_and_push() {
 #  * deletes each ref under `refs/remotes/` that belongs to no configured
 #    remote and that no remote's fetch refspec names, such as
 #    `refs/remotes/pr/123`, unless its reflog says that it was updated within
-#    the last day, as when a tool such as `pr-merge-analysis.sh` is using it.
+#    the last day, as when a tool such as `pr-merge-analysis` is using it.
 #    `git remote prune` never deletes such a ref.
 #  * deletes each local branch that is gone from its remote and that no
 #    worktree has checked out, if every commit on it is on some other ref or
