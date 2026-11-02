@@ -168,10 +168,22 @@ alias claude-review='claude "/review $(pr-number)"'
 alias claude-fix-ci='claude "Fix CI failure, commit, and push."'
 alias claude-ci=claude-fix-ci
 #
-alias claude='claudetrustdir && \claude --model opus --dangerously-skip-permissions'
-alias claudemax='claudetrustdir && \claude --model fable --effort max'
+alias claudemax='claudetrustdir && command claude --model fable --effort max'
 #
 alias claudetrustdir='[ ! -f "$CLAUDE_CONFIG_DIR/.claude.json" ] || (jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" "$CLAUDE_CONFIG_DIR/.claude.json" > "$CLAUDE_CONFIG_DIR/.claude.json.tmp" && mv "$CLAUDE_CONFIG_DIR/.claude.json.tmp" "$CLAUDE_CONFIG_DIR/.claude.json")'
+#
+# In an avocado-agent working copy directory, ignore the project's
+# .claude/settings.json, whose permission deny rules forbid all git commands.
+# This function must follow the definition of the claudetrustdir alias, which
+# bash expands when it reads the function body.
+unalias claude 2> /dev/null
+function claude {
+  local setting_sources=()
+  case "$(git rev-parse --show-toplevel 2> /dev/null)" in
+    */avocado-agent | */avocado-agent-*) setting_sources=(--setting-sources user,local) ;;
+  esac
+  claudetrustdir && command claude --model opus --dangerously-skip-permissions "${setting_sources[@]}" "$@"
+}
 #
 alias claude-use-cse='export CLAUDE_CONFIG_DIR=~/.claude-cse'
 alias claude-use-personal='export CLAUDE_CONFIG_DIR=~/claude-personal'
