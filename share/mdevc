@@ -24,6 +24,16 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+## Variables
+
+h=${h:-$HOME/research/harvest}
+inv=${inv:-$HOME/research/invariants}
+pl=${pl:-$HOME/research/plume-lib}
+t=${t:-$HOME/research/types}
+test=${test:-$HOME/research/testing}
+
+## Remove unneeded directories.
+
 # Start removing orphaned branch directories as early as possible,
 # because it takes a while to complete and we don't want error
 # messages later about clones that belong to branches that have been
@@ -34,6 +44,8 @@ done
 if [ -d /scratch/mernst/clones ]; then
   (cd /scratch/mernst/clones && git-orphaned-branches --remove) &
 fi
+
+## Update repositories.
 
 # shellcheck disable=SC2086
 mdevccommit ${DEBUG}
@@ -72,6 +84,15 @@ if [ -d /scratch/mernst/clones ]; then
   replace_dir_by_link /scratch/mernst/clones .html-tools /scratch/mernst/clones/bin/src/html-tools &
   replace_dir_by_link /scratch/mernst/clones .plume-scripts /scratch/mernst/clones/bin/src/plume-scripts &
 fi
+
+## Resolve conflicts and CodeRabbitAI comments.
+
+# Use resolve-conflicts instead of just pr-status.
+for dir in $inv $t $test $h $pl ~/bin/src; do
+  cd "$dir" && \
+  resolve-conflicts && \
+  crreview-resolve-all
+done
 
 ## Run `git prune` where needed.
 
