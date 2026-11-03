@@ -107,6 +107,17 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/dots/.claude/hooks/block-claude-coauthor-trailer\""
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {

@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# A Claude Code PreToolUse hook for the Bash tool.  It blocks a command that
+# would record a "Co-Authored-By: Claude ..." trailer, such as a `git commit`
+# or a `gh pr create` whose message contains one.  The "attribution" setting
+# only omits Claude Code's request for the trailer; this hook enforces it.
+#
+# The hook reads the hook input JSON on standard input.  It checks the command
+# text, and also each message file that the command names with -F, --file, or
+# --body-file.  It exits with status 2, which blocks the command and shows
+# standard error to the model, if it finds the trailer.  Otherwise it exits
+# with status 0.
+
+input=$(cat)
+command=$(jq -r '.tool_input.command // empty' <<< "$input") || exit 0
+cwd=$(jq -r '.cwd // empty' <<< "$input")
+
+# Matches the trailer at the start of a line, optionally after a quote, or
+# as the argument of -m, --message, or --trailer.
+trailer_regex='(^|\n|-m|--message|--trailer)[=[:space:]]*["'"'"']?co-authored-by:[[:space:]]*claude'
+
+texts=("$command")
+while IFS= read -r file; do
+  file=${file#\"}
+  file=${file%\"}
+  file=${file#\'}
+  file=${file%\'}
+  file=${file/#\~/$HOME}
+  if [[ "$file" != /* && -n "$cwd" ]]; then
+    file="$cwd/$file"
+  fi
+  if [[ -f "$file" ]]; then
+    texts+=("$(cat -- "$file")")
+  fi
+done < <(grep -oP '(?:-F|--file|--body-file)(?:=|\s+)\K("[^"]*"|'"'"'[^'"'"']*'"'"'|\S+)' <<< "$command")
+
+for text in "${texts[@]}"; do
+  if grep -qiPz "$trailer_regex" <<< "$text"; then
+    echo "Blocked: the message contains a \"Co-Authored-By: Claude\" trailer." \
+      "The user does not want Claude attribution in commits or pull requests." \
+      "Remove the trailer and run the command again." >&2
+    exit 2
+  fi
+done
+exit 0
