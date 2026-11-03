@@ -421,6 +421,7 @@ Uses Magit."
 (autoload 'travis-cleanup-output "one-off" "Remove extraneous characters from a Travis CI log." t)
 (autoload 'azure-cleanup-output "one-off" "Remove extraneous characters from an Azure Pipelines CI log." t)
 (autoload 'kindle-prepare-for-transfer "one-off" "Prepare to transfer Kindle books" t)
+(autoload 'pr-status "one-off" "View PR status for six groups of repositories." t)
 
 ;; Searching.
 (if (not (fboundp 'deadgrep))

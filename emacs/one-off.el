@@ -739,5 +739,21 @@ that is delimited by two lines starting with a colon."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Pull requests
+;;;
+
+(defun pr-status ()
+  "View PR status for six groups of repositories."
+  (interactive)
+  (browse-url (substitute-in-file-name "$inv/pr-status.md"))
+  (browse-url (substitute-in-file-name "$t/pr-status.md"))
+  (browse-url (substitute-in-file-name "$test/pr-status.md"))
+  (browse-url (substitute-in-file-name "$h/pr-status.md"))
+  (browse-url (substitute-in-file-name "$pl/pr-status.md"))
+  (browse-url (substitute-in-file-name "~/bin/src/pr-status.md"))
+  )
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End of file
 ;;;
