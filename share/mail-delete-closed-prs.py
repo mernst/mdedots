@@ -160,14 +160,23 @@ class Source:
     """A service that sends notifications about pull requests, issues, or branches.
 
     `sender` is the address from which the service sends notifications,
-    `query` is a Gmail search that finds them, and `parse` returns the ref that
+    `subject_filter` holds Gmail search terms, such as "subject:Build", that
+    restrict the sender's mail to notifications, and `parse` returns the ref that
     a notification's subject names, or None if the subject names none.
     """
 
     name: str
     sender: str
-    query: str
+    subject_filter: str
     parse: Callable[[str], Ref | None]
+
+    @property
+    def query(self) -> str:
+        """The Gmail search that finds this service's notifications.
+
+        An example is "from:azuredevops@microsoft.com subject:Build".
+        """
+        return f"from:{self.sender} {self.subject_filter}".strip()
 
 
 @dataclass(frozen=True)
@@ -273,19 +282,19 @@ SOURCES = (
     Source(
         "GitHub",
         "notifications@github.com",
-        "from:notifications@github.com",
+        "",
         parse_github_subject,
     ),
     Source(
         "Azure DevOps",
         "azuredevops@microsoft.com",
-        "from:azuredevops@microsoft.com subject:Build",
+        "subject:Build",
         parse_azure_subject,
     ),
     Source(
         "CircleCI",
         "no-reply@builds.circleci.com",
-        "from:no-reply@builds.circleci.com subject:Workflow",
+        "subject:Workflow",
         parse_circleci_subject,
     ),
 )
@@ -351,7 +360,8 @@ def refs_verdict(refs: tuple[Ref, ...] | None, states: Mapping[Ref, RefState]) -
     """Return what to do with a thread whose subjects name the given refs.
 
     Args:
-        refs: the refs that a thread's subjects name, or None if some subject names none
+        refs: a thread's refs, as thread_refs returns them: the refs that its
+            subjects name, or None if some subject names none
         states: the state of each of the refs
 
     Returns:
@@ -377,8 +387,9 @@ def thread_verdicts(
     The routine looks up only the refs of threads that it might trash.
 
     Args:
-        found: threads of notifications
-        lookup: returns the state of each of the given refs, as ref_states does
+        found: a list of notification threads
+        lookup: a function that returns the state of each of the refs that it is
+            given, as ref_states does
 
     Returns:
         The verdicts, in the order of the threads.
@@ -399,7 +410,7 @@ def thread_verdicts(
 # GitHub queries
 
 
-PR_FIELDS = "nodes { number state headRepositoryOwner { login } }"
+PR_FIELDS = "nodes { number state headRepository { nameWithOwner } }"
 
 
 def _graphql_string(text: str) -> str:
@@ -444,7 +455,7 @@ def ref_query_field(alias: str, ref: Ref) -> str:
     )
     return (
         f"{alias}: {_repository_selector(ref.slug)} {{"
-        " defaultBranchRef { name }"
+        " isFork defaultBranchRef { name }"
         f" {pull_requests}"
         f" parent {{ nameWithOwner {pull_requests} }} }}"
     )
@@ -475,11 +486,15 @@ def ref_state(ref: Ref, repository: Mapping[str, Any] | None) -> RefState:
     default_branch = (repository.get("defaultBranchRef") or {}).get("name")
     if ref.branch == default_branch:
         return RefState(False, f"{ref} is the default branch")
-    owner = ref.slug.split("/", 1)[0].casefold()
+    head = ref.slug.casefold()
     repositories = [(ref.slug, repository)]
     parent = repository.get("parent")
     if parent is not None:
         repositories.append((parent["nameWithOwner"], parent))
+    elif repository.get("isFork") is not False:
+        # GitHub reports a null parent for a fork whose parent it does not
+        # reveal, as when the parent's organization restricts access.
+        return RefState(None, f"GitHub did not report the parent of {ref.slug}")
     pull_requests = []
     for slug, repo in repositories:
         # GitHub reports null for a field that it could not fetch, as when an
@@ -495,7 +510,8 @@ def ref_state(ref: Ref, repository: Mapping[str, Any] | None) -> RefState:
         pull_requests.extend(
             (slug, pr)
             for pr in connection["nodes"]
-            if (pr.get("headRepositoryOwner") or {}).get("login", "").casefold() == owner
+            # A PR from a deleted repository has no head repository.
+            if (pr.get("headRepository") or {}).get("nameWithOwner", "").casefold() == head
         )
     if not pull_requests:
         return RefState(False, f"no PR from {ref}")
@@ -506,6 +522,10 @@ def ref_state(ref: Ref, repository: Mapping[str, Any] | None) -> RefState:
     return RefState(closed, f"PR from {ref}: {description}")
 
 
+class GraphQLError(RuntimeError):
+    """A GitHub GraphQL query that GitHub did not answer, as when the query timed out."""
+
+
 def run_gh_graphql(query: str) -> Mapping[str, Any]:
     """Return GitHub's answer to the given GraphQL query, which the `gh` command sends.
 
@@ -513,6 +533,10 @@ def run_gh_graphql(query: str) -> Mapping[str, Any]:
         The response's "data" member, as a dict parsed from the GitHub GraphQL
         API's JSON, whose keys are the query's aliases.  A field that GitHub
         did not report, such as a repository that does not exist, is None.
+
+    Raises:
+        GraphQLError: if GitHub did not answer the query.
+        RuntimeError: if the `gh` command cannot be run.
     """
     try:
         result = subprocess.run(
@@ -532,7 +556,7 @@ def run_gh_graphql(query: str) -> Mapping[str, Any]:
         response = None
     if not isinstance(response, dict) or not isinstance(response.get("data"), dict):
         msg = f"gh api graphql failed: {result.stderr.strip() or result.stdout.strip()}"
-        raise RuntimeError(msg)  # ruff: ignore[type-check-without-type-error]
+        raise GraphQLError(msg)
     return response["data"]
 
 
@@ -544,17 +568,24 @@ def ref_states(
 
     Args:
         refs: refs whose states to look up
-        run_graphql: runs a GraphQL query and returns its "data" member
+        run_graphql: runs a GraphQL query and returns its "data" member, as
+            run_gh_graphql does
 
     Returns:
-        A map from each ref to its state.
+        A map from each ref to its state.  If GitHub did not answer a query,
+        the state of each ref in that query is unknown.
     """
     unique_refs = list(dict.fromkeys(refs))
     states: dict[Ref, RefState] = {}
     for start in range(0, len(unique_refs), GITHUB_BATCH_SIZE):
         batch = unique_refs[start : start + GITHUB_BATCH_SIZE]
         fields = [ref_query_field(f"r{index}", ref) for index, ref in enumerate(batch)]
-        data = run_graphql("query { " + " ".join(fields) + " }")
+        try:
+            data = run_graphql("query { " + " ".join(fields) + " }")
+        except GraphQLError as error:
+            for ref in batch:
+                states[ref] = RefState(None, f"GitHub query failed: {error}")
+            continue
         for index, ref in enumerate(batch):
             states[ref] = ref_state(ref, data.get(f"r{index}"))
     return states
@@ -564,7 +595,7 @@ def ref_states(
 
 
 def thread_ids(service: Any, query: str) -> list[str]:
-    """Return the ids of the threads that match a Gmail search, outside spam and trash.
+    """Return the ids of the threads that match the given Gmail search, outside spam and trash.
 
     Args:
         service: a Gmail service
@@ -804,7 +835,7 @@ def with_default_window(extra_query: str) -> str:
     """Return the given Gmail search terms, restricted to DEFAULT_WINDOW if they restrict no date.
 
     Args:
-        extra_query: Gmail search terms, such as "in:inbox", or ""
+        extra_query: a string of Gmail search terms, such as "in:inbox", or ""
 
     Returns:
         The search terms, followed by DEFAULT_WINDOW if they contain no date operator.

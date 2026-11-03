@@ -33,12 +33,13 @@ def thread(subjects, senders=None, starred=False):
     return mdcp.ThreadSummary("t1", message_ids, tuple(subjects), tuple(senders), starred)
 
 
-def pr(number, state, owner):
+def pr(number, state, head):
     """Return a pull request, as a dict like one parsed from GitHub's JSON for PR_FIELDS.
 
-    The dict has the keys "number", "state", and "headRepositoryOwner".
+    The dict has the keys "number", "state", and "headRepository".  `head` is
+    the GitHub slug "ORG/REPO" of the pull request's head repository.
     """
-    return {"number": number, "state": state, "headRepositoryOwner": {"login": owner}}
+    return {"number": number, "state": state, "headRepository": {"nameWithOwner": head}}
 
 
 def pull_request_connection(pull_requests, has_next_page):
@@ -49,12 +50,16 @@ def pull_request_connection(pull_requests, has_next_page):
     return {"nodes": list(pull_requests), "pageInfo": {"hasNextPage": has_next_page}}
 
 
-def repository(pull_requests=(), parent=None, default_branch="master", has_next_page=False):
+def repository(
+    pull_requests=(), parent=None, default_branch="master", has_next_page=False, is_fork=None
+):
     """Return a repository, as a dict like one parsed from GitHub's JSON for a BranchRef.
 
-    The dict has the keys "defaultBranchRef", "pullRequests", and "parent".
+    The dict has the keys "isFork", "defaultBranchRef", "pullRequests", and
+    "parent".  By default, the repository is a fork if it has a parent.
     """
     return {
+        "isFork": parent is not None if is_fork is None else is_fork,
         "defaultBranchRef": {"name": default_branch},
         "pullRequests": pull_request_connection(pull_requests, has_next_page),
         "parent": parent,
@@ -70,6 +75,14 @@ def parent_repository(slug, pull_requests=(), has_next_page=False):
         "nameWithOwner": slug,
         "pullRequests": pull_request_connection(pull_requests, has_next_page),
     }
+
+
+class SourceTest(unittest.TestCase):
+    """Test the Gmail searches of the sources."""
+
+    def test_query(self):
+        self.assertEqual(GITHUB.query, "from:notifications@github.com")
+        self.assertEqual(AZURE.query, "from:azuredevops@microsoft.com subject:Build")
 
 
 class ModifyAccountTest(unittest.TestCase):
@@ -293,7 +306,7 @@ class RefStateTest(unittest.TestCase):
 
     def test_default_branch(self):
         ref = BranchRef("mernst/fjalar", "master")
-        merged = repository([pr(1, "MERGED", "mernst")])
+        merged = repository([pr(1, "MERGED", "mernst/fjalar")])
         self.assertFalse(mdcp.ref_state(ref, merged).closed)
 
     def test_branch_without_pull_request(self):
@@ -303,7 +316,7 @@ class RefStateTest(unittest.TestCase):
         )
 
     def test_branch_with_merged_pull_request_to_parent(self):
-        parent = parent_repository("codespecs/daikon", [pr(918, "MERGED", "mernst")])
+        parent = parent_repository("codespecs/daikon", [pr(918, "MERGED", "mernst/daikon")])
         self.assertEqual(
             mdcp.ref_state(self.BRANCH, repository(parent=parent)),
             RefState(True, "PR from mernst/daikon:my-branch: codespecs/daikon#918 merged"),
@@ -311,15 +324,21 @@ class RefStateTest(unittest.TestCase):
 
     def test_branch_with_open_pull_request(self):
         parent = parent_repository(
-            "codespecs/daikon", [pr(918, "CLOSED", "mernst"), pr(964, "OPEN", "mernst")]
+            "codespecs/daikon",
+            [pr(918, "CLOSED", "mernst/daikon"), pr(964, "OPEN", "mernst/daikon")],
         )
         self.assertFalse(mdcp.ref_state(self.BRANCH, repository(parent=parent)).closed)
 
     def test_other_owners_branch_is_ignored(self):
-        # A pull request from a deleted fork has no head repository owner.
-        from_deleted_fork = {"number": 901, "state": "MERGED", "headRepositoryOwner": None}
+        # A pull request from a deleted fork has no head repository.
+        from_deleted_fork = {"number": 901, "state": "MERGED", "headRepository": None}
         parent = parent_repository(
-            "codespecs/daikon", [pr(900, "MERGED", "someone"), from_deleted_fork]
+            "codespecs/daikon",
+            [
+                pr(900, "MERGED", "someone/daikon"),
+                pr(902, "CLOSED", "mernst/daikon-old"),
+                from_deleted_fork,
+            ],
         )
         self.assertEqual(
             mdcp.ref_state(self.BRANCH, repository(parent=parent)),
@@ -328,11 +347,13 @@ class RefStateTest(unittest.TestCase):
 
     def test_same_repository_pull_request(self):
         ref = BranchRef("codespecs/daikon", "feature")
-        self.assertTrue(mdcp.ref_state(ref, repository([pr(7, "CLOSED", "codespecs")])).closed)
+        self.assertTrue(
+            mdcp.ref_state(ref, repository([pr(7, "CLOSED", "codespecs/daikon")])).closed
+        )
 
     def test_too_many_pull_requests(self):
         parent = parent_repository(
-            "codespecs/daikon", [pr(918, "MERGED", "mernst")], has_next_page=True
+            "codespecs/daikon", [pr(918, "MERGED", "mernst/daikon")], has_next_page=True
         )
         self.assertIsNone(mdcp.ref_state(self.BRANCH, repository(parent=parent)).closed)
         self.assertIsNone(mdcp.ref_state(self.BRANCH, repository(has_next_page=True)).closed)
@@ -341,9 +362,12 @@ class RefStateTest(unittest.TestCase):
         parent = parent_repository("codespecs/daikon")
         parent["pullRequests"] = None
         self.assertIsNone(mdcp.ref_state(self.BRANCH, repository(parent=parent)).closed)
-        partial = repository([pr(7, "CLOSED", "mernst")])
+        partial = repository([pr(7, "CLOSED", "mernst/daikon")])
         partial["pullRequests"]["nodes"].append(None)
         self.assertIsNone(mdcp.ref_state(self.BRANCH, partial).closed)
+
+    def test_unreported_parent(self):
+        self.assertIsNone(mdcp.ref_state(self.BRANCH, repository(is_fork=True)).closed)
 
     def test_unknown_repository(self):
         self.assertIsNone(mdcp.ref_state(self.BRANCH, None).closed)
@@ -377,6 +401,20 @@ class RefStatesTest(unittest.TestCase):
         self.assertIn(r'headRefName: "a\"b"', field)
         self.assertIn("parent { nameWithOwner pullRequests", field)
         self.assertIn("pageInfo { hasNextPage }", field)
+        self.assertIn("isFork", field)
+
+    def test_failed_query_makes_states_unknown(self):
+        refs = [IssueRef("o/r", 1), IssueRef("o/r", 2)]
+
+        def run_graphql(query):
+            if "number: 1)" in query:
+                raise mdcp.GraphQLError("timed out")
+            return {"r0": {"issueOrPullRequest": {"__typename": "Issue", "state": "CLOSED"}}}
+
+        with mock.patch.object(mdcp, "GITHUB_BATCH_SIZE", 1):
+            states = mdcp.ref_states(refs, run_graphql)
+        self.assertEqual(states[refs[0]], RefState(None, "GitHub query failed: timed out"))
+        self.assertTrue(states[refs[1]].closed)
 
 
 class FakeBatch:

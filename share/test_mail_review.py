@@ -381,6 +381,13 @@ class TransientErrorTest(unittest.TestCase):
         self.assertTrue(mail_review.is_transient_api_error(ConnectionResetError("reset")))
         self.assertTrue(mail_review.is_transient_api_error(TimeoutError("timed out")))
 
+    def test_name_lookup_failure_is_transient(self):
+        server_not_found = type("ServerNotFoundError", (Exception,), {})
+        httplib2 = types.SimpleNamespace(ServerNotFoundError=server_not_found)
+        with mock.patch.dict(sys.modules, {"httplib2": httplib2}):
+            error = server_not_found("Unable to find the server")
+            self.assertTrue(mail_review.is_transient_api_error(error))
+
 
 class CachedCredentialsTest(unittest.TestCase):
     """Test when a cached authorization is reused and when the user must authorize again."""

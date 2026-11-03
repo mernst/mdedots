@@ -535,13 +535,19 @@ def is_transient_api_error(error: Exception) -> bool:
     # Gmail reports both throttling and permanent authorization failures as 403.
     if status == 403 and "ratelimitexceeded" in str(error).casefold():
         return True
-    # OSError covers the connection, timeout, name-resolution, and TLS errors
-    # that the HTTP client raises.
-    try:
+    # OSError covers the connection, timeout, and TLS errors that the HTTP
+    # client raises.  httplib2 reports a failed name lookup as
+    # ServerNotFoundError, which is not an OSError.
+    transient: list[type[Exception]] = [OSError]
+    with contextlib.suppress(ImportError):
         from google.auth.exceptions import TransportError  # ty: ignore[unresolved-import]
-    except ImportError:
-        return isinstance(error, OSError)
-    return isinstance(error, (TransportError, OSError))
+
+        transient.append(TransportError)
+    with contextlib.suppress(ImportError):
+        from httplib2 import ServerNotFoundError  # ty: ignore[unresolved-import]
+
+        transient.append(ServerNotFoundError)
+    return isinstance(error, tuple(transient))
 
 
 def open_search(search_term: str, sessions: tuple[AccountSession, ...], review: Review) -> None:
