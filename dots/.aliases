@@ -169,6 +169,8 @@ alias claude-fix-ci='claude "Fix CI failure, commit, and push."'
 alias claude-ci=claude-fix-ci
 alias claude-fix-merge-conflict='claude "Fix merge conflict, commit, and push."'
 alias claude-merge-conflict=claude-fix-merge-conflict
+alias claude-crreview-resolve='crreview-resolve'
+alias claude-fix-crreview='crreview-resolve'
 #
 alias claudemax='claudetrustdir && command claude --model fable --effort max'
 #
