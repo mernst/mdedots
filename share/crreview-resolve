@@ -12,7 +12,10 @@
 # threads.  That saves tokens, avoids starting a session when there is nothing
 # to address, and lets the session run without access to `gh` or `git push`.
 # The script refuses a PR that is not open, because pushing to the branch of
-# a landed PR would recreate the branch, which GitHub usually deletes.
+# a landed PR would recreate the branch, which GitHub usually deletes.  It
+# also refuses unless `git push` pushes to the PR's head branch:  `gh pr view`
+# finds the PR by the branch's name, so it can find a PR from a branch of the
+# same name in another repository.
 # The comments, both in review threads and outside the diff, are sent without
 # CodeRabbit's markup and without its record of the commands that it ran to
 # analyze the code.  Each "Prompt for AI Agents" section is reduced to its
@@ -176,10 +179,39 @@ set_git_config diff.ignoreSubmodules dirty
 # submodules.  The environment's settings apply there too and override the
 # submodule's own git configuration.
 set_git_config core.fsmonitor false
-pr=$(gh pr view --json id,baseRefName,state,url) || exit 1
+pr=$(gh pr view --json id,baseRefName,state,url,headRepositoryOwner,headRepository,headRefName) || exit 1
 if [ "$(printf '%s\n' "$pr" | jq -r .state)" != OPEN ]; then
   echo "${0##*/}: $(printf '%s\n' "$pr" | jq -r '"\(.url) \(if .state == "MERGED" then "has landed" else "is closed" end)"')," \
     "so its comments are not addressed" >&2
+  exit 1
+fi
+if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
+  echo "${0##*/}: \`git push\` has no destination for the current branch" >&2
+  exit 1
+fi
+# `gh pr view` finds the PR by the current branch's name, so the PR's head can
+# be a branch of the same name in another repository, such as the upstream
+# repository of a fork.  Pushing would then update or create a branch that
+# is not the PR's head.  The destination is written as "OWNER/REPO:BRANCH",
+# from the configured URL of the push remote, which `url.BASE.insteadOf`
+# does not rewrite.
+pr_head=$(printf '%s\n' "$pr" \
+  | jq -r '"\(.headRepositoryOwner.login)/\(.headRepository.name // ""):\(.headRefName)"')
+branch_ref=$(git symbolic-ref --quiet HEAD) || exit 1
+push_remote=$(git for-each-ref --format='%(push:remotename)' "$branch_ref")
+push_branch=$(git for-each-ref --format='%(push)' "$branch_ref")
+push_branch=${push_branch#refs/remotes/"$push_remote"/}
+push_url=$(git config --get "remote.$push_remote.pushurl" || git config --get "remote.$push_remote.url")
+push_repo=${push_url#*github.com[:/]}
+push_repo=${push_repo%/}
+push_repo=${push_repo%.git}
+lowercase() {
+  printf '%s\n' "$1" | tr '[:upper:]' '[:lower:]'
+}
+if [ "$push_repo" = "$push_url" ] \
+  || [ "$(lowercase "$push_repo"):$push_branch" != "$(lowercase "${pr_head%%:*}"):${pr_head#*:}" ]; then
+  echo "${0##*/}: the head of $(printf '%s\n' "$pr" | jq -r .url) is $pr_head," \
+    "but \`git push\` would push to $push_url ($push_branch)" >&2
   exit 1
 fi
 pr_id=$(printf '%s\n' "$pr" | jq -r .id)
@@ -192,16 +224,19 @@ unchecked_file=$git_dir/crreview-resolve-unchecked
 
 # Print, as a JSON array, the untracked files that are not ignored.
 untracked_json() {
-  untracked_files | jq -Rs 'split("\u0000") | map(select(. != ""))'
+  untracked_files | jq -Rs 'split("\u0000") | map(select(length > 0))'
 }
 
-# Record that the "Outside diff range comments" in $data were addressed, and
-# resolve the review threads in $data.  Leave unresolved any thread that got
-# a reply since $data was fetched, which the session did not see, or that was
-# deleted.
-record_and_resolve() {
+# Record that the "Outside diff range comments" in $data were addressed.
+record_outside() {
   printf '%s\n' "$data" | jq -r '.outside[].id' >> "$handled_file"
+}
 
+# Resolve the review threads in $data.  Leave unresolved any thread that got a
+# reply since $data was fetched, which the session did not see, or that was
+# deleted.  Return 0 if every thread was resolved, 2 if every thread except
+# those was resolved, and 1 if the threads could not be read or resolved.
+resolve_threads() {
   # Query and resolve all the threads at once.
   if [ "$(printf '%s\n' "$data" | jq '.threads | length')" -eq 0 ]; then
     return 0
@@ -245,7 +280,7 @@ record_and_resolve() {
     for thread in $changed; do
       echo "${0##*/}: did not resolve thread $thread, which got a reply or was deleted after the comments were fetched" >&2
     done
-    return 1
+    return 2
   fi
 }
 
@@ -271,7 +306,20 @@ if [ "$mode" = resolve ]; then
     echo "${0##*/}: push the current branch first" >&2
     exit 1
   fi
-  record_and_resolve || exit 1
+  record_outside || exit 1
+  # A retry after a failure below must not record the outside-diff comments
+  # again.
+  printf '%s\n' "$data" | jq '.outside = []' > "$printed_file" || exit 1
+  resolve_threads
+  case $? in
+    0) ;;
+    2)
+      rm -f "$printed_file"
+      echo "${0##*/}: run \`${0##*/} --print-comments\` to see the replies" >&2
+      exit 1
+      ;;
+    *) exit 1 ;;
+  esac
   rm -f "$printed_file"
   exit 0
 fi
@@ -285,6 +333,32 @@ if [ "$mode" = print ]; then
       "check them and push them manually first" >&2
     exit 1
   fi
+fi
+# Fail before fetching the comments, which can take a while, if the untracked
+# files rule out a run.  The check for uncommitted changes comes after the
+# fetch, so that a run with nothing to address succeeds anyway.
+if [ "$mode" = run ]; then
+  if [ "$agent" = codex ]; then
+    # The sandbox lets Codex write the system's temporary directories, but not
+    # the git directory.
+    tmp=$(mktemp -d "$git_dir/crreview-resolve.XXXXXX") || exit 1
+  else
+    # Claude's file tools can write only the working directory, which can
+    # contain the git directory.
+    tmp=$(mktemp -d) || exit 1
+  fi
+  trap 'rm -rf "$tmp"' EXIT
+  # Some shells do not run the EXIT trap when a signal kills the script.
+  trap 'exit 1' HUP INT TERM
+  untracked_files > "$tmp/untracked" || exit 1
+  # "$untracked" separates the names by newlines.
+  newlines=$(tr -cd '\n' < "$tmp/untracked" | wc -l)
+  if [ "$((newlines))" -ne 0 ]; then
+    echo "${0##*/}: the name of an untracked file contains a newline;" \
+      "rename, remove, or ignore the file" >&2
+    exit 1
+  fi
+  untracked=$(tr '\0' '\n' < "$tmp/untracked")
 fi
 handled=$(cat "$handled_file" 2> /dev/null)
 
@@ -393,37 +467,12 @@ if [ "$mode" = print ]; then
   exit 0
 fi
 
-if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
-  echo "${0##*/}: \`git push\` has no destination for the current branch" >&2
-  exit 1
-fi
 # The session commits its changes, which must not include unrelated ones.
 if [ -n "$(tracked_changes)" ]; then
   echo "${0##*/}: the working tree has uncommitted changes:" >&2
   git status --short --untracked-files=no --ignore-submodules=dirty >&2
   exit 1
 fi
-if [ "$agent" = codex ]; then
-  # The sandbox lets Codex write the system's temporary directories, but not
-  # the git directory.
-  tmp=$(mktemp -d "$git_dir/crreview-resolve.XXXXXX") || exit 1
-else
-  # Claude's file tools can write only the working directory, which can
-  # contain the git directory.
-  tmp=$(mktemp -d) || exit 1
-fi
-trap 'rm -rf "$tmp"' EXIT
-# Some shells do not run the EXIT trap when a signal kills the script.
-trap 'exit 1' HUP INT TERM
-untracked_files > "$tmp/untracked" || exit 1
-# "$untracked" separates the names by newlines.
-newlines=$(tr -cd '\n' < "$tmp/untracked" | wc -l)
-if [ "$((newlines))" -ne 0 ]; then
-  echo "${0##*/}: the name of an untracked file contains a newline;" \
-    "rename, remove, or ignore the file" >&2
-  exit 1
-fi
-untracked=$(tr '\0' '\n' < "$tmp/untracked")
 start=$(git rev-parse HEAD)
 # The pre-push checks examine the commits after $checked.  The script records
 # $checked in $unchecked_file before the session, and removes the file only
@@ -605,4 +654,5 @@ if [ "$(git rev-parse HEAD)" != "$checked" ]; then
   git push || exit 1
 fi
 rm -f "$unchecked_file"
-record_and_resolve
+record_outside || exit 1
+resolve_threads
