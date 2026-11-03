@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# Usage: crreview-resolve [--agent claude|codex]
-#        crreview-resolve --print-comments
+# Usage: crreview-resolve [--quiet] [--agent claude|codex]
+#        crreview-resolve [--quiet] --print-comments
 #        crreview-resolve --resolve-printed
 # Address the unresolved CodeRabbit review comments on the current branch's PR:
 # run an AI agent non-interactively to edit and commit, then push and resolve
@@ -86,11 +86,17 @@
 #    pre-push work itself.
 #
 # The session's full transcript is written to a log file.
+#
+# With --quiet, the script prints nothing when there are no comments to
+# address, rather than saying so.  A script that runs crreview-resolve in many
+# directories can use it to omit the directories where there is nothing to do.
 
 usage() {
-  echo "Usage: ${0##*/} [--agent claude|codex | --print-comments | --resolve-printed]"
+  echo "Usage: ${0##*/} [--quiet] [--agent claude|codex | --print-comments | --resolve-printed]"
 }
 agent=claude
+# True if the script prints nothing when there are no comments to address.
+quiet=false
 # "run", "print", or "resolve".
 mode=run
 while [ "$#" -ne 0 ]; do
@@ -109,6 +115,10 @@ while [ "$#" -ne 0 ]; do
       ;;
     --agent=*)
       agent=${1#--agent=}
+      shift
+      ;;
+    --quiet)
+      quiet=true
       shift
       ;;
     --print-comments)
@@ -293,7 +303,7 @@ if [ "$mode" = resolve ]; then
   fi
   # Resolve the threads only if the changes that address them were pushed.
   if [ -n "$(tracked_changes)" ]; then
-    echo "${0##*/}: the working tree has uncommitted changes; commit and push them first:" >&2
+    echo "${0##*/}: $PWD has uncommitted changes; commit and push them first:" >&2
     git status --short --untracked-files=no --ignore-submodules=dirty >&2
     exit 1
   fi
@@ -458,13 +468,15 @@ comments=$(printf '%s\n' "$data" | jq -r '
  if .outside != [] then "## Outside diff range comments\n\n" + (.outside | map(.text) | join("\n\n")) else empty end]
 | join("\n\n")')
 if [ -z "$comments" ]; then
-  echo "${0##*/}: there are no CodeRabbit comments to address"
+  if [ "$quiet" = false ]; then
+    echo "${0##*/}: there are no CodeRabbit comments to address"
+  fi
   exit 0
 fi
 
 # The session commits its changes, which must not include unrelated ones.
 if [ "$mode" = run ] && [ -n "$(tracked_changes)" ]; then
-  echo "${0##*/}: the working tree has uncommitted changes:" >&2
+  echo "${0##*/}: $PWD has uncommitted changes:" >&2
   git status --short --untracked-files=no --ignore-submodules=dirty >&2
   exit 1
 fi
