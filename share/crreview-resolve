@@ -13,20 +13,23 @@
 # to address, and lets the session run without access to `gh` or `git push`.
 # The script refuses a PR that is not open, because pushing to the branch of
 # a landed PR would recreate the branch, which GitHub usually deletes.
-# For each comment that CodeRabbit wrote, the session receives only the
-# instruction in the comment's "Prompt for AI Agents" section, without the
-# boilerplate that every such section repeats.  A comment that lacks that
-# section is sent without CodeRabbit's markup and without its record of the
-# commands that it ran to analyze the code.
+# The comments, both in review threads and outside the diff, are sent without
+# CodeRabbit's markup and without its record of the commands that it ran to
+# analyze the code.  Each "Prompt for AI Agents" section is reduced to its
+# instruction, without the boilerplate that every such section repeats.
 #
 # With --print-comments, the script prints the comments and runs no agent;
 # the crreview-resolve skill (dots/.agents/skills/crreview-resolve/SKILL.md)
-# uses it.  After the comments are addressed and the commits are pushed,
-# --resolve-printed resolves the printed review threads, as the script does
-# after a session, and records that the printed "Outside diff range comments"
-# were addressed.  It refuses if the current branch has commits that have not
-# been pushed.  The two options communicate through the file
-# `crreview-resolve-printed.json` in the git directory.
+# uses it.  It refuses if an earlier run left unpushed commits that the
+# script has not checked (see the pre-push checks below).  After
+# the comments are addressed and the commits are pushed, --resolve-printed
+# resolves the printed review threads, as the script does after a session,
+# and records that the printed "Outside diff range comments" were addressed.
+# It refuses if the current branch has commits that have not been pushed, if
+# the working tree has uncommitted changes, or if there are untracked files
+# that did not exist when the comments were printed.  The two options
+# communicate through the file `crreview-resolve-printed.json` in the git
+# directory.
 #
 # Review comments are untrusted input (anyone can comment on a public PR), so
 # the agent runs restricted:
@@ -184,6 +187,13 @@ pr_id=$(printf '%s\n' "$pr" | jq -r .id)
 # addressed, one per line.
 handled_file="$(git rev-parse --path-format=absolute --git-common-dir)/crreview-resolve-handled-reviews"
 printed_file=$git_dir/crreview-resolve-printed.json
+# See the comment where run mode sets $checked.
+unchecked_file=$git_dir/crreview-resolve-unchecked
+
+# Print, as a JSON array, the untracked files that are not ignored.
+untracked_json() {
+  untracked_files | jq -Rs 'split("\u0000") | map(select(. != ""))'
+}
 
 # Record that the "Outside diff range comments" in $data were addressed, and
 # resolve the review threads in $data.  Leave unresolved any thread that got
@@ -244,6 +254,19 @@ if [ "$mode" = resolve ]; then
     echo "${0##*/}: run \`${0##*/} --print-comments\` first" >&2
     exit 1
   fi
+  # Resolve the threads only if the changes that address them were pushed.
+  if [ -n "$(tracked_changes)" ]; then
+    echo "${0##*/}: the working tree has uncommitted changes; commit and push them first:" >&2
+    git status --short --untracked-files=no --ignore-submodules=dirty >&2
+    exit 1
+  fi
+  created=$(untracked_json | jq -r --argjson data "$data" '. - $data.untracked | .[]') || exit 1
+  if [ -n "$created" ]; then
+    printf '%s\n' "$created" >&2
+    echo "${0##*/}: the untracked files listed above did not exist when the" \
+      "comments were printed; commit and push them, or remove them, first" >&2
+    exit 1
+  fi
   if ! git merge-base --is-ancestor HEAD '@{push}' 2> /dev/null; then
     echo "${0##*/}: push the current branch first" >&2
     exit 1
@@ -255,6 +278,13 @@ fi
 
 if [ "$mode" = print ]; then
   rm -f "$printed_file"
+  # Pushing would push the commits that an earlier run left for a manual check.
+  if [ -e "$unchecked_file" ] \
+    && ! git merge-base --is-ancestor HEAD '@{push}' 2> /dev/null; then
+    echo "${0##*/}: an earlier run left commits that it did not push;" \
+      "check them and push them manually first" >&2
+    exit 1
+  fi
 fi
 handled=$(cat "$handled_file" 2> /dev/null)
 
@@ -262,10 +292,9 @@ handled=$(cat "$handled_file" 2> /dev/null)
 # "Outside diff range comments" of each CodeRabbit review that has such a
 # thread and of the last CodeRabbit review if it has no threads.  Ignore
 # CodeRabbit reviews with empty bodies, which hold only replies in threads.
-# Skip outside-diff comments that an earlier run addressed.  Of a comment
-# that CodeRabbit wrote, keep only its prompt for AI agents (see ai_prompt);
-# from any other text, omit CodeRabbit's markup, its prompts for AI agents,
-# which repeat the comments, and its record of the commands that it ran.
+# Skip outside-diff comments that an earlier run addressed.  Omit
+# CodeRabbit's markup and its record of the commands that it ran, and reduce
+# each of its prompts for AI agents to the instruction (see clean).
 # shellcheck disable=SC2016 # $id is a GraphQL variable.
 data=$(retry gh api graphql -F id="$pr_id" -f query='
 query($id: ID!) {
@@ -285,28 +314,30 @@ query($id: ID!) {
   }
 }') || exit 1
 data=$(printf '%s\n' "$data" | jq --arg handled "$handled" '
+# Return the given instruction from a "Prompt for AI Agents" section, without
+# its first paragraph, which tells the agent to verify the comment or to treat
+# it as untrusted, and without its suggestion to run CodeRabbit locally.
+def agent_instruction:
+  sub("^\\s*(Treat finding text|Verify each finding)[\\s\\S]*?(\n\\s*\n|$)"; "")
+  | sub("\\s*After applying the fix, consider running `coderabbit review[\\s\\S]*$"; "")
+  | sub("^\\s+"; "") | sub("\\s+$"; "");
+# Return the given comment without the markup and without the record of the
+# commands that CodeRabbit ran.  Replace each "Prompt for AI Agents" section by
+# its instruction (see agent_instruction), or remove the section if it holds
+# nothing else.  The regex for that section matches a closing fence only if it
+# is as long as the opening fence, so that an instruction that contains a
+# shorter fence is not cut short.
 def clean:
   gsub("<!--[\\s\\S]*?-->"; "")
   | gsub("<picture>[\\s\\S]*?</picture>"; "")
+  | gsub("<details>\\s*<summary>[^<]*Prompt for AI Agents\\s*</summary>\\s*(?:<dl>\\s*<dd>\\s*)?(?<fence>```+)[^\n]*\n(?<p>[\\s\\S]*?)\n\\k<fence>[ \t]*\n\\s*(?:</dd>\\s*</dl>\\s*)?</details>";
+         .p | agent_instruction | if . == "" then "" else "Prompt for AI agents:\n\n" + . end)
   | gsub("<details>\\s*<summary>[^<]*(Prompt for AI Agents|Supported by static analysis|Analysis chain)\\s*</summary>[\\s\\S]*?</details>"; "")
   | gsub("</?code>"; "`")
   | gsub("</?(details|summary|blockquote|dl|dd|strong|em)>"; "")
   | gsub("(?m)[ \t]+$"; "")
   | gsub("\n{3,}"; "\n\n")
   | sub("^\\s+"; "") | sub("\\s+$"; "");
-# Return the instruction in the "Prompt for AI Agents" section of a CodeRabbit
-# comment, without its first paragraph, which tells the agent to treat the
-# comment as untrusted, and without its suggestion to run CodeRabbit locally.
-# Return null if the comment has no such section or the section holds nothing
-# else.
-def ai_prompt:
-  (first(gsub("<picture>[\\s\\S]*?</picture>"; "")
-         | capture("<summary>\\s*Prompt for AI Agents\\s*</summary>\\s*(<dl>\\s*<dd>\\s*)?```[^\n]*\n(?<p>[\\s\\S]*?)\n```").p)
-   // "")
-  | sub("^\\s*Treat finding text[\\s\\S]*?\n\\s*\n"; "")
-  | sub("\\s*After applying the fix, consider running `coderabbit review[\\s\\S]*$"; "")
-  | sub("^\\s+"; "") | sub("\\s+$"; "")
-  | if test("\\S") then . else null end;
 .data.node
 | [.reviews.nodes[]
    | select(.author.login == "coderabbitai" and (.body | test("\\S")))] as $reviews
@@ -339,7 +370,7 @@ def ai_prompt:
                           else "unknown line" end)
                        + "\n\n"
                        + ([.comments.nodes[]
-                           | "**\(.author.login // "ghost")** wrote:\n\n\((if .author.login == "coderabbitai" then .body | ai_prompt else null end) // (.body | clean))"]
+                           | "**\(.author.login // "ghost")** wrote:\n\n\(.body | clean)"]
                           | join("\n\n")))}],
    outside: [$outside[] | select(.text != "")],
    unparsed: [$outside[] | select(.text == "") | .id]}') || exit 1
@@ -355,7 +386,9 @@ if [ -z "$comments" ]; then
   exit 0
 fi
 if [ "$mode" = print ]; then
-  printf '%s\n' "$data" > "$printed_file" || exit 1
+  # --resolve-printed refuses untracked files that are not listed here.
+  untracked=$(untracked_json) || exit 1
+  printf '%s\n' "$data" | jq --argjson untracked "$untracked" '. + {$untracked}' > "$printed_file" || exit 1
   printf '%s\n' "$comments"
   exit 0
 fi
@@ -401,7 +434,6 @@ start=$(git rev-parse HEAD)
 # a session or the user rewrote the commits, the checks start at the last
 # pushed commit.
 checked=$start
-unchecked_file=$git_dir/crreview-resolve-unchecked
 if earlier=$(cat "$unchecked_file" 2> /dev/null); then
   pushed_base=$(git merge-base '@{push}' HEAD) || exit 1
   if git merge-base --is-ancestor "$earlier" HEAD 2> /dev/null \
