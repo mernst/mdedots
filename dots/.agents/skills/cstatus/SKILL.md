@@ -5,4 +5,4 @@ description: Report the current conversation status and identify decisions that 
 
 # Report the status of the conversation
 
-What is the status of this conversation?  What remains for me to decide?
+What is the status of this conversation?  What remains for me to decide?  If you are waiting for a result, about what time do you expect to have all results?
