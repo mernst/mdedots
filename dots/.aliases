@@ -167,6 +167,8 @@ alias gterm=gterminal
 alias claude-review='claude "/review $(pr-number)"'
 alias claude-fix-ci='claude "Fix CI failure, commit, and push."'
 alias claude-ci=claude-fix-ci
+alias claude-fix-merge-conflict='claude "Fix merge conflict, commit, and push."'
+alias claude-merge-conflict=claude-fix-merge-conflict
 #
 alias claudemax='claudetrustdir && command claude --model fable --effort max'
 #
