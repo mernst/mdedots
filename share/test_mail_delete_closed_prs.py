@@ -127,6 +127,27 @@ class ParseSubjectTest(unittest.TestCase):
         self.assertIsNone(mdcp.parse_circleci_subject("Your AI software factory | Commit #19"))
 
 
+class DefaultWindowTest(unittest.TestCase):
+    """Test the default search window."""
+
+    def test_no_terms(self):
+        self.assertEqual(mdcp.with_default_window(""), "newer_than:31d")
+
+    def test_terms_without_date(self):
+        self.assertEqual(mdcp.with_default_window("in:inbox"), "in:inbox newer_than:31d")
+
+    def test_terms_with_date(self):
+        for query in (
+            "newer_than:7d",
+            "in:inbox older_than:1y",
+            "after:2000/01/01",
+            "-before:2026/01/01",
+            "(NEWER:2026/10/01)",
+        ):
+            with self.subTest(query=query):
+                self.assertEqual(mdcp.with_default_window(query), query)
+
+
 class ThreadSummaryTest(unittest.TestCase):
     """Test the summarizing of Gmail threads."""
 

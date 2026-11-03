@@ -33,7 +33,9 @@ issue, or branch.  It does not examine mail in the spam or trash folders.
 By default, the script only reports what it would trash; --delete trashes it.
 The script trashes only the messages that it examined, so a message that
 arrives in a thread while the script runs stays out of the trash.
---query adds Gmail search terms, such as "newer_than:30d", to every search.
+--query adds Gmail search terms, such as "in:inbox", to every search.  If
+those terms restrict no date, the script searches only the last 31 days; to
+search all mail, give a date such as "after:2000/01/01".
 
 The script uses the `gh` command to query GitHub.  See mail_review.py, in this
 directory, for the OAuth client-secret file that it needs.  On the first run,
@@ -76,6 +78,13 @@ MODIFY_ACCOUNT = dataclasses.replace(
     / "private/googleusercontent-oauth-token-gmail-modify-mernst-cs-washington-edu.json",
 )
 
+# The Gmail search term that restricts every search if --query restricts no date.
+DEFAULT_WINDOW = "newer_than:31d"
+# Matches a Gmail search operator that restricts dates, such as the "newer_than:"
+# of "newer_than:7d" or the "-after:" of "-after:2026/01/01".
+DATE_OPERATOR = re.compile(
+    r"(?<![\w:])-?(?:after|before|newer|older|newer_than|older_than):", re.IGNORECASE
+)
 # The number of Gmail requests per batch.
 GMAIL_BATCH_SIZE = 20
 # The number of Gmail quota units that a user can spend per second.
@@ -717,6 +726,20 @@ class Candidate:
     thread: ThreadSummary
 
 
+def with_default_window(extra_query: str) -> str:
+    """Return the given Gmail search terms, restricted to DEFAULT_WINDOW if they restrict no date.
+
+    Args:
+        extra_query: Gmail search terms, such as "in:inbox", or ""
+
+    Returns:
+        The search terms, followed by DEFAULT_WINDOW if they contain no date operator.
+    """
+    if DATE_OPERATOR.search(extra_query):
+        return extra_query
+    return f"{extra_query} {DEFAULT_WINDOW}".strip()
+
+
 def candidates(service: Any, extra_query: str) -> list[Candidate]:
     """Return the threads that each source's Gmail search finds.
 
@@ -749,12 +772,15 @@ def main() -> None:
     parser.add_argument(
         "--query",
         default="",
-        help='Gmail search terms that restrict every search, as in "newer_than:7d" or "in:inbox"',
+        help=(
+            'Gmail search terms that restrict every search, as in "newer_than:7d" or "in:inbox";'
+            f" if they restrict no date, {DEFAULT_WINDOW} is added"
+        ),
     )
     arguments = parser.parse_args()
 
     service = gmail_service(MODIFY_ACCOUNT, CLIENT_SECRET_PATH, GMAIL_MODIFY_SCOPE)
-    found = candidates(service, arguments.query)
+    found = candidates(service, with_default_window(arguments.query))
     refs = [
         ref for candidate in found for ref in thread_refs(candidate.thread, candidate.source) or ()
     ]
