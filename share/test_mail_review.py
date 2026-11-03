@@ -345,6 +345,20 @@ class MailReviewTest(unittest.TestCase):
         self.assertIn("no browser accepted", stderr.getvalue())
 
 
+class MissingLibraryMessageTest(unittest.TestCase):
+    """Test the explanation of a missing library."""
+
+    def test_names_missing_module(self):
+        message = mail_review.missing_library_message(
+            ModuleNotFoundError("No module named 'requests'", name="requests")
+        )
+        self.assertTrue(message.startswith("missing library requests; execute the script"))
+
+    def test_unnamed_failure(self):
+        message = mail_review.missing_library_message(ImportError("cannot import name 'x'"))
+        self.assertTrue(message.startswith("cannot import name 'x'; execute the script"))
+
+
 class TransientErrorTest(unittest.TestCase):
     """Test which Gmail failures let the review continue."""
 
@@ -366,6 +380,13 @@ class TransientErrorTest(unittest.TestCase):
     def test_network_failures_are_transient(self):
         self.assertTrue(mail_review.is_transient_api_error(ConnectionResetError("reset")))
         self.assertTrue(mail_review.is_transient_api_error(TimeoutError("timed out")))
+
+    def test_name_lookup_failure_is_transient(self):
+        server_not_found = type("ServerNotFoundError", (Exception,), {})
+        httplib2 = types.SimpleNamespace(ServerNotFoundError=server_not_found)
+        with mock.patch.dict(sys.modules, {"httplib2": httplib2}):
+            error = server_not_found("Unable to find the server")
+            self.assertTrue(mail_review.is_transient_api_error(error))
 
 
 class CachedCredentialsTest(unittest.TestCase):
