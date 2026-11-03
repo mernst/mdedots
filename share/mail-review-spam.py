@@ -55,6 +55,7 @@ GERMAN_TERMS = (
     "(kurze Frage)",
     "(anfrage zu)",
     "(frage zu)",
+    '(ohne AND und AND deine)',
 )
 GERMAN_SEARCH = "(" + " OR ".join(GERMAN_TERMS) + ")"
 
@@ -167,7 +168,10 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             # Japanese
             "様",
             # Chinese or Japanese
-            "重要",
+            "重",
+            "国",
+            "補",
+            "確",
             # NOTE: Most of these aren't a problem because the email subject sorts
             # at the end when I review the email in Emacs Mew.
             # "К",  # ruff:ignore[ambiguous-unicode-character-comment] # intentionally not regular "K"
@@ -217,6 +221,8 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             "from:8x8",  # nothing on 8/3/2023
             "from:webinars" + "@" + "training.businesswatchnetwork.com",
             "from:expertspeak" + "@" + "email.concordeducations.com",
+            "from:reply" + "@" + "members.nra.org",
+            "newsletters" + "@" + "news.openaccessgovernment.org"
         ),
     ),
     Section(
@@ -320,6 +326,7 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             "subject:journal",
             '"nick hellen"',
             '"michael duwayne"',
+            "Biehl",
         ),
     ),
     Section(
