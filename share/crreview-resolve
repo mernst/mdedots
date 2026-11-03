@@ -11,6 +11,8 @@
 # The script, not the agent, fetches the comments, pushes, and resolves the
 # threads.  That saves tokens, avoids starting a session when there is nothing
 # to address, and lets the session run without access to `gh` or `git push`.
+# The script refuses a PR that is not open, because pushing to the branch of
+# a landed PR would recreate the branch, which GitHub usually deletes.
 # For each comment that CodeRabbit wrote, the session receives only the
 # instruction in the comment's "Prompt for AI Agents" section, without the
 # boilerplate that every such section repeats.  A comment that lacks that
@@ -171,7 +173,12 @@ set_git_config diff.ignoreSubmodules dirty
 # submodules.  The environment's settings apply there too and override the
 # submodule's own git configuration.
 set_git_config core.fsmonitor false
-pr=$(gh pr view --json id,baseRefName) || exit 1
+pr=$(gh pr view --json id,baseRefName,state,url) || exit 1
+if [ "$(printf '%s\n' "$pr" | jq -r .state)" != OPEN ]; then
+  echo "${0##*/}: $(printf '%s\n' "$pr" | jq -r '"\(.url) \(if .state == "MERGED" then "has landed" else "is closed" end)"')," \
+    "so its comments are not addressed" >&2
+  exit 1
+fi
 pr_id=$(printf '%s\n' "$pr" | jq -r .id)
 # The IDs of the reviews whose "Outside diff range comments" an earlier run
 # addressed, one per line.
