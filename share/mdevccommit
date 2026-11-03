@@ -67,6 +67,13 @@ for dir in ~/bib ~/bin/src/mdedots ~/research/notes ~/wisdom; do
       ## TODO: Another problem is the possibility of git commands happening simultaneously.
       (
         cd $dir && git status > /dev/null
+        # Pull before committing, so that the commit usually follows the
+        # remote's commits rather than requiring a merge.  This pull only
+        # fast-forwards, so it cannot leave conflicts that the commit would
+        # record.  It fails if the branch has diverged from the remote's or if
+        # the remote's commits change a file that has uncommitted changes; the
+        # pull after the commit then merges, and reports any failure.
+        git pull -q --ff-only > /dev/null 2>&1
         (git diff --quiet --exit-code HEAD || cronic --permit-stderr git commit -q -a --allow-empty-message -m " ")
         git pull -q
         if [ -n "$(git log --branches --not --remotes --format=%H)" ]; then

@@ -8,9 +8,11 @@
 # the comments' review threads.  The agent is Claude Code (the default) or
 # Codex.
 #
-# The script, not the agent, fetches the comments, pushes, and resolves the
-# threads.  That saves tokens, avoids starting a session when there is nothing
-# to address, and lets the session run without access to `gh` or `git push`.
+# The script, not the agent, fetches the comments, pulls the PR's head branch,
+# pushes, and resolves the threads.  That saves tokens, avoids starting a
+# session when there is nothing to address, and lets the session run without
+# access to `gh`, `git pull`, or `git push`.  The pull happens only when there
+# are comments to address, and it merges; it never rebases.
 # The script refuses a PR that is not open, because pushing to the branch of
 # a landed PR would recreate the branch, which GitHub usually deletes.  It
 # also refuses unless `git push` pushes to the PR's head branch:  `gh pr view`
@@ -21,11 +23,11 @@
 # analyze the code.  Each "Prompt for AI Agents" section is reduced to its
 # instruction, without the boilerplate that every such section repeats.
 #
-# With --print-comments, the script prints the comments and runs no agent;
-# the crreview-resolve skill (dots/.agents/skills/crreview-resolve/SKILL.md)
-# uses it.  It refuses if an earlier run left unpushed commits that the
-# script has not checked (see the pre-push checks below).  After
-# the comments are addressed and the commits are pushed, --resolve-printed
+# With --print-comments, the script pulls, prints the comments, and runs no
+# agent; the crreview-resolve skill
+# (dots/.agents/skills/crreview-resolve/SKILL.md) uses it.  It refuses if an
+# earlier run left unpushed commits that the script has not checked (see the
+# pre-push checks below).  After the comments are addressed and the commits are pushed, --resolve-printed
 # resolves the printed review threads, as the script does after a session,
 # and records that the printed "Outside diff range comments" were addressed.
 # It refuses if the current branch has commits that have not been pushed, if
@@ -459,6 +461,20 @@ if [ -z "$comments" ]; then
   echo "${0##*/}: there are no CodeRabbit comments to address"
   exit 0
 fi
+
+# The session commits its changes, which must not include unrelated ones.
+if [ "$mode" = run ] && [ -n "$(tracked_changes)" ]; then
+  echo "${0##*/}: the working tree has uncommitted changes:" >&2
+  git status --short --untracked-files=no --ignore-submodules=dirty >&2
+  exit 1
+fi
+# Pull the PR's head branch, so that the comments are addressed in the latest
+# code and the push after the commits is a fast-forward.  The pull merges
+# rather than rebases, so it does not rewrite commits that were not pushed.
+if ! git pull --quiet --no-rebase --no-edit "$push_remote" "$push_branch"; then
+  echo "${0##*/}: could not pull $push_branch from $push_remote" >&2
+  exit 1
+fi
 if [ "$mode" = print ]; then
   # --resolve-printed refuses untracked files that are not listed here.
   untracked=$(untracked_json) || exit 1
@@ -467,12 +483,6 @@ if [ "$mode" = print ]; then
   exit 0
 fi
 
-# The session commits its changes, which must not include unrelated ones.
-if [ -n "$(tracked_changes)" ]; then
-  echo "${0##*/}: the working tree has uncommitted changes:" >&2
-  git status --short --untracked-files=no --ignore-submodules=dirty >&2
-  exit 1
-fi
 start=$(git rev-parse HEAD)
 # The pre-push checks examine the commits after $checked.  The script records
 # $checked in $unchecked_file before the session, and removes the file only
