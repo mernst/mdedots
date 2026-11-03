@@ -825,9 +825,16 @@ def modify_account(config: AccountConfig) -> AccountConfig:
 
     Returns:
         The account, with a different token cache.
+
+    Raises:
+        RuntimeError: if the name of the account's cache does not contain
+            "oauth-token-", so that the two caches would be the same file.
     """
     path = config.token_path
     name = path.name.replace("oauth-token-", "oauth-token-gmail-modify-", 1)
+    if name == path.name:
+        msg = f'cannot derive a modify-scope cache from {path}, which lacks "oauth-token-"'
+        raise RuntimeError(msg)
     return dataclasses.replace(config, token_path=path.with_name(name))
 
 

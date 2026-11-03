@@ -100,6 +100,11 @@ class ModifyAccountTest(unittest.TestCase):
             ),
         )
 
+    def test_unrecognized_cache_name(self):
+        config = mdcp.AccountConfig("user@example.com", Path("/p/token-user.json"))
+        with self.assertRaisesRegex(RuntimeError, "cannot derive a modify-scope cache"):
+            mdcp.modify_account(config)
+
 
 class ParseSubjectTest(unittest.TestCase):
     """Test the parsing of notification subjects."""
