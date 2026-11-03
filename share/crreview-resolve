@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # Usage: crreview-resolve [--agent claude|codex]
+#        crreview-resolve --print-comments
+#        crreview-resolve --resolve-printed
 # Address the unresolved CodeRabbit review comments on the current branch's PR:
 # run an AI agent non-interactively to edit and commit, then push and resolve
 # the comments' review threads.  The agent is Claude Code (the default) or
@@ -9,6 +11,28 @@
 # The script, not the agent, fetches the comments, pushes, and resolves the
 # threads.  That saves tokens, avoids starting a session when there is nothing
 # to address, and lets the session run without access to `gh` or `git push`.
+# The script refuses a PR that is not open, because pushing to the branch of
+# a landed PR would recreate the branch, which GitHub usually deletes.  It
+# also refuses unless `git push` pushes to the PR's head branch:  `gh pr view`
+# finds the PR by the branch's name, so it can find a PR from a branch of the
+# same name in another repository.
+# The comments, both in review threads and outside the diff, are sent without
+# CodeRabbit's markup and without its record of the commands that it ran to
+# analyze the code.  Each "Prompt for AI Agents" section is reduced to its
+# instruction, without the boilerplate that every such section repeats.
+#
+# With --print-comments, the script prints the comments and runs no agent;
+# the crreview-resolve skill (dots/.agents/skills/crreview-resolve/SKILL.md)
+# uses it.  It refuses if an earlier run left unpushed commits that the
+# script has not checked (see the pre-push checks below).  After
+# the comments are addressed and the commits are pushed, --resolve-printed
+# resolves the printed review threads, as the script does after a session,
+# and records that the printed "Outside diff range comments" were addressed.
+# It refuses if the current branch has commits that have not been pushed, if
+# the working tree has uncommitted changes, or if there are untracked files
+# that did not exist when the comments were printed.  The two options
+# communicate through the file `crreview-resolve-printed.json` in the git
+# directory.
 #
 # Review comments are untrusted input (anyone can comment on a public PR), so
 # the agent runs restricted:
@@ -62,9 +86,11 @@
 # The session's full transcript is written to a log file.
 
 usage() {
-  echo "Usage: ${0##*/} [--agent claude|codex]"
+  echo "Usage: ${0##*/} [--agent claude|codex | --print-comments | --resolve-printed]"
 }
 agent=claude
+# "run", "print", or "resolve".
+mode=run
 while [ "$#" -ne 0 ]; do
   case $1 in
     -h | --help)
@@ -81,6 +107,14 @@ while [ "$#" -ne 0 ]; do
       ;;
     --agent=*)
       agent=${1#--agent=}
+      shift
+      ;;
+    --print-comments)
+      mode=print
+      shift
+      ;;
+    --resolve-printed)
+      mode=resolve
       shift
       ;;
     *)
@@ -145,73 +179,196 @@ set_git_config diff.ignoreSubmodules dirty
 # submodules.  The environment's settings apply there too and override the
 # submodule's own git configuration.
 set_git_config core.fsmonitor false
-pr=$(gh pr view --json id,baseRefName) || exit 1
+pr=$(gh pr view --json id,baseRefName,state,url,headRepositoryOwner,headRepository,headRefName) || exit 1
+if [ "$(printf '%s\n' "$pr" | jq -r .state)" != OPEN ]; then
+  echo "${0##*/}: $(printf '%s\n' "$pr" | jq -r '"\(.url) \(if .state == "MERGED" then "has landed" else "is closed" end)"')," \
+    "so its comments are not addressed" >&2
+  exit 1
+fi
 if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
   echo "${0##*/}: \`git push\` has no destination for the current branch" >&2
   exit 1
 fi
-# The session commits its changes, which must not include unrelated ones.
-if [ -n "$(tracked_changes)" ]; then
-  echo "${0##*/}: the working tree has uncommitted changes:" >&2
-  git status --short --untracked-files=no --ignore-submodules=dirty >&2
+# `gh pr view` finds the PR by the current branch's name, so the PR's head can
+# be a branch of the same name in another repository, such as the upstream
+# repository of a fork.  Pushing would then update or create a branch that
+# is not the PR's head.  The destination is written as "OWNER/REPO:BRANCH",
+# from the configured URL of the push remote, which `url.BASE.insteadOf`
+# does not rewrite.
+pr_head=$(printf '%s\n' "$pr" \
+  | jq -r '"\(.headRepositoryOwner.login)/\(.headRepository.name // ""):\(.headRefName)"')
+branch_ref=$(git symbolic-ref --quiet HEAD) || exit 1
+push_remote=$(git for-each-ref --format='%(push:remotename)' "$branch_ref")
+push_branch=$(git for-each-ref --format='%(push)' "$branch_ref")
+push_branch=${push_branch#refs/remotes/"$push_remote"/}
+push_url=$(git config --get "remote.$push_remote.pushurl" || git config --get "remote.$push_remote.url")
+push_repo=${push_url#*github.com[:/]}
+push_repo=${push_repo%/}
+push_repo=${push_repo%.git}
+lowercase() {
+  printf '%s\n' "$1" | tr '[:upper:]' '[:lower:]'
+}
+if [ "$push_repo" = "$push_url" ] \
+  || [ "$(lowercase "$push_repo"):$push_branch" != "$(lowercase "${pr_head%%:*}"):${pr_head#*:}" ]; then
+  echo "${0##*/}: the head of $(printf '%s\n' "$pr" | jq -r .url) is $pr_head," \
+    "but \`git push\` would push to $push_url ($push_branch)" >&2
   exit 1
 fi
-if [ "$agent" = codex ]; then
-  # The sandbox lets Codex write the system's temporary directories, but not
-  # the git directory.
-  tmp=$(mktemp -d "$git_dir/crreview-resolve.XXXXXX") || exit 1
-else
-  # Claude's file tools can write only the working directory, which can
-  # contain the git directory.
-  tmp=$(mktemp -d) || exit 1
-fi
-trap 'rm -rf "$tmp"' EXIT
-# Some shells do not run the EXIT trap when a signal kills the script.
-trap 'exit 1' HUP INT TERM
-untracked_files > "$tmp/untracked" || exit 1
-# "$untracked" separates the names by newlines.
-newlines=$(tr -cd '\n' < "$tmp/untracked" | wc -l)
-if [ "$((newlines))" -ne 0 ]; then
-  echo "${0##*/}: the name of an untracked file contains a newline;" \
-    "rename, remove, or ignore the file" >&2
-  exit 1
-fi
-untracked=$(tr '\0' '\n' < "$tmp/untracked")
-start=$(git rev-parse HEAD)
-# The pre-push checks examine the commits after $checked.  The script records
-# $checked in $unchecked_file before the session, and removes the file only
-# after it pushes.  If a run stops in between, even without running its EXIT
-# trap, the next run's checks start at the earlier run's $checked, or at the
-# last pushed commit if that is later, and so cover the earlier session's
-# commits.  If the earlier $checked is no longer an ancestor of HEAD, because
-# a session or the user rewrote the commits, the checks start at the last
-# pushed commit.
-checked=$start
-unchecked_file=$git_dir/crreview-resolve-unchecked
-if earlier=$(cat "$unchecked_file" 2> /dev/null); then
-  pushed_base=$(git merge-base '@{push}' HEAD) || exit 1
-  if git merge-base --is-ancestor "$earlier" HEAD 2> /dev/null \
-    && ! git merge-base --is-ancestor "$earlier" "$pushed_base"; then
-    checked=$earlier
-  else
-    checked=$pushed_base
-  fi
-fi
+pr_id=$(printf '%s\n' "$pr" | jq -r .id)
 # The IDs of the reviews whose "Outside diff range comments" an earlier run
 # addressed, one per line.
 handled_file="$(git rev-parse --path-format=absolute --git-common-dir)/crreview-resolve-handled-reviews"
+printed_file=$git_dir/crreview-resolve-printed.json
+# See the comment where run mode sets $checked.
+unchecked_file=$git_dir/crreview-resolve-unchecked
+
+# Print, as a JSON array, the untracked files that are not ignored.
+untracked_json() {
+  untracked_files | jq -Rs 'split("\u0000") | map(select(length > 0))'
+}
+
+# Record that the "Outside diff range comments" in $data were addressed.
+record_outside() {
+  printf '%s\n' "$data" | jq -r '.outside[].id' >> "$handled_file"
+}
+
+# Resolve the review threads in $data.  Leave unresolved any thread that got a
+# reply since $data was fetched, which the session did not see, or that was
+# deleted.  Return 0 if every thread was resolved, 2 if every thread except
+# those was resolved, and 1 if the threads could not be read or resolved.
+resolve_threads() {
+  # Query and resolve all the threads at once.
+  if [ "$(printf '%s\n' "$data" | jq '.threads | length')" -eq 0 ]; then
+    return 0
+  fi
+  # shellcheck disable=SC2016 # $id is a GraphQL variable.
+  current=$(retry gh api graphql -F id="$pr_id" -f query='
+    query($id: ID!) {
+      node(id: $id) {
+        ... on PullRequest { reviewThreads(last: 100) { nodes { id comments { totalCount } } } }
+      }
+    }') || {
+    echo "${0##*/}: could not read the review threads" >&2
+    return 1
+  }
+  statuses=$(printf '%s\n' "$data" | jq -r --argjson current "$current" '
+    ($current.data.node.reviewThreads.nodes
+     | map({key: .id, value: .comments.totalCount}) | from_entries) as $counts
+    | .threads[]
+    | "\(if $counts[.id] == .count then "unchanged" else "changed" end) \(.id)"') || {
+    echo "${0##*/}: could not compare the review threads" >&2
+    return 1
+  }
+  set --
+  variables=""
+  fields=""
+  i=0
+  for thread in $(printf '%s\n' "$statuses" | sed -n 's/^unchanged //p'); do
+    variables="$variables \$t$i: ID!"
+    fields="$fields t$i: resolveReviewThread(input: {threadId: \$t$i}) { thread { id } }"
+    set -- "$@" -f "t$i=$thread"
+    i=$((i + 1))
+  done
+  if [ "$i" -ne 0 ]; then
+    retry gh api graphql "$@" -f query="mutation($variables) {$fields }" > /dev/null || {
+      echo "${0##*/}: could not resolve the review threads" >&2
+      return 1
+    }
+  fi
+  changed=$(printf '%s\n' "$statuses" | sed -n 's/^changed //p')
+  if [ -n "$changed" ]; then
+    for thread in $changed; do
+      echo "${0##*/}: did not resolve thread $thread, which got a reply or was deleted after the comments were fetched" >&2
+    done
+    return 2
+  fi
+}
+
+if [ "$mode" = resolve ]; then
+  if ! data=$(cat "$printed_file" 2> /dev/null); then
+    echo "${0##*/}: run \`${0##*/} --print-comments\` first" >&2
+    exit 1
+  fi
+  # Resolve the threads only if the changes that address them were pushed.
+  if [ -n "$(tracked_changes)" ]; then
+    echo "${0##*/}: the working tree has uncommitted changes; commit and push them first:" >&2
+    git status --short --untracked-files=no --ignore-submodules=dirty >&2
+    exit 1
+  fi
+  created=$(untracked_json | jq -r --argjson data "$data" '. - $data.untracked | .[]') || exit 1
+  if [ -n "$created" ]; then
+    printf '%s\n' "$created" >&2
+    echo "${0##*/}: the untracked files listed above did not exist when the" \
+      "comments were printed; commit and push them, or remove them, first" >&2
+    exit 1
+  fi
+  if ! git merge-base --is-ancestor HEAD '@{push}' 2> /dev/null; then
+    echo "${0##*/}: push the current branch first" >&2
+    exit 1
+  fi
+  record_outside || exit 1
+  # A retry after a failure below must not record the outside-diff comments
+  # again.
+  printf '%s\n' "$data" | jq '.outside = []' > "$printed_file" || exit 1
+  resolve_threads
+  case $? in
+    0) ;;
+    2)
+      rm -f "$printed_file"
+      echo "${0##*/}: run \`${0##*/} --print-comments\` to see the replies" >&2
+      exit 1
+      ;;
+    *) exit 1 ;;
+  esac
+  rm -f "$printed_file"
+  exit 0
+fi
+
+if [ "$mode" = print ]; then
+  rm -f "$printed_file"
+  # Pushing would push the commits that an earlier run left for a manual check.
+  if [ -e "$unchecked_file" ] \
+    && ! git merge-base --is-ancestor HEAD '@{push}' 2> /dev/null; then
+    echo "${0##*/}: an earlier run left commits that it did not push;" \
+      "check them and push them manually first" >&2
+    exit 1
+  fi
+fi
+# Fail before fetching the comments, which can take a while, if the untracked
+# files rule out a run.  The check for uncommitted changes comes after the
+# fetch, so that a run with nothing to address succeeds anyway.
+if [ "$mode" = run ]; then
+  if [ "$agent" = codex ]; then
+    # The sandbox lets Codex write the system's temporary directories, but not
+    # the git directory.
+    tmp=$(mktemp -d "$git_dir/crreview-resolve.XXXXXX") || exit 1
+  else
+    # Claude's file tools can write only the working directory, which can
+    # contain the git directory.
+    tmp=$(mktemp -d) || exit 1
+  fi
+  trap 'rm -rf "$tmp"' EXIT
+  # Some shells do not run the EXIT trap when a signal kills the script.
+  trap 'exit 1' HUP INT TERM
+  untracked_files > "$tmp/untracked" || exit 1
+  # "$untracked" separates the names by newlines.
+  newlines=$(tr -cd '\n' < "$tmp/untracked" | wc -l)
+  if [ "$((newlines))" -ne 0 ]; then
+    echo "${0##*/}: the name of an untracked file contains a newline;" \
+      "rename, remove, or ignore the file" >&2
+    exit 1
+  fi
+  untracked=$(tr '\0' '\n' < "$tmp/untracked")
+fi
 handled=$(cat "$handled_file" 2> /dev/null)
 
 # Select the unresolved review threads that CodeRabbit started, and the
 # "Outside diff range comments" of each CodeRabbit review that has such a
-# thread and of the last CodeRabbit review if it has no threads.  This is the
-# selection rule of the crreview-resolve skill
-# (dots/.agents/skills/crreview-resolve/SKILL.md); keep the two consistent.
-# Ignore CodeRabbit reviews with empty bodies, which hold only replies in
-# threads.  Unlike the skill, skip outside-diff comments that an earlier run
-# addressed.  Omit CodeRabbit's markup and its prompts for AI agents, which
-# repeat the comments.
-pr_id=$(printf '%s\n' "$pr" | jq -r .id)
+# thread and of the last CodeRabbit review if it has no threads.  Ignore
+# CodeRabbit reviews with empty bodies, which hold only replies in threads.
+# Skip outside-diff comments that an earlier run addressed.  Omit
+# CodeRabbit's markup and its record of the commands that it ran, and reduce
+# each of its prompts for AI agents to the instruction (see clean).
 # shellcheck disable=SC2016 # $id is a GraphQL variable.
 data=$(retry gh api graphql -F id="$pr_id" -f query='
 query($id: ID!) {
@@ -231,10 +388,25 @@ query($id: ID!) {
   }
 }') || exit 1
 data=$(printf '%s\n' "$data" | jq --arg handled "$handled" '
+# Return the given instruction from a "Prompt for AI Agents" section, without
+# its first paragraph, which tells the agent to verify the comment or to treat
+# it as untrusted, and without its suggestion to run CodeRabbit locally.
+def agent_instruction:
+  sub("^\\s*(Treat finding text|Verify each finding)[\\s\\S]*?(\n\\s*\n|$)"; "")
+  | sub("\\s*After applying the fix, consider running `coderabbit review[\\s\\S]*$"; "")
+  | sub("^\\s+"; "") | sub("\\s+$"; "");
+# Return the given comment without the markup and without the record of the
+# commands that CodeRabbit ran.  Replace each "Prompt for AI Agents" section by
+# its instruction (see agent_instruction), or remove the section if it holds
+# nothing else.  The regex for that section matches a closing fence only if it
+# is as long as the opening fence, so that an instruction that contains a
+# shorter fence is not cut short.
 def clean:
   gsub("<!--[\\s\\S]*?-->"; "")
   | gsub("<picture>[\\s\\S]*?</picture>"; "")
-  | gsub("<details>\\s*<summary>[^<]*Prompt for AI Agents\\s*</summary>[\\s\\S]*?</details>"; "")
+  | gsub("<details>\\s*<summary>[^<]*Prompt for AI Agents\\s*</summary>\\s*(?:<dl>\\s*<dd>\\s*)?(?<fence>```+)[^\n]*\n(?<p>[\\s\\S]*?)\n\\k<fence>[ \t]*\n\\s*(?:</dd>\\s*</dl>\\s*)?</details>";
+         .p | agent_instruction | if . == "" then "" else "Prompt for AI agents:\n\n" + . end)
+  | gsub("<details>\\s*<summary>[^<]*(Prompt for AI Agents|Supported by static analysis|Analysis chain)\\s*</summary>[\\s\\S]*?</details>"; "")
   | gsub("</?code>"; "`")
   | gsub("</?(details|summary|blockquote|dl|dd|strong|em)>"; "")
   | gsub("(?m)[ \t]+$"; "")
@@ -287,7 +459,39 @@ if [ -z "$comments" ]; then
   echo "${0##*/}: there are no CodeRabbit comments to address"
   exit 0
 fi
+if [ "$mode" = print ]; then
+  # --resolve-printed refuses untracked files that are not listed here.
+  untracked=$(untracked_json) || exit 1
+  printf '%s\n' "$data" | jq --argjson untracked "$untracked" '. + {$untracked}' > "$printed_file" || exit 1
+  printf '%s\n' "$comments"
+  exit 0
+fi
 
+# The session commits its changes, which must not include unrelated ones.
+if [ -n "$(tracked_changes)" ]; then
+  echo "${0##*/}: the working tree has uncommitted changes:" >&2
+  git status --short --untracked-files=no --ignore-submodules=dirty >&2
+  exit 1
+fi
+start=$(git rev-parse HEAD)
+# The pre-push checks examine the commits after $checked.  The script records
+# $checked in $unchecked_file before the session, and removes the file only
+# after it pushes.  If a run stops in between, even without running its EXIT
+# trap, the next run's checks start at the earlier run's $checked, or at the
+# last pushed commit if that is later, and so cover the earlier session's
+# commits.  If the earlier $checked is no longer an ancestor of HEAD, because
+# a session or the user rewrote the commits, the checks start at the last
+# pushed commit.
+checked=$start
+if earlier=$(cat "$unchecked_file" 2> /dev/null); then
+  pushed_base=$(git merge-base '@{push}' HEAD) || exit 1
+  if git merge-base --is-ancestor "$earlier" HEAD 2> /dev/null \
+    && ! git merge-base --is-ancestor "$earlier" "$pushed_base"; then
+    checked=$earlier
+  else
+    checked=$pushed_base
+  fi
+fi
 log="$git_dir/crreview-resolve-$(date +%Y%m%d-%H%M%S).jsonl"
 echo "${0##*/}: logging to $log"
 base=$(printf '%s\n' "$pr" | jq -r .baseRefName)
@@ -450,52 +654,5 @@ if [ "$(git rev-parse HEAD)" != "$checked" ]; then
   git push || exit 1
 fi
 rm -f "$unchecked_file"
-printf '%s\n' "$data" | jq -r '.outside[].id' >> "$handled_file"
-
-# Leave unresolved any thread that got a reply during the session, which the
-# session did not see, or that was deleted.  Query and resolve all the threads
-# at once.
-if [ "$(printf '%s\n' "$data" | jq '.threads | length')" -eq 0 ]; then
-  exit 0
-fi
-# shellcheck disable=SC2016 # $id is a GraphQL variable.
-current=$(retry gh api graphql -F id="$pr_id" -f query='
-  query($id: ID!) {
-    node(id: $id) {
-      ... on PullRequest { reviewThreads(last: 100) { nodes { id comments { totalCount } } } }
-    }
-  }') || {
-  echo "${0##*/}: could not read the review threads" >&2
-  exit 1
-}
-statuses=$(printf '%s\n' "$data" | jq -r --argjson current "$current" '
-  ($current.data.node.reviewThreads.nodes
-   | map({key: .id, value: .comments.totalCount}) | from_entries) as $counts
-  | .threads[]
-  | "\(if $counts[.id] == .count then "unchanged" else "changed" end) \(.id)"') || {
-  echo "${0##*/}: could not compare the review threads" >&2
-  exit 1
-}
-set --
-variables=""
-fields=""
-i=0
-for thread in $(printf '%s\n' "$statuses" | sed -n 's/^unchanged //p'); do
-  variables="$variables \$t$i: ID!"
-  fields="$fields t$i: resolveReviewThread(input: {threadId: \$t$i}) { thread { id } }"
-  set -- "$@" -f "t$i=$thread"
-  i=$((i + 1))
-done
-if [ "$i" -ne 0 ]; then
-  retry gh api graphql "$@" -f query="mutation($variables) {$fields }" > /dev/null || {
-    echo "${0##*/}: could not resolve the review threads" >&2
-    exit 1
-  }
-fi
-changed=$(printf '%s\n' "$statuses" | sed -n 's/^changed //p')
-if [ -n "$changed" ]; then
-  for thread in $changed; do
-    echo "${0##*/}: did not resolve thread $thread, which got a reply or was deleted during the session" >&2
-  done
-  exit 1
-fi
+record_outside || exit 1
+resolve_threads
