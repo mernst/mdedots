@@ -1,9 +1,9 @@
-"""Shared support for the Gmail review scripts.
+"""Shared support for the Gmail scripts.
 
-mail-review-spam.py and mail-review-weekly.py import this module, which must
-remain in the same directory as those scripts.  Each script declares the dependencies that
-these routines need; run a script directly or with `uv run --script`, so that uv
-supplies them.
+mail-review-spam.py, mail-review-weekly.py, and mail-delete-closed-prs.py
+import this module, which must remain in the same directory as those scripts.
+Each script declares the dependencies that these routines need; run a script
+directly or with `uv run --script`, so that uv supplies them.
 
 The Gmail API must be enabled for the application represented by
 ~/private/googleusercontent-oauth-client-secret.json.  On the first run, a
@@ -53,6 +53,9 @@ ACCOUNT_CONFIGS = (
 
 
 GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
+# Permits reading mail, changing labels, and moving mail to the trash, but not
+# deleting mail permanently.
+GMAIL_MODIFY_SCOPE = "https://www.googleapis.com/auth/gmail.modify"
 # This identifies the application; by contrast, the oauth *tokens* identify an account.
 CLIENT_SECRET_PATH = Path.home() / "private/googleusercontent-oauth-client-secret.json"
 GMAIL_URL_PREFIX = "https://mail.google.com/mail/u/"
@@ -320,8 +323,12 @@ def _write_private_token(path: Path, contents: str) -> None:
                 Path(temporary_name).unlink()
 
 
-def cached_credentials(config: AccountConfig) -> Any | None:
+def cached_credentials(config: AccountConfig, scope: str = GMAIL_READONLY_SCOPE) -> Any | None:
     """Load an account's cached OAuth credentials, refreshing them if they have expired.
+
+    Args:
+        config: an account whose token cache holds credentials for the scope
+        scope: the OAuth scope URL that the credentials grant, such as GMAIL_READONLY_SCOPE
 
     Returns:
         Usable credentials, or None if the user must authorize the account again.
@@ -336,9 +343,7 @@ def cached_credentials(config: AccountConfig) -> Any | None:
         raise RuntimeError(MISSING_LIBRARIES) from error
 
     try:
-        credentials = Credentials.from_authorized_user_file(
-            str(config.token_path), [GMAIL_READONLY_SCOPE]
-        )
+        credentials = Credentials.from_authorized_user_file(str(config.token_path), [scope])
         if not credentials.valid and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
     except (GoogleAuthError, OSError, ValueError) as error:
@@ -357,6 +362,30 @@ def authenticate_account(
     Returns:
         The authenticated account session.
     """
+    service = gmail_service(config, client_secret_path, browser_slot=browser_slot)
+    return AccountSession(config, browser_slot, service)
+
+
+def gmail_service(
+    config: AccountConfig,
+    client_secret_path: Path = CLIENT_SECRET_PATH,
+    scope: str = GMAIL_READONLY_SCOPE,
+    browser_slot: str | None = None,
+) -> Any:
+    """Return a Gmail service for the given account, asking the user to authorize it if necessary.
+
+    The service is verified to belong to the account, and its credentials are
+    written to the account's token cache.
+
+    Args:
+        config: an account whose token cache holds, or will hold, credentials for the scope
+        client_secret_path: the OAuth client-secret file that identifies this application
+        scope: the OAuth scope URL that the service needs, such as GMAIL_READONLY_SCOPE
+        browser_slot: the account's Gmail browser slot, such as "0"; used for diagnostics
+
+    Returns:
+        A Gmail API service, as built by googleapiclient.discovery.build.
+    """
     try:
         from google_auth_oauthlib.flow import InstalledAppFlow  # ty: ignore[unresolved-import]
         from googleapiclient.discovery import build  # ty: ignore[unresolved-import]
@@ -364,7 +393,7 @@ def authenticate_account(
         raise RuntimeError(MISSING_LIBRARIES) from error
 
     try:
-        credentials = cached_credentials(config)
+        credentials = cached_credentials(config, scope)
         from_cache = credentials is not None
         if credentials is None:
             # Check this before asking the user to authorize, so that a missing
@@ -372,10 +401,9 @@ def authenticate_account(
             if not client_secret_path.is_file():
                 msg = f"OAuth client-secret file does not exist: {client_secret_path}"
                 raise RuntimeError(msg)  # ruff: ignore[raise-within-try]
-            print(f"Authorize {config.email} (Gmail browser slot {browser_slot}).")
-            flow = InstalledAppFlow.from_client_secrets_file(
-                str(client_secret_path), [GMAIL_READONLY_SCOPE]
-            )
+            slot = "" if browser_slot is None else f" (Gmail browser slot {browser_slot})"
+            print(f"Authorize {config.email}{slot}.")
+            flow = InstalledAppFlow.from_client_secrets_file(str(client_secret_path), [scope])
             credentials = flow.run_local_server(
                 port=0,
                 prompt="select_account",
@@ -402,7 +430,7 @@ def authenticate_account(
                 )
             raise RuntimeError(msg)  # ruff: ignore[raise-within-try]
         _write_private_token(config.token_path, credentials.to_json())
-        return AccountSession(config, browser_slot, service)
+        return service
     except RuntimeError:
         raise
     except Exception as error:

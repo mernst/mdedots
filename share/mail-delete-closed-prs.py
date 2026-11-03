@@ -1,0 +1,718 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "google-api-python-client",
+#   "google-auth",
+#   "google-auth-oauthlib",
+# ]
+# ///
+
+"""Move Gmail notifications about closed pull requests and issues to the trash.
+
+Usage: mail-delete-closed-prs.py [--delete] [--query GMAIL-SEARCH]
+
+The script examines notifications from three services:
+ * GitHub, whose subjects name a pull request or issue, as in
+   "[codespecs/daikon] Fix a bug (PR #926)".  Such a notification is about a
+   closed pull request or issue if it is closed or merged.
+ * Azure DevOps, whose subjects name a branch, as in
+   "[Build failed] mernst.daikon - mernst/daikon:my-branch - daikon - 5429bfbb".
+ * CircleCI, whose subjects name a branch, as in
+   "[CircleCI] Workflow failed: mernst / daikon on my-branch".
+A notification about a branch is about a closed pull request if at least one
+pull request was made from that branch, to its repository or to the
+repository's parent, and none of those pull requests is open.  A notification
+about a repository's default branch is never trashed.
+
+The script keeps a thread if any of its messages is starred, if any message
+comes from a sender other than the service's notification address (such as a
+reply that you sent), or if it cannot determine the state of the pull request,
+issue, or branch.  It does not examine mail in the spam or trash folders.
+
+By default, the script only reports what it would trash; --delete trashes it.
+--query adds Gmail search terms, such as "newer_than:30d", to every search.
+
+The script uses the `gh` command to query GitHub.  See mail_review.py, in this
+directory, for the OAuth client-secret file that it needs.  On the first run,
+the script asks the user to authorize it to modify mail; it caches that
+authorization in MODIFY_ACCOUNT.token_path.
+"""
+
+from __future__ import annotations
+
+import argparse
+import enum
+import json
+import re
+import subprocess
+import time
+from collections import Counter
+from dataclasses import dataclass
+from email.utils import parseaddr
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+from mail_review import (
+    CLIENT_SECRET_PATH,
+    GMAIL_MODIFY_SCOPE,
+    AccountConfig,
+    gmail_service,
+    is_transient_api_error,
+    warn,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Mapping
+
+# The modify scope needs its own token cache, because a cached token grants
+# only the scopes that the user authorized when the cache was written.
+MODIFY_ACCOUNT = AccountConfig(
+    "mernst" + "@" + "cs.washington.edu",
+    Path.home()
+    / "private/googleusercontent-oauth-token-gmail-modify-mernst-cs-washington-edu.json",
+)
+
+# The number of Gmail requests per batch.  Gmail charges 10 quota units for
+# each threads.get or threads.trash request and permits 250 units per second.
+GMAIL_BATCH_SIZE = 20
+# The number of times to retry Gmail requests that fail transiently.
+GMAIL_RETRIES = 6
+# The number of repository lookups in each GitHub GraphQL query.
+GITHUB_BATCH_SIZE = 50
+# The maximum number of pull requests per branch and repository that GitHub reports.
+MAX_PRS_PER_BRANCH = 100
+
+
+@dataclass(frozen=True)
+class IssueRef:
+    """A GitHub issue or pull request, such as codespecs/daikon#926.
+
+    `slug` is the repository's GitHub slug, such as "codespecs/daikon".
+    """
+
+    slug: str
+    number: int
+
+    def __str__(self) -> str:
+        """Return the ref in GitHub's notation.
+
+        Returns:
+            The ref, as in "codespecs/daikon#926".
+        """
+        return f"{self.slug}#{self.number}"
+
+
+@dataclass(frozen=True)
+class BranchRef:
+    """A branch of a GitHub repository, such as mernst/daikon:my-branch.
+
+    `slug` is the repository's GitHub slug, such as "mernst/daikon".
+    """
+
+    slug: str
+    branch: str
+
+    def __str__(self) -> str:
+        """Return the ref in GitHub's notation.
+
+        Returns:
+            The ref, as in "mernst/daikon:my-branch".
+        """
+        return f"{self.slug}:{self.branch}"
+
+
+Ref = IssueRef | BranchRef
+
+
+@dataclass(frozen=True)
+class RefState:
+    """What GitHub reports about a ref.
+
+    `closed` is True if the ref is about a closed pull request or issue, False
+    if it is not, and None if GitHub did not report its state.  `description`
+    explains the state to the user, as in "codespecs/daikon#918 merged".
+    """
+
+    closed: bool | None
+    description: str
+
+
+@dataclass(frozen=True)
+class Source:
+    """A service that sends notifications about pull requests, issues, or branches.
+
+    `sender` is the address from which the service sends notifications,
+    `query` is a Gmail search that finds them, and `parse` returns the ref that
+    a notification's subject names, or None if the subject names none.
+    """
+
+    name: str
+    sender: str
+    query: str
+    parse: Callable[[str], Ref | None]
+
+
+@dataclass(frozen=True)
+class ThreadSummary:
+    """The parts of a Gmail thread that determine whether to trash it.
+
+    `subjects` and `senders` have one entry per message.  Each sender is an
+    email address, such as "notifications@github.com", without a display name.
+    `starred` is True if any message in the thread is starred.
+    """
+
+    thread_id: str
+    subjects: tuple[str, ...]
+    senders: tuple[str, ...]
+    starred: bool
+
+    @classmethod
+    def from_gmail_thread(cls, thread: Mapping[str, Any]) -> ThreadSummary:
+        """Return the summary of the given thread.
+
+        Args:
+            thread: a thread, as a dict parsed from the Gmail API's JSON for a
+                threads.get request in "metadata" format, with keys such as "id"
+                and "messages"
+
+        Returns:
+            The summary of the thread.
+        """
+        subjects = []
+        senders = []
+        starred = False
+        for message in thread.get("messages", ()):
+            headers = {
+                header["name"].casefold(): header["value"]
+                for header in message.get("payload", {}).get("headers", ())
+            }
+            subjects.append(" ".join(headers.get("subject", "").split()))
+            senders.append(parseaddr(headers.get("from", ""))[1].casefold())
+            starred = starred or "STARRED" in message.get("labelIds", ())
+        return cls(thread["id"], tuple(subjects), tuple(senders), starred)
+
+
+# Matches a GitHub notification's subject, such as
+# "Re: [codespecs/daikon] Fix a bug (PR #926)", capturing the slug and number.
+# The parenthesized part is "(PR #926)", "(Issue #926)", or, in a thread that
+# GitHub started before it used those forms, "(#926)".
+GITHUB_SUBJECT = re.compile(
+    r"(?:Re: )?\[(?P<slug>[\w.-]+/[\w.-]+)\] .*\((?:PR |Issue )?#(?P<number>\d+)\)"
+)
+# Matches an Azure DevOps build notification's subject, such as
+# "[Build failed] mernst.daikon - mernst/daikon:my-branch - daikon - 5429bfbb",
+# capturing the slug and branch.
+AZURE_SUBJECT = re.compile(r"\[Build [^\]]+\] .*? - (?P<slug>[\w.-]+/[\w.-]+):(?P<branch>\S+) - .*")
+# Matches a CircleCI workflow notification's subject, such as
+# "[CircleCI] Workflow failed: mernst / daikon on my-branch", capturing the
+# owner, repository name, and branch.
+CIRCLECI_SUBJECT = re.compile(
+    r"\[CircleCI\] Workflow [^:]+: (?P<owner>[\w.-]+) / (?P<repo>[\w.-]+) on (?P<branch>\S+)"
+)
+
+
+def parse_github_subject(subject: str) -> Ref | None:
+    """Return the issue or pull request that a GitHub notification's subject names.
+
+    Returns:
+        The issue or pull request, or None if the subject names neither.
+    """
+    match = GITHUB_SUBJECT.fullmatch(subject)
+    if match is None:
+        return None
+    return IssueRef(match["slug"], int(match["number"]))
+
+
+def parse_azure_subject(subject: str) -> Ref | None:
+    """Return the branch that an Azure DevOps build notification's subject names.
+
+    Returns:
+        The branch, or None if the subject names none.
+    """
+    match = AZURE_SUBJECT.fullmatch(subject)
+    if match is None:
+        return None
+    return BranchRef(match["slug"], match["branch"])
+
+
+def parse_circleci_subject(subject: str) -> Ref | None:
+    """Return the branch that a CircleCI workflow notification's subject names.
+
+    Returns:
+        The branch, or None if the subject names none.
+    """
+    match = CIRCLECI_SUBJECT.fullmatch(subject)
+    if match is None:
+        return None
+    return BranchRef(f"{match['owner']}/{match['repo']}", match["branch"])
+
+
+SOURCES = (
+    Source(
+        "GitHub",
+        "notifications@github.com",
+        "from:notifications@github.com",
+        parse_github_subject,
+    ),
+    Source(
+        "Azure DevOps",
+        "azuredevops@microsoft.com",
+        "from:azuredevops@microsoft.com subject:Build",
+        parse_azure_subject,
+    ),
+    Source(
+        "CircleCI",
+        "no-reply@builds.circleci.com",
+        "from:no-reply@builds.circleci.com subject:Workflow",
+        parse_circleci_subject,
+    ),
+)
+
+
+class Disposition(enum.Enum):
+    """What to do with a thread, and why."""
+
+    TRASH = "closed"
+    NOT_CLOSED = "not closed"
+    STARRED = "starred"
+    OTHER_SENDER = "has a message from another sender"
+    UNPARSED = "subject names no pull request, issue, or branch"
+    UNKNOWN = "state unknown"
+
+
+@dataclass(frozen=True)
+class Verdict:
+    """What to do with a thread, and a description of the refs it is about."""
+
+    disposition: Disposition
+    description: str = ""
+
+
+def thread_refs(thread: ThreadSummary, source: Source) -> tuple[Ref, ...] | None:
+    """Return the refs that the given thread's subjects name.
+
+    Args:
+        thread: a thread of notifications
+        source: the service that sent the thread
+
+    Returns:
+        The distinct refs, in order, or None if some subject names no ref.
+    """
+    refs: list[Ref] = []
+    for subject in thread.subjects:
+        ref = source.parse(subject)
+        if ref is None:
+            return None
+        if ref not in refs:
+            refs.append(ref)
+    return tuple(refs) or None
+
+
+def thread_verdict(
+    thread: ThreadSummary, source: Source, states: Mapping[Ref, RefState]
+) -> Verdict:
+    """Return what to do with the given thread.
+
+    Args:
+        thread: a thread of notifications
+        source: the service that sent the thread
+        states: the state of each ref that the thread's subjects name
+
+    Returns:
+        A verdict whose disposition is TRASH only if every ref is closed.
+    """
+    if thread.starred:
+        return Verdict(Disposition.STARRED)
+    if any(sender != source.sender for sender in thread.senders):
+        return Verdict(Disposition.OTHER_SENDER)
+    refs = thread_refs(thread, source)
+    if refs is None:
+        return Verdict(Disposition.UNPARSED)
+    ref_states = [states.get(ref, RefState(None, f"{ref} not looked up")) for ref in refs]
+    description = "; ".join(state.description for state in ref_states)
+    if any(state.closed is None for state in ref_states):
+        return Verdict(Disposition.UNKNOWN, description)
+    if all(state.closed for state in ref_states):
+        return Verdict(Disposition.TRASH, description)
+    return Verdict(Disposition.NOT_CLOSED, description)
+
+
+# GitHub queries
+
+
+PR_FIELDS = "nodes { number state headRepositoryOwner { login } }"
+
+
+def _graphql_string(text: str) -> str:
+    """Return a GraphQL string literal whose value is the given text.
+
+    Returns:
+        The string literal, with its quotation marks.
+    """
+    # A JSON string literal is also a GraphQL string literal.
+    return json.dumps(text)
+
+
+def _repository_selector(slug: str) -> str:
+    """Return a GraphQL field that selects the repository with the given GitHub slug "ORG/REPO".
+
+    Returns:
+        The field, without a selection set.
+    """
+    owner, name = slug.split("/", 1)
+    return f"repository(owner: {_graphql_string(owner)}, name: {_graphql_string(name)})"
+
+
+def ref_query_field(alias: str, ref: Ref) -> str:
+    """Return a GraphQL query field, named by the given alias, that reports a ref's state.
+
+    Args:
+        alias: a GraphQL alias, such as "r0", which names the field in the response
+        ref: the ref whose state to query
+
+    Returns:
+        A field of a GraphQL query; ref_state interprets its value.
+    """
+    if isinstance(ref, IssueRef):
+        return (
+            f"{alias}: {_repository_selector(ref.slug)} {{"
+            f" issueOrPullRequest(number: {ref.number}) {{"
+            " __typename ... on Issue { state } ... on PullRequest { state } } }"
+        )
+    pull_requests = (
+        f"pullRequests(headRefName: {_graphql_string(ref.branch)},"
+        f" first: {MAX_PRS_PER_BRANCH}) {{ {PR_FIELDS} }}"
+    )
+    return (
+        f"{alias}: {_repository_selector(ref.slug)} {{"
+        " defaultBranchRef { name }"
+        f" {pull_requests}"
+        f" parent {{ nameWithOwner {pull_requests} }} }}"
+    )
+
+
+def ref_state(ref: Ref, repository: Mapping[str, Any] | None) -> RefState:
+    """Return the state of a ref, given GitHub's answer to ref_query_field.
+
+    Args:
+        ref: a ref
+        repository: the value of the ref's ref_query_field, as a dict parsed from the
+            GitHub GraphQL API's JSON, with keys such as "issueOrPullRequest" or
+            "pullRequests"; or None if GitHub did not report it
+
+    Returns:
+        The state of the ref.
+    """
+    if repository is None:
+        return RefState(None, f"GitHub did not report {ref.slug}")
+    if isinstance(ref, IssueRef):
+        item = repository.get("issueOrPullRequest")
+        if item is None:
+            return RefState(None, f"GitHub did not report {ref}")
+        kind = "PR" if item["__typename"] == "PullRequest" else "issue"
+        state = item["state"]
+        return RefState(state != "OPEN", f"{kind} {ref} {state.lower()}")
+
+    default_branch = (repository.get("defaultBranchRef") or {}).get("name")
+    if ref.branch == default_branch:
+        return RefState(False, f"{ref} is the default branch")
+    owner = ref.slug.split("/", 1)[0].casefold()
+    repositories = [(ref.slug, repository)]
+    parent = repository.get("parent")
+    if parent is not None:
+        repositories.append((parent["nameWithOwner"], parent))
+    pull_requests = [
+        (slug, pr)
+        for slug, repo in repositories
+        for pr in repo["pullRequests"]["nodes"]
+        if (pr.get("headRepositoryOwner") or {}).get("login", "").casefold() == owner
+    ]
+    if not pull_requests:
+        return RefState(False, f"no PR from {ref}")
+    description = ", ".join(
+        f"{slug}#{pr['number']} {pr['state'].lower()}" for slug, pr in pull_requests
+    )
+    closed = all(pr["state"] != "OPEN" for _slug, pr in pull_requests)
+    return RefState(closed, f"PR from {ref}: {description}")
+
+
+def run_gh_graphql(query: str) -> Mapping[str, Any]:
+    """Run a GitHub GraphQL query with the `gh` command.
+
+    Returns:
+        The response's "data" member, as a dict parsed from the GitHub GraphQL
+        API's JSON, whose keys are the query's aliases.  A field that GitHub
+        did not report, such as a repository that does not exist, is None.
+    """
+    try:
+        result = subprocess.run(
+            ["gh", "api", "graphql", "-f", f"query={query}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as error:
+        msg = f"cannot run gh: {error}"
+        raise RuntimeError(msg) from error
+    # gh exits with a failure status if any field has an error, such as a
+    # repository that does not exist, but it still prints the other fields.
+    try:
+        response = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        response = None
+    if not isinstance(response, dict) or not isinstance(response.get("data"), dict):
+        msg = f"gh api graphql failed: {result.stderr.strip() or result.stdout.strip()}"
+        raise RuntimeError(msg)  # ruff: ignore[type-check-without-type-error]
+    return response["data"]
+
+
+def ref_states(
+    refs: Iterable[Ref],
+    run_graphql: Callable[[str], Mapping[str, Any]] = run_gh_graphql,
+) -> dict[Ref, RefState]:
+    """Return the state of each of the given refs.
+
+    Args:
+        refs: refs whose states to look up
+        run_graphql: runs a GraphQL query and returns its "data" member
+
+    Returns:
+        A map from each ref to its state.
+    """
+    unique_refs = list(dict.fromkeys(refs))
+    states: dict[Ref, RefState] = {}
+    for start in range(0, len(unique_refs), GITHUB_BATCH_SIZE):
+        batch = unique_refs[start : start + GITHUB_BATCH_SIZE]
+        fields = [ref_query_field(f"r{index}", ref) for index, ref in enumerate(batch)]
+        data = run_graphql("query { " + " ".join(fields) + " }")
+        for index, ref in enumerate(batch):
+            states[ref] = ref_state(ref, data.get(f"r{index}"))
+    return states
+
+
+# Gmail requests
+
+
+def thread_ids(service: Any, query: str) -> list[str]:
+    """Return the ids of the threads that match a Gmail search, outside spam and trash.
+
+    Args:
+        service: a Gmail service
+        query: a Gmail search, such as "from:notifications@github.com"
+
+    Returns:
+        The ids of the matching threads, as hexadecimal strings such as "1a19d2c2ea83367f".
+    """
+    ids: list[str] = []
+    page_token = None
+    while True:
+        response = (
+            service.users()
+            .threads()
+            .list(userId="me", q=query, pageToken=page_token, maxResults=500)
+            .execute(num_retries=GMAIL_RETRIES)
+        )
+        ids.extend(thread["id"] for thread in response.get("threads", ()))
+        page_token = response.get("nextPageToken")
+        if not page_token:
+            return ids
+
+
+def _batch_pass(
+    service: Any,
+    requests: Mapping[str, Callable[[], Any]],
+    request_ids: list[str],
+    responses: dict[str, Any],
+) -> dict[str, Exception]:
+    """Execute the given Gmail requests once, in batches, storing each response in `responses`.
+
+    Args:
+        service: a Gmail service
+        requests: a map from a request id, such as a thread id, to a function that
+            creates the request
+        request_ids: the ids of the requests to execute
+        responses: a map to which each successful request's id and response are added
+
+    Returns:
+        A map from the id of each request that failed to its exception.
+    """
+    errors: dict[str, Exception] = {}
+
+    def callback(request_id: str, response: Any, exception: Exception | None) -> None:
+        if exception is None:
+            responses[request_id] = response
+        else:
+            errors[request_id] = exception
+
+    for start in range(0, len(request_ids), GMAIL_BATCH_SIZE):
+        batch = service.new_batch_http_request(callback=callback)
+        for request_id in request_ids[start : start + GMAIL_BATCH_SIZE]:
+            batch.add(requests[request_id](), request_id=request_id)
+        batch.execute()
+    return errors
+
+
+def batch_execute(
+    service: Any,
+    requests: Mapping[str, Callable[[], Any]],
+    description: str,
+    sleep: Callable[[float], None] = time.sleep,
+) -> dict[str, Any]:
+    """Execute Gmail requests in batches, retrying those that fail transiently.
+
+    Args:
+        service: a Gmail service
+        requests: a map from a request id, such as a thread id, to a function that
+            creates the request
+        description: what the requests do, such as "fetch thread"; used for diagnostics
+        sleep: waits for the given number of seconds before a retry
+
+    Returns:
+        A map from each request id to the request's response.
+    """
+    responses: dict[str, Any] = {}
+    pending = list(requests)
+    errors: dict[str, Exception] = {}
+    for attempt in range(GMAIL_RETRIES + 1):
+        errors = _batch_pass(service, requests, pending, responses)
+        for request_id, error in errors.items():
+            if not is_transient_api_error(error):
+                msg = f"cannot {description} {request_id}: {error}"
+                raise RuntimeError(msg)
+        if not errors:
+            return responses
+        pending = list(errors)
+        if attempt < GMAIL_RETRIES:
+            sleep(2**attempt)
+    others = f" and {len(pending) - 1} others" if len(pending) > 1 else ""
+    msg = f"cannot {description} {pending[0]}{others}: {errors[pending[0]]}"
+    raise RuntimeError(msg)
+
+
+def thread_summaries(service: Any, ids: Iterable[str]) -> list[ThreadSummary]:
+    """Return the summaries of the given Gmail threads.
+
+    Args:
+        service: a Gmail service
+        ids: Gmail thread ids, such as "1a19d2c2ea83367f"
+
+    Returns:
+        The summaries, in the order of the ids.
+    """
+    threads = service.users().threads()
+
+    def request(thread_id: str) -> Callable[[], Any]:
+        return lambda: threads.get(
+            userId="me", id=thread_id, format="metadata", metadataHeaders=["From", "Subject"]
+        )
+
+    ordered_ids = list(dict.fromkeys(ids))
+    responses = batch_execute(service, {tid: request(tid) for tid in ordered_ids}, "fetch thread")
+    return [ThreadSummary.from_gmail_thread(responses[tid]) for tid in ordered_ids]
+
+
+def trash_threads(service: Any, ids: Iterable[str]) -> None:
+    """Move the given Gmail threads to the trash.
+
+    Args:
+        service: a Gmail service
+        ids: Gmail thread ids, such as "1a19d2c2ea83367f"
+    """
+    threads = service.users().threads()
+
+    def request(thread_id: str) -> Callable[[], Any]:
+        return lambda: threads.trash(userId="me", id=thread_id)
+
+    batch_execute(service, {tid: request(tid) for tid in ids}, "trash thread")
+
+
+# The main routine
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """A Gmail thread from a notification service."""
+
+    source: Source
+    thread: ThreadSummary
+
+
+def candidates(service: Any, extra_query: str) -> list[Candidate]:
+    """Return the threads that each source's Gmail search finds.
+
+    Args:
+        service: a Gmail service
+        extra_query: Gmail search terms that restrict every source's search, or ""
+
+    Returns:
+        The threads, each paired with the first source whose search found it.
+    """
+    seen: set[str] = set()
+    result: list[Candidate] = []
+    for source in SOURCES:
+        query = f"{source.query} {extra_query}".strip()
+        ids = [tid for tid in thread_ids(service, query) if tid not in seen]
+        seen.update(ids)
+        print(f"{source.name}: {len(ids)} threads")
+        result.extend(Candidate(source, thread) for thread in thread_summaries(service, ids))
+    return result
+
+
+def main() -> None:
+    """Report, and optionally trash, notification threads about closed pull requests and issues."""
+    parser = argparse.ArgumentParser(
+        description="Move Gmail notifications about closed pull requests and issues to the trash."
+    )
+    parser.add_argument(
+        "--delete", action="store_true", help="trash the threads, instead of only reporting them"
+    )
+    parser.add_argument(
+        "--query",
+        default="",
+        help='Gmail search terms that restrict every search, as in "in:inbox"',
+    )
+    arguments = parser.parse_args()
+
+    service = gmail_service(MODIFY_ACCOUNT, CLIENT_SECRET_PATH, GMAIL_MODIFY_SCOPE)
+    found = candidates(service, arguments.query)
+    refs = [
+        ref for candidate in found for ref in thread_refs(candidate.thread, candidate.source) or ()
+    ]
+    states = ref_states(refs)
+
+    to_trash: list[Candidate] = []
+    counts: Counter[Disposition] = Counter()
+    for candidate in found:
+        verdict = thread_verdict(candidate.thread, candidate.source, states)
+        counts[verdict.disposition] += 1
+        subject = candidate.thread.subjects[0] if candidate.thread.subjects else "(no subject)"
+        if verdict.disposition is Disposition.TRASH:
+            to_trash.append(candidate)
+            print(f"Trash: {subject}  [{verdict.description}]")
+        elif verdict.disposition is Disposition.UNKNOWN:
+            warn(f"keeping {subject}: {verdict.description}")
+
+    kept = ", ".join(
+        f"{counts[disposition]} {disposition.value}"
+        for disposition in Disposition
+        if disposition is not Disposition.TRASH and counts[disposition]
+    )
+    print(f"Kept {sum(counts.values()) - len(to_trash)} threads: {kept or 'none'}.")
+    if not to_trash:
+        print("No threads to trash.")
+    elif arguments.delete:
+        trash_threads(service, (candidate.thread.thread_id for candidate in to_trash))
+        print(f"Trashed {len(to_trash)} threads.")
+    else:
+        print(f"Would trash {len(to_trash)} threads; pass --delete to trash them.")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nCancelled.")
+    except RuntimeError as error:
+        msg = f"mail-delete-closed-prs.py: {error}"
+        raise SystemExit(msg) from error
