@@ -72,6 +72,22 @@ def parent_repository(slug, pull_requests=(), has_next_page=False):
     }
 
 
+class ModifyAccountTest(unittest.TestCase):
+    """Test the derivation of the modify-scope token cache."""
+
+    def test_modify_account(self):
+        config = mdcp.AccountConfig(
+            "user@example.com", Path("/p/googleusercontent-oauth-token-user-example-com.json")
+        )
+        self.assertEqual(
+            mdcp.modify_account(config),
+            mdcp.AccountConfig(
+                "user@example.com",
+                Path("/p/googleusercontent-oauth-token-gmail-modify-user-example-com.json"),
+            ),
+        )
+
+
 class ParseSubjectTest(unittest.TestCase):
     """Test the parsing of notification subjects."""
 
@@ -195,7 +211,9 @@ class ThreadVerdictTest(unittest.TestCase):
     OPEN = RefState(False, "PR o/r#2 open")
 
     def verdict(self, summary, states):
-        return mdcp.thread_verdict(summary, GITHUB, states).disposition
+        return mdcp.thread_verdicts([mdcp.Candidate(GITHUB, summary)], lambda _refs: states)[
+            0
+        ].disposition
 
     def test_closed(self):
         self.assertIs(
@@ -229,6 +247,24 @@ class ThreadVerdictTest(unittest.TestCase):
             senders=("notifications@github.com", "me@example.com"),
         )
         self.assertIs(self.verdict(summary, {self.REF: self.CLOSED}), Disposition.OTHER_SENDER)
+
+    def test_kept_threads_are_not_looked_up(self):
+        looked_up = []
+
+        def lookup(refs):
+            looked_up.extend(refs)
+            return {self.REF: self.CLOSED, self.OTHER_REF: self.CLOSED}
+
+        found = [
+            mdcp.Candidate(GITHUB, thread([self.SUBJECT], starred=True)),
+            mdcp.Candidate(GITHUB, thread([self.OTHER_SUBJECT])),
+        ]
+        verdicts = mdcp.thread_verdicts(found, lookup)
+        self.assertEqual(
+            [verdict.disposition for verdict in verdicts],
+            [Disposition.STARRED, Disposition.TRASH],
+        )
+        self.assertEqual(looked_up, [self.OTHER_REF])
 
     def test_unparsed(self):
         summary = thread([self.SUBJECT, "[o/r] Run failed: CI - main"])
@@ -300,6 +336,14 @@ class RefStateTest(unittest.TestCase):
         )
         self.assertIsNone(mdcp.ref_state(self.BRANCH, repository(parent=parent)).closed)
         self.assertIsNone(mdcp.ref_state(self.BRANCH, repository(has_next_page=True)).closed)
+
+    def test_unreported_pull_requests(self):
+        parent = parent_repository("codespecs/daikon")
+        parent["pullRequests"] = None
+        self.assertIsNone(mdcp.ref_state(self.BRANCH, repository(parent=parent)).closed)
+        partial = repository([pr(7, "CLOSED", "mernst")])
+        partial["pullRequests"]["nodes"].append(None)
+        self.assertIsNone(mdcp.ref_state(self.BRANCH, partial).closed)
 
     def test_unknown_repository(self):
         self.assertIsNone(mdcp.ref_state(self.BRANCH, None).closed)

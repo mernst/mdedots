@@ -66,11 +66,6 @@ LIST_ACCOUNTS_URL = (
 DISCOVERY_FAILURE = (
     "Google browser-account discovery no longer works; mail_review.py must be rewritten"
 )
-MISSING_LIBRARIES = (
-    "the mail-review scripts require browser-cookie3, google-api-python-client, google-auth, "
-    "google-auth-oauthlib, and requests; execute the script directly or with "
-    "`uv run --script` so uv supplies them"
-)
 # Delay after opening a browser tab, to avoid overwhelming the browser.
 TAB_DELAY_SECONDS = 0.1
 
@@ -116,6 +111,22 @@ class Section:
 def warn(message: str) -> None:
     """Print a warning that is not part of the review's ordinary output."""
     print(f"Warning: {message}", file=sys.stderr)
+
+
+def missing_library_message(error: ImportError) -> str:
+    """Return a message that explains the given failure to import a library.
+
+    Args:
+        error: the failure to import a library that a script's uv header declares
+
+    Returns:
+        A message that names the missing module, such as "google_auth_oauthlib",
+        and says how to supply it.
+    """
+    missing = f"missing library {error.name}" if error.name else str(error)
+    return (
+        f"{missing}; execute the script directly or with `uv run --script` so that uv supplies it"
+    )
 
 
 def _read_varint(data: bytes, position: int) -> tuple[int, int]:
@@ -262,7 +273,7 @@ def discover_browser_slots(expected_emails: tuple[str, ...]) -> dict[str, str]:
         import browser_cookie3  # ty: ignore[unresolved-import]
         import requests  # ty: ignore[unresolved-import]
     except ImportError as error:
-        raise RuntimeError(MISSING_LIBRARIES) from error
+        raise RuntimeError(missing_library_message(error)) from error
 
     try:
         cookies = browser_cookie3.chrome(domain_name=".google.com")
@@ -340,7 +351,7 @@ def cached_credentials(config: AccountConfig, scope: str = GMAIL_READONLY_SCOPE)
         from google.auth.transport.requests import Request  # ty: ignore[unresolved-import]
         from google.oauth2.credentials import Credentials  # ty: ignore[unresolved-import]
     except ImportError as error:
-        raise RuntimeError(MISSING_LIBRARIES) from error
+        raise RuntimeError(missing_library_message(error)) from error
 
     try:
         credentials = Credentials.from_authorized_user_file(str(config.token_path), [scope])
@@ -390,7 +401,7 @@ def gmail_service(
         from google_auth_oauthlib.flow import InstalledAppFlow  # ty: ignore[unresolved-import]
         from googleapiclient.discovery import build  # ty: ignore[unresolved-import]
     except ImportError as error:
-        raise RuntimeError(MISSING_LIBRARIES) from error
+        raise RuntimeError(missing_library_message(error)) from error
 
     try:
         credentials = cached_credentials(config, scope)

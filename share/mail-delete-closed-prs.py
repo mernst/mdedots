@@ -10,7 +10,7 @@
 
 """Move Gmail notifications about closed pull requests and issues to the trash.
 
-Usage: mail-delete-closed-prs.py [--delete] [--query GMAIL-SEARCH]
+Usage: mail-delete-closed-prs.py [--delete] [--query GMAIL-SEARCH] [--account EMAIL]
 
 The script examines notifications from three services:
  * GitHub, whose subjects name a pull request or issue, as in
@@ -37,10 +37,17 @@ arrives in a thread while the script runs stays out of the trash.
 those terms restrict no date, the script searches only the last 31 days; to
 search all mail, give a date such as "after:2000/01/01".
 
+--account selects the Gmail account to examine, by its email address; it is
+one of the accounts in mail_review.ACCOUNT_CONFIGS, and the default is the
+first of them.
+
+If any Gmail request fails, the script exits with a nonzero status after
+doing the rest of its work.
+
 The script uses the `gh` command to query GitHub.  See mail_review.py, in this
-directory, for the OAuth client-secret file that it needs.  On the first run,
-the script asks the user to authorize it to modify mail; it caches that
-authorization in MODIFY_ACCOUNT.token_path.
+directory, for the OAuth client-secret file that it needs.  On the first run
+for an account, the script asks the user to authorize it to modify mail; it
+caches that authorization in the file that modify_account names.
 """
 
 from __future__ import annotations
@@ -55,13 +62,13 @@ import time
 from collections import Counter
 from dataclasses import dataclass
 from email.utils import parseaddr
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from mail_review import (
     ACCOUNT_CONFIGS,
     CLIENT_SECRET_PATH,
     GMAIL_MODIFY_SCOPE,
+    AccountConfig,
     gmail_service,
     is_transient_api_error,
     warn,
@@ -69,14 +76,6 @@ from mail_review import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
-
-# The modify scope needs its own token cache, because a cached token grants
-# only the scopes that the user authorized when the cache was written.
-MODIFY_ACCOUNT = dataclasses.replace(
-    ACCOUNT_CONFIGS[0],
-    token_path=Path.home()
-    / "private/googleusercontent-oauth-token-gmail-modify-mernst-cs-washington-edu.json",
-)
 
 # The Gmail search term that restricts every search if --query restricts no date.
 DEFAULT_WINDOW = "newer_than:31d"
@@ -331,24 +330,33 @@ def thread_refs(thread: ThreadSummary, source: Source) -> tuple[Ref, ...] | None
     return tuple(refs) or None
 
 
-def thread_verdict(
-    thread: ThreadSummary, source: Source, states: Mapping[Ref, RefState]
-) -> Verdict:
-    """Return what to do with the given thread.
+def sender_disposition(thread: ThreadSummary, source: Source) -> Disposition | None:
+    """Return why the given thread is kept regardless of its refs' states, or None.
 
     Args:
         thread: a thread of notifications
         source: the service that sent the thread
-        states: the state of each ref that the thread's subjects name
+
+    Returns:
+        STARRED, OTHER_SENDER, or None if the thread's refs determine whether to trash it.
+    """
+    if thread.starred:
+        return Disposition.STARRED
+    if any(sender != source.sender for sender in thread.senders):
+        return Disposition.OTHER_SENDER
+    return None
+
+
+def refs_verdict(refs: tuple[Ref, ...] | None, states: Mapping[Ref, RefState]) -> Verdict:
+    """Return what to do with a thread whose subjects name the given refs.
+
+    Args:
+        refs: the refs that a thread's subjects name, or None if some subject names none
+        states: the state of each of the refs
 
     Returns:
         A verdict whose disposition is TRASH only if every ref is closed.
     """
-    if thread.starred:
-        return Verdict(Disposition.STARRED)
-    if any(sender != source.sender for sender in thread.senders):
-        return Verdict(Disposition.OTHER_SENDER)
-    refs = thread_refs(thread, source)
     if refs is None:
         return Verdict(Disposition.UNPARSED)
     ref_states = [states.get(ref, RefState(None, f"{ref} not looked up")) for ref in refs]
@@ -358,6 +366,34 @@ def thread_verdict(
     if all(state.closed for state in ref_states):
         return Verdict(Disposition.TRASH, description)
     return Verdict(Disposition.NOT_CLOSED, description)
+
+
+def thread_verdicts(
+    found: Iterable[Candidate],
+    lookup: Callable[[Iterable[Ref]], Mapping[Ref, RefState]],
+) -> list[Verdict]:
+    """Return what to do with each of the given threads.
+
+    The routine looks up only the refs of threads that it might trash.
+
+    Args:
+        found: threads of notifications
+        lookup: returns the state of each of the given refs, as ref_states does
+
+    Returns:
+        The verdicts, in the order of the threads.
+    """
+    found = list(found)
+    kept = [sender_disposition(candidate.thread, candidate.source) for candidate in found]
+    refs = [
+        None if disposition else thread_refs(candidate.thread, candidate.source)
+        for candidate, disposition in zip(found, kept, strict=True)
+    ]
+    states = lookup(ref for candidate_refs in refs for ref in candidate_refs or ())
+    return [
+        Verdict(disposition) if disposition else refs_verdict(candidate_refs, states)
+        for disposition, candidate_refs in zip(kept, refs, strict=True)
+    ]
 
 
 # GitHub queries
@@ -444,18 +480,23 @@ def ref_state(ref: Ref, repository: Mapping[str, Any] | None) -> RefState:
     parent = repository.get("parent")
     if parent is not None:
         repositories.append((parent["nameWithOwner"], parent))
+    pull_requests = []
     for slug, repo in repositories:
-        if repo["pullRequests"]["pageInfo"]["hasNextPage"]:
+        # GitHub reports null for a field that it could not fetch, as when an
+        # organization restricts access.
+        connection = repo.get("pullRequests")
+        if connection is None or None in connection["nodes"]:
+            return RefState(None, f"GitHub did not report the PRs in {slug}")
+        if connection["pageInfo"]["hasNextPage"]:
             return RefState(
                 None,
                 f"{slug} has over {MAX_PRS_PER_BRANCH} PRs from branches named {ref.branch}",
             )
-    pull_requests = [
-        (slug, pr)
-        for slug, repo in repositories
-        for pr in repo["pullRequests"]["nodes"]
-        if (pr.get("headRepositoryOwner") or {}).get("login", "").casefold() == owner
-    ]
+        pull_requests.extend(
+            (slug, pr)
+            for pr in connection["nodes"]
+            if (pr.get("headRepositoryOwner") or {}).get("login", "").casefold() == owner
+        )
     if not pull_requests:
         return RefState(False, f"no PR from {ref}")
     description = ", ".join(
@@ -569,7 +610,7 @@ def _batch_pass(
     request_ids: list[str],
     units: int,
     sleep: Callable[[float], None],
-) -> tuple[dict[str, Any], dict[str, Exception]]:
+) -> BatchResult:
     """Return the outcome of executing the given Gmail requests once, in batches.
 
     Between batches, the routine waits long enough to stay within Gmail's quota.
@@ -583,8 +624,8 @@ def _batch_pass(
         sleep: waits for the given number of seconds
 
     Returns:
-        A map from the id of each request that succeeded to its response, and a
-        map from the id of each request that failed to its exception.
+        The responses to the requests that succeeded, and the exceptions of
+        those that failed.
     """
     responses: dict[str, Any] = {}
     errors: dict[str, Exception] = {}
@@ -610,7 +651,7 @@ def _batch_pass(
             for request_id in chunk:
                 if request_id not in responses and request_id not in errors:
                     errors[request_id] = error
-    return responses, errors
+    return BatchResult(responses, errors)
 
 
 def batch_execute(
@@ -641,8 +682,9 @@ def batch_execute(
     for attempt in range(GMAIL_RETRIES + 1):
         if attempt:
             sleep(2 ** (attempt - 1))
-        succeeded, errors = _batch_pass(service, requests, pending, units, sleep)
-        responses.update(succeeded)
+        result = _batch_pass(service, requests, pending, units, sleep)
+        responses.update(result.responses)
+        errors = result.failures
         permanent.update(
             (request_id, error)
             for request_id, error in errors.items()
@@ -669,15 +711,16 @@ def warn_failures(description: str, failures: Mapping[str, Exception]) -> None:
     warn(f"cannot {description} {first}{others}: {error}")
 
 
-def thread_summaries(service: Any, ids: Iterable[str]) -> list[ThreadSummary]:
-    """Return the summaries of the given Gmail threads, warning about those that Gmail omits.
+def thread_summaries(service: Any, ids: Iterable[str]) -> BatchResult:
+    """Return the summaries of the given Gmail threads.
 
     Args:
         service: a Gmail service
-        ids: Gmail thread ids, such as "1a19d2c2ea83367f"
+        ids: distinct Gmail thread ids, such as "1a19d2c2ea83367f"
 
     Returns:
-        The summaries of the threads that Gmail returns, in the order of the ids.
+        A result whose `responses` maps the id of each thread that Gmail
+        returned to its ThreadSummary, in the order of the ids.
     """
     threads = service.users().threads()
 
@@ -686,14 +729,14 @@ def thread_summaries(service: Any, ids: Iterable[str]) -> list[ThreadSummary]:
             userId="me", id=thread_id, format="metadata", metadataHeaders=["From", "Subject"]
         )
 
-    ordered_ids = list(dict.fromkeys(ids))
-    result = batch_execute(service, {tid: request(tid) for tid in ordered_ids}, THREADS_GET_UNITS)
-    warn_failures("fetch thread", result.failures)
-    return [
-        ThreadSummary.from_gmail_thread(result.responses[tid])
-        for tid in ordered_ids
+    ids = list(ids)
+    result = batch_execute(service, {tid: request(tid) for tid in ids}, THREADS_GET_UNITS)
+    summaries = {
+        tid: ThreadSummary.from_gmail_thread(result.responses[tid])
+        for tid in ids
         if tid in result.responses
-    ]
+    }
+    return BatchResult(summaries, result.failures)
 
 
 def trash_messages(service: Any, ids: Iterable[str]) -> dict[str, Exception]:
@@ -726,6 +769,37 @@ class Candidate:
     thread: ThreadSummary
 
 
+@dataclass(frozen=True)
+class Search:
+    """The threads that the sources' Gmail searches find.
+
+    `candidates` holds the threads that Gmail returned, and `failures` maps the
+    id of each thread that Gmail did not return to the exception.
+    """
+
+    candidates: list[Candidate]
+    failures: dict[str, Exception]
+
+
+def modify_account(config: AccountConfig) -> AccountConfig:
+    """Return the given account, with a token cache for the Gmail modify scope.
+
+    The modify scope needs its own token cache, because a cached token grants
+    only the scopes that the user authorized when the cache was written.  The
+    cache's file name is that of the account's cache, with "gmail-modify-"
+    inserted, as in "googleusercontent-oauth-token-gmail-modify-mernst-cs-washington-edu.json".
+
+    Args:
+        config: an account
+
+    Returns:
+        The account, with a different token cache.
+    """
+    path = config.token_path
+    name = path.name.replace("oauth-token-", "oauth-token-gmail-modify-", 1)
+    return dataclasses.replace(config, token_path=path.with_name(name))
+
+
 def with_default_window(extra_query: str) -> str:
     """Return the given Gmail search terms, restricted to DEFAULT_WINDOW if they restrict no date.
 
@@ -740,7 +814,7 @@ def with_default_window(extra_query: str) -> str:
     return f"{extra_query} {DEFAULT_WINDOW}".strip()
 
 
-def candidates(service: Any, extra_query: str) -> list[Candidate]:
+def candidates(service: Any, extra_query: str) -> Search:
     """Return the threads that each source's Gmail search finds.
 
     Args:
@@ -751,18 +825,25 @@ def candidates(service: Any, extra_query: str) -> list[Candidate]:
         The threads, each paired with the first source whose search found it.
     """
     seen: set[str] = set()
-    result: list[Candidate] = []
+    found: list[Candidate] = []
+    failures: dict[str, Exception] = {}
     for source in SOURCES:
         query = f"{source.query} {extra_query}".strip()
         ids = [tid for tid in thread_ids(service, query) if tid not in seen]
         seen.update(ids)
         print(f"{source.name}: {len(ids)} threads")
-        result.extend(Candidate(source, thread) for thread in thread_summaries(service, ids))
-    return result
+        result = thread_summaries(service, ids)
+        found.extend(Candidate(source, thread) for thread in result.responses.values())
+        failures.update(result.failures)
+    return Search(found, failures)
 
 
-def main() -> None:
-    """Report, and optionally trash, notification threads about closed pull requests and issues."""
+def main() -> int:
+    """Report, and optionally trash, notification threads about closed pull requests and issues.
+
+    Returns:
+        The exit status: 0 if every Gmail request succeeded, and 1 otherwise.
+    """
     parser = argparse.ArgumentParser(
         description="Move Gmail notifications about closed pull requests and issues to the trash."
     )
@@ -777,19 +858,24 @@ def main() -> None:
             f" if they restrict no date, {DEFAULT_WINDOW} is added"
         ),
     )
+    accounts = {config.email: config for config in ACCOUNT_CONFIGS}
+    parser.add_argument(
+        "--account",
+        choices=list(accounts),
+        default=ACCOUNT_CONFIGS[0].email,
+        help="the email address of the Gmail account to examine (default: %(default)s)",
+    )
     arguments = parser.parse_args()
 
-    service = gmail_service(MODIFY_ACCOUNT, CLIENT_SECRET_PATH, GMAIL_MODIFY_SCOPE)
-    found = candidates(service, with_default_window(arguments.query))
-    refs = [
-        ref for candidate in found for ref in thread_refs(candidate.thread, candidate.source) or ()
-    ]
-    states = ref_states(refs)
+    account = modify_account(accounts[arguments.account])
+    service = gmail_service(account, CLIENT_SECRET_PATH, GMAIL_MODIFY_SCOPE)
+    search = candidates(service, with_default_window(arguments.query))
+    warn_failures("fetch thread", search.failures)
+    verdicts = thread_verdicts(search.candidates, ref_states)
 
     to_trash: list[Candidate] = []
     counts: Counter[Disposition] = Counter()
-    for candidate in found:
-        verdict = thread_verdict(candidate.thread, candidate.source, states)
+    for candidate, verdict in zip(search.candidates, verdicts, strict=True):
         counts[verdict.disposition] += 1
         subject = candidate.thread.subjects[0] if candidate.thread.subjects else "(no subject)"
         if verdict.disposition is Disposition.TRASH:
@@ -804,6 +890,7 @@ def main() -> None:
         if disposition is not Disposition.TRASH and counts[disposition]
     )
     print(f"Kept {sum(counts.values()) - len(to_trash)} threads: {kept or 'none'}.")
+    failed = bool(search.failures)
     if not to_trash:
         print("No threads to trash.")
     elif arguments.delete:
@@ -815,13 +902,15 @@ def main() -> None:
             1 for candidate in to_trash if failures.keys().isdisjoint(candidate.thread.message_ids)
         )
         print(f"Trashed {trashed} threads.")
+        failed = failed or bool(failures)
     else:
         print(f"Would trash {len(to_trash)} threads; pass --delete to trash them.")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
     try:
-        main()
+        raise SystemExit(main())
     except KeyboardInterrupt:
         print("\nCancelled.")
     except RuntimeError as error:
