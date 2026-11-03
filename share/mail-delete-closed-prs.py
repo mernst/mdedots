@@ -31,6 +31,8 @@ reply that you sent), or if it cannot determine the state of the pull request,
 issue, or branch.  It does not examine mail in the spam or trash folders.
 
 By default, the script only reports what it would trash; --delete trashes it.
+The script trashes only the messages that it examined, so a message that
+arrives in a thread while the script runs stays out of the trash.
 --query adds Gmail search terms, such as "newer_than:30d", to every search.
 
 The script uses the `gh` command to query GitHub.  See mail_review.py, in this
@@ -42,6 +44,7 @@ authorization in MODIFY_ACCOUNT.token_path.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import enum
 import json
 import re
@@ -54,9 +57,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from mail_review import (
+    ACCOUNT_CONFIGS,
     CLIENT_SECRET_PATH,
     GMAIL_MODIFY_SCOPE,
-    AccountConfig,
     gmail_service,
     is_transient_api_error,
     warn,
@@ -67,20 +70,26 @@ if TYPE_CHECKING:
 
 # The modify scope needs its own token cache, because a cached token grants
 # only the scopes that the user authorized when the cache was written.
-MODIFY_ACCOUNT = AccountConfig(
-    "mernst" + "@" + "cs.washington.edu",
-    Path.home()
+MODIFY_ACCOUNT = dataclasses.replace(
+    ACCOUNT_CONFIGS[0],
+    token_path=Path.home()
     / "private/googleusercontent-oauth-token-gmail-modify-mernst-cs-washington-edu.json",
 )
 
-# The number of Gmail requests per batch.  Gmail charges 10 quota units for
-# each threads.get or threads.trash request and permits 250 units per second.
+# The number of Gmail requests per batch.
 GMAIL_BATCH_SIZE = 20
+# The number of Gmail quota units that a user can spend per second.
+GMAIL_QUOTA_UNITS_PER_SECOND = 250
+# The number of Gmail quota units that a threads.get request costs.
+THREADS_GET_UNITS = 10
+# The number of Gmail quota units that a messages.trash request costs.
+MESSAGES_TRASH_UNITS = 5
 # The number of times to retry Gmail requests that fail transiently.
 GMAIL_RETRIES = 6
 # The number of repository lookups in each GitHub GraphQL query.
 GITHUB_BATCH_SIZE = 50
-# The maximum number of pull requests per branch and repository that GitHub reports.
+# The maximum number of pull requests per branch and repository that one
+# GitHub query reports.  A branch with more is treated as having an unknown state.
 MAX_PRS_PER_BRANCH = 100
 
 
@@ -157,12 +166,14 @@ class Source:
 class ThreadSummary:
     """The parts of a Gmail thread that determine whether to trash it.
 
-    `subjects` and `senders` have one entry per message.  Each sender is an
+    `message_ids`, `subjects`, and `senders` have one entry per message.  A
+    message id is a hexadecimal string such as "19a3c2f1b07d8e45".  Each sender is an
     email address, such as "notifications@github.com", without a display name.
     `starred` is True if any message in the thread is starred.
     """
 
     thread_id: str
+    message_ids: tuple[str, ...]
     subjects: tuple[str, ...]
     senders: tuple[str, ...]
     starred: bool
@@ -179,10 +190,12 @@ class ThreadSummary:
         Returns:
             The summary of the thread.
         """
+        message_ids = []
         subjects = []
         senders = []
         starred = False
         for message in thread.get("messages", ()):
+            message_ids.append(message["id"])
             headers = {
                 header["name"].casefold(): header["value"]
                 for header in message.get("payload", {}).get("headers", ())
@@ -190,7 +203,7 @@ class ThreadSummary:
             subjects.append(" ".join(headers.get("subject", "").split()))
             senders.append(parseaddr(headers.get("from", ""))[1].casefold())
             starred = starred or "STARRED" in message.get("labelIds", ())
-        return cls(thread["id"], tuple(subjects), tuple(senders), starred)
+        return cls(thread["id"], tuple(message_ids), tuple(subjects), tuple(senders), starred)
 
 
 # Matches a GitHub notification's subject, such as
@@ -382,7 +395,7 @@ def ref_query_field(alias: str, ref: Ref) -> str:
         )
     pull_requests = (
         f"pullRequests(headRefName: {_graphql_string(ref.branch)},"
-        f" first: {MAX_PRS_PER_BRANCH}) {{ {PR_FIELDS} }}"
+        f" first: {MAX_PRS_PER_BRANCH}) {{ {PR_FIELDS} pageInfo {{ hasNextPage }} }}"
     )
     return (
         f"{alias}: {_repository_selector(ref.slug)} {{"
@@ -393,7 +406,7 @@ def ref_query_field(alias: str, ref: Ref) -> str:
 
 
 def ref_state(ref: Ref, repository: Mapping[str, Any] | None) -> RefState:
-    """Return the state of a ref, given GitHub's answer to ref_query_field.
+    """Return the state of the given ref, given GitHub's answer to ref_query_field.
 
     Args:
         ref: a ref
@@ -422,6 +435,12 @@ def ref_state(ref: Ref, repository: Mapping[str, Any] | None) -> RefState:
     parent = repository.get("parent")
     if parent is not None:
         repositories.append((parent["nameWithOwner"], parent))
+    for slug, repo in repositories:
+        if repo["pullRequests"]["pageInfo"]["hasNextPage"]:
+            return RefState(
+                None,
+                f"{slug} has over {MAX_PRS_PER_BRANCH} PRs from branches named {ref.branch}",
+            )
     pull_requests = [
         (slug, pr)
         for slug, repo in repositories
@@ -438,7 +457,7 @@ def ref_state(ref: Ref, repository: Mapping[str, Any] | None) -> RefState:
 
 
 def run_gh_graphql(query: str) -> Mapping[str, Any]:
-    """Run a GitHub GraphQL query with the `gh` command.
+    """Return GitHub's answer to the given GraphQL query, which the `gh` command sends.
 
     Returns:
         The response's "data" member, as a dict parsed from the GitHub GraphQL
@@ -507,36 +526,58 @@ def thread_ids(service: Any, query: str) -> list[str]:
     ids: list[str] = []
     page_token = None
     while True:
-        response = (
-            service.users()
-            .threads()
-            .list(userId="me", q=query, pageToken=page_token, maxResults=500)
-            .execute(num_retries=GMAIL_RETRIES)
-        )
+        try:
+            response = (
+                service.users()
+                .threads()
+                .list(userId="me", q=query, pageToken=page_token, maxResults=500)
+                .execute(num_retries=GMAIL_RETRIES)
+            )
+        except Exception as error:
+            msg = f"Gmail search failed: {query}: {error}"
+            raise RuntimeError(msg) from error
         ids.extend(thread["id"] for thread in response.get("threads", ()))
         page_token = response.get("nextPageToken")
         if not page_token:
             return ids
 
 
+@dataclass(frozen=True)
+class BatchResult:
+    """The outcome of a set of Gmail requests.
+
+    `responses` maps the id of each request that succeeded to its response, and
+    `failures` maps the id of each request that failed to its last exception.
+    """
+
+    responses: dict[str, Any]
+    failures: dict[str, Exception]
+
+
 def _batch_pass(
     service: Any,
     requests: Mapping[str, Callable[[], Any]],
     request_ids: list[str],
-    responses: dict[str, Any],
-) -> dict[str, Exception]:
-    """Execute the given Gmail requests once, in batches, storing each response in `responses`.
+    units: int,
+    sleep: Callable[[float], None],
+) -> tuple[dict[str, Any], dict[str, Exception]]:
+    """Return the outcome of executing the given Gmail requests once, in batches.
+
+    Between batches, the routine waits long enough to stay within Gmail's quota.
 
     Args:
         service: a Gmail service
         requests: a map from a request id, such as a thread id, to a function that
             creates the request
         request_ids: the ids of the requests to execute
-        responses: a map to which each successful request's id and response are added
+        units: the number of Gmail quota units that each request costs
+        sleep: waits for the given number of seconds
 
     Returns:
-        A map from the id of each request that failed to its exception.
+        A map from the id of each request that succeeded to its response, and a
+        map from the id of each request that failed to its exception.
     """
+    responses: dict[str, Any] = {}
     errors: dict[str, Exception] = {}
 
     def callback(request_id: str, response: Any, exception: Exception | None) -> None:
@@ -546,59 +587,88 @@ def _batch_pass(
             errors[request_id] = exception
 
     for start in range(0, len(request_ids), GMAIL_BATCH_SIZE):
+        if start:
+            sleep(GMAIL_BATCH_SIZE * units / GMAIL_QUOTA_UNITS_PER_SECOND)
+        chunk = request_ids[start : start + GMAIL_BATCH_SIZE]
         batch = service.new_batch_http_request(callback=callback)
-        for request_id in request_ids[start : start + GMAIL_BATCH_SIZE]:
+        for request_id in chunk:
             batch.add(requests[request_id](), request_id=request_id)
-        batch.execute()
-    return errors
+        try:
+            batch.execute()
+        except Exception as error:  # ruff: ignore[blind-except]
+            # The whole batch failed, as for a network error.  Record the
+            # exception for each request, so that batch_execute retries or reports it.
+            for request_id in chunk:
+                if request_id not in responses and request_id not in errors:
+                    errors[request_id] = error
+    return responses, errors
 
 
 def batch_execute(
     service: Any,
     requests: Mapping[str, Callable[[], Any]],
-    description: str,
+    units: int,
     sleep: Callable[[float], None] = time.sleep,
-) -> dict[str, Any]:
-    """Execute Gmail requests in batches, retrying those that fail transiently.
+) -> BatchResult:
+    """Return the outcome of executing the given Gmail requests, retrying transient failures.
+
+    The routine executes the requests in batches.
 
     Args:
         service: a Gmail service
         requests: a map from a request id, such as a thread id, to a function that
             creates the request
-        description: what the requests do, such as "fetch thread"; used for diagnostics
-        sleep: waits for the given number of seconds before a retry
+        units: the number of Gmail quota units that each request costs
+        sleep: waits for the given number of seconds
 
     Returns:
-        A map from each request id to the request's response.
+        The responses to the requests that succeeded, and the exceptions of
+        those that failed permanently or that failed on every attempt.
     """
     responses: dict[str, Any] = {}
-    pending = list(requests)
+    permanent: dict[str, Exception] = {}
     errors: dict[str, Exception] = {}
+    pending = list(requests)
     for attempt in range(GMAIL_RETRIES + 1):
-        errors = _batch_pass(service, requests, pending, responses)
-        for request_id, error in errors.items():
-            if not is_transient_api_error(error):
-                msg = f"cannot {description} {request_id}: {error}"
-                raise RuntimeError(msg)
-        if not errors:
-            return responses
-        pending = list(errors)
-        if attempt < GMAIL_RETRIES:
-            sleep(2**attempt)
-    others = f" and {len(pending) - 1} others" if len(pending) > 1 else ""
-    msg = f"cannot {description} {pending[0]}{others}: {errors[pending[0]]}"
-    raise RuntimeError(msg)
+        if attempt:
+            sleep(2 ** (attempt - 1))
+        succeeded, errors = _batch_pass(service, requests, pending, units, sleep)
+        responses.update(succeeded)
+        permanent.update(
+            (request_id, error)
+            for request_id, error in errors.items()
+            if not is_transient_api_error(error)
+        )
+        pending = [request_id for request_id in errors if request_id not in permanent]
+        if not pending:
+            break
+    failures = permanent | {request_id: errors[request_id] for request_id in pending}
+    return BatchResult(responses, failures)
+
+
+def warn_failures(description: str, failures: Mapping[str, Exception]) -> None:
+    """Warn about the given failed Gmail requests, if there are any.
+
+    Args:
+        description: what the requests do, such as "fetch thread"; used for diagnostics
+        failures: a map from the id of each failed request to its exception
+    """
+    if not failures:
+        return
+    first, error = next(iter(failures.items()))
+    others = f" and {len(failures) - 1} others" if len(failures) > 1 else ""
+    warn(f"cannot {description} {first}{others}: {error}")
 
 
 def thread_summaries(service: Any, ids: Iterable[str]) -> list[ThreadSummary]:
-    """Return the summaries of the given Gmail threads.
+    """Return the summaries of the given Gmail threads, warning about those that Gmail omits.
 
     Args:
         service: a Gmail service
         ids: Gmail thread ids, such as "1a19d2c2ea83367f"
 
     Returns:
-        The summaries, in the order of the ids.
+        The summaries of the threads that Gmail returns, in the order of the ids.
     """
     threads = service.users().threads()
 
@@ -608,23 +678,32 @@ def thread_summaries(service: Any, ids: Iterable[str]) -> list[ThreadSummary]:
         )
 
     ordered_ids = list(dict.fromkeys(ids))
-    responses = batch_execute(service, {tid: request(tid) for tid in ordered_ids}, "fetch thread")
-    return [ThreadSummary.from_gmail_thread(responses[tid]) for tid in ordered_ids]
+    result = batch_execute(service, {tid: request(tid) for tid in ordered_ids}, THREADS_GET_UNITS)
+    warn_failures("fetch thread", result.failures)
+    return [
+        ThreadSummary.from_gmail_thread(result.responses[tid])
+        for tid in ordered_ids
+        if tid in result.responses
+    ]
 
 
-def trash_threads(service: Any, ids: Iterable[str]) -> None:
-    """Move the given Gmail threads to the trash.
+def trash_messages(service: Any, ids: Iterable[str]) -> dict[str, Exception]:
+    """Move the given Gmail messages to the trash.
 
     Args:
         service: a Gmail service
-        ids: Gmail thread ids, such as "1a19d2c2ea83367f"
+        ids: Gmail message ids, such as "19a3c2f1b07d8e45"
+
+    Returns:
+        A map from the id of each message that Gmail did not trash to the exception.
     """
-    threads = service.users().threads()
+    messages = service.users().messages()
 
-    def request(thread_id: str) -> Callable[[], Any]:
-        return lambda: threads.trash(userId="me", id=thread_id)
+    def request(message_id: str) -> Callable[[], Any]:
+        return lambda: messages.trash(userId="me", id=message_id)
 
-    batch_execute(service, {tid: request(tid) for tid in ids}, "trash thread")
+    requests = {mid: request(mid) for mid in ids}
+    return batch_execute(service, requests, MESSAGES_TRASH_UNITS).failures
 
 
 # The main routine
@@ -670,7 +749,7 @@ def main() -> None:
     parser.add_argument(
         "--query",
         default="",
-        help='Gmail search terms that restrict every search, as in "in:inbox"',
+        help='Gmail search terms that restrict every search, as in "newer_than:7d" or "in:inbox"',
     )
     arguments = parser.parse_args()
 
@@ -702,8 +781,14 @@ def main() -> None:
     if not to_trash:
         print("No threads to trash.")
     elif arguments.delete:
-        trash_threads(service, (candidate.thread.thread_id for candidate in to_trash))
-        print(f"Trashed {len(to_trash)} threads.")
+        failures = trash_messages(
+            service, (mid for candidate in to_trash for mid in candidate.thread.message_ids)
+        )
+        warn_failures("trash message", failures)
+        trashed = sum(
+            1 for candidate in to_trash if failures.keys().isdisjoint(candidate.thread.message_ids)
+        )
+        print(f"Trashed {trashed} threads.")
     else:
         print(f"Would trash {len(to_trash)} threads; pass --delete to trash them.")
 

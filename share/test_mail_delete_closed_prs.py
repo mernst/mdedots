@@ -29,26 +29,47 @@ def thread(subjects, senders=None, starred=False):
     """Return a thread summary whose messages have the given subjects."""
     if senders is None:
         senders = ("notifications@github.com",) * len(subjects)
-    return mdcp.ThreadSummary("t1", tuple(subjects), tuple(senders), starred)
+    message_ids = tuple(f"m{index}" for index in range(len(subjects)))
+    return mdcp.ThreadSummary("t1", message_ids, tuple(subjects), tuple(senders), starred)
 
 
 def pr(number, state, owner):
-    """Return a pull request as the GitHub GraphQL API describes it in ref_query_field."""
+    """Return a pull request, as a dict like one parsed from GitHub's JSON for PR_FIELDS.
+
+    The dict has the keys "number", "state", and "headRepositoryOwner".
+    """
     return {"number": number, "state": state, "headRepositoryOwner": {"login": owner}}
 
 
-def repository(pull_requests=(), parent=None, default_branch="master"):
-    """Return a repository as the GitHub GraphQL API describes it for a BranchRef."""
+def pull_request_connection(pull_requests, has_next_page):
+    """Return a dict like one parsed from GitHub's JSON for a pullRequests field.
+
+    The dict has the keys "nodes" and "pageInfo".
+    """
+    return {"nodes": list(pull_requests), "pageInfo": {"hasNextPage": has_next_page}}
+
+
+def repository(pull_requests=(), parent=None, default_branch="master", has_next_page=False):
+    """Return a repository, as a dict like one parsed from GitHub's JSON for a BranchRef.
+
+    The dict has the keys "defaultBranchRef", "pullRequests", and "parent".
+    """
     return {
         "defaultBranchRef": {"name": default_branch},
-        "pullRequests": {"nodes": list(pull_requests)},
+        "pullRequests": pull_request_connection(pull_requests, has_next_page),
         "parent": parent,
     }
 
 
-def parent_repository(slug, pull_requests=()):
-    """Return a parent repository as the GitHub GraphQL API describes it for a BranchRef."""
-    return {"nameWithOwner": slug, "pullRequests": {"nodes": list(pull_requests)}}
+def parent_repository(slug, pull_requests=(), has_next_page=False):
+    """Return a parent repository, as a dict like one parsed from GitHub's JSON for a BranchRef.
+
+    The dict has the keys "nameWithOwner" and "pullRequests".
+    """
+    return {
+        "nameWithOwner": slug,
+        "pullRequests": pull_request_connection(pull_requests, has_next_page),
+    }
 
 
 class ParseSubjectTest(unittest.TestCase):
@@ -114,6 +135,7 @@ class ThreadSummaryTest(unittest.TestCase):
             "id": "abc",
             "messages": [
                 {
+                    "id": "m1",
                     "labelIds": ["INBOX"],
                     "payload": {
                         "headers": [
@@ -123,6 +145,7 @@ class ThreadSummaryTest(unittest.TestCase):
                     },
                 },
                 {
+                    "id": "m2",
                     "labelIds": ["STARRED"],
                     "payload": {"headers": [{"name": "From", "value": "Me@Example.com"}]},
                 },
@@ -132,6 +155,7 @@ class ThreadSummaryTest(unittest.TestCase):
             mdcp.ThreadSummary.from_gmail_thread(gmail_thread),
             mdcp.ThreadSummary(
                 "abc",
+                ("m1", "m2"),
                 ("[o/r] Title (PR #1)", ""),
                 ("notifications@github.com", "me@example.com"),
                 True,
@@ -249,6 +273,13 @@ class RefStateTest(unittest.TestCase):
         ref = BranchRef("codespecs/daikon", "feature")
         self.assertTrue(mdcp.ref_state(ref, repository([pr(7, "CLOSED", "codespecs")])).closed)
 
+    def test_too_many_pull_requests(self):
+        parent = parent_repository(
+            "codespecs/daikon", [pr(918, "MERGED", "mernst")], has_next_page=True
+        )
+        self.assertIsNone(mdcp.ref_state(self.BRANCH, repository(parent=parent)).closed)
+        self.assertIsNone(mdcp.ref_state(self.BRANCH, repository(has_next_page=True)).closed)
+
     def test_unknown_repository(self):
         self.assertIsNone(mdcp.ref_state(self.BRANCH, None).closed)
 
@@ -280,20 +311,24 @@ class RefStatesTest(unittest.TestCase):
         field = mdcp.ref_query_field("r0", BranchRef("o/r", 'a"b'))
         self.assertIn(r'headRefName: "a\"b"', field)
         self.assertIn("parent { nameWithOwner pullRequests", field)
+        self.assertIn("pageInfo { hasNextPage }", field)
 
 
 class FakeBatch:
     """A fake Gmail batch request whose requests succeed or fail as the test specifies."""
 
-    def __init__(self, callback, outcomes):
+    def __init__(self, callback, outcomes, batch_errors):
         self.callback = callback
         self.outcomes = outcomes
+        self.batch_errors = batch_errors
         self.request_ids = []
 
     def add(self, _request, request_id):
         self.request_ids.append(request_id)
 
     def execute(self):
+        if self.batch_errors:
+            raise self.batch_errors.pop(0)
         for request_id in self.request_ids:
             outcome = self.outcomes[request_id].pop(0)
             if isinstance(outcome, Exception):
@@ -303,13 +338,20 @@ class FakeBatch:
 
 
 class FakeBatchService:
-    """A fake Gmail service that creates FakeBatch requests."""
+    """A fake Gmail service that creates FakeBatch requests.
 
-    def __init__(self, outcomes):
+    `batch_errors` holds exceptions that the next batches raise as a whole.
+    """
+
+    def __init__(self, outcomes, batch_errors=()):
         self.outcomes = outcomes
+        self.batch_errors = list(batch_errors)
+        self.batches = []
 
     def new_batch_http_request(self, callback):
-        return FakeBatch(callback, self.outcomes)
+        batch = FakeBatch(callback, self.outcomes, self.batch_errors)
+        self.batches.append(batch.request_ids)
+        return batch
 
 
 def http_error(status, message="error"):
@@ -320,33 +362,55 @@ def http_error(status, message="error"):
 
 
 class BatchExecuteTest(unittest.TestCase):
-    """Test the retrying of Gmail batch requests."""
+    """Test the retrying and pacing of Gmail batch requests."""
+
+    UNITS = 10
 
     def requests(self, outcomes):
         return {request_id: lambda: None for request_id in outcomes}
 
+    def execute(self, service, outcomes, sleeps):
+        return mdcp.batch_execute(service, self.requests(outcomes), self.UNITS, sleeps.append)
+
     def test_transient_failure_is_retried(self):
         outcomes = {"a": [http_error(429), "A"], "b": ["B"]}
         sleeps = []
-        responses = mdcp.batch_execute(
-            FakeBatchService(outcomes), self.requests(outcomes), "fetch thread", sleeps.append
-        )
-        self.assertEqual(responses, {"a": "A", "b": "B"})
+        result = self.execute(FakeBatchService(outcomes), outcomes, sleeps)
+        self.assertEqual(result, mdcp.BatchResult({"a": "A", "b": "B"}, {}))
         self.assertEqual(sleeps, [1])
 
-    def test_permanent_failure_is_raised(self):
-        outcomes = {"a": [http_error(404, "not found")]}
-        with self.assertRaisesRegex(RuntimeError, "cannot fetch thread a: not found"):
-            mdcp.batch_execute(FakeBatchService(outcomes), self.requests(outcomes), "fetch thread")
+    def test_permanent_failure_is_reported(self):
+        not_found = http_error(404, "not found")
+        outcomes = {"a": [not_found], "b": [http_error(503), "B"]}
+        result = self.execute(FakeBatchService(outcomes), outcomes, [])
+        self.assertEqual(result, mdcp.BatchResult({"b": "B"}, {"a": not_found}))
 
-    def test_repeated_transient_failure_is_raised(self):
-        outcomes = {"a": [http_error(503)] * (mdcp.GMAIL_RETRIES + 1)}
+    def test_repeated_transient_failure_is_reported(self):
+        unavailable = http_error(503)
+        outcomes = {"a": [unavailable] * (mdcp.GMAIL_RETRIES + 1), "b": ["B"]}
         sleeps = []
-        with self.assertRaisesRegex(RuntimeError, "cannot trash thread a: error"):
-            mdcp.batch_execute(
-                FakeBatchService(outcomes), self.requests(outcomes), "trash thread", sleeps.append
-            )
+        result = self.execute(FakeBatchService(outcomes), outcomes, sleeps)
+        self.assertEqual(result, mdcp.BatchResult({"b": "B"}, {"a": unavailable}))
         self.assertEqual(sleeps, [2**attempt for attempt in range(mdcp.GMAIL_RETRIES)])
+
+    def test_failure_of_whole_batch_is_retried(self):
+        outcomes = {"a": ["A"], "b": ["B"]}
+        service = FakeBatchService(outcomes, [TimeoutError("timed out")])
+        result = self.execute(service, outcomes, [])
+        self.assertEqual(result, mdcp.BatchResult({"a": "A", "b": "B"}, {}))
+
+    def test_batches_are_paced(self):
+        outcomes = {str(index): ["R"] for index in range(mdcp.GMAIL_BATCH_SIZE * 2 + 1)}
+        sleeps = []
+        service = FakeBatchService(outcomes)
+        result = self.execute(service, outcomes, sleeps)
+        self.assertEqual(len(result.responses), len(outcomes))
+        self.assertEqual(
+            [len(request_ids) for request_ids in service.batches],
+            [mdcp.GMAIL_BATCH_SIZE, mdcp.GMAIL_BATCH_SIZE, 1],
+        )
+        interval = mdcp.GMAIL_BATCH_SIZE * self.UNITS / mdcp.GMAIL_QUOTA_UNITS_PER_SECOND
+        self.assertEqual(sleeps, [interval, interval])
 
 
 if __name__ == "__main__":
