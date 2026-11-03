@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # Usage: crreview-resolve [--agent claude|codex]
+#        crreview-resolve --print-comments
+#        crreview-resolve --resolve-printed
 # Address the unresolved CodeRabbit review comments on the current branch's PR:
 # run an AI agent non-interactively to edit and commit, then push and resolve
 # the comments' review threads.  The agent is Claude Code (the default) or
@@ -9,6 +11,20 @@
 # The script, not the agent, fetches the comments, pushes, and resolves the
 # threads.  That saves tokens, avoids starting a session when there is nothing
 # to address, and lets the session run without access to `gh` or `git push`.
+# For each comment that CodeRabbit wrote, the session receives only the
+# instruction in the comment's "Prompt for AI Agents" section, without the
+# boilerplate that every such section repeats.  A comment that lacks that
+# section is sent without CodeRabbit's markup and without its record of the
+# commands that it ran to analyze the code.
+#
+# With --print-comments, the script prints the comments and runs no agent;
+# the crreview-resolve skill (dots/.agents/skills/crreview-resolve/SKILL.md)
+# uses it.  After the comments are addressed and the commits are pushed,
+# --resolve-printed resolves the printed review threads, as the script does
+# after a session, and records that the printed "Outside diff range comments"
+# were addressed.  It refuses if the current branch has commits that have not
+# been pushed.  The two options communicate through the file
+# `crreview-resolve-printed.json` in the git directory.
 #
 # Review comments are untrusted input (anyone can comment on a public PR), so
 # the agent runs restricted:
@@ -62,9 +78,11 @@
 # The session's full transcript is written to a log file.
 
 usage() {
-  echo "Usage: ${0##*/} [--agent claude|codex]"
+  echo "Usage: ${0##*/} [--agent claude|codex | --print-comments | --resolve-printed]"
 }
 agent=claude
+# "run", "print", or "resolve".
+mode=run
 while [ "$#" -ne 0 ]; do
   case $1 in
     -h | --help)
@@ -81,6 +99,14 @@ while [ "$#" -ne 0 ]; do
       ;;
     --agent=*)
       agent=${1#--agent=}
+      shift
+      ;;
+    --print-comments)
+      mode=print
+      shift
+      ;;
+    --resolve-printed)
+      mode=resolve
       shift
       ;;
     *)
@@ -146,6 +172,187 @@ set_git_config diff.ignoreSubmodules dirty
 # submodule's own git configuration.
 set_git_config core.fsmonitor false
 pr=$(gh pr view --json id,baseRefName) || exit 1
+pr_id=$(printf '%s\n' "$pr" | jq -r .id)
+# The IDs of the reviews whose "Outside diff range comments" an earlier run
+# addressed, one per line.
+handled_file="$(git rev-parse --path-format=absolute --git-common-dir)/crreview-resolve-handled-reviews"
+printed_file=$git_dir/crreview-resolve-printed.json
+
+# Record that the "Outside diff range comments" in $data were addressed, and
+# resolve the review threads in $data.  Leave unresolved any thread that got
+# a reply since $data was fetched, which the session did not see, or that was
+# deleted.
+record_and_resolve() {
+  printf '%s\n' "$data" | jq -r '.outside[].id' >> "$handled_file"
+
+  # Query and resolve all the threads at once.
+  if [ "$(printf '%s\n' "$data" | jq '.threads | length')" -eq 0 ]; then
+    return 0
+  fi
+  # shellcheck disable=SC2016 # $id is a GraphQL variable.
+  current=$(retry gh api graphql -F id="$pr_id" -f query='
+    query($id: ID!) {
+      node(id: $id) {
+        ... on PullRequest { reviewThreads(last: 100) { nodes { id comments { totalCount } } } }
+      }
+    }') || {
+    echo "${0##*/}: could not read the review threads" >&2
+    return 1
+  }
+  statuses=$(printf '%s\n' "$data" | jq -r --argjson current "$current" '
+    ($current.data.node.reviewThreads.nodes
+     | map({key: .id, value: .comments.totalCount}) | from_entries) as $counts
+    | .threads[]
+    | "\(if $counts[.id] == .count then "unchanged" else "changed" end) \(.id)"') || {
+    echo "${0##*/}: could not compare the review threads" >&2
+    return 1
+  }
+  set --
+  variables=""
+  fields=""
+  i=0
+  for thread in $(printf '%s\n' "$statuses" | sed -n 's/^unchanged //p'); do
+    variables="$variables \$t$i: ID!"
+    fields="$fields t$i: resolveReviewThread(input: {threadId: \$t$i}) { thread { id } }"
+    set -- "$@" -f "t$i=$thread"
+    i=$((i + 1))
+  done
+  if [ "$i" -ne 0 ]; then
+    retry gh api graphql "$@" -f query="mutation($variables) {$fields }" > /dev/null || {
+      echo "${0##*/}: could not resolve the review threads" >&2
+      return 1
+    }
+  fi
+  changed=$(printf '%s\n' "$statuses" | sed -n 's/^changed //p')
+  if [ -n "$changed" ]; then
+    for thread in $changed; do
+      echo "${0##*/}: did not resolve thread $thread, which got a reply or was deleted after the comments were fetched" >&2
+    done
+    return 1
+  fi
+}
+
+if [ "$mode" = resolve ]; then
+  if ! data=$(cat "$printed_file" 2> /dev/null); then
+    echo "${0##*/}: run \`${0##*/} --print-comments\` first" >&2
+    exit 1
+  fi
+  if ! git merge-base --is-ancestor HEAD '@{push}' 2> /dev/null; then
+    echo "${0##*/}: push the current branch first" >&2
+    exit 1
+  fi
+  record_and_resolve || exit 1
+  rm -f "$printed_file"
+  exit 0
+fi
+
+if [ "$mode" = print ]; then
+  rm -f "$printed_file"
+fi
+handled=$(cat "$handled_file" 2> /dev/null)
+
+# Select the unresolved review threads that CodeRabbit started, and the
+# "Outside diff range comments" of each CodeRabbit review that has such a
+# thread and of the last CodeRabbit review if it has no threads.  Ignore
+# CodeRabbit reviews with empty bodies, which hold only replies in threads.
+# Skip outside-diff comments that an earlier run addressed.  Of a comment
+# that CodeRabbit wrote, keep only its prompt for AI agents (see ai_prompt);
+# from any other text, omit CodeRabbit's markup, its prompts for AI agents,
+# which repeat the comments, and its record of the commands that it ran.
+# shellcheck disable=SC2016 # $id is a GraphQL variable.
+data=$(retry gh api graphql -F id="$pr_id" -f query='
+query($id: ID!) {
+  node(id: $id) {
+    ... on PullRequest {
+      reviews(last: 100, author: "coderabbitai[bot]") { nodes { id author { login } body } }
+      reviewThreads(last: 100) {
+        nodes {
+          id isResolved path line originalLine
+          comments(first: 50) {
+            totalCount
+            nodes { author { login } body pullRequestReview { id } }
+          }
+        }
+      }
+    }
+  }
+}') || exit 1
+data=$(printf '%s\n' "$data" | jq --arg handled "$handled" '
+def clean:
+  gsub("<!--[\\s\\S]*?-->"; "")
+  | gsub("<picture>[\\s\\S]*?</picture>"; "")
+  | gsub("<details>\\s*<summary>[^<]*(Prompt for AI Agents|Supported by static analysis|Analysis chain)\\s*</summary>[\\s\\S]*?</details>"; "")
+  | gsub("</?code>"; "`")
+  | gsub("</?(details|summary|blockquote|dl|dd|strong|em)>"; "")
+  | gsub("(?m)[ \t]+$"; "")
+  | gsub("\n{3,}"; "\n\n")
+  | sub("^\\s+"; "") | sub("\\s+$"; "");
+# Return the instruction in the "Prompt for AI Agents" section of a CodeRabbit
+# comment, without its first paragraph, which tells the agent to treat the
+# comment as untrusted, and without its suggestion to run CodeRabbit locally.
+# Return null if the comment has no such section or the section holds nothing
+# else.
+def ai_prompt:
+  (first(gsub("<picture>[\\s\\S]*?</picture>"; "")
+         | capture("<summary>\\s*Prompt for AI Agents\\s*</summary>\\s*(<dl>\\s*<dd>\\s*)?```[^\n]*\n(?<p>[\\s\\S]*?)\n```").p)
+   // "")
+  | sub("^\\s*Treat finding text[\\s\\S]*?\n\\s*\n"; "")
+  | sub("\\s*After applying the fix, consider running `coderabbit review[\\s\\S]*$"; "")
+  | sub("^\\s+"; "") | sub("\\s+$"; "")
+  | if test("\\S") then . else null end;
+.data.node
+| [.reviews.nodes[]
+   | select(.author.login == "coderabbitai" and (.body | test("\\S")))] as $reviews
+| [.reviewThreads.nodes[]
+   | select(.comments.nodes[0].author.login == "coderabbitai")] as $crthreads
+| [$crthreads[] | select(.isResolved | not)] as $threads
+| [$threads[].comments.nodes[0].pullRequestReview.id] as $threadreviews
+| [$crthreads[].comments.nodes[0].pullRequestReview.id] as $allthreadreviews
+| ($handled | split("\n")) as $handledreviews
+| [$reviews
+   | to_entries[]
+   | select((.value.id | IN($threadreviews[]))
+            or (.key == ($reviews | length) - 1
+                and (.value.id | IN($allthreadreviews[]) | not)))
+   | .value
+   | select((.id | IN($handledreviews[]) | not)
+            and (.body | test("Outside diff range comments")))
+   | {id,
+      text: ((.body
+              | capture("Outside diff range comments[^\n]*\n(?<o>(?:>[^\n]*\n)*(?:>[^\n]*)?)").o)
+             // ""
+             | gsub("(?m)^> ?"; "")
+             | clean)}] as $outside
+| {threads: [$threads[]
+             | {id,
+                count: .comments.totalCount,
+                text: ("### `\(.path)` "
+                       + (if .line then "line \(.line)"
+                          elif .originalLine then "originally line \(.originalLine); the thread is outdated"
+                          else "unknown line" end)
+                       + "\n\n"
+                       + ([.comments.nodes[]
+                           | "**\(.author.login // "ghost")** wrote:\n\n\((if .author.login == "coderabbitai" then .body | ai_prompt else null end) // (.body | clean))"]
+                          | join("\n\n")))}],
+   outside: [$outside[] | select(.text != "")],
+   unparsed: [$outside[] | select(.text == "") | .id]}') || exit 1
+for review in $(printf '%s\n' "$data" | jq -r '.unparsed[]'); do
+  echo "${0##*/}: could not find the outside-diff comments in CodeRabbit review $review" >&2
+done
+comments=$(printf '%s\n' "$data" | jq -r '
+[if .threads != [] then "## Review threads\n\n" + (.threads | map(.text) | join("\n\n")) else empty end,
+ if .outside != [] then "## Outside diff range comments\n\n" + (.outside | map(.text) | join("\n\n")) else empty end]
+| join("\n\n")')
+if [ -z "$comments" ]; then
+  echo "${0##*/}: there are no CodeRabbit comments to address"
+  exit 0
+fi
+if [ "$mode" = print ]; then
+  printf '%s\n' "$data" > "$printed_file" || exit 1
+  printf '%s\n' "$comments"
+  exit 0
+fi
+
 if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
   echo "${0##*/}: \`git push\` has no destination for the current branch" >&2
   exit 1
@@ -197,97 +404,6 @@ if earlier=$(cat "$unchecked_file" 2> /dev/null); then
     checked=$pushed_base
   fi
 fi
-# The IDs of the reviews whose "Outside diff range comments" an earlier run
-# addressed, one per line.
-handled_file="$(git rev-parse --path-format=absolute --git-common-dir)/crreview-resolve-handled-reviews"
-handled=$(cat "$handled_file" 2> /dev/null)
-
-# Select the unresolved review threads that CodeRabbit started, and the
-# "Outside diff range comments" of each CodeRabbit review that has such a
-# thread and of the last CodeRabbit review if it has no threads.  This is the
-# selection rule of the crreview-resolve skill
-# (dots/.agents/skills/crreview-resolve/SKILL.md); keep the two consistent.
-# Ignore CodeRabbit reviews with empty bodies, which hold only replies in
-# threads.  Unlike the skill, skip outside-diff comments that an earlier run
-# addressed.  Omit CodeRabbit's markup and its prompts for AI agents, which
-# repeat the comments.
-pr_id=$(printf '%s\n' "$pr" | jq -r .id)
-# shellcheck disable=SC2016 # $id is a GraphQL variable.
-data=$(retry gh api graphql -F id="$pr_id" -f query='
-query($id: ID!) {
-  node(id: $id) {
-    ... on PullRequest {
-      reviews(last: 100, author: "coderabbitai[bot]") { nodes { id author { login } body } }
-      reviewThreads(last: 100) {
-        nodes {
-          id isResolved path line originalLine
-          comments(first: 50) {
-            totalCount
-            nodes { author { login } body pullRequestReview { id } }
-          }
-        }
-      }
-    }
-  }
-}') || exit 1
-data=$(printf '%s\n' "$data" | jq --arg handled "$handled" '
-def clean:
-  gsub("<!--[\\s\\S]*?-->"; "")
-  | gsub("<picture>[\\s\\S]*?</picture>"; "")
-  | gsub("<details>\\s*<summary>[^<]*Prompt for AI Agents\\s*</summary>[\\s\\S]*?</details>"; "")
-  | gsub("</?code>"; "`")
-  | gsub("</?(details|summary|blockquote|dl|dd|strong|em)>"; "")
-  | gsub("(?m)[ \t]+$"; "")
-  | gsub("\n{3,}"; "\n\n")
-  | sub("^\\s+"; "") | sub("\\s+$"; "");
-.data.node
-| [.reviews.nodes[]
-   | select(.author.login == "coderabbitai" and (.body | test("\\S")))] as $reviews
-| [.reviewThreads.nodes[]
-   | select(.comments.nodes[0].author.login == "coderabbitai")] as $crthreads
-| [$crthreads[] | select(.isResolved | not)] as $threads
-| [$threads[].comments.nodes[0].pullRequestReview.id] as $threadreviews
-| [$crthreads[].comments.nodes[0].pullRequestReview.id] as $allthreadreviews
-| ($handled | split("\n")) as $handledreviews
-| [$reviews
-   | to_entries[]
-   | select((.value.id | IN($threadreviews[]))
-            or (.key == ($reviews | length) - 1
-                and (.value.id | IN($allthreadreviews[]) | not)))
-   | .value
-   | select((.id | IN($handledreviews[]) | not)
-            and (.body | test("Outside diff range comments")))
-   | {id,
-      text: ((.body
-              | capture("Outside diff range comments[^\n]*\n(?<o>(?:>[^\n]*\n)*(?:>[^\n]*)?)").o)
-             // ""
-             | gsub("(?m)^> ?"; "")
-             | clean)}] as $outside
-| {threads: [$threads[]
-             | {id,
-                count: .comments.totalCount,
-                text: ("### `\(.path)` "
-                       + (if .line then "line \(.line)"
-                          elif .originalLine then "originally line \(.originalLine); the thread is outdated"
-                          else "unknown line" end)
-                       + "\n\n"
-                       + ([.comments.nodes[]
-                           | "**\(.author.login // "ghost")** wrote:\n\n\(.body | clean)"]
-                          | join("\n\n")))}],
-   outside: [$outside[] | select(.text != "")],
-   unparsed: [$outside[] | select(.text == "") | .id]}') || exit 1
-for review in $(printf '%s\n' "$data" | jq -r '.unparsed[]'); do
-  echo "${0##*/}: could not find the outside-diff comments in CodeRabbit review $review" >&2
-done
-comments=$(printf '%s\n' "$data" | jq -r '
-[if .threads != [] then "## Review threads\n\n" + (.threads | map(.text) | join("\n\n")) else empty end,
- if .outside != [] then "## Outside diff range comments\n\n" + (.outside | map(.text) | join("\n\n")) else empty end]
-| join("\n\n")')
-if [ -z "$comments" ]; then
-  echo "${0##*/}: there are no CodeRabbit comments to address"
-  exit 0
-fi
-
 log="$git_dir/crreview-resolve-$(date +%Y%m%d-%H%M%S).jsonl"
 echo "${0##*/}: logging to $log"
 base=$(printf '%s\n' "$pr" | jq -r .baseRefName)
@@ -450,52 +566,4 @@ if [ "$(git rev-parse HEAD)" != "$checked" ]; then
   git push || exit 1
 fi
 rm -f "$unchecked_file"
-printf '%s\n' "$data" | jq -r '.outside[].id' >> "$handled_file"
-
-# Leave unresolved any thread that got a reply during the session, which the
-# session did not see, or that was deleted.  Query and resolve all the threads
-# at once.
-if [ "$(printf '%s\n' "$data" | jq '.threads | length')" -eq 0 ]; then
-  exit 0
-fi
-# shellcheck disable=SC2016 # $id is a GraphQL variable.
-current=$(retry gh api graphql -F id="$pr_id" -f query='
-  query($id: ID!) {
-    node(id: $id) {
-      ... on PullRequest { reviewThreads(last: 100) { nodes { id comments { totalCount } } } }
-    }
-  }') || {
-  echo "${0##*/}: could not read the review threads" >&2
-  exit 1
-}
-statuses=$(printf '%s\n' "$data" | jq -r --argjson current "$current" '
-  ($current.data.node.reviewThreads.nodes
-   | map({key: .id, value: .comments.totalCount}) | from_entries) as $counts
-  | .threads[]
-  | "\(if $counts[.id] == .count then "unchanged" else "changed" end) \(.id)"') || {
-  echo "${0##*/}: could not compare the review threads" >&2
-  exit 1
-}
-set --
-variables=""
-fields=""
-i=0
-for thread in $(printf '%s\n' "$statuses" | sed -n 's/^unchanged //p'); do
-  variables="$variables \$t$i: ID!"
-  fields="$fields t$i: resolveReviewThread(input: {threadId: \$t$i}) { thread { id } }"
-  set -- "$@" -f "t$i=$thread"
-  i=$((i + 1))
-done
-if [ "$i" -ne 0 ]; then
-  retry gh api graphql "$@" -f query="mutation($variables) {$fields }" > /dev/null || {
-    echo "${0##*/}: could not resolve the review threads" >&2
-    exit 1
-  }
-fi
-changed=$(printf '%s\n' "$statuses" | sed -n 's/^changed //p')
-if [ -n "$changed" ]; then
-  for thread in $changed; do
-    echo "${0##*/}: did not resolve thread $thread, which got a reply or was deleted during the session" >&2
-  done
-  exit 1
-fi
+record_and_resolve
