@@ -33,7 +33,7 @@
 # There isn't one for blame, so far as I know.
 [alias]
 ## Alternative definitions of out:  "git log FETCH_HEAD.." (in which case it is essential to fetch first, which requires a network connection); "git log @{upstream}.." (not sure about pros and cons of it)
-	out = log --branches --not --remotes
+	out = log HEAD --not --remotes
 	outgoing = log --branches --not --remotes
 	in = !git fetch && git log ..FETCH_HEAD
 	incoming = !git fetch && git log ..FETCH_HEAD
