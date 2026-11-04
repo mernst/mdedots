@@ -34,7 +34,7 @@
 [alias]
 ## Alternative definitions of out:  "git log FETCH_HEAD.." (in which case it is essential to fetch first, which requires a network connection); "git log @{upstream}.." (not sure about pros and cons of it)
 	out = log HEAD --not --remotes
-	outgoing = log --branches --not --remotes
+	outgoing = log HEAD --not --remotes
 	in = !git fetch && git log ..FETCH_HEAD
 	incoming = !git fetch && git log ..FETCH_HEAD
 	unstage = reset HEAD
@@ -208,3 +208,4 @@
 
 [advice]
 	skippedCherryPicks = false
+	diverging = false
