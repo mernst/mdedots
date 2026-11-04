@@ -55,7 +55,7 @@ GERMAN_TERMS = (
     "(kurze Frage)",
     "(anfrage zu)",
     "(frage zu)",
-    '(ohne AND und AND deine)',
+    "(ohne AND und AND deine)",
 )
 GERMAN_SEARCH = "(" + " OR ".join(GERMAN_TERMS) + ")"
 
@@ -222,7 +222,7 @@ SPAM_REVIEW_SECTIONS: tuple[Section, ...] = (
             "from:webinars" + "@" + "training.businesswatchnetwork.com",
             "from:expertspeak" + "@" + "email.concordeducations.com",
             "from:reply" + "@" + "members.nra.org",
-            "newsletters" + "@" + "news.openaccessgovernment.org"
+            "newsletters" + "@" + "news.openaccessgovernment.org",
         ),
     ),
     Section(
