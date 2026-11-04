@@ -13,11 +13,11 @@
 # session when there is nothing to address, and lets the session run without
 # access to `gh`, `git pull`, or `git push`.  The pull happens only when there
 # are comments to address, and it merges; it never rebases.
+# The PR is the one whose head is the branch that `git push` pushes to; the
+# script looks for it in the repository that the push repository was forked
+# from, in the root of that fork network, and in the push repository itself.
 # The script refuses a PR that is not open, because pushing to the branch of
-# a landed PR would recreate the branch, which GitHub usually deletes.  It
-# also refuses unless `git push` pushes to the PR's head branch:  `gh pr view`
-# finds the PR by the branch's name, so it can find a PR from a branch of the
-# same name in another repository.
+# a landed PR would recreate the branch, which GitHub usually deletes.
 # The comments, both in review threads and outside the diff, are sent without
 # CodeRabbit's markup and without its record of the commands that it ran to
 # analyze the code.  Each "Prompt for AI Agents" section is reduced to its
@@ -191,24 +191,14 @@ set_git_config diff.ignoreSubmodules dirty
 # submodules.  The environment's settings apply there too and override the
 # submodule's own git configuration.
 set_git_config core.fsmonitor false
-pr=$(gh pr view --json id,baseRefName,state,url,headRepositoryOwner,headRepository,headRefName) || exit 1
-if [ "$(printf '%s\n' "$pr" | jq -r .state)" != OPEN ]; then
-  echo "${0##*/}: $(printf '%s\n' "$pr" | jq -r '"\(.url) \(if .state == "MERGED" then "has landed" else "is closed" end)"')," \
-    "so its comments are not addressed" >&2
-  exit 1
-fi
 if ! git rev-parse --verify --quiet '@{push}' > /dev/null; then
   echo "${0##*/}: \`git push\` has no destination for the current branch" >&2
   exit 1
 fi
-# `gh pr view` finds the PR by the current branch's name, so the PR's head can
-# be a branch of the same name in another repository, such as the upstream
-# repository of a fork.  Pushing would then update or create a branch that
-# is not the PR's head.  The destination is written as "OWNER/REPO:BRANCH",
-# from the configured URL of the push remote, which `url.BASE.insteadOf`
-# does not rewrite.
-pr_head=$(printf '%s\n' "$pr" \
-  | jq -r '"\(.headRepositoryOwner.login)/\(.headRepository.name // ""):\(.headRefName)"')
+# The PR's head must be the branch that `git push` pushes to; otherwise,
+# pushing would update or create a branch that is not the PR's head.  The
+# push repository's GitHub slug, such as "ORG/REPO", comes from the configured
+# URL of the push remote, which `url.BASE.insteadOf` does not rewrite.
 branch_ref=$(git symbolic-ref --quiet HEAD) || exit 1
 push_remote=$(git for-each-ref --format='%(push:remotename)' "$branch_ref")
 push_branch=$(git for-each-ref --format='%(push)' "$branch_ref")
@@ -217,13 +207,44 @@ push_url=$(git config --get "remote.$push_remote.pushurl" || git config --get "r
 push_repo=${push_url#*github.com[:/]}
 push_repo=${push_repo%/}
 push_repo=${push_repo%.git}
-lowercase() {
-  printf '%s\n' "$1" | tr '[:upper:]' '[:lower:]'
-}
-if [ "$push_repo" = "$push_url" ] \
-  || [ "$(lowercase "$push_repo"):$push_branch" != "$(lowercase "${pr_head%%:*}"):${pr_head#*:}" ]; then
-  echo "${0##*/}: the head of $(printf '%s\n' "$pr" | jq -r .url) is $pr_head," \
-    "but \`git push\` would push to $push_url ($push_branch)" >&2
+if [ "$push_repo" = "$push_url" ]; then
+  echo "${0##*/}: \`git push\` pushes to $push_url, which is not a GitHub repository" >&2
+  exit 1
+fi
+# Look for the PR in the repository that the push repository was forked from,
+# then in the root of its fork network, then in the push repository itself.
+# `gh pr view` without an argument would look only in gh's default
+# repository, which for a clone of a fork with no other remote is the fork.
+# The GitHub API gives the push repository's canonical GitHub slug, which can
+# differ in case from the URL's.
+# shellcheck disable=SC2016 # $r is a jq variable.
+repos=$(gh api "repos/$push_repo" --jq '
+  [.parent.full_name, .source.full_name, .full_name]
+  | map(select(. != null))
+  | reduce .[] as $r ([]; if index([$r]) then . else . + [$r] end)
+  | .[]') || exit 1
+push_repo=$(printf '%s\n' "$repos" | tail -n 1)
+pr=""
+for repo in $repos; do
+  # `gh pr list --head` matches only the branch name, not its repository.
+  # Prefer an open PR to a closed one.
+  prs=$(retry gh pr list --repo "$repo" --head "$push_branch" --state all --limit 100 \
+    --json id,baseRefName,state,url,headRepository) || exit 1
+  pr=$(printf '%s\n' "$prs" | jq -c --arg head "$push_repo" '
+        map(select(.headRepository.nameWithOwner == $head))
+        | (map(select(.state == "OPEN")) + .) | .[0] // empty') || exit 1
+  if [ -n "$pr" ]; then
+    break
+  fi
+done
+if [ -z "$pr" ]; then
+  echo "${0##*/}: found no pull request from $push_repo:$push_branch in" \
+    "$(printf '%s\n' "$repos" | paste -sd ' ')" >&2
+  exit 1
+fi
+if [ "$(printf '%s\n' "$pr" | jq -r .state)" != OPEN ]; then
+  echo "${0##*/}: $(printf '%s\n' "$pr" | jq -r '"\(.url) \(if .state == "MERGED" then "has landed" else "is closed" end)"')," \
+    "so its comments are not addressed" >&2
   exit 1
 fi
 pr_id=$(printf '%s\n' "$pr" | jq -r .id)
