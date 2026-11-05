@@ -23,3 +23,7 @@ Then commit and push.
 
 Finally, run `crreview-resolve --resolve-printed`, which resolves the printed
 review threads.  Do not resolve review threads in any other way.
+
+Do not print anything except questions for the user and error messages
+(which should also be written to an `AGENT-todo.md` file.  In particular,
+do not report your resolution of each comment.
