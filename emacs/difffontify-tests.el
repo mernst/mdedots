@@ -7,7 +7,8 @@
 ;;
 ;; The test inputs are in difffontify-tests/.  langs.diff is the output of
 ;; "diff -u -b -r old new" in that directory, and nofiles.diff is the same
-;; diff with the directory names changed to ones that do not exist.  Each
+;; diff with the directory names changed to ones that do not exist.  git.diff
+;; is the output of "git diff --no-index old/Foo.java new/Foo.java".  Each
 ;; .goal file holds the expected text of the buffer that
 ;; `difffontify--prepare' returns, with each run of text that has faces
 ;; written as ⟨FACES|TEXT⟩ (see `difffontify-tests--markup').
@@ -161,6 +162,22 @@ The caller must kill the buffer."
               (kill-buffer prepared))))
       (kill-buffer buffer))))
 
+(ert-deftest difffontify-tests-git-diff-uses-files ()
+  "In a \"git diff\" file, the new file \"b/new/Foo.java\" is \"new/Foo.java\"."
+  (let ((buffer (find-file-noselect
+                 (expand-file-name "git.diff" difffontify-tests--dir))))
+    (unwind-protect
+        (with-current-buffer buffer
+          (let ((prepared (difffontify--prepare nil)))
+            (unwind-protect
+                (with-current-buffer prepared
+                  (goto-char (point-min))
+                  (search-forward "License line 12, revised.")
+                  (should (memq 'font-lock-comment-face
+                                (get-text-property (match-beginning 0)
+                                                   'face))))
+              (kill-buffer prepared))))
+      (kill-buffer buffer))))
 
 (ert-deftest difffontify-tests-diff-finished ()
   "The \"Diff finished\" line at the end of a `*Diff*' buffer is omitted."

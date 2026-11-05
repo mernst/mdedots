@@ -226,14 +226,19 @@ for COLOR, long lines are wrapped, and the \"Diff finished\" line that ends a
       (let ((diff-font-lock-syntax 'hunk-also)
             (diff-refine nil)
             (diff-font-lock-prettify nil)
-            (orig-fontify-props (symbol-function 'diff-syntax-fontify-props)))
+            (orig-fontify-props (symbol-function 'diff-syntax-fontify-props))
+            (orig-file-names (symbol-function 'diff-hunk-file-names)))
         (delay-mode-hooks (diff-mode))
         (setq-local diff-default-directory dir)
         (setq tab-width 8)
         (cl-letf (((symbol-function 'diff-syntax-fontify-props)
                    (lambda (file text line-nb &optional hunk-only)
                      (difffontify--fontify-props
-                      orig-fontify-props file text line-nb hunk-only))))
+                      orig-fontify-props file text line-nb hunk-only)))
+                  ((symbol-function 'diff-hunk-file-names)
+                   (lambda (&optional old)
+                     (mapcar #'difffontify--strip-b-prefix
+                             (funcall orig-file-names old)))))
           ;; Major modes for the compared files print messages, such as
           ;; Python's "Can't guess python-indent-offset".
           (let ((inhibit-message t))
@@ -272,6 +277,13 @@ case, highlight the hunk text alone."
              (insert text)
              (with-demoted-errors "%S"
                (funcall orig file text line-nb t))))))
+
+(defun difffontify--strip-b-prefix (file)
+  "Return FILE, a file name from a diff, without a leading \"b/\".
+\"git diff\" writes the new file \"dir/foo.c\" as \"b/dir/foo.c\"."
+  (if (string-prefix-p "b/" file)
+      (substring file 2)
+    file))
 
 (defun difffontify--embolden-diff-lines ()
   "Give the `diff-file-header' face to each file header line.
