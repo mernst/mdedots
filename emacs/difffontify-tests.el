@@ -303,6 +303,234 @@ The caller must kill the buffer."
     (should (equal (buffer-string) "+abcdefghi \\\n»\tjkl\\\n»mnop\n"))))
 
 
+;;; Page headers
+
+(defun difffontify-tests--call-prepared (function)
+  "Call FUNCTION in the black-and-white prepared copy of the current buffer.
+That is, in the buffer that `difffontify--prepare' returns.  Return the
+result of FUNCTION, and kill the prepared buffer."
+  (let ((buffer (difffontify--prepare nil)))
+    (unwind-protect
+        (with-current-buffer buffer
+          (funcall function))
+      (kill-buffer buffer))))
+
+(defun difffontify-tests--locations ()
+  "Return the `difffontify-location' properties in the current buffer.
+The result is a list of elements (LINE . LOCATION), one for each line whose
+location differs from the previous line's, where LINE is a line number such
+as 1 for the first line."
+  (save-excursion
+    (goto-char (point-min))
+    (let ((previous 'none)
+          result)
+      (while (not (eobp))
+        (let ((location (get-text-property (point) 'difffontify-location)))
+          (unless (equal location previous)
+            (push (cons (line-number-at-pos) location) result)
+            (setq previous location)))
+        (forward-line 1))
+      (nreverse result))))
+
+(defun difffontify-tests--text-locations (&rest lines)
+  "Return the locations, as by `difffontify-tests--locations', for LINES.
+LINES are the lines of a diff, without newlines.  The locations are those in
+the buffer that `difffontify--prepare' returns for the diff."
+  (with-temp-buffer
+    (insert (mapconcat (lambda (line) (concat line "\n")) lines))
+    (delay-mode-hooks (diff-mode))
+    (difffontify-tests--call-prepared #'difffontify-tests--locations)))
+
+(ert-deftest difffontify-tests-locations-git ()
+  "Locations come from file headers, hunk headers, and definitions in hunks."
+  (should (equal (difffontify-tests--text-locations
+                  "diff --git a/Bar.java b/Bar.java"
+                  "index 1111111..2222222 100644"
+                  "--- a/Bar.java"
+                  "+++ b/Bar.java"
+                  "@@ -5,6 +5,7 @@ public class Bar {"
+                  "   int x;"
+                  " "
+                  "   void first() {"
+                  "+    x++;"
+                  "   }"
+                  " "
+                  "   void second() {"
+                  "diff --git a/Gone.py b/Gone.py"
+                  "deleted file mode 100644"
+                  "index 3333333..0000000"
+                  "--- a/Gone.py"
+                  "+++ /dev/null"
+                  "@@ -1,2 +0,0 @@"
+                  "-def gone():"
+                  "-    pass")
+                 '((1 . nil)
+                   (5 . "Bar.java:  public class Bar {")
+                   (8 . "Bar.java:  void first() {")
+                   (12 . "Bar.java:  void second() {")
+                   (13 . nil)
+                   (18 . "Gone.py")
+                   (19 . "Gone.py:  def gone():")))))
+
+(ert-deftest difffontify-tests-locations-combined ()
+  "A combined diff, as for a merge, has locations."
+  (should (equal (difffontify-tests--text-locations
+                  "diff --cc f.c"
+                  "index 1111111,2222222..3333333"
+                  "--- a/f.c"
+                  "+++ b/f.c"
+                  "@@@ -1,3 -1,3 +1,4 @@@ int main() {"
+                  "  int a;"
+                  "- int b;"
+                  " -int c;"
+                  "++int d;"
+                  "  return 0;")
+                 '((1 . nil)
+                   (5 . "f.c:  int main() {")))))
+
+(ert-deftest difffontify-tests-locations-svn ()
+  "The lines that precede a file's \"---\" line have no location."
+  (should (equal (difffontify-tests--text-locations
+                  "Index: a.c"
+                  (make-string 67 ?=)
+                  "--- a.c\t(revision 1)"
+                  "+++ a.c\t(working copy)"
+                  "@@ -1 +1 @@ void f() {"
+                  "-  x = 1;"
+                  "+  x = 2;"
+                  "Index: b.c"
+                  (make-string 67 ?=)
+                  "--- b.c\t(revision 1)"
+                  "+++ b.c\t(working copy)"
+                  "@@ -1 +1 @@"
+                  "-y"
+                  "+z")
+                 '((1 . nil)
+                   (5 . "a.c:  void f() {")
+                   (8 . nil)
+                   (12 . "b.c")))))
+
+(ert-deftest difffontify-tests-locations-normal ()
+  "A normal diff, which names its files only in the \"diff\" line."
+  (should (equal (difffontify-tests--text-locations
+                  "diff -r old/x.c new/x.c"
+                  "5c5"
+                  "< a"
+                  "---"
+                  "> b"
+                  "Only in new: y.c")
+                 '((1 . nil)
+                   (2 . "new/x.c")
+                   (6 . nil)))))
+
+(ert-deftest difffontify-tests-locations-whitespace ()
+  "In a location, a run of spaces and tabs is one space."
+  (should (equal (difffontify-tests--text-locations
+                  "--- a/m.c"
+                  "+++ b/m.c"
+                  "@@ -1,2 +1,2 @@ static\tint  g(void)"
+                  " static int"
+                  "-f(void)\t{"
+                  "+h(void)\t{")
+                 '((1 . nil)
+                   (3 . "m.c:  static int g(void)")
+                   (5 . "m.c:  f(void) {")
+                   (6 . "m.c:  h(void) {")))))
+
+(ert-deftest difffontify-tests-locations-langs ()
+  "Locations in a diff of several files, including LaTeX environments."
+  (let ((buffer (find-file-noselect
+                 (expand-file-name "langs.diff" difffontify-tests--dir))))
+    (unwind-protect
+        (should (equal
+                 (with-current-buffer buffer
+                   (difffontify-tests--call-prepared
+                    #'difffontify-tests--locations))
+                 '((1 . nil)
+                   (4 . "new/foo.el")
+                   (7 . "new/foo.el:  (defun foo-double (n)")
+                   (13 . nil)
+                   (16 . "new/Foo.java")
+                   (33 . "new/Foo.java:  public int count() {")
+                   (34 . "new/Foo.java:  public long count() {")
+                   (38 . "new/Foo.java:  public void log() {")
+                   (44 . nil)
+                   (47 . "new/foo.py")
+                   (57 . nil)
+                   (60 . "new/foo.sh")
+                   (69 . nil)
+                   (72 . "new/foo.tex")
+                   (73 . "new/foo.tex:  \\section{Introduction}")
+                   (80 . nil)
+                   (83 . "new/Makefile")
+                   (87 . "new/Makefile:  all: foo")
+                   (89 . "new/Makefile:  foo: foo.c"))))
+      (kill-buffer buffer))))
+
+(ert-deftest difffontify-tests-locations-share-strings ()
+  "Lines with the same location share one string, and so one interval."
+  (with-temp-buffer
+    (insert "--- a/f.txt\n+++ b/f.txt\n@@ -1,3 +1,3 @@\n a\n-b\n+c\n d\n")
+    (delay-mode-hooks (diff-mode))
+    (difffontify-tests--call-prepared
+     (lambda ()
+       (goto-char (point-min))
+       (search-forward "@@")
+       (should (null (next-single-property-change
+                      (point) 'difffontify-location)))))))
+
+(ert-deftest difffontify-tests-wrap-location ()
+  "A continuation line has the location of the line that was wrapped."
+  (with-temp-buffer
+    (insert (propertize "+aaa bbbb cccc dddd\n" 'difffontify-location "f.c"))
+    (difffontify--wrap-lines 12)
+    (goto-char (point-min))
+    (search-forward "»")
+    (should (equal (get-text-property (match-beginning 0) 'difffontify-location)
+                   "f.c"))))
+
+(ert-deftest difffontify-tests-headers ()
+  "The first page header has the date, and others have the location."
+  (let* ((dir (make-temp-file "difffontify-tests-" t))
+         (ps (expand-file-name "out.ps" dir))
+         (buffer (find-file-noselect
+                  (expand-file-name "langs.diff" difffontify-tests--dir))))
+    (unwind-protect
+        (progn
+          (with-current-buffer buffer
+            (difffontify-tests--call-prepared
+             (lambda ()
+               (difffontify--write-ps (current-buffer) ps "langs.diff" nil))))
+          (should (equal
+                   (with-temp-buffer
+                     (insert-file-contents ps)
+                     (let (headers)
+                       (while (re-search-forward
+                               "^/HeaderLinesLeft\\[\n \\[/h0 (\\(.*\\))\\]$"
+                               nil t)
+                         (push (match-string 1) headers))
+                       (nreverse headers)))
+                   (list (concat "langs.diff      "
+                                 (format-time-string "%Y-%m-%d"))
+                         ;; In PostScript, a backslash is doubled.
+                         (concat "langs.diff      "
+                                 "new/foo.tex:  \\\\section{Introduction}")))))
+      (kill-buffer buffer)
+      (delete-directory dir t))))
+
+(ert-deftest difffontify-tests-header-truncated ()
+  "A long page header is truncated."
+  (let ((difffontify--header-title "x.diff"))
+    (cl-letf (((symbol-function 'ps-page-number) (lambda () 2)))
+      (with-temp-buffer
+        (insert (propertize "+line\n" 'difffontify-location
+                            (make-string 200 ?a)))
+        (goto-char (point-min))
+        (let ((header (difffontify--header)))
+          (should (= (length header) (difffontify--header-width)))
+          (should (string-suffix-p "..." header)))))))
+
+
 ;;; PDF
 
 (ert-deftest difffontify-tests-pdf ()

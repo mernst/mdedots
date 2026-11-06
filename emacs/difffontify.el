@@ -11,6 +11,15 @@
 ;; categories, and deleted lines are shaded.  A prefix argument to either
 ;; command inverts `difffontify-color' for that call.
 ;;
+;; Each page's header shows the diff's name and the page number.  The first
+;; page's header also shows the date.  Each other page's header also shows the
+;; file and the function at the top of the page, if the page starts within a
+;; hunk.  A page that starts elsewhere, such as in a file header (the "diff ",
+;; "index ", "--- ", and "+++ " lines), gets nothing more in its header.  The
+;; function is the last one that is defined before the top of the page, in a
+;; hunk line or in the hunk header, where "diff -p" and "git diff" write the
+;; definition line that precedes the hunk.
+;;
 ;; From the command line, to write FILE.diff.pdf:
 ;;   emacs -Q --batch -l difffontify.el -f difffontify-batch-pdf FILE.diff ...
 
@@ -19,6 +28,7 @@
 (require 'cl-lib)
 (require 'diff-mode)
 (require 'ps-print)
+(require 'subr-x)
 
 (defgroup difffontify nil
   "Print diffs with syntax highlighting."
@@ -44,6 +54,7 @@ It reads standard input and writes standard output, and preserves line breaks.
 (defconst difffontify--font-size 8.7)
 (defconst difffontify--margin 36
   "Page margins, in points.")
+(defconst difffontify--header-font-size 10)
 
 (defconst difffontify--diff-faces
   '((diff-file-header nil nil bold)
@@ -98,8 +109,8 @@ a contrast ratio of at least 7:1 against white.")
 
 (defvar ps-multibyte-buffer)            ; in ps-mule.el
 
-(defvar difffontify--page-header nil
-  "The page header, for `ps-left-header'.")
+(defvar difffontify--header-title nil
+  "The diff's name, which starts each page header.")
 
 
 ;;; Commands
@@ -202,8 +213,10 @@ line."
 (defun difffontify--prepare (color)
   "Return a new buffer that holds the current buffer's diff, ready to print.
 Each character's `face' property is a list of faces from `difffontify--faces'
-for COLOR, long lines are wrapped, and the \"Diff finished\" line that ends a
-`*Diff*' buffer is omitted.  The caller must kill the buffer."
+for COLOR, each line has a `difffontify-location' property (see
+`difffontify--mark-locations'), long lines are wrapped, and the \"Diff
+finished\" line that ends a `*Diff*' buffer is omitted.  The caller must
+kill the buffer."
   (let ((text (save-restriction
                 (widen)
                 (buffer-substring-no-properties (point-min) (point-max))))
@@ -237,7 +250,7 @@ for COLOR, long lines are wrapped, and the \"Diff finished\" line that ends a
                       orig-fontify-props file text line-nb hunk-only)))
                   ((symbol-function 'diff-hunk-file-names)
                    (lambda (&optional old)
-                     (mapcar #'difffontify--strip-b-prefix
+                     (mapcar #'difffontify--strip-git-prefix
                              (funcall orig-file-names old)))))
           ;; Major modes for the compared files print messages, such as
           ;; Python's "Can't guess python-indent-offset".
@@ -246,6 +259,7 @@ for COLOR, long lines are wrapped, and the \"Diff finished\" line that ends a
       (difffontify--embolden-diff-lines)
       (difffontify--flatten-faces (difffontify--faces color))
       (difffontify--latin-1)
+      (difffontify--mark-locations)
       (difffontify--wrap-lines (difffontify--line-width))
       ;; `ps-print' calls `font-lock-ensure', which would replace the faces.
       (setq-local font-lock-ensure-function #'ignore)
@@ -278,10 +292,11 @@ case, highlight the hunk text alone."
              (with-demoted-errors "%S"
                (funcall orig file text line-nb t))))))
 
-(defun difffontify--strip-b-prefix (file)
-  "Return FILE, a file name from a diff, without a leading \"b/\".
-\"git diff\" writes the new file \"dir/foo.c\" as \"b/dir/foo.c\"."
-  (if (string-prefix-p "b/" file)
+(defun difffontify--strip-git-prefix (file)
+  "Return FILE, a file name from a diff, without a leading \"a/\" or \"b/\".
+\"git diff\" writes the old file \"dir/foo.c\" as \"a/dir/foo.c\" and the new
+file as \"b/dir/foo.c\"."
+  (if (string-match-p "\\`[ab]/" file)
       (substring file 2)
     file))
 
@@ -410,6 +425,141 @@ Run `difffontify-latin-1-command' on CHARS, one per line."
                    unicode lines))))
     table))
 
+;;; Locations
+
+(defconst difffontify--hunk-header-re
+  (concat diff-hunk-header-re "\\|^@@@+ .* @@@+")
+  "Matches a hunk header, including one in a combined diff from \"git diff\".
+In a combined diff (as for a merge), a hunk header such as
+\"@@@ -1,3 -1,3 +1,4 @@@\" has one more \"@\" at each end than the diff
+has parents, and each line of the hunk starts with one prefix character per
+parent.")
+
+(defun difffontify--mark-locations ()
+  "Give each line of each hunk a `difffontify-location' property.
+Its value is a string such as \"src/Foo.java:  void bar() {\" that holds
+the file and the function at that line, for the page header.  The hunk
+header is part of the hunk, and lines outside hunks get no property.  The
+function is the last line of the hunk, up to and including that line, that
+defines a function (that has `font-lock-function-name-face'), or else the
+function context in the hunk header.  Call this after
+`difffontify--flatten-faces', which gives that face to definitions only."
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward difffontify--hunk-header-re nil t)
+      (goto-char (match-beginning 0))
+      (let* ((start (point))
+             (prefix-length (difffontify--hunk-prefix-length))
+             ;; At least the hunk header, so that the loop terminates.
+             (end (max (save-excursion (difffontify--end-of-hunk))
+                       (line-beginning-position 2)))
+             (file (difffontify--hunk-file))
+             (function (difffontify--hunk-function))
+             (location (difffontify--location file function)))
+        (while (< (point) end)
+          (let ((bol (point))
+                (eol (line-end-position)))
+            (when (and (> bol start) (difffontify--defines-function-p bol eol))
+              (setq function (difffontify--collapse-whitespace
+                              (buffer-substring-no-properties
+                               (min (+ bol prefix-length) eol) eol))
+                    location (difffontify--location file function)))
+            (forward-line 1)
+            ;; Each line of the hunk until the next definition gets the same
+            ;; string, so the lines' text properties form one interval.
+            (put-text-property bol (min (point) end)
+                               'difffontify-location location)))
+        (goto-char end)))))
+
+(defun difffontify--location (file function)
+  "Return the location string for FILE and FUNCTION, which can be nil."
+  (cond ((null file) nil)
+        (function (concat file ":  " function))
+        (t file)))
+
+(defun difffontify--collapse-whitespace (string)
+  "Return STRING without leading or trailing whitespace.
+Each run of spaces and tabs within it is replaced by one space, because a
+page header has no tab stops."
+  (replace-regexp-in-string "[ \t]+" " " (string-trim string)))
+
+(defun difffontify--hunk-prefix-length ()
+  "Return the number of prefix characters in each line of the hunk at point.
+For example, it is 1 for \"+\" in a unified diff, and 2 for \"! \" in a
+context diff or \"< \" in a normal diff."
+  (cond ((looking-at "@\\(@+\\)@ ") (length (match-string 1)))
+        ((looking-at "@@ ") 1)
+        (t 2)))
+
+(defun difffontify--end-of-hunk ()
+  "Return the end of the hunk whose header is at point."
+  (if (looking-at "@@@")
+      (progn
+        (forward-line 1)
+        (if (re-search-forward "^[^-+ \\]" nil t)
+            (match-beginning 0)
+          (point-max)))
+    (diff-end-of-hunk)))
+
+(defun difffontify--hunk-file ()
+  "Return the name of the file that the hunk at point changes, or nil.
+It is the new file, or the old file if the hunk deletes the file.  A \"git
+diff\" prefix such as \"b/\" is omitted."
+  (let ((name (cl-find "/dev/null" (diff-hunk-file-names) :test-not #'equal)))
+    (and name (difffontify--strip-git-prefix (substring-no-properties name)))))
+
+(defun difffontify--hunk-function ()
+  "Return the function context in the hunk header at point, or nil.
+\"diff -p\" and \"git diff\" write it after the line numbers, as in
+\"@@ -10,7 +10,8 @@ void bar() {\"."
+  (and (looking-at "\\(?:@@+ .*? @@+\\|\\*\\{15\\}\\)\\(.*\\)")
+       (let ((function (difffontify--collapse-whitespace
+                        (match-string-no-properties 1))))
+         (and (not (string-empty-p function)) function))))
+
+(defun difffontify--defines-function-p (bol eol)
+  "Return non-nil if the text from BOL to EOL defines a function.
+That is, some of it has `font-lock-function-name-face', other than a LaTeX
+environment name, as in \"\\begin{equation}\"."
+  (save-excursion
+    (let ((pos bol)
+          found)
+      (while (and (not found) (< pos eol))
+        (goto-char pos)
+        (if (and (memq 'font-lock-function-name-face
+                       (get-text-property pos 'face))
+                 (not (looking-back "\\\\\\(?:begin\\|end\\){" bol)))
+            (setq found t)
+          (setq pos (next-single-property-change pos 'face nil eol))))
+      found)))
+
+(defun difffontify--header ()
+  "Return the left part of the current page's header, for `ps-left-header'.
+It is `difffontify--header-title', followed on the first page by the date
+and on each other page by the location (see `difffontify--mark-locations')
+at point, if any.  `ps-print' calls this at the start of each page, with
+point at the beginning of the page's first line."
+  (let ((extra (if (= (ps-page-number) 1)
+                   (format-time-string "%Y-%m-%d")
+                 (get-text-property (point) 'difffontify-location))))
+    (truncate-string-to-width
+     (if extra
+         (concat difffontify--header-title "      " extra)
+       difffontify--header-title)
+     (difffontify--header-width) nil nil "...")))
+
+(defun difffontify--header-width ()
+  "Return the number of characters that fit in the left part of a page header.
+The right part is the page number."
+  (- (floor (- (nth 1 (assq difffontify--paper-type
+                            ps-page-dimensions-database))
+               (* 2 difffontify--margin))
+            ;; The average width of a Helvetica character is about 0.55 em.
+            (* 0.55 difffontify--header-font-size))
+     ;; Room for the page number, such as "12/34".
+     15))
+
+
 ;;; Wrapping
 
 (defun difffontify--line-width ()
@@ -443,7 +593,10 @@ are in the regular font, but on a deleted line they are shaded."
                                        (max 0 (- width 1 (current-column))) ?\s)
                                       "\\\n")
                               'face mark-faces)
-                  (propertize "»" 'face (and hunk-line prefix-faces)))
+                  (propertize "»"
+                              'face (and hunk-line prefix-faces)
+                              'difffontify-location
+                              (get-text-property bol 'difffontify-location)))
           ;; The continuation line might need to be wrapped too.
           (forward-line 0))))))
 
@@ -509,7 +662,7 @@ Use color if COLOR is non-nil."
   "Write BUFFER, prepared by `difffontify--prepare', to PostScript file PS.
 TITLE is the page header.  Use color if COLOR is non-nil."
   (with-current-buffer buffer
-    (let ((difffontify--page-header title)
+    (let ((difffontify--header-title title)
           ;; The `black-white' mode prints each face according to
           ;; `ps-black-white-faces' rather than according to its appearance on
           ;; the screen, so the output does not depend on the user's faces.
@@ -539,9 +692,9 @@ TITLE is the page header.  Use color if COLOR is non-nil."
           (ps-header-offset 10)
           (ps-header-line-pad 0.15)
           (ps-header-font-family 'Helvetica)
-          (ps-header-font-size 10)
-          (ps-header-title-font-size 10)
-          (ps-left-header '(difffontify--page-header))
+          (ps-header-font-size difffontify--header-font-size)
+          (ps-header-title-font-size difffontify--header-font-size)
+          (ps-left-header '(difffontify--header))
           (ps-right-header '("/pagenumberstring load"))
           (ps-show-n-of-n t)
           (ps-selected-pages nil)

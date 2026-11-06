@@ -3,6 +3,8 @@
 # For each FILE.diff, writes FILE.diff.pdf:  the diff, with syntax highlighting.
 # File names in each diff are relative to the diff file's directory; if the compared
 # files exist there, they make the highlighting more accurate.
+# The first page header shows the date.  Each other page header shows the file and
+# function at the top of the page, if the page starts within a hunk.
 # See ../emacs/difffontify.el, which also has commands for use within Emacs.
 
 if [ "$#" -eq 0 ]; then
