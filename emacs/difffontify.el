@@ -20,8 +20,10 @@
 ;; hunk line or in the hunk header, where "diff -p" and "git diff" write the
 ;; definition line that precedes the hunk.  The header omits the definition's
 ;; annotations, modifiers, and return type, as in "count(int x) {" for
-;; "@Pure public int count(@NonNull int x) {".  A header that is too long to
-;; fit beside the page number ends with "...".
+;; "@Pure public int count(@NonNull int x) {".  To fit beside the page
+;; number, a header that is too long first shortens the function's formal
+;; parameters, and then the start of the file name, leaving its last path
+;; components.
 ;;
 ;; From the command line, to write FILE.diff.pdf:
 ;;   emacs -Q --batch -l difffontify.el -f difffontify-batch-pdf FILE.diff ...
@@ -440,8 +442,9 @@ parent.")
 
 (defun difffontify--mark-locations ()
   "Give each line of each hunk a `difffontify-location' property.
-Its value is a string such as \"src/Foo.java:  void bar() {\" that holds
-the file and the function at that line, for the page header.  The hunk
+Its value is a cons (FILE . FUNCTION), such as (\"src/Foo.java\" .
+\"bar() {\"), that holds the file and the function (or nil) at that line,
+for the page header.  The hunk
 header is part of the hunk, and lines outside hunks get no property.  The
 function is the last line of the hunk, up to and including that line, that
 defines a function (that has `font-lock-function-name-face'), or else the
@@ -469,16 +472,15 @@ function context in the hunk header.  Call this after
                     location (difffontify--location file function)))
             (forward-line 1)
             ;; Each line of the hunk until the next definition gets the same
-            ;; string, so the lines' text properties form one interval.
+            ;; cons, so the lines' text properties form one interval.
             (put-text-property bol (min (point) end)
                                'difffontify-location location)))
         (goto-char end)))))
 
 (defun difffontify--location (file function)
-  "Return the location string for FILE and FUNCTION, which can be nil."
-  (cond ((null file) nil)
-        (function (concat file ":  " function))
-        (t file)))
+  "Return the location for FILE and FUNCTION, which can be nil.
+It is (FILE . FUNCTION), or nil if FILE is nil."
+  (and file (cons file function)))
 
 (defconst difffontify--annotation-re
   (concat "\\(\\`\\|[^[:alnum:]_$]\\)"
@@ -584,49 +586,144 @@ environment name, as in \"\\begin{equation}\"."
       found)))
 
 (defun difffontify--header ()
-  "Return the text of the left part of the current page's header.
-It is `difffontify--header-title', followed on the first page by the date
-and on each other page by the location (see `difffontify--mark-locations')
-at point, if any.  Call this at the start of each page, with point at the
+  "Return the parts of the left part of the current page's header.
+The result is a list of four strings (TITLE FILE NAME PARAMETERS), any of
+which but TITLE can be empty.  TITLE is `difffontify--header-title',
+followed on the first page by the date.  On each other page, FILE and the
+function come from the location (see `difffontify--mark-locations') at
+point, if any:  NAME is \":  \" and the function up to the \"(\" that
+starts its formal parameters, and PARAMETERS is the rest of the function.
+For example, the parts can be (\"x.diff      \" \"src/Foo.java\" \":  get\"
+\"(int n) {\").  Call this at the start of each page, with point at the
 beginning of the page's first line."
-  (let ((extra (if (bobp)
-                   (format-time-string "%Y-%m-%d")
-                 (get-text-property (point) 'difffontify-location))))
-    (if extra
-        (concat difffontify--header-title "      " extra)
-      difffontify--header-title)))
+  (let ((location (and (not (bobp))
+                       (get-text-property (point) 'difffontify-location)))
+        (separator "      "))
+    (cond ((bobp)
+           (list (concat difffontify--header-title separator
+                         (format-time-string "%Y-%m-%d"))
+                 "" "" ""))
+          ((null location)
+           (list difffontify--header-title "" "" ""))
+          (t
+           (let ((function (cdr location)))
+             (if (and function
+                      ;; A "(" before the function name, as in Lisp's "(defun
+                      ;; foo (n)", does not start the formal parameters.
+                      (string-match "\\`[^(]*[[:alnum:]_$>][ \t]*(" function))
+                 (list (concat difffontify--header-title separator)
+                       (car location)
+                       (concat ":  " (substring function 0 (1- (match-end 0))))
+                       (substring function (1- (match-end 0))))
+               (list (concat difffontify--header-title separator)
+                     (car location)
+                     (if function (concat ":  " function) "")
+                     "")))))))
 
 (defun difffontify--output-header ()
-  "Write PostScript that sets the current page's `DifffontifyHeaderText'.
-Its value is `difffontify--header'.  `ps-print' calls this at the start of
-each page, with point at the beginning of the page's first line."
-  (ps-output "/DifffontifyHeaderText ")
-  (ps-output-string (difffontify--header))
-  (ps-output " def\n"))
+  "Write PostScript that sets the current page's `DifffontifyHeaderParts'.
+Its value is an array of the strings that `difffontify--header' returns.
+`ps-print' calls this at the start of each page, with point at the beginning
+of the page's first line."
+  (ps-output "/DifffontifyHeaderParts [")
+  (dolist (part (difffontify--header))
+    (ps-output-string part)
+    (ps-output " "))
+  (ps-output "] def\n"))
 
 (defconst difffontify--header-prologue
-  "% The text of the left part of the current page's header.
-/DifffontifyHeaderText () def
+  "% The parts of the left part of the current page's header:
+% [TITLE FILE NAME PARAMETERS], as in Emacs's `difffontify--header'.
+/DifffontifyHeaderParts [() () () ()] def
+
+% string -- width
+/DfWidth{stringwidth pop}def
+
+% string1 ... stringN N -- string1...stringN
+% Return the concatenation of N strings, where N is at least 1.
+/DfConcat{1 sub{strcat}repeat}def
+
+% string max -- length
+% Return the length of the longest prefix of string that is at most max wide.
+/DfPrefixLength{
+  /DfMax exch def
+  dup length
+  {dup 0 le{exit}if
+   2 copy 0 exch getinterval DfWidth DfMax le{exit}if
+   1 sub}loop
+  exch pop
+}def
+
+% string max at-slash -- start true
+% string max at-slash -- false
+% Return the start of the longest suffix of string that is at most max wide.
+% If at-slash is true, the suffix must start with \"/\".  Return false if there
+% is no such suffix.
+/DfSuffixStart{
+  /DfAtSlash exch def /DfMax exch def /DfString exch def
+  false
+  0 1 DfString length{
+    /DfStart exch def
+    DfAtSlash{
+      DfStart DfString length lt{DfString DfStart get 47 eq}{false}ifelse
+    }{true}ifelse{
+      DfString DfStart DfString length DfStart sub getinterval
+      DfWidth DfMax le{pop DfStart true exit}if
+    }if
+  }for
+}def
 
 % -- string
-% Return DifffontifyHeaderText, truncated with \"...\" if necessary so that it
-% fits beside the page number.  Call this while showing the header, when the
-% header font is the current font.
+% Return the left part of the current page's header, from
+% DifffontifyHeaderParts, shortened if necessary so that it fits beside the
+% page number.  To shorten it, first replace the end of PARAMETERS by \"...\",
+% keeping the \"(\" and at least one character after it.  If that is not
+% enough, omit PARAMETERS, and if that is not enough, also replace the start
+% of FILE by \"...\", leaving whole path components if possible.  If that is
+% not enough, replace the end of the whole header by \"...\".  Call this while
+% showing the header, when the header font is the current font.
 /DifffontifyHeader{
-  /DifffontifyWidth
+  /DfAvailable
     PrintHeaderWidth HFPad 2 mul sub
-    pagenumberstring stringwidth pop sub
-    (    ) stringwidth pop sub
+    pagenumberstring DfWidth sub
+    (    ) DfWidth sub
   def
-  DifffontifyHeaderText dup stringwidth pop DifffontifyWidth gt{
-    /DifffontifyWidth DifffontifyWidth (...) stringwidth pop sub def
-    % ---- find the longest prefix that fits
-    dup length
-    {dup 0 le{exit}if
-     2 copy 0 exch getinterval stringwidth pop DifffontifyWidth le{exit}if
-     1 sub}loop
-    0 exch getinterval (...) strcat
-  }if
+  DifffontifyHeaderParts aload pop
+  /DfParameters exch def /DfName exch def /DfFile exch def /DfTitle exch def
+  % ---- the width of the parts that are never shortened, except as a whole
+  /DfFixed DfTitle DfWidth DfName DfWidth add def
+  DfFixed DfFile DfWidth add DfParameters DfWidth add DfAvailable le{
+    DfTitle DfFile DfName DfParameters 4 DfConcat
+  }{
+    % ---- the length of the prefix of the formal parameters that fits
+    DfParameters
+    DfAvailable DfFixed sub DfFile DfWidth sub (...) DfWidth sub
+    DfPrefixLength
+    dup 2 ge{
+      % ---- shorten the formal parameters
+      DfParameters 0 3 -1 roll getinterval
+      DfTitle DfFile DfName 4 -1 roll (...) 5 DfConcat
+    }{
+      pop
+      DfFixed DfFile DfWidth add DfAvailable le{
+        % ---- omit the formal parameters
+        DfTitle DfFile DfName 3 DfConcat
+      }{
+        /DfFileMax DfAvailable DfFixed sub (...) DfWidth sub def
+        DfFile length 0 gt DfFileMax 0 ge and{
+          % ---- shorten the file name too
+          DfFile DfFileMax true DfSuffixStart
+          not{DfFile DfFileMax false DfSuffixStart pop}if
+          DfFile exch dup DfFile length exch sub getinterval
+          DfTitle (...) 3 -1 roll DfName 4 DfConcat
+        }{
+          DfTitle DfFile DfName DfParameters 4 DfConcat
+          dup DfAvailable (...) DfWidth sub DfPrefixLength
+          0 exch getinterval (...) strcat
+        }ifelse
+      }ifelse
+    }ifelse
+  }ifelse
 }def
 "
   "PostScript code that `ps-print' puts in its prologue, for the page header.
