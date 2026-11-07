@@ -1,8 +1,14 @@
 #!/bin/sh
 
-pr-status -C $h &
-pr-status -C $inv &
-pr-status -C $pl &
-pr-status -C $t &
-pr-status -C $test &
+h=${h:-$HOME/research/harvest}
+inv=${inv:-$HOME/research/invariants}
+pl=${pl:-$HOME/research/plume-lib}
+t=${t:-$HOME/research/types}
+test=${test:-$HOME/research/testing}
+
+pr-status -C "$h" --highlight avocado-agent#100 &
+pr-status -C "$inv" &
+pr-status -C "$pl" &
+pr-status -C "$t" &
+pr-status -C "$test" &
 pr-status -C ~/bin/src &
