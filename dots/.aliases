@@ -165,13 +165,23 @@ alias gterm=gterminal
 ### LLMs
 
 alias claude-review='claude "/review $(pr-number)"'
+#
 alias claude-fix-ci='claude "Fix CI failure, commit, and push."'
 alias claude-ci=claude-fix-ci
+#
 alias claude-fix-merge-conflict='claude "If an AGENT-TODO.md file exists, follow its directions then delete it (except that often doing work in this session is better than resuming a previous session).  Fix merge conflict, commit, and push."'
 alias claude-merge-conflict=claude-fix-merge-conflict
-alias claude-crreview-resolve='crreview-resolve'
-alias claude-fix-crreview='crreview-resolve'
 #
+alias claude-fix-crreview=crreview-resolve
+alias claude-crreview-resolve=crreview-resolve
+#
+alias claude-fix-todo='claude "Follow the instructions in the AGENT-TODO.md file."'
+alias claude-todo=claude-fix-todo
+#
+alias claude-fix-build='claude "Fix the build failure, then commit and push."'
+alias claude--build=claude-fix-build
+
+
 alias claudemax='claudetrustdir && command claude --model fable --effort max'
 #
 alias claudetrustdir='[ ! -f "$CLAUDE_CONFIG_DIR/.claude.json" ] || (jq ".projects[\"$(pwd)\"].hasTrustDialogAccepted = true" "$CLAUDE_CONFIG_DIR/.claude.json" > "$CLAUDE_CONFIG_DIR/.claude.json.tmp" && mv "$CLAUDE_CONFIG_DIR/.claude.json.tmp" "$CLAUDE_CONFIG_DIR/.claude.json")'
