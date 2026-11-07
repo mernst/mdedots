@@ -18,7 +18,13 @@
 ;; "index ", "--- ", and "+++ " lines), gets nothing more in its header.  The
 ;; function is the last one that is defined before the top of the page, in a
 ;; hunk line or in the hunk header, where "diff -p" and "git diff" write the
-;; definition line that precedes the hunk.
+;; definition line that precedes the hunk.  For a file in a programming
+;; language, the header omits the definition's annotations, modifiers, and
+;; return type, as in "count(int x) {" for
+;; "@Pure public int count(@NonNull int x) {".  To fit beside the page
+;; number, a header that is too long first shortens the function's formal
+;; parameters, and then the start of the file name, leaving its last path
+;; components.
 ;;
 ;; From the command line, to write FILE.diff.pdf:
 ;;   emacs -Q --batch -l difffontify.el -f difffontify-batch-pdf FILE.diff ...
@@ -389,6 +395,14 @@ The replacement has the same text properties as the character."
           (delete-char -1)
           (insert (apply #'propertize replacement props)))))))
 
+(defun difffontify--latin-1-string (string)
+  "Return STRING, with each character that is not in Latin 1 approximated.
+See `difffontify--latin-1'."
+  (with-temp-buffer
+    (insert string)
+    (difffontify--latin-1)
+    (buffer-string)))
+
 (defun difffontify--non-latin-1-chars ()
   "Return a list of the distinct characters in the buffer that are not in Latin 1."
   (save-excursion
@@ -437,12 +451,13 @@ parent.")
 
 (defun difffontify--mark-locations ()
   "Give each line of each hunk a `difffontify-location' property.
-Its value is a string such as \"src/Foo.java:  void bar() {\" that holds
-the file and the function at that line, for the page header.  The hunk
-header is part of the hunk, and lines outside hunks get no property.  The
-function is the last line of the hunk, up to and including that line, that
-defines a function (that has `font-lock-function-name-face'), or else the
-function context in the hunk header.  Call this after
+Its value is a cons (FILE . FUNCTION), such as (\"src/Foo.java\" .
+\"bar() {\"), that holds the file and the function (or nil) at that line,
+for the page header.  The hunk header is part of the hunk, and lines
+outside hunks get no property.  The function comes from the last line of
+the hunk, up to and including that line, that defines a function (that has
+`font-lock-function-name-face'), or else from the function context in the
+hunk header; see `difffontify--function'.  Call this after
 `difffontify--flatten-faces', which gives that face to definitions only."
   (save-excursion
     (goto-char (point-min))
@@ -454,34 +469,130 @@ function context in the hunk header.  Call this after
              (end (max (save-excursion (difffontify--end-of-hunk))
                        (line-beginning-position 2)))
              (file (difffontify--hunk-file))
-             (function (difffontify--hunk-function))
+             (code (and file (difffontify--code-file-p file)))
+             (function (difffontify--function (difffontify--hunk-function)
+                                              code))
              (location (difffontify--location file function)))
         (while (< (point) end)
           (let ((bol (point))
                 (eol (line-end-position)))
             (when (and (> bol start) (difffontify--defines-function-p bol eol))
-              (setq function (difffontify--collapse-whitespace
+              (setq function (difffontify--function
                               (buffer-substring-no-properties
-                               (min (+ bol prefix-length) eol) eol))
+                               (min (+ bol prefix-length) eol) eol)
+                              code)
                     location (difffontify--location file function)))
             (forward-line 1)
             ;; Each line of the hunk until the next definition gets the same
-            ;; string, so the lines' text properties form one interval.
+            ;; cons, so the lines' text properties form one interval.
             (put-text-property bol (min (point) end)
                                'difffontify-location location)))
         (goto-char end)))))
 
 (defun difffontify--location (file function)
-  "Return the location string for FILE and FUNCTION, which can be nil."
-  (cond ((null file) nil)
-        (function (concat file ":  " function))
-        (t file)))
+  "Return the location for FILE and FUNCTION, which can be nil.
+It is (FILE . FUNCTION), or nil if FILE is nil."
+  (and file (cons file function)))
 
-(defun difffontify--collapse-whitespace (string)
-  "Return STRING without leading or trailing whitespace.
-Each run of spaces and tabs within it is replaced by one space, because a
-page header has no tab stops."
-  (replace-regexp-in-string "[ \t]+" " " (string-trim string)))
+(defun difffontify--code-file-p (file)
+  "True if FILE is in a programming language.
+That is, the major mode that `auto-mode-alist' gives for FILE's name derives
+from `prog-mode'.  This loads the major mode, if necessary."
+  (let ((mode (assoc-default file auto-mode-alist #'string-match)))
+    (and (symbolp mode)
+         (fboundp mode)
+         (progn
+           (let ((definition (indirect-function mode)))
+             (when (autoloadp definition)
+               (autoload-do-load definition)))
+           (provided-mode-derived-p mode 'prog-mode)))))
+
+(defun difffontify--function (definition code)
+  "Return DEFINITION, a line that defines a function, for a page header.
+CODE is true if DEFINITION is in a programming language; then omit its
+annotations, modifiers, and return type (see
+`difffontify--simplify-definition').  Prose, such as the function context
+that \"git diff\" writes for a Markdown file, is not simplified.  Also omit
+leading and trailing whitespace, and replace each other run of spaces and
+tabs by one space, because a page header has no tab stops.  Return nil if
+DEFINITION is nil or nothing remains."
+  (and definition
+       (let ((result (string-trim
+                      (replace-regexp-in-string "[ \t]+" " " definition))))
+         (when code
+           (setq result (difffontify--simplify-definition result)))
+         (and (not (string-empty-p result)) result))))
+
+(defconst difffontify--annotation-re
+  (concat "@[[:alpha:]_$][[:alnum:]_$.]*"
+          ;; Arguments, with parentheses nested at most one level.
+          "\\(?:([^()]*\\(?:([^()]*)[^()]*\\)*)\\)? ?")
+  "Matches a Java annotation and the space after it, if any.
+Examples are \"@Override\" and \"@SuppressWarnings(\"unchecked\")\".  It also
+matches the Java keyword \"@interface\".")
+
+(defconst difffontify--modifiers-re
+  (concat "\\`\\(?:"
+          (regexp-opt '("public" "protected" "private" "static" "final"
+                        "abstract" "synchronized" "native" "strictfp" "default"
+                        "transient" "volatile" "sealed" "non-sealed")
+                      "\\(?:")
+          " \\)+")
+  "Matches the Java modifiers, such as \"public static \", that start a line.")
+
+(defconst difffontify--return-type-re
+  (concat "\\`\\([^(=]*[] *&>]\\)"
+          "\\([[:alpha:]_$~][[:alnum:]_$:~]*\\(?:<[^()]*>\\)? ?(\\)")
+  "Matches a function definition that starts with a return type or keyword.
+Examples are \"int f(\", \"Map<K, V> get(\", and \"def f(\".  Group 1
+matches the text before the function name, and group 2 matches the function
+name (and any type parameters) through the \"(\" that follows it.  Text that
+contains \"=\" before the \"(\", as in JavaScript's \"const f = function(\",
+is not a return type.")
+
+(defconst difffontify--keep-before-name-re
+  (concat "\\(?:\\`\\|[^[:alnum:]_$]\\)"
+          (regexp-opt '("class" "interface" "enum" "record" "struct" "union"
+                        "operator")
+                      "\\(?:")
+          " \\'")
+  "Matches text that ends with a keyword that must stay before the next word.
+Examples are \"class \", as in Python's \"class Foo(Base):\", and
+\"operator \", as in C++'s \"operator int()\".")
+
+(defconst difffontify--keyword-name-re
+  (concat "\\`" (regexp-opt '("function" "async") "\\(?:") " ?(")
+  "Matches a keyword and the \"(\" after it, at the start of a string.
+An example is \"function(\", as in JavaScript's \"foo: function(x) {\".  The
+keyword is not a function name.")
+
+(defun difffontify--simplify-definition (definition)
+  "Return DEFINITION, a line that defines a function, simplified.
+DEFINITION has no tabs, no runs of spaces, and no leading or trailing
+whitespace.  Omit Java annotations, leading Java modifiers, and the return
+type or keyword (such as \"def\") before the function name.  For example,
+return \"count(int x) {\" for \"@Pure public static int count(@NonNull int x)
+{\"."
+  (let* ((case-fold-search nil)
+         (result
+          (string-trim
+           (replace-regexp-in-string
+            " +" " "
+            (replace-regexp-in-string
+             difffontify--annotation-re
+             (lambda (annotation)
+               (if (equal (string-trim-right annotation) "@interface")
+                   annotation
+                 ""))
+             definition)))))
+    (setq result (replace-regexp-in-string difffontify--modifiers-re "" result))
+    (when (and (string-match difffontify--return-type-re result)
+               (not (string-match-p difffontify--keep-before-name-re
+                                    (match-string 1 result)))
+               (not (string-match-p difffontify--keyword-name-re
+                                    (substring result (match-beginning 2)))))
+      (setq result (substring result (match-beginning 2))))
+    result))
 
 (defun difffontify--hunk-prefix-length ()
   "Return the number of prefix characters in each line of the hunk at point.
@@ -513,9 +624,7 @@ diff\" prefix such as \"b/\" is omitted."
 \"diff -p\" and \"git diff\" write it after the line numbers, as in
 \"@@ -10,7 +10,8 @@ void bar() {\"."
   (and (looking-at "\\(?:@@+ .*? @@+\\|\\*\\{15\\}\\)\\(.*\\)")
-       (let ((function (difffontify--collapse-whitespace
-                        (match-string-no-properties 1))))
-         (and (not (string-empty-p function)) function))))
+       (match-string-no-properties 1)))
 
 (defun difffontify--defines-function-p (bol eol)
   "Return non-nil if the text from BOL to EOL defines a function.
@@ -534,31 +643,150 @@ environment name, as in \"\\begin{equation}\"."
       found)))
 
 (defun difffontify--header ()
-  "Return the left part of the current page's header, for `ps-left-header'.
-It is `difffontify--header-title', followed on the first page by the date
-and on each other page by the location (see `difffontify--mark-locations')
-at point, if any.  `ps-print' calls this at the start of each page, with
-point at the beginning of the page's first line."
-  (let ((extra (if (= (ps-page-number) 1)
-                   (format-time-string "%Y-%m-%d")
-                 (get-text-property (point) 'difffontify-location))))
-    (truncate-string-to-width
-     (if extra
-         (concat difffontify--header-title "      " extra)
-       difffontify--header-title)
-     (difffontify--header-width) nil nil "...")))
+  "Return the parts of the left part of the current page's header.
+The result is a list of four strings (TITLE FILE NAME PARAMETERS), any of
+which but TITLE can be empty.  TITLE is `difffontify--header-title',
+followed on the first page by the date.  On each other page, FILE and the
+function come from the location (see `difffontify--mark-locations') at
+point, if any:  NAME is \":  \" and the function up to the \"(\" that
+starts its formal parameters, and PARAMETERS is the rest of the function.
+For example, the parts can be (\"x.diff      \" \"src/Foo.java\" \":  get\"
+\"(int n) {\").  Call this at the start of each page, with point at the
+beginning of the page's first line."
+  (let ((location (and (not (bobp))
+                       (get-text-property (point) 'difffontify-location)))
+        (separator "      "))
+    (cond ((bobp)
+           (list (concat difffontify--header-title separator
+                         (format-time-string "%Y-%m-%d"))
+                 "" "" ""))
+          ((null location)
+           (list difffontify--header-title "" "" ""))
+          (t
+           (let ((function (cdr location)))
+             (if (and function
+                      ;; A "(" before the function name, as in Lisp's "(defun
+                      ;; foo (n)", does not start the formal parameters.
+                      (string-match "\\`[^(]*[[:alnum:]_$>][ \t]*(" function))
+                 (list (concat difffontify--header-title separator)
+                       (car location)
+                       (concat ":  " (substring function 0 (1- (match-end 0))))
+                       (substring function (1- (match-end 0))))
+               (list (concat difffontify--header-title separator)
+                     (car location)
+                     (if function (concat ":  " function) "")
+                     "")))))))
 
-(defun difffontify--header-width ()
-  "Return the number of characters that fit in the left part of a page header.
-The right part is the page number."
-  (- (floor (- (nth 1 (assq difffontify--paper-type
-                            ps-page-dimensions-database))
-               (* 2 difffontify--margin))
-            ;; The average width of a Helvetica character is about 0.55 em.
-            (* 0.55 difffontify--header-font-size))
-     ;; Room for the page number, such as "12/34".
-     15))
+(defun difffontify--output-header ()
+  "Write PostScript that sets the current page's `DifffontifyHeaderParts'.
+Its value is an array of the strings that `difffontify--header' returns.
+`ps-print' calls this at the start of each page, with point at the beginning
+of the page's first line."
+  (ps-output "/DifffontifyHeaderParts [")
+  (dolist (part (difffontify--header))
+    ;; `ps-output-string' would write each non-ASCII character of a
+    ;; multibyte string as its UTF-8 bytes, but the header font uses Latin 1.
+    (ps-output-string (encode-coding-string part 'latin-1))
+    (ps-output " "))
+  (ps-output "] def\n"))
 
+(defconst difffontify--header-prologue
+  "% The parts of the left part of the current page's header:
+% [TITLE FILE NAME PARAMETERS], as in Emacs's `difffontify--header'.
+/DifffontifyHeaderParts [() () () ()] def
+
+% string -- width
+/DfWidth{stringwidth pop}def
+
+% string1 ... stringN N -- string1...stringN
+% Return the concatenation of N strings, where N is at least 1.
+/DfConcat{1 sub{strcat}repeat}def
+
+% string max -- length
+% Return the length of the longest prefix of string that is at most max wide.
+/DfPrefixLength{
+  /DfMax exch def
+  dup length
+  {dup 0 le{exit}if
+   2 copy 0 exch getinterval DfWidth DfMax le{exit}if
+   1 sub}loop
+  exch pop
+}def
+
+% string max at-slash -- start true
+% string max at-slash -- false
+% Return the start of the longest suffix of string that is at most max wide.
+% If at-slash is true, the suffix must start with \"/\".  Return false if there
+% is no such suffix.
+/DfSuffixStart{
+  /DfAtSlash exch def /DfMax exch def /DfString exch def
+  false
+  0 1 DfString length{
+    /DfStart exch def
+    DfAtSlash{
+      DfStart DfString length lt{DfString DfStart get 47 eq}{false}ifelse
+    }{true}ifelse{
+      DfString DfStart DfString length DfStart sub getinterval
+      DfWidth DfMax le{pop DfStart true exit}if
+    }if
+  }for
+}def
+
+% -- string
+% Return the left part of the current page's header, from
+% DifffontifyHeaderParts, shortened if necessary so that it fits beside the
+% page number.  To shorten it, first replace the end of PARAMETERS by \"...\",
+% keeping the \"(\" and at least one character after it.  If that is not
+% enough, omit PARAMETERS, and if that is not enough, also replace the start
+% of FILE by \"...\", leaving whole path components if possible.  If that is
+% not enough, replace the end of the whole header by \"...\".  Call this while
+% showing the header, when the header font is the current font.
+/DifffontifyHeader{
+  /DfAvailable
+    PrintHeaderWidth HFPad 2 mul sub
+    pagenumberstring DfWidth sub
+    (    ) DfWidth sub
+  def
+  DifffontifyHeaderParts aload pop
+  /DfParameters exch def /DfName exch def /DfFile exch def /DfTitle exch def
+  % ---- the width of the parts that are never shortened, except as a whole
+  /DfFixed DfTitle DfWidth DfName DfWidth add def
+  DfFixed DfFile DfWidth add DfParameters DfWidth add DfAvailable le{
+    DfTitle DfFile DfName DfParameters 4 DfConcat
+  }{
+    % ---- the length of the prefix of the formal parameters that fits
+    DfParameters
+    DfAvailable DfFixed sub DfFile DfWidth sub (...) DfWidth sub
+    DfPrefixLength
+    dup 2 ge{
+      % ---- shorten the formal parameters
+      DfParameters 0 3 -1 roll getinterval
+      DfTitle DfFile DfName 4 -1 roll (...) 5 DfConcat
+    }{
+      pop
+      DfFixed DfFile DfWidth add DfAvailable le{
+        % ---- omit the formal parameters
+        DfTitle DfFile DfName 3 DfConcat
+      }{
+        /DfFileMax DfAvailable DfFixed sub (...) DfWidth sub def
+        DfFile length 0 gt DfFileMax 0 ge and{
+          % ---- shorten the file name too
+          DfFile DfFileMax true DfSuffixStart
+          not{DfFile DfFileMax false DfSuffixStart pop}if
+          DfFile exch dup DfFile length exch sub getinterval
+          DfTitle (...) 3 -1 roll DfName 4 DfConcat
+        }{
+          DfTitle DfFile DfName DfParameters 4 DfConcat
+          dup DfAvailable (...) DfWidth sub DfPrefixLength
+          0 exch getinterval (...) strcat
+        }ifelse
+      }ifelse
+    }ifelse
+  }ifelse
+}def
+"
+  "PostScript code that `ps-print' puts in its prologue, for the page header.
+Emacs does not know the widths of the characters in the header font.")
 
 ;;; Wrapping
 
@@ -662,7 +890,7 @@ Use color if COLOR is non-nil."
   "Write BUFFER, prepared by `difffontify--prepare', to PostScript file PS.
 TITLE is the page header.  Use color if COLOR is non-nil."
   (with-current-buffer buffer
-    (let ((difffontify--header-title title)
+    (let ((difffontify--header-title (difffontify--latin-1-string title))
           ;; The `black-white' mode prints each face according to
           ;; `ps-black-white-faces' rather than according to its appearance on
           ;; the screen, so the output does not depend on the user's faces.
@@ -694,13 +922,17 @@ TITLE is the page header.  Use color if COLOR is non-nil."
           (ps-header-font-family 'Helvetica)
           (ps-header-font-size difffontify--header-font-size)
           (ps-header-title-font-size difffontify--header-font-size)
-          (ps-left-header '(difffontify--header))
+          (ps-user-defined-prologue difffontify--header-prologue)
+          ;; This hook runs at the start of each page, because each sheet of
+          ;; paper holds one page.
+          (ps-print-begin-sheet-hook (list #'difffontify--output-header))
+          ;; ps-print executes a procedure when it shows the header.
+          (ps-left-header '("/DifffontifyHeader load"))
           (ps-right-header '("/pagenumberstring load"))
           (ps-show-n-of-n t)
           (ps-selected-pages nil)
           (ps-even-or-odd-pages nil)
           (ps-banner-page-when-duplexing nil)
-          (ps-user-defined-prologue nil)
           (ps-print-control-characters 'control-8-bit)
           (ps-multibyte-buffer nil)
           (ps-zebra-stripes nil)
@@ -717,7 +949,12 @@ TITLE is the page header.  Use color if COLOR is non-nil."
       (cl-letf (((symbol-function 'display-color-p) (lambda (&rest _) t))
                 ((symbol-function 'color-values)
                  (lambda (color &rest _) (tty-color-standard-values color))))
-        (ps-print-buffer-with-faces ps)))))
+        ;; `difffontify--header' recognizes the first page by point being at
+        ;; the beginning of the buffer.  `ps-print' moves point to the start
+        ;; of each later page, but not to the start of the first page.
+        (save-excursion
+          (goto-char (point-min))
+          (ps-print-buffer-with-faces ps))))))
 
 (provide 'difffontify)
 

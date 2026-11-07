@@ -319,13 +319,17 @@ result of FUNCTION, and kill the prepared buffer."
   "Return the `difffontify-location' properties in the current buffer.
 The result is a list of elements (LINE . LOCATION), one for each line whose
 location differs from the previous line's, where LINE is a line number such
-as 1 for the first line."
+as 1 for the first line.  LOCATION is a string such as \"src/Foo.java:
+bar() {\" or \"src/Foo.java\", or nil."
   (save-excursion
     (goto-char (point-min))
     (let ((previous 'none)
           result)
       (while (not (eobp))
-        (let ((location (get-text-property (point) 'difffontify-location)))
+        (let* ((property (get-text-property (point) 'difffontify-location))
+               (location (if (cdr property)
+                             (concat (car property) ":  " (cdr property))
+                           (car property))))
           (unless (equal location previous)
             (push (cons (line-number-at-pos) location) result)
             (setq previous location)))
@@ -365,12 +369,12 @@ the buffer that `difffontify--prepare' returns for the diff."
                   "-def gone():"
                   "-    pass")
                  '((1 . nil)
-                   (5 . "Bar.java:  public class Bar {")
-                   (8 . "Bar.java:  void first() {")
-                   (12 . "Bar.java:  void second() {")
+                   (5 . "Bar.java:  class Bar {")
+                   (8 . "Bar.java:  first() {")
+                   (12 . "Bar.java:  second() {")
                    (13 . nil)
                    (18 . "Gone.py")
-                   (19 . "Gone.py:  def gone():")))))
+                   (19 . "Gone.py:  gone():")))))
 
 (ert-deftest difffontify-tests-locations-combined ()
   "A combined diff, as for a merge, has locations."
@@ -386,7 +390,7 @@ the buffer that `difffontify--prepare' returns for the diff."
                   "++int d;"
                   "  return 0;")
                  '((1 . nil)
-                   (5 . "f.c:  int main() {")))))
+                   (5 . "f.c:  main() {")))))
 
 (ert-deftest difffontify-tests-locations-svn ()
   "The lines that precede a file's \"---\" line have no location."
@@ -406,7 +410,7 @@ the buffer that `difffontify--prepare' returns for the diff."
                   "-y"
                   "+z")
                  '((1 . nil)
-                   (5 . "a.c:  void f() {")
+                   (5 . "a.c:  f() {")
                    (8 . nil)
                    (12 . "b.c")))))
 
@@ -433,7 +437,7 @@ the buffer that `difffontify--prepare' returns for the diff."
                   "-f(void)\t{"
                   "+h(void)\t{")
                  '((1 . nil)
-                   (3 . "m.c:  static int g(void)")
+                   (3 . "m.c:  g(void)")
                    (5 . "m.c:  f(void) {")
                    (6 . "m.c:  h(void) {")))))
 
@@ -451,9 +455,8 @@ the buffer that `difffontify--prepare' returns for the diff."
                    (7 . "new/foo.el:  (defun foo-double (n)")
                    (13 . nil)
                    (16 . "new/Foo.java")
-                   (33 . "new/Foo.java:  public int count() {")
-                   (34 . "new/Foo.java:  public long count() {")
-                   (38 . "new/Foo.java:  public void log() {")
+                   (33 . "new/Foo.java:  count() {")
+                   (38 . "new/Foo.java:  log() {")
                    (44 . nil)
                    (47 . "new/foo.py")
                    (57 . nil)
@@ -467,8 +470,61 @@ the buffer that `difffontify--prepare' returns for the diff."
                    (89 . "new/Makefile:  foo: foo.c"))))
       (kill-buffer buffer))))
 
+(ert-deftest difffontify-tests-simplify-definition ()
+  "A function name omits annotations, modifiers, and the return type."
+  (should (equal (difffontify--simplify-definition
+                  (concat "@Pure @SuppressWarnings(\"x\") public static"
+                          " @Nullable Map<String, List<Integer>>"
+                          " get(@NonNull String key, int n) {"))
+                 "get(String key, int n) {"))
+  (should (equal (difffontify--simplify-definition "public <T> List<T> f(T x)")
+                 "f(T x)"))
+  (should (equal (difffontify--simplify-definition "public Foo(int x) {")
+                 "Foo(int x) {"))
+  (should (equal (difffontify--simplify-definition
+                  "public static class Inner {")
+                 "class Inner {"))
+  (should (equal (difffontify--simplify-definition
+                  "std::string Foo::bar(int x)")
+                 "Foo::bar(int x)"))
+  (should (equal (difffontify--simplify-definition "int *f(void)") "f(void)"))
+  (should (equal (difffontify--simplify-definition "class Foo(Base):")
+                 "class Foo(Base):"))
+  (should (equal (difffontify--simplify-definition "(defun foo (n)")
+                 "(defun foo (n)"))
+  (should (equal (difffontify--simplify-definition "\\section{Intro}")
+                 "\\section{Intro}"))
+  (should (equal (difffontify--simplify-definition
+                  "@Foo(bar(1)) public void f() {")
+                 "f() {"))
+  (should (equal (difffontify--simplify-definition "public @interface Anno {")
+                 "@interface Anno {"))
+  (should (equal (difffontify--simplify-definition "Foo::operator int() const")
+                 "Foo::operator int() const"))
+  (should (equal (difffontify--simplify-definition "const f = function(x) {")
+                 "const f = function(x) {"))
+  (should (equal (difffontify--simplify-definition "f: function(x) {")
+                 "f: function(x) {")))
+
+(ert-deftest difffontify-tests-function ()
+  "Only a definition in a programming language is simplified."
+  (should (equal (difffontify--function " public\tint  f(int x) " t)
+                 "f(int x)"))
+  (should (equal (difffontify--function "Run the tests (make check)." nil)
+                 "Run the tests (make check)."))
+  (should (equal (difffontify--function " a\t b " nil) "a b"))
+  (should (null (difffontify--function "@Override" t)))
+  (should (null (difffontify--function nil t))))
+
+(ert-deftest difffontify-tests-code-file-p ()
+  "Files in programming languages are recognized by their names."
+  (should (difffontify--code-file-p "src/Foo.java"))
+  (should (difffontify--code-file-p "foo.py"))
+  (should-not (difffontify--code-file-p "README.md"))
+  (should-not (difffontify--code-file-p "notes.txt")))
+
 (ert-deftest difffontify-tests-locations-share-strings ()
-  "Lines with the same location share one string, and so one interval."
+  "Lines with the same location share one cons, and so one interval."
   (with-temp-buffer
     (insert "--- a/f.txt\n+++ b/f.txt\n@@ -1,3 +1,3 @@\n a\n-b\n+c\n d\n")
     (delay-mode-hooks (diff-mode))
@@ -482,12 +538,27 @@ the buffer that `difffontify--prepare' returns for the diff."
 (ert-deftest difffontify-tests-wrap-location ()
   "A continuation line has the location of the line that was wrapped."
   (with-temp-buffer
-    (insert (propertize "+aaa bbbb cccc dddd\n" 'difffontify-location "f.c"))
+    (insert (propertize "+aaa bbbb cccc dddd\n"
+                        'difffontify-location '("f.c" . "g()")))
     (difffontify--wrap-lines 12)
     (goto-char (point-min))
     (search-forward "»")
     (should (equal (get-text-property (match-beginning 0) 'difffontify-location)
-                   "f.c"))))
+                   '("f.c" . "g()")))))
+
+(defun difffontify-tests--headers (ps)
+  "Return the parts of the left parts of the page headers in PostScript file PS.
+Each element of the result is the text of a PostScript array of strings,
+such as \"(x.diff      ) (f.c) (:  g\\() (int n\\)) \".  In PostScript, each
+backslash and parenthesis in a string is preceded by a backslash."
+  (with-temp-buffer
+    (insert-file-contents ps)
+    (search-forward "%%EndProlog")
+    (let (headers)
+      (while (re-search-forward "^/DifffontifyHeaderParts \\[\\(.*\\)\\] def$"
+                                nil t)
+        (push (match-string 1) headers))
+      (nreverse headers))))
 
 (ert-deftest difffontify-tests-headers ()
   "The first page header has the date, and others have the location."
@@ -500,36 +571,137 @@ the buffer that `difffontify--prepare' returns for the diff."
           (with-current-buffer buffer
             (difffontify-tests--call-prepared
              (lambda ()
+               ;; Start elsewhere than the first page, as after preparing.
+               (goto-char (point-max))
                (difffontify--write-ps (current-buffer) ps "langs.diff" nil))))
           (should (equal
-                   (with-temp-buffer
-                     (insert-file-contents ps)
-                     (let (headers)
-                       (while (re-search-forward
-                               "^/HeaderLinesLeft\\[\n \\[/h0 (\\(.*\\))\\]$"
-                               nil t)
-                         (push (match-string 1) headers))
-                       (nreverse headers)))
-                   (list (concat "langs.diff      "
-                                 (format-time-string "%Y-%m-%d"))
-                         ;; In PostScript, a backslash is doubled.
-                         (concat "langs.diff      "
-                                 "new/foo.tex:  \\\\section{Introduction}")))))
+                   (difffontify-tests--headers ps)
+                   (list (concat "(langs.diff      "
+                                 (format-time-string "%Y-%m-%d")
+                                 ") () () () ")
+                         (concat "(langs.diff      ) (new/foo.tex) "
+                                 "(:  \\\\section{Introduction}) () ")))))
       (kill-buffer buffer)
       (delete-directory dir t))))
 
-(ert-deftest difffontify-tests-header-truncated ()
-  "A long page header is truncated."
+(ert-deftest difffontify-tests-header-parts ()
+  "The formal parameters are separate from the function name."
   (let ((difffontify--header-title "x.diff"))
-    (cl-letf (((symbol-function 'ps-page-number) (lambda () 2)))
-      (with-temp-buffer
-        (insert (propertize "+line\n" 'difffontify-location
-                            (make-string 200 ?a)))
-        (goto-char (point-min))
-        (let ((header (difffontify--header)))
-          (should (= (length header) (difffontify--header-width)))
-          (should (string-suffix-p "..." header)))))))
+    (with-temp-buffer
+      (insert "+first\n")
+      (dolist (location '(("f.c" . "get(int n) {")
+                          ("f.el" . "(defun foo (n)")
+                          ("f.tex" . "\\section{Intro}")
+                          ("f.c")))
+        (let ((start (point)))
+          (insert "+line\n")
+          (put-text-property start (point) 'difffontify-location location)))
+      (should (equal (cl-loop for line from 2 to 5
+                              collect (progn (goto-char (point-min))
+                                             (forward-line (1- line))
+                                             (difffontify--header)))
+                     '(("x.diff      " "f.c" ":  get" "(int n) {")
+                       ("x.diff      " "f.el" ":  (defun foo (n)" "")
+                       ("x.diff      " "f.tex" ":  \\section{Intro}" "")
+                       ("x.diff      " "f.c" "" "")))))))
 
+(defun difffontify-tests--rendered-header (file function &optional title)
+  "Return the left part of the second page's header, as printed.
+FILE and FUNCTION are the location of every line, and the header title is
+TITLE, which defaults to \"x.diff\".  Each run of spaces in the result is
+one space."
+  (setq title (or title "x.diff"))
+  (let* ((dir (make-temp-file "difffontify-tests-" t))
+         (ps (expand-file-name "out.ps" dir)))
+    (unwind-protect
+        (with-temp-buffer
+          (dotimes (_ 100)
+            (insert (propertize "+line\n" 'difffontify-location
+                                (cons file function))))
+          (difffontify--write-ps (current-buffer) ps title nil)
+          (erase-buffer)
+          ;; Ghostscript reads standard input, because a security policy
+          ;; might forbid it to read files in DIR.
+          (call-process "gs" ps t nil "-q" "-dNOPAUSE" "-dBATCH"
+                        "-sDEVICE=txtwrite" "-sOutputFile=-" "-")
+          (goto-char (point-min))
+          (and (re-search-forward
+                (concat "^ *\\(" (regexp-quote title) " .*?\\) +2/2") nil t)
+               (replace-regexp-in-string " +" " " (match-string 1))))
+      (delete-directory dir t))))
+
+(defconst difffontify-tests--parameters
+  (concat "("
+          (mapconcat (lambda (i) (format "String argument%d" i))
+                     (number-sequence 1 12) ", ")
+          ") {")
+  "Formal parameters that are too long to fit in a page header.")
+
+(ert-deftest difffontify-tests-header-fits ()
+  "A page header that fits is not shortened."
+  (skip-unless (executable-find "gs"))
+  (should (equal (difffontify-tests--rendered-header "src/Foo.java"
+                                                     "get(int n) {")
+                 "x.diff src/Foo.java: get(int n) {")))
+
+(ert-deftest difffontify-tests-header-latin-1 ()
+  "A page header can hold characters in Latin 1 that are not in ASCII."
+  (skip-unless (executable-find "gs"))
+  (should (equal (difffontify-tests--rendered-header
+                  "caf\u00e9.c" "na\u00efve(int x)" "r\u00e9sum\u00e9.diff")
+                 "r\u00e9sum\u00e9.diff caf\u00e9.c: na\u00efve(int x)")))
+
+(ert-deftest difffontify-tests-header-parameters-shortened ()
+  "To fit, a page header first shortens the formal parameters."
+  (skip-unless (executable-find "gs"))
+  (should (string-match-p
+           (concat "\\`x\\.diff src/Foo\\.java: get(String argument1,"
+                   " String argument2, String argument3, .*\\.\\.\\.\\'")
+           (difffontify-tests--rendered-header
+            "src/Foo.java" (concat "get" difffontify-tests--parameters)))))
+
+(ert-deftest difffontify-tests-header-parameters-omitted ()
+  "If too few formal parameters fit, a page header omits them all.
+It never shows the \"(\" alone, as in \"get(...\"."
+  (skip-unless (executable-find "gs"))
+  (let (omitted)
+    ;; Names of a range of lengths, because the length that leaves room for
+    ;; the name but not for any parameters depends on the font.  The range
+    ;; is wider than that room, which is about 3 characters.
+    (dolist (length (number-sequence 40 90 2))
+      (let* ((name (make-string length ?g))
+             (header (difffontify-tests--rendered-header
+                      "src/Foo.java"
+                      (concat name difffontify-tests--parameters))))
+        (should-not (string-search "(..." header))
+        (when (equal header (concat "x.diff src/Foo.java: " name))
+          (setq omitted t))))
+    (should omitted)))
+
+(ert-deftest difffontify-tests-header-file-shortened ()
+  "To fit, a page header next shortens the start of the file name."
+  (skip-unless (executable-find "gs"))
+  (should (string-match-p
+           (concat "\\`x\\.diff \\.\\.\\./\\(?:directory/\\)+last/Foo\\.java:"
+                   " computeSomething\\'")
+           (difffontify-tests--rendered-header
+            (concat (mapconcat #'identity (make-list 30 "directory") "/")
+                    "/last/Foo.java")
+            (concat "computeSomething" difffontify-tests--parameters))))
+  ;; Part of the last component, if the whole component does not fit.
+  (should (string-match-p
+           "\\`x\\.diff \\.\\.\\.f+\\.java: computeSomething\\'"
+           (difffontify-tests--rendered-header
+            (concat "src/" (make-string 300 ?f) ".java")
+            (concat "computeSomething" difffontify-tests--parameters)))))
+
+(ert-deftest difffontify-tests-header-truncated ()
+  "A page header whose function name is too long to fit is truncated."
+  (skip-unless (executable-find "gs"))
+  (should (string-match-p
+           "\\`x\\.diff src/Foo\\.java: g+\\.\\.\\.\\'"
+           (difffontify-tests--rendered-header
+            "src/Foo.java" (concat (make-string 300 ?g) "(int n)")))))
 
 ;;; PDF
 
