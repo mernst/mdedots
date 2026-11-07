@@ -470,32 +470,61 @@ the buffer that `difffontify--prepare' returns for the diff."
                    (89 . "new/Makefile:  foo: foo.c"))))
       (kill-buffer buffer))))
 
-(ert-deftest difffontify-tests-function-name ()
+(ert-deftest difffontify-tests-simplify-definition ()
   "A function name omits annotations, modifiers, and the return type."
-  (should (equal (difffontify--function-name
+  (should (equal (difffontify--simplify-definition
                   (concat "@Pure @SuppressWarnings(\"x\") public static"
                           " @Nullable Map<String, List<Integer>>"
                           " get(@NonNull String key, int n) {"))
                  "get(String key, int n) {"))
-  (should (equal (difffontify--function-name "public <T> List<T> f(T x)")
+  (should (equal (difffontify--simplify-definition "public <T> List<T> f(T x)")
                  "f(T x)"))
-  (should (equal (difffontify--function-name "public Foo(int x) {")
+  (should (equal (difffontify--simplify-definition "public Foo(int x) {")
                  "Foo(int x) {"))
-  (should (equal (difffontify--function-name "public static class Inner {")
+  (should (equal (difffontify--simplify-definition
+                  "public static class Inner {")
                  "class Inner {"))
-  (should (equal (difffontify--function-name "std::string Foo::bar(int x)")
+  (should (equal (difffontify--simplify-definition
+                  "std::string Foo::bar(int x)")
                  "Foo::bar(int x)"))
-  (should (equal (difffontify--function-name "int *f(void)") "f(void)"))
-  (should (equal (difffontify--function-name "class Foo(Base):")
+  (should (equal (difffontify--simplify-definition "int *f(void)") "f(void)"))
+  (should (equal (difffontify--simplify-definition "class Foo(Base):")
                  "class Foo(Base):"))
-  (should (equal (difffontify--function-name "(defun foo (n)")
+  (should (equal (difffontify--simplify-definition "(defun foo (n)")
                  "(defun foo (n)"))
-  (should (equal (difffontify--function-name "\\section{Intro}")
+  (should (equal (difffontify--simplify-definition "\\section{Intro}")
                  "\\section{Intro}"))
-  (should (null (difffontify--function-name "@Override"))))
+  (should (equal (difffontify--simplify-definition
+                  "@Foo(bar(1)) public void f() {")
+                 "f() {"))
+  (should (equal (difffontify--simplify-definition "public @interface Anno {")
+                 "@interface Anno {"))
+  (should (equal (difffontify--simplify-definition "Foo::operator int() const")
+                 "Foo::operator int() const"))
+  (should (equal (difffontify--simplify-definition "const f = function(x) {")
+                 "const f = function(x) {"))
+  (should (equal (difffontify--simplify-definition "f: function(x) {")
+                 "f: function(x) {")))
+
+(ert-deftest difffontify-tests-function ()
+  "Only a definition in a programming language is simplified."
+  (should (equal (difffontify--function " public\tint  f(int x) " t)
+                 "f(int x)"))
+  (should (equal (difffontify--function "Run the tests (make check)." nil)
+                 "Run the tests (make check)."))
+  (should (equal (difffontify--function " a\t b " nil) "a b"))
+  (should (null (difffontify--function "@Override" t)))
+  (should (null (difffontify--function nil t))))
+
+(ert-deftest difffontify-tests-code-file-p ()
+  "Files in programming languages are recognized by their names."
+  (should (difffontify--code-file-p "src/Foo.java"))
+  (should (difffontify--code-file-p "foo.py"))
+  (should-not (difffontify--code-file-p "README.md"))
+  (should-not (difffontify--code-file-p "notes.txt")))
 
 (ert-deftest difffontify-tests-locations-share-strings ()
-  "Lines with the same location share one string, and so one interval."
+  "Lines with the same location share one cons, and so one interval."
   (with-temp-buffer
     (insert "--- a/f.txt\n+++ b/f.txt\n@@ -1,3 +1,3 @@\n a\n-b\n+c\n d\n")
     (delay-mode-hooks (diff-mode))
@@ -509,12 +538,13 @@ the buffer that `difffontify--prepare' returns for the diff."
 (ert-deftest difffontify-tests-wrap-location ()
   "A continuation line has the location of the line that was wrapped."
   (with-temp-buffer
-    (insert (propertize "+aaa bbbb cccc dddd\n" 'difffontify-location "f.c"))
+    (insert (propertize "+aaa bbbb cccc dddd\n"
+                        'difffontify-location '("f.c" . "g()")))
     (difffontify--wrap-lines 12)
     (goto-char (point-min))
     (search-forward "»")
     (should (equal (get-text-property (match-beginning 0) 'difffontify-location)
-                   "f.c"))))
+                   '("f.c" . "g()")))))
 
 (defun difffontify-tests--headers (ps)
   "Return the parts of the left parts of the page headers in PostScript file PS.
@@ -575,10 +605,12 @@ backslash and parenthesis in a string is preceded by a backslash."
                        ("x.diff      " "f.tex" ":  \\section{Intro}" "")
                        ("x.diff      " "f.c" "" "")))))))
 
-(defun difffontify-tests--rendered-header (file function)
+(defun difffontify-tests--rendered-header (file function &optional title)
   "Return the left part of the second page's header, as printed.
 FILE and FUNCTION are the location of every line, and the header title is
-\"x.diff\".  Each run of spaces in the result is one space."
+TITLE, which defaults to \"x.diff\".  Each run of spaces in the result is
+one space."
+  (setq title (or title "x.diff"))
   (let* ((dir (make-temp-file "difffontify-tests-" t))
          (ps (expand-file-name "out.ps" dir)))
     (unwind-protect
@@ -586,14 +618,15 @@ FILE and FUNCTION are the location of every line, and the header title is
           (dotimes (_ 100)
             (insert (propertize "+line\n" 'difffontify-location
                                 (cons file function))))
-          (difffontify--write-ps (current-buffer) ps "x.diff" nil)
+          (difffontify--write-ps (current-buffer) ps title nil)
           (erase-buffer)
           ;; Ghostscript reads standard input, because a security policy
           ;; might forbid it to read files in DIR.
           (call-process "gs" ps t nil "-q" "-dNOPAUSE" "-dBATCH"
                         "-sDEVICE=txtwrite" "-sOutputFile=-" "-")
           (goto-char (point-min))
-          (and (re-search-forward "^ *\\(x\\.diff .*?\\) +2/2" nil t)
+          (and (re-search-forward
+                (concat "^ *\\(" (regexp-quote title) " .*?\\) +2/2") nil t)
                (replace-regexp-in-string " +" " " (match-string 1))))
       (delete-directory dir t))))
 
@@ -610,6 +643,13 @@ FILE and FUNCTION are the location of every line, and the header title is
   (should (equal (difffontify-tests--rendered-header "src/Foo.java"
                                                      "get(int n) {")
                  "x.diff src/Foo.java: get(int n) {")))
+
+(ert-deftest difffontify-tests-header-latin-1 ()
+  "A page header can hold characters in Latin 1 that are not in ASCII."
+  (skip-unless (executable-find "gs"))
+  (should (equal (difffontify-tests--rendered-header
+                  "caf\u00e9.c" "na\u00efve(int x)" "r\u00e9sum\u00e9.diff")
+                 "r\u00e9sum\u00e9.diff caf\u00e9.c: na\u00efve(int x)")))
 
 (ert-deftest difffontify-tests-header-parameters-shortened ()
   "To fit, a page header first shortens the formal parameters."

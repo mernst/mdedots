@@ -18,8 +18,9 @@
 ;; "index ", "--- ", and "+++ " lines), gets nothing more in its header.  The
 ;; function is the last one that is defined before the top of the page, in a
 ;; hunk line or in the hunk header, where "diff -p" and "git diff" write the
-;; definition line that precedes the hunk.  The header omits the definition's
-;; annotations, modifiers, and return type, as in "count(int x) {" for
+;; definition line that precedes the hunk.  For a file in a programming
+;; language, the header omits the definition's annotations, modifiers, and
+;; return type, as in "count(int x) {" for
 ;; "@Pure public int count(@NonNull int x) {".  To fit beside the page
 ;; number, a header that is too long first shortens the function's formal
 ;; parameters, and then the start of the file name, leaving its last path
@@ -394,6 +395,14 @@ The replacement has the same text properties as the character."
           (delete-char -1)
           (insert (apply #'propertize replacement props)))))))
 
+(defun difffontify--latin-1-string (string)
+  "Return STRING, with each character that is not in Latin 1 approximated.
+See `difffontify--latin-1'."
+  (with-temp-buffer
+    (insert string)
+    (difffontify--latin-1)
+    (buffer-string)))
+
 (defun difffontify--non-latin-1-chars ()
   "Return a list of the distinct characters in the buffer that are not in Latin 1."
   (save-excursion
@@ -444,11 +453,11 @@ parent.")
   "Give each line of each hunk a `difffontify-location' property.
 Its value is a cons (FILE . FUNCTION), such as (\"src/Foo.java\" .
 \"bar() {\"), that holds the file and the function (or nil) at that line,
-for the page header.  The hunk
-header is part of the hunk, and lines outside hunks get no property.  The
-function is the last line of the hunk, up to and including that line, that
-defines a function (that has `font-lock-function-name-face'), or else the
-function context in the hunk header.  Call this after
+for the page header.  The hunk header is part of the hunk, and lines
+outside hunks get no property.  The function comes from the last line of
+the hunk, up to and including that line, that defines a function (that has
+`font-lock-function-name-face'), or else from the function context in the
+hunk header; see `difffontify--function'.  Call this after
 `difffontify--flatten-faces', which gives that face to definitions only."
   (save-excursion
     (goto-char (point-min))
@@ -460,15 +469,18 @@ function context in the hunk header.  Call this after
              (end (max (save-excursion (difffontify--end-of-hunk))
                        (line-beginning-position 2)))
              (file (difffontify--hunk-file))
-             (function (difffontify--hunk-function))
+             (code (and file (difffontify--code-file-p file)))
+             (function (difffontify--function (difffontify--hunk-function)
+                                              code))
              (location (difffontify--location file function)))
         (while (< (point) end)
           (let ((bol (point))
                 (eol (line-end-position)))
             (when (and (> bol start) (difffontify--defines-function-p bol eol))
-              (setq function (difffontify--function-name
+              (setq function (difffontify--function
                               (buffer-substring-no-properties
-                               (min (+ bol prefix-length) eol) eol))
+                               (min (+ bol prefix-length) eol) eol)
+                              code)
                     location (difffontify--location file function)))
             (forward-line 1)
             ;; Each line of the hunk until the next definition gets the same
@@ -482,12 +494,42 @@ function context in the hunk header.  Call this after
 It is (FILE . FUNCTION), or nil if FILE is nil."
   (and file (cons file function)))
 
+(defun difffontify--code-file-p (file)
+  "True if FILE is in a programming language.
+That is, the major mode that `auto-mode-alist' gives for FILE's name derives
+from `prog-mode'.  This loads the major mode, if necessary."
+  (let ((mode (assoc-default file auto-mode-alist #'string-match)))
+    (and (symbolp mode)
+         (fboundp mode)
+         (progn
+           (let ((definition (indirect-function mode)))
+             (when (autoloadp definition)
+               (autoload-do-load definition)))
+           (provided-mode-derived-p mode 'prog-mode)))))
+
+(defun difffontify--function (definition code)
+  "Return DEFINITION, a line that defines a function, for a page header.
+CODE is true if DEFINITION is in a programming language; then omit its
+annotations, modifiers, and return type (see
+`difffontify--simplify-definition').  Prose, such as the function context
+that \"git diff\" writes for a Markdown file, is not simplified.  Also omit
+leading and trailing whitespace, and replace each other run of spaces and
+tabs by one space, because a page header has no tab stops.  Return nil if
+DEFINITION is nil or nothing remains."
+  (and definition
+       (let ((result (string-trim
+                      (replace-regexp-in-string "[ \t]+" " " definition))))
+         (when code
+           (setq result (difffontify--simplify-definition result)))
+         (and (not (string-empty-p result)) result))))
+
 (defconst difffontify--annotation-re
-  (concat "\\(\\`\\|[^[:alnum:]_$]\\)"
-          "@[[:alpha:]_$][[:alnum:]_$.]*\\(?:([^()]*)\\)?[ \t]*")
-  "Matches a Java annotation and the whitespace after it.
-Examples are \"@Override\" and \"@SuppressWarnings(\"unchecked\")\".  Group 1
-matches the character before the annotation, if any.")
+  (concat "@[[:alpha:]_$][[:alnum:]_$.]*"
+          ;; Arguments, with parentheses nested at most one level.
+          "\\(?:([^()]*\\(?:([^()]*)[^()]*\\)*)\\)? ?")
+  "Matches a Java annotation and the space after it, if any.
+Examples are \"@Override\" and \"@SuppressWarnings(\"unchecked\")\".  It also
+matches the Java keyword \"@interface\".")
 
 (defconst difffontify--modifiers-re
   (concat "\\`\\(?:"
@@ -495,47 +537,62 @@ matches the character before the annotation, if any.")
                         "abstract" "synchronized" "native" "strictfp" "default"
                         "transient" "volatile" "sealed" "non-sealed")
                       "\\(?:")
-          "[ \t]+\\)+")
+          " \\)+")
   "Matches the Java modifiers, such as \"public static \", that start a line.")
 
 (defconst difffontify--return-type-re
-  (concat "\\`\\([^(]*[] \t*&>]\\)"
-          "\\([[:alpha:]_$~][[:alnum:]_$:~]*\\(?:<[^()]*>\\)?[ \t]*(\\)")
+  (concat "\\`\\([^(=]*[] *&>]\\)"
+          "\\([[:alpha:]_$~][[:alnum:]_$:~]*\\(?:<[^()]*>\\)? ?(\\)")
   "Matches a function definition that starts with a return type or keyword.
 Examples are \"int f(\", \"Map<K, V> get(\", and \"def f(\".  Group 1
 matches the text before the function name, and group 2 matches the function
-name (and any type parameters) through the \"(\" that follows it.")
+name (and any type parameters) through the \"(\" that follows it.  Text that
+contains \"=\" before the \"(\", as in JavaScript's \"const f = function(\",
+is not a return type.")
 
-(defun difffontify--function-name (definition)
-  "Return DEFINITION, a function definition line, simplified for a page header.
-Remove Java annotations, leading Java modifiers, and the return type or
-keyword (such as \"def\") before the function name.  For example, return
-\"count(int x) {\" for \"@Pure public static int count(@NonNull int x) {\".
-Also remove leading and trailing whitespace, and replace each other run of
-spaces and tabs by one space, because a page header has no tab stops.
-Return nil if nothing remains."
-  (let ((case-fold-search nil)
-        (result (replace-regexp-in-string "[ \t]+" " " definition))
-        previous)
-    ;; One match can consume the character that precedes the next annotation.
-    (while (not (equal result previous))
-      (setq previous result
-            result (replace-regexp-in-string difffontify--annotation-re "\\1"
-                                             result)))
-    (setq result (replace-regexp-in-string difffontify--modifiers-re ""
-                                           (string-trim result)))
+(defconst difffontify--keep-before-name-re
+  (concat "\\(?:\\`\\|[^[:alnum:]_$]\\)"
+          (regexp-opt '("class" "interface" "enum" "record" "struct" "union"
+                        "operator")
+                      "\\(?:")
+          " \\'")
+  "Matches text that ends with a keyword that must stay before the next word.
+Examples are \"class \", as in Python's \"class Foo(Base):\", and
+\"operator \", as in C++'s \"operator int()\".")
+
+(defconst difffontify--keyword-name-re
+  (concat "\\`" (regexp-opt '("function" "async") "\\(?:") " ?(")
+  "Matches a keyword and the \"(\" after it, at the start of a string.
+An example is \"function(\", as in JavaScript's \"foo: function(x) {\".  The
+keyword is not a function name.")
+
+(defun difffontify--simplify-definition (definition)
+  "Return DEFINITION, a line that defines a function, simplified.
+DEFINITION has no tabs, no runs of spaces, and no leading or trailing
+whitespace.  Omit Java annotations, leading Java modifiers, and the return
+type or keyword (such as \"def\") before the function name.  For example,
+return \"count(int x) {\" for \"@Pure public static int count(@NonNull int x)
+{\"."
+  (let* ((case-fold-search nil)
+         (result
+          (string-trim
+           (replace-regexp-in-string
+            " +" " "
+            (replace-regexp-in-string
+             difffontify--annotation-re
+             (lambda (annotation)
+               (if (equal (string-trim-right annotation) "@interface")
+                   annotation
+                 ""))
+             definition)))))
+    (setq result (replace-regexp-in-string difffontify--modifiers-re "" result))
     (when (and (string-match difffontify--return-type-re result)
-               ;; The name of a class, as in Python's "class Foo(Base):".
-               (not (string-match-p
-                     (concat "\\(?:\\`\\|[ \t]\\)"
-                             (regexp-opt '("class" "interface" "enum" "record"
-                                           "struct" "union")
-                                         "\\(?:")
-                             "[ \t]*\\'")
-                     (match-string 1 result))))
+               (not (string-match-p difffontify--keep-before-name-re
+                                    (match-string 1 result)))
+               (not (string-match-p difffontify--keyword-name-re
+                                    (substring result (match-beginning 2)))))
       (setq result (substring result (match-beginning 2))))
-    (setq result (string-trim result))
-    (and (not (string-empty-p result)) result)))
+    result))
 
 (defun difffontify--hunk-prefix-length ()
   "Return the number of prefix characters in each line of the hunk at point.
@@ -567,7 +624,7 @@ diff\" prefix such as \"b/\" is omitted."
 \"diff -p\" and \"git diff\" write it after the line numbers, as in
 \"@@ -10,7 +10,8 @@ void bar() {\"."
   (and (looking-at "\\(?:@@+ .*? @@+\\|\\*\\{15\\}\\)\\(.*\\)")
-       (difffontify--function-name (match-string-no-properties 1))))
+       (match-string-no-properties 1)))
 
 (defun difffontify--defines-function-p (bol eol)
   "Return non-nil if the text from BOL to EOL defines a function.
@@ -627,7 +684,9 @@ Its value is an array of the strings that `difffontify--header' returns.
 of the page's first line."
   (ps-output "/DifffontifyHeaderParts [")
   (dolist (part (difffontify--header))
-    (ps-output-string part)
+    ;; `ps-output-string' would write each non-ASCII character of a
+    ;; multibyte string as its UTF-8 bytes, but the header font uses Latin 1.
+    (ps-output-string (encode-coding-string part 'latin-1))
     (ps-output " "))
   (ps-output "] def\n"))
 
@@ -831,7 +890,7 @@ Use color if COLOR is non-nil."
   "Write BUFFER, prepared by `difffontify--prepare', to PostScript file PS.
 TITLE is the page header.  Use color if COLOR is non-nil."
   (with-current-buffer buffer
-    (let ((difffontify--header-title title)
+    (let ((difffontify--header-title (difffontify--latin-1-string title))
           ;; The `black-white' mode prints each face according to
           ;; `ps-black-white-faces' rather than according to its appearance on
           ;; the screen, so the output does not depend on the user's faces.
