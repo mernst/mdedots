@@ -18,7 +18,10 @@
 ;; "index ", "--- ", and "+++ " lines), gets nothing more in its header.  The
 ;; function is the last one that is defined before the top of the page, in a
 ;; hunk line or in the hunk header, where "diff -p" and "git diff" write the
-;; definition line that precedes the hunk.
+;; definition line that precedes the hunk.  The header omits the definition's
+;; annotations, modifiers, and return type, as in "count(int x) {" for
+;; "@Pure public int count(@NonNull int x) {".  A header that is too long to
+;; fit beside the page number ends with "...".
 ;;
 ;; From the command line, to write FILE.diff.pdf:
 ;;   emacs -Q --batch -l difffontify.el -f difffontify-batch-pdf FILE.diff ...
@@ -460,7 +463,7 @@ function context in the hunk header.  Call this after
           (let ((bol (point))
                 (eol (line-end-position)))
             (when (and (> bol start) (difffontify--defines-function-p bol eol))
-              (setq function (difffontify--collapse-whitespace
+              (setq function (difffontify--function-name
                               (buffer-substring-no-properties
                                (min (+ bol prefix-length) eol) eol))
                     location (difffontify--location file function)))
@@ -477,11 +480,60 @@ function context in the hunk header.  Call this after
         (function (concat file ":  " function))
         (t file)))
 
-(defun difffontify--collapse-whitespace (string)
-  "Return STRING without leading or trailing whitespace.
-Each run of spaces and tabs within it is replaced by one space, because a
-page header has no tab stops."
-  (replace-regexp-in-string "[ \t]+" " " (string-trim string)))
+(defconst difffontify--annotation-re
+  (concat "\\(\\`\\|[^[:alnum:]_$]\\)"
+          "@[[:alpha:]_$][[:alnum:]_$.]*\\(?:([^()]*)\\)?[ \t]*")
+  "Matches a Java annotation and the whitespace after it.
+Examples are \"@Override\" and \"@SuppressWarnings(\"unchecked\")\".  Group 1
+matches the character before the annotation, if any.")
+
+(defconst difffontify--modifiers-re
+  (concat "\\`\\(?:"
+          (regexp-opt '("public" "protected" "private" "static" "final"
+                        "abstract" "synchronized" "native" "strictfp" "default"
+                        "transient" "volatile" "sealed" "non-sealed")
+                      "\\(?:")
+          "[ \t]+\\)+")
+  "Matches the Java modifiers, such as \"public static \", that start a line.")
+
+(defconst difffontify--return-type-re
+  (concat "\\`\\([^(]*[] \t*&>]\\)"
+          "\\([[:alpha:]_$~][[:alnum:]_$:~]*\\(?:<[^()]*>\\)?[ \t]*(\\)")
+  "Matches a function definition that starts with a return type or keyword.
+Examples are \"int f(\", \"Map<K, V> get(\", and \"def f(\".  Group 1
+matches the text before the function name, and group 2 matches the function
+name (and any type parameters) through the \"(\" that follows it.")
+
+(defun difffontify--function-name (definition)
+  "Return DEFINITION, a function definition line, simplified for a page header.
+Remove Java annotations, leading Java modifiers, and the return type or
+keyword (such as \"def\") before the function name.  For example, return
+\"count(int x) {\" for \"@Pure public static int count(@NonNull int x) {\".
+Also remove leading and trailing whitespace, and replace each other run of
+spaces and tabs by one space, because a page header has no tab stops.
+Return nil if nothing remains."
+  (let ((case-fold-search nil)
+        (result (replace-regexp-in-string "[ \t]+" " " definition))
+        previous)
+    ;; One match can consume the character that precedes the next annotation.
+    (while (not (equal result previous))
+      (setq previous result
+            result (replace-regexp-in-string difffontify--annotation-re "\\1"
+                                             result)))
+    (setq result (replace-regexp-in-string difffontify--modifiers-re ""
+                                           (string-trim result)))
+    (when (and (string-match difffontify--return-type-re result)
+               ;; The name of a class, as in Python's "class Foo(Base):".
+               (not (string-match-p
+                     (concat "\\(?:\\`\\|[ \t]\\)"
+                             (regexp-opt '("class" "interface" "enum" "record"
+                                           "struct" "union")
+                                         "\\(?:")
+                             "[ \t]*\\'")
+                     (match-string 1 result))))
+      (setq result (substring result (match-beginning 2))))
+    (setq result (string-trim result))
+    (and (not (string-empty-p result)) result)))
 
 (defun difffontify--hunk-prefix-length ()
   "Return the number of prefix characters in each line of the hunk at point.
@@ -513,9 +565,7 @@ diff\" prefix such as \"b/\" is omitted."
 \"diff -p\" and \"git diff\" write it after the line numbers, as in
 \"@@ -10,7 +10,8 @@ void bar() {\"."
   (and (looking-at "\\(?:@@+ .*? @@+\\|\\*\\{15\\}\\)\\(.*\\)")
-       (let ((function (difffontify--collapse-whitespace
-                        (match-string-no-properties 1))))
-         (and (not (string-empty-p function)) function))))
+       (difffontify--function-name (match-string-no-properties 1))))
 
 (defun difffontify--defines-function-p (bol eol)
   "Return non-nil if the text from BOL to EOL defines a function.
@@ -534,31 +584,53 @@ environment name, as in \"\\begin{equation}\"."
       found)))
 
 (defun difffontify--header ()
-  "Return the left part of the current page's header, for `ps-left-header'.
+  "Return the text of the left part of the current page's header.
 It is `difffontify--header-title', followed on the first page by the date
 and on each other page by the location (see `difffontify--mark-locations')
-at point, if any.  `ps-print' calls this at the start of each page, with
-point at the beginning of the page's first line."
-  (let ((extra (if (= (ps-page-number) 1)
+at point, if any.  Call this at the start of each page, with point at the
+beginning of the page's first line."
+  (let ((extra (if (bobp)
                    (format-time-string "%Y-%m-%d")
                  (get-text-property (point) 'difffontify-location))))
-    (truncate-string-to-width
-     (if extra
-         (concat difffontify--header-title "      " extra)
-       difffontify--header-title)
-     (difffontify--header-width) nil nil "...")))
+    (if extra
+        (concat difffontify--header-title "      " extra)
+      difffontify--header-title)))
 
-(defun difffontify--header-width ()
-  "Return the number of characters that fit in the left part of a page header.
-The right part is the page number."
-  (- (floor (- (nth 1 (assq difffontify--paper-type
-                            ps-page-dimensions-database))
-               (* 2 difffontify--margin))
-            ;; The average width of a Helvetica character is about 0.55 em.
-            (* 0.55 difffontify--header-font-size))
-     ;; Room for the page number, such as "12/34".
-     15))
+(defun difffontify--output-header ()
+  "Write PostScript that sets the current page's `DifffontifyHeaderText'.
+Its value is `difffontify--header'.  `ps-print' calls this at the start of
+each page, with point at the beginning of the page's first line."
+  (ps-output "/DifffontifyHeaderText ")
+  (ps-output-string (difffontify--header))
+  (ps-output " def\n"))
 
+(defconst difffontify--header-prologue
+  "% The text of the left part of the current page's header.
+/DifffontifyHeaderText () def
+
+% -- string
+% Return DifffontifyHeaderText, truncated with \"...\" if necessary so that it
+% fits beside the page number.  Call this while showing the header, when the
+% header font is the current font.
+/DifffontifyHeader{
+  /DifffontifyWidth
+    PrintHeaderWidth HFPad 2 mul sub
+    pagenumberstring stringwidth pop sub
+    (    ) stringwidth pop sub
+  def
+  DifffontifyHeaderText dup stringwidth pop DifffontifyWidth gt{
+    /DifffontifyWidth DifffontifyWidth (...) stringwidth pop sub def
+    % ---- find the longest prefix that fits
+    dup length
+    {dup 0 le{exit}if
+     2 copy 0 exch getinterval stringwidth pop DifffontifyWidth le{exit}if
+     1 sub}loop
+    0 exch getinterval (...) strcat
+  }if
+}def
+"
+  "PostScript code that `ps-print' puts in its prologue, for the page header.
+Emacs does not know the widths of the characters in the header font.")
 
 ;;; Wrapping
 
@@ -694,13 +766,17 @@ TITLE is the page header.  Use color if COLOR is non-nil."
           (ps-header-font-family 'Helvetica)
           (ps-header-font-size difffontify--header-font-size)
           (ps-header-title-font-size difffontify--header-font-size)
-          (ps-left-header '(difffontify--header))
+          (ps-user-defined-prologue difffontify--header-prologue)
+          ;; This hook runs at the start of each page, because each sheet of
+          ;; paper holds one page.
+          (ps-print-begin-sheet-hook (list #'difffontify--output-header))
+          ;; ps-print executes a procedure when it shows the header.
+          (ps-left-header '("/DifffontifyHeader load"))
           (ps-right-header '("/pagenumberstring load"))
           (ps-show-n-of-n t)
           (ps-selected-pages nil)
           (ps-even-or-odd-pages nil)
           (ps-banner-page-when-duplexing nil)
-          (ps-user-defined-prologue nil)
           (ps-print-control-characters 'control-8-bit)
           (ps-multibyte-buffer nil)
           (ps-zebra-stripes nil)
@@ -717,7 +793,12 @@ TITLE is the page header.  Use color if COLOR is non-nil."
       (cl-letf (((symbol-function 'display-color-p) (lambda (&rest _) t))
                 ((symbol-function 'color-values)
                  (lambda (color &rest _) (tty-color-standard-values color))))
-        (ps-print-buffer-with-faces ps)))))
+        ;; `difffontify--header' recognizes the first page by point being at
+        ;; the beginning of the buffer.  `ps-print' moves point to the start
+        ;; of each later page, but not to the start of the first page.
+        (save-excursion
+          (goto-char (point-min))
+          (ps-print-buffer-with-faces ps))))))
 
 (provide 'difffontify)
 
