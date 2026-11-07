@@ -6,9 +6,9 @@ pl=${pl:-$HOME/research/plume-lib}
 t=${t:-$HOME/research/types}
 test=${test:-$HOME/research/testing}
 
-pr-status -C "$h" &
-pr-status -C "$inv" &
-pr-status -C "$pl" &
-pr-status -C "$t" &
-pr-status -C "$test" &
-pr-status -C ~/bin/src &
+pr-status -C "$h" --highlight nested &
+pr-status -C "$inv" --highlight nested &
+pr-status -C "$pl" --highlight nested &
+pr-status -C "$t" --highlight nested &
+pr-status -C "$test" --highlight nested &
+pr-status -C ~/bin/src --highlight nested &
