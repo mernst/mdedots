@@ -76,7 +76,7 @@ update_fork_from_rjust_bitbucket() {
   if [ -n "$VERBOSE" ]; then
     echo "update_fork_from_rjust_bitbucket 1=$1 2=$2"
   fi
-  update_fork_with_hosting_and_userid "rjust" "$1" "$2" "" bitbucket.org michaelernst
+  update_fork_with_hosting_and_userid "rjust" "$1" "$2" "" ssh.bitbucket.org michaelernst
 }
 
 # userid relates to how the clone is named locally, not the username at the hosting service
@@ -129,11 +129,22 @@ update_fork_with_hosting_and_userid() {
   fi
 }
 
-# Run the command given by the arguments.  If it fails, print the current
-# directory and the command, and fail.  mdevc updates many clones at once, so
-# the message says which clone, and which step of updating it, failed.
+# Run the command given by the arguments.  If it writes to stderr, print the
+# current directory and the command, then that output.  If it fails, print the
+# current directory and the command, and fail.  mdevc updates many clones at
+# once, so the messages say which clone, and which step of updating it,
+# produced them.  A message that a server prints, such as a banner from a git
+# host, does not otherwise name the clone.
 run_step() {
-  if ! "$@"; then
+  run_step_stderr="$(mktemp)"
+  run_step_status=0
+  "$@" 2> "$run_step_stderr" || run_step_status=$?
+  if [ -s "$run_step_stderr" ]; then
+    echo "$(pwd): $*:" >&2
+    cat "$run_step_stderr" >&2
+  fi
+  rm -f "$run_step_stderr"
+  if [ "$run_step_status" -ne 0 ]; then
     echo "$(pwd): failed: $*" >&2
     return 1
   fi
