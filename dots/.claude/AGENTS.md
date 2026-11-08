@@ -137,6 +137,11 @@ If a branch can be pushed only to a URL, then its directory is the wrong one:  s
   Land before #N.
   ```
 
+  Suppose that the base of pull request #2 is the branch of pull request #1 (that is, #2 does not target the default branch).  #2 is one of two kinds, and its kind determines which line to write in the description of #2:
+
+  * A fix to #1:  #2 fixes a problem in #1's branch, as when #2 addresses a review finding about #1.  #2 changes #1 itself, so #2 must land into #1's branch before #1 lands:  write "Land before #1."
+  * A change that builds on #1:  #2 is a separate change that #1's branch enables, as when #2 uses a feature that #1 adds.  #2 uses #1's branch as its base only so that the diff of #2 omits #1's changes, and #2 lands after #1 does:  write "Land after #1."
+
 ### Merging
 
 * When resolving a merge conflict, change only the conflicted hunks.  Keep every hunk that git merged cleanly, even in a file that has conflicts.  Do not resolve a file by taking one side wholesale (`git checkout --ours`/`--theirs`, `-X ours`/`-X theirs`, or rewriting the file from one parent).
