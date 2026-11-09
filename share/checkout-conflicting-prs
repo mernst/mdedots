@@ -1,0 +1,109 @@
+#!/bin/sh
+
+# Usage: checkout-conflicting-prs [--dry-run] [-C DIR]
+# Create the working copy directories that are needed to resolve the merge
+# conflicts that `pr-status` reports, so that `git-push-to` (or
+# `resolve-conflicts`) can do the merges.
+#
+# Run it in the directory that holds the working copy directories, which is
+# where `pr-status` runs, or pass that directory with "-C".
+#
+# The script first runs `pr-status`, which regenerates the PR status
+# documents and records the conflicts and the working copies.  Then
+# `pr-status --print-missing-branches` lists the branches that resolving the
+# conflicts needs, but that have no working copy.  For each one, the script
+# runs `git-checkout-branch OWNER:BRANCH` in the clone of the branch's
+# repository that `pr-status` names.  `git-checkout-branch` creates the
+# working copy directory, and also the clone of OWNER's fork, if it does not
+# exist.  `git-checkout-branch` first pulls in the clone that OWNER selects;
+# for each later branch of the same OWNER and clone, the script passes
+# `--no-pull`, because the first pull fetched that branch too.
+# A failure for one branch does not stop the others.  If any branch
+# got a working copy, the script runs `pr-status` again, so that the documents
+# and the push chains include the new working copies.  The script exits with
+# status 1 if either run of `pr-status` or any branch failed.
+#
+# With --dry-run, the script prints the `git-checkout-branch` commands that it
+# would run, but does not run them.  It still runs `pr-status` the first time.
+
+set -e
+
+SCRIPT_NAME=$(basename "$0")
+
+dry_run=false
+directory=.
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run)
+      dry_run=true
+      shift
+      ;;
+    -C)
+      if [ $# -lt 2 ]; then
+        echo "${SCRIPT_NAME}: -C requires a directory" >&2
+        exit 2
+      fi
+      directory="$2"
+      shift 2
+      ;;
+    *)
+      echo "Usage: ${SCRIPT_NAME} [--dry-run] [-C DIR]" >&2
+      exit 2
+      ;;
+  esac
+done
+
+cd "${directory}"
+
+if ! pr-status; then
+  echo "${SCRIPT_NAME}: pr-status failed in $(pwd)" >&2
+  exit 1
+fi
+branches=$(pr-status --print-missing-branches)
+if [ -z "${branches}" ]; then
+  echo "Every branch needed to resolve the conflicts has a working copy."
+  exit 0
+fi
+
+tab=$(printf '\t')
+failed=""
+checked_out=false
+# The clones and owners for which `git-checkout-branch` has pulled, each
+# surrounded by tabs, as in "<tab>daikon<tab>mernst<tab>".
+pulled=""
+# Read from a here-document rather than a pipe, so that the loop runs in this
+# shell and its assignments to "failed", "checked_out", and "pulled" persist.
+while IFS="${tab}" read -r clone branch; do
+  key="${tab}${clone}${tab}${branch%%:*}${tab}"
+  case "${pulled}" in
+    *"${key}"*) set -- --no-pull "${branch}" ;;
+    *)
+      set -- "${branch}"
+      pulled="${pulled}${key}"
+      ;;
+  esac
+  echo "cd ${clone} && git-checkout-branch $*"
+  if [ "${dry_run}" = true ]; then
+    continue
+  fi
+  # Redirect the input, so that `git-checkout-branch` cannot consume the rest
+  # of the branches.
+  if (cd "${clone}" && git-checkout-branch "$@" < /dev/null); then
+    checked_out=true
+  else
+    echo "${SCRIPT_NAME}: git-checkout-branch ${branch} failed in ${clone}" >&2
+    failed="${failed} ${branch}"
+  fi
+done << EOF
+${branches}
+EOF
+
+if [ "${checked_out}" = true ] && ! pr-status; then
+  echo "${SCRIPT_NAME}: pr-status failed in $(pwd), after the checkouts" >&2
+  exit 1
+fi
+
+if [ -n "${failed}" ]; then
+  echo "${SCRIPT_NAME}: failed for:${failed}" >&2
+  exit 1
+fi
