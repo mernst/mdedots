@@ -1,0 +1,483 @@
+#!/usr/bin/env python3
+"""Create the working copy directories that are needed to resolve the PRs' merge conflicts.
+
+Usage: checkout-conflicting-prs [--dry-run] [-C DIR]
+
+Run it in the directory that holds the working copy directories, which is where
+`pr-status` writes `pr-status.md`, or pass that directory with "-C".
+
+The script reads the PR tables of `pr-status.md`.  A PR has a merge conflict if
+its "Unresolved threads" cell contains shuffle arrows (🔀), which `pr-status`
+writes if merging the default branch, or a branch that the PR's branch is
+updated from, into the PR would conflict.
+
+For each PR that has a merge conflict, the script makes sure that there are
+working copies of 2 branches, so that `git-push-to` can merge the second into
+the first:
+ * the PR's branch, and
+ * the branch upstream of it, whose merge into the PR conflicts:  each direct
+   prerequisite that the PR's "Depends on" cell marks with 🔀, or, if there is
+   none, the PR's base branch, which is usually the default branch, such as
+   `master`.
+A PR has a working copy if its "Directory" cell is not "(none)".  A branch of
+the PR's repository, such as its default branch, has a working copy if a
+directory's current branch tracks that branch of that repository.
+
+For each branch that has no working copy, the script runs
+`git-checkout-branch OWNER:BRANCH` in a clone of the PR's repository in the
+current directory.  The script asks GitHub (via `gh`) for the owner of the
+repository that holds a PR's branch, for the branch's name, and for the PR's
+base branch.  `git-checkout-branch` creates the working copy directory, and
+also the clone of OWNER's fork, if it does not exist.  A failure for one branch
+does not stop the others.  The script exits with status 1 if any branch failed.
+
+With --dry-run, the script prints the commands that it would run, but does not
+run them.
+"""
+
+from __future__ import annotations
+
+import argparse
+import dataclasses
+import functools
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+# The document that `pr-status` writes.
+PR_STATUS_FILE = "pr-status.md"
+
+# The marker of a merge conflict, in a PR's "Unresolved threads" cell and after a
+# prerequisite in its "Depends on" cell.
+CONFLICT_MARK = "🔀"
+
+# The "Directory" cell of a PR that has no working copy.
+NO_DIRECTORY = "(none)"
+
+# Matches the URL of a GitHub pull request, as in
+# "https://github.com/typetools/checker-framework/pull/8394".  Group "slug" is the
+# repository's GitHub slug, such as "typetools/checker-framework", and group "number" is
+# the PR number, such as "8394".
+PR_URL_RE = re.compile(r"https://github\.com/(?P<slug>[^/\s()]+/[^/\s()]+)/pull/(?P<number>\d+)")
+
+# Matches a separator between the cells of a Markdown table row:  a "|" that is not
+# escaped by a preceding backslash.
+CELL_SEPARATOR_RE = re.compile(r"(?<!\\)\|")
+
+# Matches the URL of a git remote on GitHub, as in "git@github.com:ORG/REPO.git" or
+# "https://github.com/ORG/REPO".  Group "slug" is the repository's GitHub slug, such as
+# "ORG/REPO".
+GITHUB_REMOTE_RE = re.compile(r"github\.com[:/](?P<slug>[^/\s]+/[^/\s]+?)(?:\.git)?/?$")
+
+
+@dataclasses.dataclass(frozen=True)
+class Pr:
+    """A pull request on GitHub."""
+
+    slug: str
+    """The PR's repository's GitHub slug, such as "ORG/REPO"."""
+    number: int
+    """The PR number, such as 8394 in "https://github.com/ORG/REPO/pull/8394"."""
+
+    @property
+    def url(self) -> str:
+        """The URL of the PR on GitHub."""
+        return f"https://github.com/{self.slug}/pull/{self.number}"
+
+
+@dataclasses.dataclass(frozen=True)
+class Row:
+    """A row of a PR table of the PR status document."""
+
+    pr: Pr
+    """The PR that the row describes."""
+    conflict: bool
+    """True if the row's "Unresolved threads" cell marks a merge conflict."""
+    has_working_copy: bool
+    """True if the row's "Directory" cell names a working copy directory."""
+    conflicting_prerequisites: tuple[Pr, ...]
+    """The direct prerequisites that the row's "Depends on" cell marks with 🔀."""
+
+
+@dataclasses.dataclass(frozen=True)
+class Branch:
+    """A git branch of a GitHub repository, in the form that `git-checkout-branch` takes."""
+
+    slug: str
+    """The GitHub slug, such as "ORG/REPO", of the repository whose PR needs the branch."""
+    owner: str
+    """The login of the owner of the repository that holds the branch, such as "mernst"."""
+    name: str
+    """The branch's name, such as "fix-typo"."""
+
+    @property
+    def argument(self) -> str:
+        """The argument of `git-checkout-branch`, such as "mernst:fix-typo"."""
+        return f"{self.owner}:{self.name}"
+
+
+def split_row(line: str) -> list[str]:
+    """Return the cells of the given Markdown table row, stripped of surrounding whitespace.
+
+    Args:
+        line: a line of a Markdown table, such as "| a | b |".
+
+    Returns:
+        The row's cells, such as ["a", "b"].
+    """
+    cells = CELL_SEPARATOR_RE.split(line.strip())
+    # The leading and trailing "|" produce empty first and last elements.
+    if cells and not cells[0].strip():
+        cells = cells[1:]
+    if cells and not cells[-1].strip():
+        cells = cells[:-1]
+    return [cell.strip() for cell in cells]
+
+
+def conflicting_prerequisites(depends_on: str) -> tuple[Pr, ...]:
+    """Return the direct prerequisites that the given "Depends on" cell marks with 🔀.
+
+    Args:
+        depends_on: a "Depends on" cell, such as
+            "[cf#1](https://github.com/ORG/REPO/pull/1) 🔀 (and transitively [cf#2](...))".
+
+    Returns:
+        The PRs whose links are followed by 🔀 before the next link or parenthesized note,
+        such as cf#1 in the example.
+    """
+    matches = list(PR_URL_RE.finditer(depends_on))
+    result = []
+    for i, match in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(depends_on)
+        # A parenthesized note, such as "(and `master` 🔀)", is not about this link.
+        after_link = depends_on[match.end() : end].split("(", 1)[0]
+        if CONFLICT_MARK in after_link:
+            result.append(Pr(match["slug"], int(match["number"])))
+    return tuple(result)
+
+
+def table_rows(markdown: str) -> list[Row]:
+    """Return the rows of the PR tables of the given PR status document.
+
+    Args:
+        markdown: a document that `pr-status` writes, such as the contents of
+            `pr-status.md`.
+
+    Returns:
+        The rows of each table that has columns "PR", "Unresolved threads", and
+        "Directory", in document order.
+    """
+    result: list[Row] = []
+    columns: dict[str, int] | None = None
+    for line in markdown.splitlines():
+        if not line.startswith("|"):
+            columns = None
+            continue
+        cells = split_row(line)
+        if columns is None:
+            # The first row of a table is its header.
+            columns = {name: i for i, name in enumerate(cells)}
+            continue
+        if not {"PR", "Unresolved threads", "Directory"} <= columns.keys():
+            continue
+        if all(set(cell) <= set("-: ") for cell in cells):
+            # The separator row between the header and the body.
+            continue
+        if len(cells) < len(columns):
+            print(f"Too few cells in table row: {line}", file=sys.stderr)
+            continue
+        match = PR_URL_RE.search(cells[columns["PR"]])
+        if match is None:
+            print(f"Cannot find a PR URL in table row: {line}", file=sys.stderr)
+            continue
+        depends_on = cells[columns["Depends on"]] if "Depends on" in columns else ""
+        result.append(
+            Row(
+                pr=Pr(match["slug"], int(match["number"])),
+                conflict=CONFLICT_MARK in cells[columns["Unresolved threads"]],
+                has_working_copy=cells[columns["Directory"]] != NO_DIRECTORY,
+                conflicting_prerequisites=conflicting_prerequisites(depends_on),
+            ),
+        )
+    return result
+
+
+def git_output(directory: Path, *args: str) -> str | None:
+    """Return the output of the given git command, run in the given directory.
+
+    Args:
+        directory: a directory, which need not be a git working copy.
+        args: the git command's arguments, such as ["remote", "get-url", "origin"].
+
+    Returns:
+        The command's standard output, without surrounding whitespace, or None if the
+        command fails, as when the directory is not a git working copy.
+    """
+    process = subprocess.run(
+        ["git", "-C", str(directory), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return process.stdout.strip() if process.returncode == 0 else None
+
+
+def url_slug(url: str) -> str | None:
+    """Return the lowercase GitHub slug, such as "org/repo", of the given git remote URL.
+
+    Args:
+        url: a git remote's URL, such as "git@github.com:ORG/REPO.git".
+
+    Returns:
+        The slug, or None if the URL is not on GitHub.
+    """
+    match = GITHUB_REMOTE_RE.search(url)
+    return match["slug"].lower() if match else None
+
+
+@functools.cache
+def remote_slugs(directory: Path) -> dict[str, str]:
+    """Return the GitHub slugs of the remotes of the given git working copy directory.
+
+    Args:
+        directory: a directory, which need not be a git working copy.
+
+    Returns:
+        A map from the name of each remote whose URL is on GitHub, such as "origin", to the
+        remote's lowercase GitHub slug, such as "org/repo"; an empty map if the directory is
+        not a git working copy.
+    """
+    output = git_output(directory, "config", "--get-regexp", r"^remote\..*\.url$") or ""
+    result = {}
+    for line in output.splitlines():
+        key, _, url = line.partition(" ")
+        slug = url_slug(url)
+        if slug:
+            result[key.removeprefix("remote.").removesuffix(".url")] = slug
+    return result
+
+
+@functools.cache
+def tracked_branch(directory: Path) -> tuple[str, str] | None:
+    """Return the remote branch that the current branch of the given directory tracks.
+
+    Args:
+        directory: a directory, which need not be a git working copy.
+
+    Returns:
+        The lowercase GitHub slug of the remote's repository, such as "org/repo", and the
+        branch's name, such as "master"; or None if the directory is not a git working copy,
+        its current branch tracks no branch, or the branch's remote is not on GitHub.
+    """
+    upstream = git_output(directory, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+    if not upstream:
+        return None
+    for remote, slug in remote_slugs(directory).items():
+        if upstream.startswith(remote + "/"):
+            return slug, upstream.removeprefix(remote + "/")
+    return None
+
+
+@dataclasses.dataclass
+class WorkingCopies:
+    """The git working copy directories in a directory."""
+
+    base: Path
+    """The directory that holds the working copy directories."""
+
+    @functools.cached_property
+    def directories(self) -> list[Path]:
+        """The subdirectories of base, preferring directories that are not symbolic links."""
+        return sorted(
+            (d for d in self.base.iterdir() if d.is_dir()),
+            key=lambda d: (d.is_symlink(), len(d.name), d.name),
+        )
+
+    def clone(self, slug: str) -> Path | None:
+        """Return a working copy of the given repository.
+
+        Args:
+            slug: a repository's GitHub slug, such as "ORG/REPO".
+
+        Returns:
+            A directory in base that has a remote whose URL is the repository on GitHub,
+            preferring one that is named for the repository; or None if there is none.
+        """
+        repo_name = slug.split("/")[1].lower()
+        candidates = [d for d in self.directories if slug.lower() in remote_slugs(d).values()]
+        for d in candidates:
+            if d.name.lower() == repo_name:
+                return d
+        return candidates[0] if candidates else None
+
+    def has_branch(self, branch: Branch) -> bool:
+        """Return true if a directory in base tracks the given branch of a PR's repository.
+
+        Args:
+            branch: a Branch whose owner owns the repository that its slug names, such as a
+                PR's base branch.
+
+        Returns:
+            True if the current branch of a directory in base tracks the branch.
+        """
+        wanted = (branch.slug.lower(), branch.name)
+        return any(tracked_branch(d) == wanted for d in self.directories)
+
+
+@functools.cache
+def pr_info(pr: Pr) -> dict | None:
+    """Return GitHub's information about the given PR's branches.
+
+    Args:
+        pr: a PR.
+
+    Returns:
+        A dict parsed from the JSON of `gh pr view`, with keys "headRefName",
+        "headRepositoryOwner", and "baseRefName"; or None if `gh` fails.
+    """
+    process = subprocess.run(
+        ["gh", "pr", "view", pr.url, "--json", "headRefName,headRepositoryOwner,baseRefName"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if process.returncode != 0:
+        print(f"{pr.url}: gh pr view failed: {process.stderr.strip()}", file=sys.stderr)
+        return None
+    return json.loads(process.stdout)
+
+
+def head_branch(pr: Pr) -> Branch | None:
+    """Return the given PR's branch.
+
+    Args:
+        pr: a PR.
+
+    Returns:
+        The PR's branch, or None if GitHub does not report it, as when the repository that
+        held the branch has been deleted.
+    """
+    info = pr_info(pr)
+    if info is None:
+        return None
+    owner = (info.get("headRepositoryOwner") or {}).get("login")
+    if not owner:
+        print(f"{pr.url}: GitHub does not report the owner of its branch", file=sys.stderr)
+        return None
+    return Branch(pr.slug, owner, info["headRefName"])
+
+
+def base_branch(pr: Pr) -> Branch | None:
+    """Return the given PR's base branch, such as the default branch of its repository.
+
+    Args:
+        pr: a PR.
+
+    Returns:
+        The PR's base branch, or None if GitHub does not report it.
+    """
+    info = pr_info(pr)
+    if info is None:
+        return None
+    return Branch(pr.slug, pr.slug.split("/")[0], info["baseRefName"])
+
+
+def needed_branches(rows: list[Row], copies: WorkingCopies) -> tuple[list[Branch], list[Pr]]:
+    """Return the branches without a working copy that are needed to resolve the conflicts.
+
+    Args:
+        rows: the rows of the PR tables of a PR status document.
+        copies: the working copy directories that the document describes.
+
+    Returns:
+        The branches, without duplicates, and the PRs for which GitHub did not report a
+        needed branch.
+    """
+    by_pr = {row.pr: row for row in rows}
+    branches: list[Branch] = []
+    failures: list[Pr] = []
+
+    def add_head(pr: Pr) -> None:
+        row = by_pr.get(pr)
+        if row is not None and row.has_working_copy:
+            return
+        branch = head_branch(pr)
+        if branch is None:
+            failures.append(pr)
+        elif branch not in branches:
+            branches.append(branch)
+
+    for row in rows:
+        if not row.conflict:
+            continue
+        add_head(row.pr)
+        if row.conflicting_prerequisites:
+            for prerequisite in row.conflicting_prerequisites:
+                add_head(prerequisite)
+            continue
+        branch = base_branch(row.pr)
+        if branch is None:
+            failures.append(row.pr)
+        elif branch not in branches and not copies.has_branch(branch):
+            branches.append(branch)
+    return branches, failures
+
+
+def main() -> None:
+    """Create the working copy directories that are needed to resolve the PRs' conflicts."""
+    parser = argparse.ArgumentParser(
+        description=(
+            "Create working copy directories for each PR that pr-status.md shows to have a"
+            " merge conflict, and for the branch upstream of it."
+        ),
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the commands, but do not run them",
+    )
+    parser.add_argument(
+        "-C",
+        dest="directory",
+        default=".",
+        help="the directory that holds the working copy directories and pr-status.md",
+    )
+    args = parser.parse_args()
+
+    base = Path(args.directory).resolve()
+    status_file = base / PR_STATUS_FILE
+    try:
+        markdown = status_file.read_text(encoding="utf-8")
+    except OSError as e:
+        sys.exit(f"Cannot read {status_file}: {e}")
+
+    copies = WorkingCopies(base)
+    branches, failures = needed_branches(table_rows(markdown), copies)
+    failed = [pr.url for pr in failures]
+    if not branches and not failed:
+        print(f"Every branch needed to resolve the conflicts in {status_file} has a working copy.")
+        return
+
+    for branch in branches:
+        clone = copies.clone(branch.slug)
+        if clone is None:
+            print(f"{base} contains no clone of {branch.slug}", file=sys.stderr)
+            failed.append(branch.argument)
+            continue
+        command = ["git-checkout-branch", branch.argument]
+        print(f"cd {clone} && {' '.join(command)}", flush=True)
+        if args.dry_run:
+            continue
+        if subprocess.run(command, cwd=clone, check=False).returncode != 0:
+            print(f"git-checkout-branch {branch.argument} failed", file=sys.stderr)
+            failed.append(branch.argument)
+
+    if failed:
+        print("Failed for: " + ", ".join(failed), file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
