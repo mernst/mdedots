@@ -166,7 +166,7 @@ alias gterm=gterminal
 
 alias claude-review='claude "/review $(pr-number)"'
 #
-alias claude-fix-ci='claude "Fix CI failure, commit, and push."'
+alias claude-fix-ci='claude "Fix CI failure, commit, and push.  If the problem is a transient network failure, then re-start the CI job."'
 alias claude-ci=claude-fix-ci
 #
 alias claude-fix-merge-conflict='claude "If an AGENT-TODO.md file exists, follow its directions then delete it (except that often doing work in this session is better than resuming a previous session).  Fix merge conflict, commit, and push."'
