@@ -1,0 +1,1 @@
+../../.agents/skills/split-pr/SKILL.md
