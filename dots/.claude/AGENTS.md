@@ -130,6 +130,7 @@ If a branch can be pushed only to a URL, then its directory is the wrong one:  s
 * Use "land", never "merge", to mean landing a GitHub pull request.
 * Never force-push to GitHub.  I squash-and-merge, so even a messy commit history in a pull request leads to a clean main branch.
 * Never land a pull request unless explicitly asked.
+* Before creating a pull request, check other PRs (via `gh pr list`), remote branches, and sibling `<reponame>-branch-*` and `<reponame>-fork-*-branch-*` directories.  I often run several sessions at once on related work.  Just before `gh pr create`, fetch again and check whether a newly landed commit already covers the change.
 * If I tell you to commit and/or push, do not delay just because tests are running; do it in parallel with the tests.
 * Sometimes, the parent directory of the current working copy contains a file `pr-status.md` that describes other PRs that are open and may be related to the current one.
 * When describing dependences in a pull request, put them at the beginning of the description.  Use a regular, stylized format (in which any of the below groups may be absent):
