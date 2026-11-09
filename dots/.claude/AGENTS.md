@@ -23,6 +23,10 @@ When such a file has no entries left (only its header), delete the file.
   * Instead of `rm`, write to a fresh scratch directory or overwrite the file.
   * Instead of `cd dir && cmd`, use absolute paths or the tool's own directory option (`make -C`, `git -C`).
 
+## Secrets
+
+* Never run a command whose output can contain a credential (such as `gh auth token`, `printenv`, `env` with no arguments, `echo "$GH_TOKEN"`, `git config --get-regexp` on credential settings, or `cat` of a token file) unless its standard output goes to `/dev/null` or through a hash such as `sha256sum`.  Anything that a command prints is stored in the transcript.  To test whether a credential exists, use the exit status or `gh auth status`.  To compare two credentials, compare their hashes.
+
 ## English text
 
 When editing English text (files with extension .txt, .md, .tex, etc.), follow these rules.

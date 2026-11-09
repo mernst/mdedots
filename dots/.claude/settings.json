@@ -115,6 +115,10 @@
           {
             "type": "command",
             "command": "\"$HOME/dots/.claude/hooks/block-claude-coauthor-trailer\""
+          },
+          {
+            "type": "command",
+            "command": "\"$HOME/dots/.claude/hooks/block-secret-output\""
           }
         ]
       }
