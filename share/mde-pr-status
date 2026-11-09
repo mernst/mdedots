@@ -6,9 +6,16 @@ pl=${pl:-$HOME/research/plume-lib}
 t=${t:-$HOME/research/types}
 test=${test:-$HOME/research/testing}
 
-pr-status -C "$h" --highlight bottleneck &
-pr-status -C "$inv" --highlight bottleneck &
-pr-status -C "$pl" --highlight bottleneck &
-pr-status -C "$t" --highlight bottleneck &
-pr-status -C "$test" --highlight bottleneck &
-pr-status -C ~/bin/src --highlight bottleneck &
+# Run the jobs in parallel, then wait for all of them.
+# Exit with status 1 if any job fails.
+pids=
+for dir in "$h" "$inv" "$pl" "$t" "$test" ~/bin/src; do
+  pr-status -C "$dir" --highlight bottleneck &
+  pids="$pids $!"
+done
+
+status=0
+for pid in $pids; do
+  wait "$pid" || status=1
+done
+exit $status
