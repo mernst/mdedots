@@ -15,11 +15,16 @@
 # runs `git-checkout-branch OWNER:BRANCH` in the clone of the branch's
 # repository that `pr-status` names.  `git-checkout-branch` creates the
 # working copy directory, and also the clone of OWNER's fork, if it does not
-# exist.  A failure for one branch does not stop the others.  The script exits
-# with status 1 if `pr-status` or any branch failed.
+# exist.  `git-checkout-branch` first pulls in the clone that OWNER selects;
+# for each later branch of the same OWNER and clone, the script passes
+# `--no-pull`, because the first pull fetched that branch too.
+# A failure for one branch does not stop the others.  If any branch
+# got a working copy, the script runs `pr-status` again, so that the documents
+# and the push chains include the new working copies.  The script exits with
+# status 1 if either run of `pr-status` or any branch failed.
 #
 # With --dry-run, the script prints the `git-checkout-branch` commands that it
-# would run, but does not run them.  It still runs `pr-status`.
+# would run, but does not run them.  It still runs `pr-status` the first time.
 
 set -e
 
@@ -62,22 +67,41 @@ fi
 
 tab=$(printf '\t')
 failed=""
+checked_out=false
+# The clones and owners for which `git-checkout-branch` has pulled, each
+# surrounded by tabs, as in "<tab>daikon<tab>mernst<tab>".
+pulled=""
 # Read from a here-document rather than a pipe, so that the loop runs in this
-# shell and its assignments to "failed" persist.
+# shell and its assignments to "failed", "checked_out", and "pulled" persist.
 while IFS="${tab}" read -r clone branch; do
-  echo "cd ${clone} && git-checkout-branch ${branch}"
+  key="${tab}${clone}${tab}${branch%%:*}${tab}"
+  case "${pulled}" in
+    *"${key}"*) set -- --no-pull "${branch}" ;;
+    *)
+      set -- "${branch}"
+      pulled="${pulled}${key}"
+      ;;
+  esac
+  echo "cd ${clone} && git-checkout-branch $*"
   if [ "${dry_run}" = true ]; then
     continue
   fi
   # Redirect the input, so that `git-checkout-branch` cannot consume the rest
   # of the branches.
-  if ! (cd "${clone}" && git-checkout-branch "${branch}" < /dev/null); then
+  if (cd "${clone}" && git-checkout-branch "$@" < /dev/null); then
+    checked_out=true
+  else
     echo "${SCRIPT_NAME}: git-checkout-branch ${branch} failed in ${clone}" >&2
     failed="${failed} ${branch}"
   fi
 done << EOF
 ${branches}
 EOF
+
+if [ "${checked_out}" = true ] && ! pr-status; then
+  echo "${SCRIPT_NAME}: pr-status failed in $(pwd), after the checkouts" >&2
+  exit 1
+fi
 
 if [ -n "${failed}" ]; then
   echo "${SCRIPT_NAME}: failed for:${failed}" >&2
