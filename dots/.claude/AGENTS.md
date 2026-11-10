@@ -83,6 +83,7 @@ When editing English text (files with extension .txt, .md, .tex, etc.), follow t
 
 ### Tests
 
+* When behavior is incorrect and I ask for a test, I want a test that fails under the current, incorrect behavior, thus requiring a fix in order to pass.
 * Use ".goal" as a suffix for goal/gold/expected files that show what a test should produce.  Do not use ".out" as a suffix for such files.
 
 ### The Checker Framework
