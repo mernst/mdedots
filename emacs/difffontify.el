@@ -9,7 +9,8 @@
 ;; as it would be in a buffer visiting its file.  The output is legible in
 ;; black and white:  the font (bold, oblique) distinguishes syntactic
 ;; categories, and deleted lines are shaded.  A prefix argument to either
-;; command inverts `difffontify-color' for that call.
+;; command inverts `difffontify-color' for that call.  Before fontifying,
+;; `difffontify-simplify-command' simplifies the diff for reading.
 ;;
 ;; Each page's header shows the diff's name and the page number.  The first
 ;; page's header also shows the date.  Each other page's header also shows the
@@ -49,6 +50,21 @@ this."
 (defcustom difffontify-lpr-command "lpr"
   "Program that `difffontify-print' runs, with a PDF file as its argument."
   :type 'string)
+
+(defcustom difffontify-simplify-command
+  (let ((sibling (expand-file-name
+                  "../share/diff-simplify.py"
+                  (file-name-directory (or load-file-name buffer-file-name
+                                           default-directory)))))
+    (if (file-executable-p sibling) sibling "diff-simplify.py"))
+  "Program that simplifies a diff for reading, or nil to not simplify it.
+It reads a diff on standard input and writes the simplified diff to standard
+output.  The default is diff-simplify.py, in the directory share/ that is a
+sibling of this library's directory, or else on the search path.  For
+example, it blanks out the prefix that a \"+\" line shares with the \"-\"
+line that the \"+\" line extends, so the \"+\" line shows only the text that
+was appended."
+  :type '(choice (const :tag "Do not simplify" nil) string))
 
 (defcustom difffontify-latin-1-command "iconv-latin-1"
   "Program that converts UTF-8 to Latin 1, approximating other characters.
@@ -218,8 +234,9 @@ line."
 
 (defun difffontify--prepare (color)
   "Return a new buffer that holds the current buffer's diff, ready to print.
-Each character's `face' property is a list of faces from `difffontify--faces'
-for COLOR, each line has a `difffontify-location' property (see
+The diff is simplified (see `difffontify--simplify'), each character's
+`face' property is a list of faces from `difffontify--faces' for COLOR, each
+line has a `difffontify-location' property (see
 `difffontify--mark-locations'), long lines are wrapped, and the \"Diff
 finished\" line that ends a `*Diff*' buffer is omitted.  The caller must
 kill the buffer."
@@ -237,6 +254,7 @@ kill the buffer."
     (with-current-buffer buffer
       (insert text)
       (difffontify--delete-diff-finished)
+      (difffontify--simplify)
       (setq default-directory dir)
       ;; A fresh buffer, rather than the user's buffer, so that the user's
       ;; settings (such as `diff-refine', whose faces would hide the syntax
@@ -282,14 +300,37 @@ buffer contains them too."
                               (line-beginning-position -1) t)
       (replace-match ""))))
 
+(defun difffontify--simplify ()
+  "Replace the diff in the current buffer by its simplification.
+Run `difffontify-simplify-command' on the buffer, if it is non-nil."
+  (when difffontify-simplify-command
+    (let ((coding-system-for-write 'utf-8-unix)
+          (coding-system-for-read 'utf-8-unix)
+          (output (generate-new-buffer " *difffontify-simplify*")))
+      (unwind-protect
+          (let ((status (call-process-region (point-min) (point-max)
+                                             difffontify-simplify-command
+                                             nil output nil)))
+            (unless (eql 0 status)
+              (error "Program %s failed: %s" difffontify-simplify-command
+                     (string-trim (with-current-buffer output
+                                    (buffer-string)))))
+            (erase-buffer)
+            (insert-buffer-substring output))
+        (kill-buffer output)))))
+
 (defun difffontify--fontify-props (orig file text line-nb hunk-only)
   "Call ORIG, which is `diff-syntax-fontify-props'.
 Pass it FILE, TEXT, LINE-NB, and HUNK-ONLY.  When `diff-mode' highlights a
 hunk using a real file but cannot find the hunk text in the file, it does
-not highlight the hunk at all.  That happens if the file was changed after
-the diff was made, or if the diff ignored whitespace (diff -b).  In that
-case, highlight the hunk text alone."
+not highlight the hunk at all.  That happens if `difffontify--simplify'
+blanked out a prefix of a line in the hunk; then use the file's text for
+that line (see `difffontify--unblanked-props').  It also happens if the
+file was changed after the diff was made, or if the diff ignored whitespace
+\(diff -b); then highlight the hunk text alone."
   (or (funcall orig file text line-nb hunk-only)
+      (and (not hunk-only)
+           (difffontify--unblanked-props orig text line-nb))
       (and (not hunk-only)
            ;; As in `diff-syntax-fontify-hunk', an error from the file's major
            ;; mode does not prevent highlighting the rest of the diff.
@@ -297,6 +338,87 @@ case, highlight the hunk text alone."
              (insert text)
              (with-demoted-errors "%S"
                (funcall orig file text line-nb t))))))
+
+(defun difffontify--unblanked-props (orig text line-nb)
+  "Return the properties of TEXT, a hunk with blanked prefixes, or nil.
+ORIG is `diff-syntax-fontify-props', and LINE-NB is as for ORIG.  The
+current buffer holds the file that the hunk is from, in its major mode.
+
+`difffontify--simplify' can split a line of the file into two lines of
+TEXT:  a prefix of the line, followed by the line with that prefix replaced
+by whitespace (see `difffontify--whitespace-like').  Join each such pair of
+lines into the file's line, call ORIG on the result, and give each line of
+the pair the properties of its part of the file's line.  Return nil if TEXT
+contains no such pair, or if the result is not the file's text at LINE-NB."
+  (let* ((lines (split-string text "\n"))
+         (file-lines
+          (save-excursion
+            (goto-char (point-min))
+            (forward-line (1- (car line-nb)))
+            (split-string (buffer-substring-no-properties
+                           (point)
+                           (progn (forward-line (length lines)) (point)))
+                          "\n")))
+         ;; The lines of the file that TEXT shows.
+         restored
+         ;; One element per element of RESTORED:  nil if the line is a line
+         ;; of TEXT, or a cons (PREFIX-LENGTH . WHITESPACE-LENGTH) if the line
+         ;; is split into a prefix of that length and a line that starts
+         ;; with whitespace of that length.
+         splits)
+    (and
+     (catch 'mismatch
+       (while lines
+         (let* ((line (pop lines))
+                (file-line (or (pop file-lines) (throw 'mismatch nil)))
+                (next (car lines))
+                (whitespace (difffontify--whitespace-like line)))
+           (cond ((equal line file-line)
+                  (push line restored)
+                  (push nil splits))
+                 ((and next
+                       (string-prefix-p whitespace next)
+                       (equal file-line
+                              (concat line
+                                      (substring next (length whitespace)))))
+                  (pop lines)
+                  (push file-line restored)
+                  (push (cons (length line) (length whitespace)) splits))
+                 (t (throw 'mismatch nil)))))
+       t)
+     (cl-some #'identity splits)
+     (let ((props (funcall orig nil (string-join (nreverse restored) "\n")
+                           line-nb)))
+       (and props
+            (cl-mapcan
+             (lambda (line-props split)
+               (if (null split)
+                   (list line-props)
+                 (let ((prefix-length (car split)))
+                   (list (difffontify--props-part line-props 0 prefix-length 0)
+                         (difffontify--props-part
+                          line-props prefix-length nil
+                          (- prefix-length (cdr split)))))))
+             props (nreverse splits)))))))
+
+(defun difffontify--props-part (line-props start end shift)
+  "Return the part of LINE-PROPS from column START to END, moved left by SHIFT.
+LINE-PROPS is a list of elements (FROM TO FACE), as in the result of
+`diff-syntax-fontify-props'.  END nil means the end of the line."
+  (cl-loop for (from to face) in line-props
+           for part-from = (max from start)
+           for part-to = (if end (min to end) to)
+           when (< part-from part-to)
+           collect (list (- part-from shift) (- part-to shift) face)))
+
+(defun difffontify--whitespace-like (text)
+  "Return whitespace that occupies the same columns as TEXT, when displayed.
+Each tab stays a tab, and each other character becomes as many spaces as
+its width, as in diff-simplify.py:  two for a wide character such as a CJK
+ideograph, and none for a combining mark."
+  (mapconcat (lambda (char)
+               (if (eq char ?\t) "\t" (make-string (char-width char) ?\s)))
+             text ""))
 
 (defun difffontify--strip-git-prefix (file)
   "Return FILE, a file name from a diff, without a leading \"a/\" or \"b/\".

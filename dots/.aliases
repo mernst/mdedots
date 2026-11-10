@@ -762,6 +762,7 @@ alias gcb=git-checkout-branch
 alias gnb=git-new-branch
 alias gpu=git-pull-upstream
 alias gdu=git-diff-upstream
+alias gduf='git-diff-upstream > "$(pr-number)".diff'
 alias gpdu='cronic --permit-stderr git-pull-upstream && git-diff-upstream'
 alias pdu=gpdu
 alias rmgob='git-orphaned-branches --remove'

@@ -55,7 +55,7 @@ When editing English text (files with extension .txt, .md, .tex, etc.), follow t
 
 ### Specifications (user-visible code documentation)
 
-* As a general rule, the documentation for a procedure should focus on what the procedure does.  It usually should not give details about how a specific clients use the procedure; such documentation belongs in the client.  This rule can sometimes be violated.
+* As a general rule, the documentation for a procedure should focus on what the procedure does.  It usually should not give details about how a specific clients use the procedure; such documentation belongs in the client.  This rule is not absolute!  It can sometimes be violated.
 * A procedure's documentation should say what the procedure does with the thing that it computes.  For example, begin it with "Return ...", not "Find ...", which says only that the procedure computes the thing.
 * Begin the description of a boolean (a result, a parameter, an attribute, or a variable) with "True if", not "Whether".
 * Describe a failure by its observable behavior, not by internal implementation details.  For example, write "or None if the CI service does not provide them", not "or None if finding them fails" or "or None if the state function raises an exception".

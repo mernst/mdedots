@@ -44,15 +44,15 @@
 ⟨diff-file-header|diff -u -b -r gone-old/foo.py gone-new/foo.py⟩
 ⟨diff-file-header|--- gone-old/foo.py	2026-10-20 09:25:24.293526745 -0700⟩
 ⟨diff-file-header|+++ gone-new/foo.py	2026-10-20 09:25:24.296526732 -0700⟩
-@@ -2,7 +2,7 @@
+@@ -2,7 +2,8 @@
 ⟨diff-context|     """Return a greeting.⟩
 ⟨diff-context| ⟩
 ⟨diff-context|     The greeting is in English.⟩
 ⟨diff-indicator-removed|-⟩⟨diff-removed|    It is suitable for most purposes.⟩
 ⟨diff-indicator-added|+⟩⟨diff-added|    It is suitable -- "mostly" -- for all purposes.⟩
 ⟨diff-context|     """⟩
-⟨diff-indicator-removed|-⟩⟨diff-removed|    ⟩⟨comment-delimiter+diff-removed|# ⟩⟨comment+diff-removed|Résumé: naïve⟩
-⟨diff-indicator-added|+⟩⟨diff-added|    ⟩⟨comment-delimiter+diff-added|# ⟩⟨comment+diff-added|Résumé: naïve; forall x in S, lambda -> yes⟩
+⟨diff-context|     ⟩⟨comment-delimiter+diff-context|# ⟩⟨comment+diff-context|Résumé: naïve⟩
+⟨diff-indicator-added|+⟩⟨diff-added|                   ; forall x in S, lambda -> yes⟩
 ⟨diff-context|     ⟩⟨keyword+diff-context|return⟩⟨diff-context| f"Hello, {name}!"⟩
 ⟨diff-file-header|diff -u -b -r gone-old/foo.sh gone-new/foo.sh⟩
 ⟨diff-file-header|--- gone-old/foo.sh	2026-10-20 09:25:24.308526677 -0700⟩
