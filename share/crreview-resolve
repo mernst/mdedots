@@ -226,13 +226,20 @@ repos=$(gh api "repos/$push_repo" --jq '
 push_repo=$(printf '%s\n' "$repos" | tail -n 1)
 pr=""
 for repo in $repos; do
-  # `gh pr list --head` matches only the branch name, not its repository.
-  # Prefer an open PR to a closed one.  gh's "headRepository" has the
-  # repository's name but not its owner, which is in "headRepositoryOwner".
-  prs=$(retry gh pr list --repo "$repo" --head "$push_branch" --state all --limit 100 \
-    --json id,baseRefName,state,url,headRepository,headRepositoryOwner) || exit 1
+  # The GitHub API filters by the head's owner and branch, so it returns only
+  # the PRs from that branch of the owner's repositories, unlike
+  # `gh pr list --head`, which matches only the branch name.  An owner can
+  # have several repositories in a fork network, so also compare the head's
+  # GitHub slug.  Prefer an open PR to a closed one.  Each PR becomes a dict
+  # with the keys "id" (a GraphQL node ID such as "PR_kwDOABCD1234"),
+  # "baseRefName", "url", and "state" ("OPEN", "MERGED", or "CLOSED").
+  prs=$(retry gh api -X GET "repos/$repo/pulls" -f head="${push_repo%%/*}:$push_branch" \
+    -f state=all -F per_page=100) || exit 1
   pr=$(printf '%s\n' "$prs" | jq -c --arg head "$push_repo" '
-        map(select("\(.headRepositoryOwner.login)/\(.headRepository.name)" == $head))
+        map(select(.head.repo.full_name == $head)
+            | {id: .node_id, baseRefName: .base.ref, url: .html_url,
+               state: (if .state == "open" then "OPEN"
+                       elif .merged_at then "MERGED" else "CLOSED" end)})
         | (map(select(.state == "OPEN")) + .) | .[0] // empty') || exit 1
   if [ -n "$pr" ]; then
     break
