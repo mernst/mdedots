@@ -2,7 +2,7 @@
 """Simplify a unified diff, to make it easier for a person to read.
 
 Usage:
-  diff-simplify.py [FILE.diff]
+  diff-simplify.py [--mark-blanked] [FILE.diff]
 
 Reads FILE.diff, or standard input if FILE.diff is absent, and writes the
 simplified diff to standard output.  The output is for reading, not for `patch`
@@ -31,7 +31,8 @@ The simplifications are:
    line becomes a context line, and the common prefix in the "+" line becomes
    whitespace of the same display width.  So the "+" line shows only the text
    that was appended.  This makes the new side of the hunk show text that is
-   not in the new file.
+   not in the new file.  With --mark-blanked, the blanked-out prefix starts
+   with "»", so the "+" line looks like a continuation of the line before it.
 
 Each hunk header's line counts are updated to match the hunk's lines.
 """
@@ -54,6 +55,9 @@ FILE_HEADER_NAME = re.compile(r"[a-z]/|/dev/null|[^\t]*\t")
 # the context that shows how they relate, such as a method signature between a changed
 # documentation comment and a changed method body.
 MIN_MERGED_GROUPS = 3
+
+# The character that starts a blanked-out prefix, with --mark-blanked.  It occupies one column.
+BLANKED_MARK = "»"
 
 # A line that consists only of closing brackets and punctuation, and that is not blank.
 CLOSING_LINE = re.compile(r"\s*[)\]};:,.][)\]};:,.\s]*")
@@ -93,11 +97,12 @@ class Line:
         return result
 
 
-def simplify_diff(text: str) -> str:
+def simplify_diff(text: str, mark_blanked: bool = False) -> str:
     """Simplify a unified diff.
 
     Args:
         text: a unified diff
+        mark_blanked: true if each blanked-out prefix starts with BLANKED_MARK
 
     Returns:
         the simplified diff
@@ -115,7 +120,7 @@ def simplify_diff(text: str) -> str:
             i += 1
             continue
         body, i = read_hunk_body(lines, i + 1, *header_counts(match))
-        body = merge_change_groups(body)
+        body = merge_change_groups(body, mark_blanked)
         result.append(hunk_header(match, body))
         result.extend(line.text() for line in body)
     return "".join(result)
@@ -274,7 +279,7 @@ def is_balanced(group: list[Line]) -> bool:
     return sum(1 for line in group if line.kind == "-") * 2 == len(group)
 
 
-def merge_change_groups(body: list[Line]) -> list[Line]:
+def merge_change_groups(body: list[Line], mark_blanked: bool = False) -> list[Line]:
     """Merge a hunk's change groups that are separated by short context.
 
     Also blanks out common prefixes, using blank_common_prefix, in each change group that is not
@@ -283,6 +288,7 @@ def merge_change_groups(body: list[Line]) -> list[Line]:
 
     Args:
         body: the body of a hunk
+        mark_blanked: true if each blanked-out prefix starts with BLANKED_MARK
 
     Returns:
         the simplified body, in which each merged region's old lines precede its new lines
@@ -305,7 +311,7 @@ def merge_change_groups(body: list[Line]) -> list[Line]:
         ):
             j += 2
         if j - i < 2 * (MIN_MERGED_GROUPS - 1):
-            result.extend(blank_common_prefix(parts[i]))
+            result.extend(blank_common_prefix(parts[i], mark_blanked))
             i += 1
             continue
         region = [line for part in parts[i : j + 1] for line in part]
@@ -327,7 +333,7 @@ def merge_change_groups(body: list[Line]) -> list[Line]:
     return result
 
 
-def blank_common_prefix(group: list[Line]) -> list[Line]:
+def blank_common_prefix(group: list[Line], mark_blanked: bool = False) -> list[Line]:
     """Blank out the prefix that a "+" line shares with a "-" line that the "+" line extends.
 
     If a run of "-" lines is followed by a run of "+" lines, and the first "+" line starts with
@@ -338,6 +344,7 @@ def blank_common_prefix(group: list[Line]) -> list[Line]:
 
     Args:
         group: a change group
+        mark_blanked: true if each blanked-out prefix starts with BLANKED_MARK (see blanked_prefix)
 
     Returns:
         the change group, with each common prefix blanked out
@@ -362,9 +369,31 @@ def blank_common_prefix(group: list[Line]) -> list[Line]:
         ):
             result[i] = line.with_kind(" ")
             result[first_new] = dataclasses.replace(
-                group[first_new], content=whitespace_like(old) + new[len(old) :]
+                group[first_new], content=blanked_prefix(old, mark_blanked) + new[len(old) :]
             )
     return result
+
+
+def blanked_prefix(text: str, mark_blanked: bool) -> str:
+    """Return text that replaces a prefix of a line and occupies the same columns, when displayed.
+
+    It is whitespace (see whitespace_like), except that if mark_blanked is true, it starts with
+    BLANKED_MARK:  in place of a leading space, or before a leading tab, which still ends at the
+    same tab stop.
+
+    Args:
+        text: the prefix to replace
+        mark_blanked: true if the result starts with BLANKED_MARK
+
+    Returns:
+        text that occupies the same columns as the prefix
+    """
+    result = whitespace_like(text)
+    if not mark_blanked or not result:
+        return result
+    if result.startswith(" "):
+        return BLANKED_MARK + result[1:]
+    return BLANKED_MARK + result
 
 
 def whitespace_like(text: str) -> str:
@@ -398,6 +427,11 @@ def main() -> None:
     # Exit quietly, rather than with a traceback, when a reader such as `head` or `less` exits.
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     parser = argparse.ArgumentParser(description="Simplify a unified diff, for reading.")
+    parser.add_argument(
+        "--mark-blanked",
+        action="store_true",
+        help=f'start each blanked-out prefix with "{BLANKED_MARK}"',
+    )
     parser.add_argument("file", nargs="?", help="the diff file (default: standard input)")
     args = parser.parse_args()
     if args.file is None:
@@ -406,7 +440,9 @@ def main() -> None:
         data = Path(args.file).read_bytes()
     # A diff can contain bytes that are not UTF-8; surrogateescape preserves them.
     text = data.decode("utf-8", "surrogateescape")
-    sys.stdout.buffer.write(simplify_diff(text).encode("utf-8", "surrogateescape"))
+    sys.stdout.buffer.write(
+        simplify_diff(text, args.mark_blanked).encode("utf-8", "surrogateescape")
+    )
 
 
 if __name__ == "__main__":

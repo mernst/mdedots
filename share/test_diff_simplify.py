@@ -317,6 +317,24 @@ class BlankCommonPrefixTest(unittest.TestCase):
             hunk("@@ -1,1 +1,2 @@", " \tx = 1;", "+\t       // one"),
         )
 
+    def test_mark_blanked(self):
+        """With mark_blanked, the blanked-out prefix starts with "»"."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(
+                hunk("@@ -1 +1 @@", "-# one two", "+# one two, and"), mark_blanked=True
+            ),
+            hunk("@@ -1,1 +1,2 @@", " # one two", "+»        , and"),
+        )
+
+    def test_mark_blanked_before_tab(self):
+        """With mark_blanked, a "»" precedes a leading tab, which ends at the same tab stop."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(
+                hunk("@@ -1 +1 @@", "-\tx = 1;", "+\tx = 1; // one"), mark_blanked=True
+            ),
+            hunk("@@ -1,1 +1,2 @@", " \tx = 1;", "+»\t       // one"),
+        )
+
     def test_wide_characters(self):
         """A wide character in the common prefix becomes two spaces."""
         self.assertEqual(

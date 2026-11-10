@@ -1,6 +1,7 @@
 #!/bin/bash
 # Usage: difffontify FILE.diff ...
-# For each FILE.diff, writes FILE.diff.pdf:  the diff, with syntax highlighting.
+# For each FILE.diff, writes FILE.diff.pdf:  the diff, simplified by diff-simplify.py
+# and with syntax highlighting.  FILE.diff itself is not changed.
 # File names in each diff are relative to the diff file's directory; if the compared
 # files exist there, they make the highlighting more accurate.
 # The first page header shows the date.  Each other page header shows the file and

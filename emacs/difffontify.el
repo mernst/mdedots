@@ -58,12 +58,14 @@ this."
                                            default-directory)))))
     (if (file-executable-p sibling) sibling "diff-simplify.py"))
   "Program that simplifies a diff for reading, or nil to not simplify it.
-It reads a diff on standard input and writes the simplified diff to standard
-output.  The default is diff-simplify.py, in the directory share/ that is a
-sibling of this library's directory, or else on the search path.  For
-example, it blanks out the prefix that a \"+\" line shares with the \"-\"
-line that the \"+\" line extends, so the \"+\" line shows only the text that
-was appended."
+It is run with the argument \"--mark-blanked\".  It reads a diff on standard
+input and writes the simplified diff to standard output.  The default is
+diff-simplify.py, in the directory share/ that is a sibling of this
+library's directory, or else on the search path.  For example, it replaces
+the prefix that a \"+\" line shares with the \"-\" line that the \"+\" line
+extends by \"»\" and whitespace (see `difffontify--blanked-prefix'), so the
+\"+\" line looks like a continuation line that shows only the text that was
+appended."
   :type '(choice (const :tag "Do not simplify" nil) string))
 
 (defcustom difffontify-latin-1-command "iconv-latin-1"
@@ -310,7 +312,8 @@ Run `difffontify-simplify-command' on the buffer, if it is non-nil."
       (unwind-protect
           (let ((status (call-process-region (point-min) (point-max)
                                              difffontify-simplify-command
-                                             nil output nil)))
+                                             nil output nil
+                                             "--mark-blanked")))
             (unless (eql 0 status)
               (error "Program %s failed: %s" difffontify-simplify-command
                      (string-trim (with-current-buffer output
@@ -346,60 +349,74 @@ current buffer holds the file that the hunk is from, in its major mode.
 
 `difffontify--simplify' can split a line of the file into two lines of
 TEXT:  a prefix of the line, followed by the line with that prefix replaced
-by whitespace (see `difffontify--whitespace-like').  Join each such pair of
-lines into the file's line, call ORIG on the result, and give each line of
-the pair the properties of its part of the file's line.  Return nil if TEXT
-contains no such pair, or if the result is not the file's text at LINE-NB."
+by \"»\" and whitespace (see `difffontify--blanked-prefix').  Join each
+such pair of lines into the file's line, call ORIG on the result, and give
+each line of the pair the properties of its part of the file's line.  Look
+for the result at line (car LINE-NB) of the file, and then anywhere in the
+file, as ORIG does.  Return nil if TEXT contains no such pair, or if the
+result is not in the file."
   (let* ((lines (split-string text "\n"))
-         (file-lines
+         (joined
           (save-excursion
             (goto-char (point-min))
             (forward-line (1- (car line-nb)))
-            (split-string (buffer-substring-no-properties
-                           (point)
-                           (progn (forward-line (length lines)) (point)))
-                          "\n")))
-         ;; The lines of the file that TEXT shows.
-         restored
-         ;; One element per element of RESTORED:  nil if the line is a line
-         ;; of TEXT, or a cons (PREFIX-LENGTH . WHITESPACE-LENGTH) if the line
-         ;; is split into a prefix of that length and a line that starts
-         ;; with whitespace of that length.
-         splits)
-    (and
-     (catch 'mismatch
-       (while lines
-         (let* ((line (pop lines))
-                (file-line (or (pop file-lines) (throw 'mismatch nil)))
-                (next (car lines))
-                (whitespace (difffontify--whitespace-like line)))
-           (cond ((equal line file-line)
-                  (push line restored)
-                  (push nil splits))
-                 ((and next
-                       (string-prefix-p whitespace next)
-                       (equal file-line
-                              (concat line
-                                      (substring next (length whitespace)))))
-                  (pop lines)
-                  (push file-line restored)
-                  (push (cons (length line) (length whitespace)) splits))
-                 (t (throw 'mismatch nil)))))
-       t)
-     (cl-some #'identity splits)
-     (let ((props (funcall orig nil (string-join (nreverse restored) "\n")
-                           line-nb)))
-       (and props
-            (cl-mapcan
-             (lambda (line-props split)
-               (if (null split)
-                   (list line-props)
-                 (let ((prefix-length (car split)))
-                   (list (difffontify--props-part line-props 0 prefix-length 0)
-                         (difffontify--props-part
-                          line-props prefix-length nil
-                          (- prefix-length (cdr split)))))))
-             props (nreverse splits)))))))
+            (or (difffontify--join-blanked lines)
+                (progn
+                  (goto-char (point-min))
+                  (cl-loop until (eobp)
+                           thereis (difffontify--join-blanked lines)
+                           do (forward-line 1))))))
+         (props (and joined
+                     (funcall orig nil (string-join (car joined) "\n")
+                              line-nb))))
+    (and props
+         (cl-mapcan
+          (lambda (line-props split)
+            (if (null split)
+                (list line-props)
+              (let ((prefix-length (car split)))
+                (list (difffontify--props-part line-props 0 prefix-length 0)
+                      (difffontify--props-part
+                       line-props prefix-length nil
+                       (- prefix-length (cdr split)))))))
+          props (cdr joined)))))
+
+(defun difffontify--join-blanked (lines)
+  "Return LINES, a hunk's lines, as the lines of the file at point, or nil.
+In LINES, a line of the file can be split into two lines, as described in
+`difffontify--unblanked-props'.  The result is a cons (FILE-LINES . SPLITS).
+FILE-LINES are the lines of the file, starting at the line at point, that
+LINES show.  SPLITS has one element per element of FILE-LINES:  nil if the
+line is one of LINES, or a cons (PREFIX-LENGTH . BLANKED-LENGTH) if LINES
+show the line as a prefix of that length followed by a line that starts
+with the prefix's replacement, of length BLANKED-LENGTH.  Return nil if
+LINES do not show the file's lines at point, or if they split no line."
+  (save-excursion
+    (forward-line 0)
+    (let (file-lines splits)
+      (catch 'mismatch
+        (while lines
+          (when (eobp)
+            (throw 'mismatch nil))
+          (let* ((line (pop lines))
+                 (file-line (buffer-substring-no-properties
+                             (point) (line-end-position)))
+                 (next (car lines))
+                 (blanked (difffontify--blanked-prefix line)))
+            (cond ((equal line file-line)
+                   (push nil splits))
+                  ((and next
+                        (string-prefix-p blanked next)
+                        (equal file-line
+                               (concat line
+                                       (substring next (length blanked)))))
+                   (pop lines)
+                   (push (cons (length line) (length blanked)) splits))
+                  (t (throw 'mismatch nil)))
+            (push file-line file-lines)
+            (forward-line 1)))
+        (and (cl-some #'identity splits)
+             (cons (nreverse file-lines) (nreverse splits)))))))
 
 (defun difffontify--props-part (line-props start end shift)
   "Return the part of LINE-PROPS from column START to END, moved left by SHIFT.
@@ -411,14 +428,24 @@ LINE-PROPS is a list of elements (FROM TO FACE), as in the result of
            when (< part-from part-to)
            collect (list (- part-from shift) (- part-to shift) face)))
 
-(defun difffontify--whitespace-like (text)
-  "Return whitespace that occupies the same columns as TEXT, when displayed.
-Each tab stays a tab, and each other character becomes as many spaces as
-its width, as in diff-simplify.py:  two for a wide character such as a CJK
-ideograph, and none for a combining mark."
-  (mapconcat (lambda (char)
-               (if (eq char ?\t) "\t" (make-string (char-width char) ?\s)))
-             text ""))
+(defun difffontify--blanked-prefix (text)
+  "Return the text that replaces TEXT, a prefix of a line, in a simplified diff.
+It occupies the same columns as TEXT, when displayed, as in
+\"diff-simplify.py --mark-blanked\":  it is \"»\" and whitespace.  Each tab
+stays a tab, and each other character becomes as many spaces as its width:
+two for a wide character such as a CJK ideograph, and none for a combining
+mark.  Then \"»\" replaces a leading space, or precedes a leading tab, which
+still ends at the same tab stop."
+  (let ((whitespace
+         (mapconcat (lambda (char)
+                      (if (eq char ?\t)
+                          "\t"
+                        (make-string (char-width char) ?\s)))
+                    text "")))
+    (cond ((string-empty-p whitespace) whitespace)
+          ((string-prefix-p " " whitespace)
+           (concat "»" (substring whitespace 1)))
+          (t (concat "»" whitespace)))))
 
 (defun difffontify--strip-git-prefix (file)
   "Return FILE, a file name from a diff, without a leading \"a/\" or \"b/\".

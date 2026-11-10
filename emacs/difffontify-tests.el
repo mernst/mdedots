@@ -194,6 +194,61 @@ The caller must kill the buffer."
       (kill-buffer buffer))))
 
 
+;;; Simplification
+
+(ert-deftest difffontify-tests-blanked-prefix ()
+  "A tab stays a tab, a wide character becomes two spaces, a combining mark
+becomes nothing, and \"»\" replaces the first space."
+  (should (equal (difffontify--blanked-prefix "a\t中e\u0301") "»\t   ")))
+
+(ert-deftest difffontify-tests-blanked-prefix-tab ()
+  "\"»\" precedes a leading tab."
+  (should (equal (difffontify--blanked-prefix "\tx") "»\t ")))
+
+(ert-deftest difffontify-tests-unblanked-props ()
+  "A file's line that is split into two lines of a hunk is found and fontified.
+The hunk's line number is wrong, so the hunk is found by searching the file."
+  (with-temp-buffer
+    (insert "other\n中(x); // c\nmore\n")
+    (let* ((calls nil)
+           (orig (lambda (file text line-nb &optional hunk-only)
+                   (push (list file text line-nb hunk-only) calls)
+                   (list '((0 1 type) (1 5 plain) (6 10 comment))
+                         '((0 4 plain)))))
+           ;; "中(x);" occupies 6 columns.
+           (text (concat "中(x);\n»" (make-string 5 ?\s) " // c\nmore")))
+      (should (equal (difffontify--unblanked-props orig text '(1 3))
+                     '(((0 1 type) (1 5 plain))
+                       ((7 11 comment))
+                       ((0 4 plain)))))
+      (should (equal calls '((nil "中(x); // c\nmore" (1 3) nil)))))))
+
+(ert-deftest difffontify-tests-unblanked-props-none ()
+  "A hunk that splits no line of the file is not fontified again."
+  (with-temp-buffer
+    (insert "foo(x);\n")
+    (should-not (difffontify--unblanked-props
+                 (lambda (&rest _) (error "Unexpected call"))
+                 "foo(x);" '(1 1)))))
+
+(ert-deftest difffontify-tests-no-simplify ()
+  "Nil `difffontify-simplify-command' leaves the diff as it is."
+  (let ((difffontify-simplify-command nil)
+        (diff "@@ -1 +1 @@\n-foo\n+foo bar\n"))
+    (with-temp-buffer
+      (insert diff)
+      (difffontify--simplify)
+      (should (equal (buffer-string) diff)))))
+
+(ert-deftest difffontify-tests-simplify ()
+  "`difffontify-simplify-command' blanks out a common prefix.
+The blanked-out prefix starts with \"»\"."
+  (with-temp-buffer
+    (insert "@@ -1 +1 @@\n-foo\n+foo bar\n")
+    (difffontify--simplify)
+    (should (equal (buffer-string) "@@ -1,1 +1,2 @@\n foo\n+»   bar\n"))))
+
+
 ;;; Faces
 
 (ert-deftest difffontify-tests-spec-face ()

@@ -52,7 +52,7 @@
 ⟨diff-indicator-added|+⟩⟨doc+diff-added|    It is suitable -- "mostly" -- for all purposes.⟩
 ⟨diff-context| ⟩⟨doc+diff-context|    """⟩
 ⟨diff-context|     ⟩⟨comment-delimiter+diff-context|# ⟩⟨comment+diff-context|Résumé: naïve⟩
-⟨diff-indicator-added|+⟩⟨diff-added|                   ⟩⟨comment+diff-added|; forall x in S, lambda -> yes⟩
+⟨diff-indicator-added|+⟩⟨diff-added|»                  ⟩⟨comment+diff-added|; forall x in S, lambda -> yes⟩
 ⟨diff-context|     ⟩⟨keyword+diff-context|return⟩⟨diff-context| f"Hello, {name}!"⟩
 ⟨diff-file-header|diff -u -b -r old/foo.sh new/foo.sh⟩
 ⟨diff-file-header|--- old/foo.sh	2026-10-20 09:25:24.308526677 -0700⟩
