@@ -230,13 +230,14 @@ for repo in $repos; do
   # the PRs from that branch of the owner's repositories, unlike
   # `gh pr list --head`, which matches only the branch name.  An owner can
   # have several repositories in a fork network, so also compare the head's
-  # GitHub slug.  Prefer an open PR to a closed one.  Each PR becomes a dict
-  # with the keys "id" (a GraphQL node ID such as "PR_kwDOABCD1234"),
-  # "baseRefName", "url", and "state" ("OPEN", "MERGED", or "CLOSED").
+  # GitHub slug.  GitHub slugs are case-insensitive.  Prefer an open PR to a
+  # closed one.  Each PR becomes a dict with the keys "id" (a GraphQL node ID
+  # such as "PR_kwDOABCD1234"), "baseRefName", "url", and "state" ("OPEN",
+  # "MERGED", or "CLOSED").
   prs=$(retry gh api -X GET "repos/$repo/pulls" -f head="${push_repo%%/*}:$push_branch" \
     -f state=all -F per_page=100) || exit 1
   pr=$(printf '%s\n' "$prs" | jq -c --arg head "$push_repo" '
-        map(select(.head.repo.full_name == $head)
+        map(select((.head.repo.full_name | ascii_downcase) == ($head | ascii_downcase))
             | {id: .node_id, baseRefName: .base.ref, url: .html_url,
                state: (if .state == "open" then "OPEN"
                        elif .merged_at then "MERGED" else "CLOSED" end)})
