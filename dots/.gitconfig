@@ -209,3 +209,6 @@
 [advice]
 	skippedCherryPicks = false
 	diverging = false
+[merge "covgoals"]
+	name = coverage goals merge driver
+	driver = /scratch/mernst/clones/testing/randoop-branch-master/scripts/merge-coverage-goals.py --labels %S %X %Y --marker-size %L %O %A %B
