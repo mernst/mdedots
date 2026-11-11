@@ -30,9 +30,13 @@ The simplifications are:
    "+" line starts with all of the (non-blank) first "-" line, then the "-"
    line becomes a context line, and the common prefix in the "+" line becomes
    whitespace of the same display width.  So the "+" line shows only the text
-   that was appended.  This makes the new side of the hunk show text that is
-   not in the new file.  With --mark-blanked, the blanked-out prefix starts
-   with "»", so the "+" line looks like a continuation of the line before it.
+   that was appended.  The two lines can differ in one punctuation character
+   (see PUNCTUATION) that ends the "-" line, as when a sentence that ended
+   with "." is continued after a ",":  then the "+" line shows its own
+   punctuation character, followed by any appended text.  This makes the new
+   side of the hunk show text that is not in the new file.  With
+   --mark-blanked, the blanked-out prefix starts with "»", so the "+" line
+   looks like a continuation of the line before it.
 
 Each hunk header's line counts are updated to match the hunk's lines.
 """
@@ -58,6 +62,10 @@ MIN_MERGED_GROUPS = 3
 
 # The character that starts a blanked-out prefix, with --mark-blanked.  It occupies one column.
 BLANKED_MARK = "»"
+
+# The punctuation characters that can end a "-" line whose "+" line replaces that character by
+# another punctuation character, possibly followed by more text.  See extended_length.
+PUNCTUATION = frozenset(".,;:?!")
 
 # A line that consists only of closing brackets and punctuation, and that is not blank.
 CLOSING_LINE = re.compile(r"\s*[)\]};:,.][)\]};:,.\s]*")
@@ -336,9 +344,9 @@ def merge_change_groups(body: list[Line], mark_blanked: bool = False) -> list[Li
 def blank_common_prefix(group: list[Line], mark_blanked: bool = False) -> list[Line]:
     """Blank out the prefix that a "+" line shares with a "-" line that the "+" line extends.
 
-    If a run of "-" lines is followed by a run of "+" lines, and the first "+" line starts with
-    all of the first "-" line, which is not blank, then the "-" line becomes a context line and
-    the common prefix in the "+" line becomes whitespace of the same display width.  A line's
+    If a run of "-" lines is followed by a run of "+" lines, and the first "+" line extends the
+    first "-" line (see extended_length), then the "-" line becomes a context line and the common
+    prefix in the "+" line becomes whitespace of the same display width.  A line's
     trailing carriage return, as in a diff of a file with CRLF line terminators, is not part of
     the comparison, but the two lines must both have one or both lack one.
 
@@ -360,18 +368,48 @@ def blank_common_prefix(group: list[Line], mark_blanked: bool = False) -> list[L
             continue
         old = line.content.removesuffix("\r")
         new = group[first_new].content
-        if (
-            old.strip()
-            and len(new.removesuffix("\r")) > len(old)
-            and new.startswith(old)
-            and new.endswith("\r") == line.content.endswith("\r")
-            and line.no_newline is None
-        ):
+        if new.endswith("\r") != line.content.endswith("\r") or line.no_newline is not None:
+            continue
+        common = extended_length(old, new.removesuffix("\r"))
+        if common is not None:
             result[i] = line.with_kind(" ")
             result[first_new] = dataclasses.replace(
-                group[first_new], content=blanked_prefix(old, mark_blanked) + new[len(old) :]
+                group[first_new], content=blanked_prefix(new[:common], mark_blanked) + new[common:]
             )
     return result
+
+
+def extended_length(old: str, new: str) -> int | None:
+    """Return the length of the prefix that the new line shares with the old line it extends.
+
+    The new line extends the old line if the lines differ and either the new line is longer and
+    starts with all of the old line, which is not blank, or the old line ends with a punctuation
+    character in PUNCTUATION and the new line starts with all of the rest of the old line, which
+    is not blank, followed by a punctuation character in PUNCTUATION.  For example, "x = 1;"
+    extends to "x = 1; // one", with a common prefix of length 6; "Stop." extends to
+    "Stop, then go.", with a common prefix of length 4; and "Stop." extends to "Stop!", with a
+    common prefix of length 4.
+
+    Args:
+        old: a line, without its line terminator
+        new: another line, without its line terminator
+
+    Returns:
+        the length of the common prefix, or None if the new line does not extend the old line
+    """
+    if new == old or len(new) < len(old):
+        return None
+    if len(new) > len(old) and old.strip() and new.startswith(old):
+        return len(old)
+    shared = old[:-1]
+    if (
+        shared.strip()
+        and old[-1] in PUNCTUATION
+        and new[len(shared)] in PUNCTUATION
+        and new.startswith(shared)
+    ):
+        return len(shared)
+    return None
 
 
 def blanked_prefix(text: str, mark_blanked: bool) -> str:

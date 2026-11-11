@@ -381,6 +381,66 @@ class BlankCommonPrefixTest(unittest.TestCase):
         text = hunk("@@ -1,2 +1,2 @@", "-a", "-bc", "+bcd", "+ef")
         self.assertEqual(diff_simplify.simplify_diff(text), text)
 
+    def test_replaced_punctuation(self):
+        """A "+" line can replace the punctuation that ends the "-" line that it extends."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(
+                hunk(
+                    "@@ -1 +1 @@",
+                    "- * by another type variable.",
+                    "+ * by another type variable, or an",
+                )
+            ),
+            hunk(
+                "@@ -1,1 +1,2 @@",
+                "  * by another type variable.",
+                "+                           , or an",
+            ),
+        )
+
+    def test_replaced_punctuation_mark_blanked(self):
+        """With mark_blanked, a replaced punctuation character is not blanked out."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(
+                hunk("@@ -1 +1 @@", "-Stop!", "+Stop? Go."), mark_blanked=True
+            ),
+            hunk("@@ -1,1 +1,2 @@", " Stop!", "+»   ? Go."),
+        )
+
+    def test_replaced_punctuation_with_carriage_return(self):
+        """A trailing carriage return does not prevent replacing punctuation."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(hunk("@@ -1 +1 @@", "-x;\r", "+x, y;\r")),
+            hunk("@@ -1,1 +1,2 @@", " x;\r", "+ , y;\r"),
+        )
+
+    def test_punctuation_replaced_by_other_character(self):
+        """A "+" line that replaces the "-" line's final punctuation by a letter is unchanged."""
+        text = hunk("@@ -1 +1 @@", "-type variable.", "+type variables")
+        self.assertEqual(diff_simplify.simplify_diff(text), text)
+
+    def test_letter_replaced_by_punctuation(self):
+        """A "+" line that replaces the "-" line's final letter by punctuation is unchanged."""
+        text = hunk("@@ -1 +1 @@", "-variables", "+variable, too")
+        self.assertEqual(diff_simplify.simplify_diff(text), text)
+
+    def test_only_replaced_punctuation(self):
+        """A "+" line can replace the "-" line's final punctuation without appending text."""
+        self.assertEqual(
+            diff_simplify.simplify_diff(hunk("@@ -1 +1 @@", "-variable.", "+variable,")),
+            hunk("@@ -1,1 +1,2 @@", " variable.", "+        ,"),
+        )
+
+    def test_identical_lines(self):
+        """A "+" line that is identical to the "-" line is unchanged."""
+        text = hunk("@@ -1,2 +1,2 @@", "-variable.", "-a", "+variable.", "+b")
+        self.assertEqual(diff_simplify.simplify_diff(text), text)
+
+    def test_only_punctuation_is_not_a_prefix(self):
+        """A "-" line that has only punctuation after its whitespace stays a "-" line."""
+        text = hunk("@@ -1 +1 @@", "-  .", "+  , x")
+        self.assertEqual(diff_simplify.simplify_diff(text), text)
+
     def test_no_newline_at_end_of_file(self):
         """A "-" line without a newline is not shown as context."""
         text = hunk(
