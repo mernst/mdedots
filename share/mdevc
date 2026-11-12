@@ -107,20 +107,18 @@ done
 # shellcheck disable=SC2086
 cronic $HOME/private/mdevcpushto ${DEBUG}
 
-## Notify about files that require attention
-
-find "${HOME}" -name AGENTS-TODO.md -o -name SKIP-REQUIRE-JAVADOC
-if [ -d /scratch/mernst/clones ]; then
-  find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name AGENTS-TODO.md -o -name SKIP-REQUIRE-JAVADOC \) -print
-fi
-
 for dir in $h $inv $pl $t $test ~/bin/src; do
   cd "$dir" && \
   resolve-conflicts && \
   crreview-resolve-all
 done
 
-# Warn about conflict markers in directories that are synchronized.
+## Notify about files that require attention
+
+find "${HOME}" -name AGENT-TODO.md -o -name AGENTS-TODO.md -o -name SKIP-REQUIRE-JAVADOC
+if [ -d /scratch/mernst/clones ]; then
+  find /scratch/mernst/clones -name checker-framework-fork-opprop -prune -o \( -name AGENT-TODO.md -o -name AGENTS-TODO.md -o -name SKIP-REQUIRE-JAVADOC \) -print
+fi
 for dir in ~/sync ~/private ~/public_html/tmp72112; do
   find "${dir}" -name '*.sync-conflict-*'
 done

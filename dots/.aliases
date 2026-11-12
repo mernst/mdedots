@@ -223,16 +223,10 @@ alias prekall='prek -q run --all-files'
 if [ -d "/homes/gws/mernst" ]; then
   alias lpr='lpr -o fit-to-page'
 fi
+# Color
 if [ -d "/homes/gws/mernst" ]; then
   alias lprc='lpr -P pgc270'
 fi
-
-# psnup can read from standard input, but then it can't take an argument
-# for the output file; thus, use ">" file redirection.
-# These commands work on .ps files, not on .pdf files
-acm2up() { command pstops "0(-125,-110)" "$@" | psnup -2 -W360 -H590 -pletter -m0.5in -b0.05in > "$(basename "$@" .ps)-2up.ps"; }
-# To make the print bigger on the final page, make the -W and -H arguments smaller.  To move the text logically downward toward the bottom of the page, make the last number in "0(-133,-97)" a larger negative number.
-lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m0.45in -b-0.15in > "$(basename "$@" .ps)-2up.ps"; }
 
 # # Seems more robust than the real html2ps
 # # But, htmldoc is not installed at CSE, whereas html2ps is.
@@ -246,6 +240,24 @@ html2pdf() {
       "$f"
   done
 }
+
+function djot2html {
+  for f in "$@"; do
+    djot -t pandoc "$f" | pandoc -f json -s -V maxwidth=none -t html -o "${f%.*}".html
+  done
+}
+function djot2pdf {
+  for f in "$@"; do
+    djot -t pandoc "$f" | pandoc -f json -s -V geometry:margin=1in -t pdf -o "${f%.*}".pdf
+  done
+}
+
+# psnup can read from standard input, but then it can't take an argument
+# for the output file; thus, use ">" file redirection.
+# These commands work on .ps files, not on .pdf files
+acm2up() { command pstops "0(-125,-110)" "$@" | psnup -2 -W360 -H590 -pletter -m0.5in -b0.05in > "$(basename "$@" .ps)-2up.ps"; }
+# To make the print bigger on the final page, make the -W and -H arguments smaller.  To move the text logically downward toward the bottom of the page, make the last number in "0(-133,-97)" a larger negative number.
+lncs2up() { command pstops "0(-133,-97)" "$@" | psnup -2 -W350 -H580 -pletter -m0.45in -b-0.15in > "$(basename "$@" .ps)-2up.ps"; }
 
 # Enscript/genscript (ens uses -pOUTFILE; gens uses -oOUTFILE to output to file)
 # -h: no burst/header page; -B: no page headings; -b 'header'; -G: gaudy page

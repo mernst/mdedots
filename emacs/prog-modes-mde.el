@@ -2464,6 +2464,22 @@ if its name ends in `.scm' and the `.bin' or `.com' file also exists."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Djot
+;;;
+
+;;; To install on a new computer:
+(when nil
+  (require 'treesit)
+  (add-to-list 'treesit-language-source-alist
+               '(djot "https://codeberg.org/treeman/tree-sitter-djot"))
+  (treesit-install-language-grammar 'djot))
+
+(load "djot" nil t)
+(add-to-list 'auto-mode-alist '("\\.dj\\'" . djot-ts-mode))
+(add-to-list 'auto-mode-alist '("\\.djot\\'" . djot-ts-mode))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Debugging
 ;;;
 
