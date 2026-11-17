@@ -726,6 +726,29 @@ For example, convert \"short a2[]\" to \"short[] a2\", or
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Batch use
+;;;
+
+(defun diff-clean-batch-tests-and-imports ()
+  "Simplify each diff file named in `command-line-args-left', in place.
+Runs `diff-clean-tests' and then `diff-clean-imports' on each file, and
+saves it without a backup file.
+Usage:
+  emacs -Q --batch -L DIR -l diff-clean \\
+    -f diff-clean-batch-tests-and-imports FILE.diff ...
+where DIR is the directory that holds diff-clean.el."
+  (unless noninteractive
+    (error "`diff-clean-batch-tests-and-imports' is only for batch mode"))
+  (let ((make-backup-files nil))
+    (dolist (file command-line-args-left)
+      (with-current-buffer (find-file-noselect file)
+        (diff-clean-tests)
+        (diff-clean-imports)
+        (save-buffer))))
+  (setq command-line-args-left nil))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End of file
 ;;;
 

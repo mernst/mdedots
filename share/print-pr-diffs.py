@@ -33,12 +33,16 @@ empty; the other PRs are still processed.
 With --dry-run, this program prints the ready PRs and the skipped PRs, but it runs
 no command other than `pr-status --print-unblocked-prs`.
 
-The exit status is 0 if every ready PR's PDF was moved to ~/sync/to-print/, and
-1 otherwise.
+If `pr-status` does not report the PRs of a DIR, this program prints a message and
+goes on to the next DIR.
+
+The exit status is 0 if `pr-status` reported the PRs of every DIR and every ready
+PR's PDF was moved to ~/sync/to-print/, and 1 otherwise.
 """
 
 import argparse
 import json
+import shlex
 import shutil
 import subprocess
 import sys
@@ -100,30 +104,30 @@ class PullRequest(NamedTuple):
         return f"{self.repo}#{self.number}"
 
 
-def unblocked_prs(directory: Path) -> list[PullRequest]:
+def unblocked_prs(directory: Path) -> list[PullRequest] | str:
     """Return the unblocked PRs that `pr-status` reports for the given directory.
-
-    Exits the program, with a message, if `pr-status` fails or prints something other
-    than the expected JSON.
 
     Args:
         directory: a directory in which `pr-status` runs, such as ~/research/types.
 
     Returns:
-        The PRs, in the order of the "Unblocked PRs" tables of the directory's pr-status.md.
+        The PRs, in the order of the "Unblocked PRs" tables of the directory's pr-status.md,
+        or else the reason that `pr-status` did not report them, such as "pr-status:
+        --print-unblocked-prs: .pr-status-snapshot.json does not record the unblocked PRs,
+        ...".
     """
     cmd = ["pr-status", "-C", str(directory), "--print-unblocked-prs"]
-    command = " ".join(cmd)
+    command = shlex.join(cmd)
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     except OSError as error:
-        sys.exit(f"print-pr-diffs: {command}: {error}")
+        return f"{command}: {error}"
     if result.returncode != 0:
-        sys.exit(f"print-pr-diffs: {result.stderr.strip() or command + ' failed'}")
+        return result.stderr.strip() or f"{command} failed"
     try:
         return [PullRequest.from_json(pr) for pr in json.loads(result.stdout)]
     except (ValueError, KeyError, TypeError) as error:
-        sys.exit(f"print-pr-diffs: {command}: unexpected output: {error!r}")
+        return f"{command}: unexpected output: {error!r}"
 
 
 def run(cmd: list[str], directory: Path, **kwargs) -> bool:
@@ -137,7 +141,7 @@ def run(cmd: list[str], directory: Path, **kwargs) -> bool:
     Returns:
         True if the command exits with status 0.
     """
-    print(f"+ (cd {directory} && {' '.join(cmd)})", flush=True)
+    print(f"+ (cd {shlex.quote(str(directory))} && {shlex.join(cmd)})", flush=True)
     return subprocess.run(cmd, cwd=directory, check=False, **kwargs).returncode == 0
 
 
@@ -150,28 +154,21 @@ def clean_diff(diff_file: Path) -> bool:
     Returns:
         True if Emacs succeeded.
     """
-    form = (
-        "(progn (setq make-backup-files nil)"
-        f" (find-file {elisp_string(str(diff_file))})"
-        " (diff-clean-tests) (diff-clean-imports) (save-buffer))"
-    )
     return run(
-        ["emacs", "-Q", "--batch", "-L", str(EMACS_LISP), "-l", "diff-clean", "--eval", form],
+        [
+            "emacs",
+            "-Q",
+            "--batch",
+            "-L",
+            str(EMACS_LISP),
+            "-l",
+            "diff-clean",
+            "-f",
+            "diff-clean-batch-tests-and-imports",
+            diff_file.name,
+        ],
         diff_file.parent,
     )
-
-
-def elisp_string(s: str) -> str:
-    r"""Return an Emacs Lisp string literal whose value is the given string.
-
-    Args:
-        s: a string.
-
-    Returns:
-        An Emacs Lisp string literal, such as "a\\b" (6 characters) for the
-        string a\b (3 characters).
-    """
-    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def pr_author(pr: PullRequest) -> str | None:
@@ -250,8 +247,15 @@ def main() -> None:
     # A list of (PR, reason it was skipped), and the ready PRs.
     skipped: list[tuple[PullRequest, str]] = []
     ready: list[PullRequest] = []
+    # A list of (directory, reason that `pr-status` did not report its PRs).
+    failed_directories: list[tuple[Path, str]] = []
     for directory in args.directories:
-        for pr in unblocked_prs(directory):
+        prs = unblocked_prs(directory)
+        if isinstance(prs, str):
+            print(f"print-pr-diffs: {prs}", file=sys.stderr)
+            failed_directories.append((directory, prs))
+            continue
+        for pr in prs:
             if pr.ci_failed:
                 skipped.append((pr, "CI failed"))
             elif pr.directory is None:
@@ -280,11 +284,13 @@ def main() -> None:
     print("\n===== Summary =====")
     if not args.dry_run:
         print(f"Moved to {TO_PRINT}: {', '.join(pr.label() for pr in printed) or '(none)'}")
+    for directory, reason in failed_directories:
+        print(f"Failed: {directory}: {reason}")
     for pr, reason in failed:
         print(f"Failed: {pr.label()}: {reason}")
     for pr, reason in skipped:
         print(f"Skipped: {pr.label()}: {reason}")
-    sys.exit(1 if failed else 0)
+    sys.exit(1 if failed or failed_directories else 0)
 
 
 if __name__ == "__main__":
