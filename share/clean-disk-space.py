@@ -2,8 +2,8 @@
 """Recover disk space by deleting stale data that tools regenerate on demand.
 
 Usage:
-  clean-disk-space.py [--dry-run] [--days DAYS] [--unused-days DAYS] [--no-sudo]
-                      [TMPDIR ...]
+  clean-disk-space.py [--dry-run] [--days DAYS] [--jdtls-days DAYS]
+                      [--unused-days DAYS] [--no-sudo] [TMPDIR ...]
 
 The script performs these steps, each of which is skipped if the directory or
 command that it needs does not exist:
@@ -40,8 +40,11 @@ cleans two kinds of subdirectory of a TMPDIR:
 In a TMPDIR, this script deletes:
  * each project subdirectory and each jdtls workspace that corresponds to no
    existing file or directory, and
- * each session's scratchpad directory and each jdtls workspace in which nothing
-   has changed for DAYS days (default 7).
+ * each session's scratchpad directory in which nothing has changed for DAYS
+   days (default 7), and
+ * each jdtls workspace in which nothing has changed for JDTLS-DAYS days
+   (default 2).  A deleted workspace is rebuilt when an editor next opens one of
+   its projects.
 It does not touch the TMPDIR's other files or directories.
 
 Because the Claude Code encoding is lossy, the script decodes a project
@@ -52,8 +55,10 @@ name.
 Options:
   --dry-run, -n           report what would be deleted and the commands that
                           would be run, but do not delete or run anything
-  --days DAYS             delete scratchpads and jdtls workspaces in which
-                          nothing has changed for this many days
+  --days DAYS             delete scratchpads in which nothing has changed for
+                          this many days
+  --jdtls-days DAYS       delete jdtls workspaces in which nothing has changed
+                          for this many days
   --unused-days DAYS      delete cache files that have not been read, and build
                           output in which nothing has changed, for this many days
   --no-sudo               skip the steps that run commands via sudo
@@ -366,14 +371,16 @@ def clean_jdtls_workspace(workspace: pathlib.Path, cutoff: float, dry_run: bool)
     return True
 
 
-def clean_tmpdir(tmpdir: pathlib.Path, cutoff: float, dry_run: bool) -> bool:
+def clean_tmpdir(tmpdir: pathlib.Path, cutoff: float, jdtls_cutoff: float, dry_run: bool) -> bool:
     """Delete, or with `dry_run` report, the stale subdirectories of the given TMPDIR.
 
     Args:
         tmpdir: a directory that contains Claude Code project subdirectories or jdtls
             workspaces, such as /tmp/claude-1000 or ~/.cache/jdtls.
-        cutoff: a time, in seconds since the epoch; a scratchpad or jdtls workspace in
-            which nothing has changed since the cutoff is stale.
+        cutoff: a time, in seconds since the epoch; a scratchpad in which nothing has
+            changed since the cutoff is stale.
+        jdtls_cutoff: a time, in seconds since the epoch; a jdtls workspace in which
+            nothing has changed since the cutoff is stale.
         dry_run: true if the directories should be reported, but not deleted.
 
     Returns:
@@ -386,7 +393,7 @@ def clean_tmpdir(tmpdir: pathlib.Path, cutoff: float, dry_run: bool) -> bool:
         if child.name.startswith("-"):
             ok &= clean_claude_project(child, cutoff, dry_run)
         elif child.name.startswith("jdtls-"):
-            ok &= clean_jdtls_workspace(child, cutoff, dry_run)
+            ok &= clean_jdtls_workspace(child, jdtls_cutoff, dry_run)
     return ok
 
 
@@ -624,8 +631,16 @@ def main() -> None:
         type=float,
         default=7,
         metavar="DAYS",
-        help="delete scratchpads and jdtls workspaces in which nothing has changed for"
-        " this many days (default: %(default)s)",
+        help="delete scratchpads in which nothing has changed for this many days"
+        " (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--jdtls-days",
+        type=float,
+        default=2,
+        metavar="DAYS",
+        help="delete jdtls workspaces in which nothing has changed for this many days"
+        " (default: %(default)s)",
     )
     parser.add_argument(
         "--unused-days",
@@ -665,11 +680,12 @@ def main() -> None:
 
     now = time.time()
     cutoff = now - args.days * 24 * 60 * 60
+    jdtls_cutoff = now - args.jdtls_days * 24 * 60 * 60
     unused_cutoff = now - args.unused_days * 24 * 60 * 60
     print_free_space()
     ok = True
     for tmpdir in tmpdirs:
-        ok &= clean_tmpdir(tmpdir, cutoff, args.dry_run)
+        ok &= clean_tmpdir(tmpdir, cutoff, jdtls_cutoff, args.dry_run)
     ok &= clean_tool_caches(unused_cutoff, args.dry_run)
     ok &= clean_build_output(unused_cutoff, args.dry_run)
     if not args.no_sudo:
