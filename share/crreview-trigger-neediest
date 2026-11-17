@@ -1,20 +1,43 @@
 #!/bin/bash
 
-# Usage: crreview-trigger-neediest [--dry-run] [--verbose]
+# Usage: crreview-trigger-neediest [--dry-run] [--verbose] [--file FILE]
 #
-# Comment "@coderabbitai review" on one open, non-draft pull request: of the
-# PRs that involve me (authored, assigned, commented, mentioned, reviewed, or
-# with a review requested), the one with the most non-merge commits that
-# CodeRabbit has not reviewed.  Merge commits and merge conflicts are ignored.  It is
-# intended to be run hourly from cron, because CodeRabbit limits how many
-# reviews it performs per hour.
+# Comment "@coderabbitai review" on one open, non-draft pull request that needs
+# a review:  the first PR in the queue file (described below) that still needs
+# one.  The queue file lists the PRs that involve me (authored, assigned,
+# commented, mentioned, reviewed, or with a review requested) and that needed a
+# review when the queue file was written, ordered by how many non-merge commits
+# CodeRabbit had not reviewed then, most first.  Merge commits and merge
+# conflicts are ignored.  It is intended to be run hourly from cron, because
+# CodeRabbit limits how many reviews it performs per hour.
 #
-#   --dry-run  do not comment; just report which PR would be chosen
-#   --verbose  list every PR that is ignored because CodeRabbit is not enabled
-#              on it, and every PR that has unreviewed non-merge commits
+#   --dry-run    do not comment and do not change the queue file; just report
+#                which PR would be chosen
+#   --verbose    list every PR that is ignored because CodeRabbit is not enabled
+#                on it, every PR that has unreviewed non-merge commits, and
+#                every queued PR that no longer needs a review
+#   --file FILE  the queue file; the default is
+#                ${XDG_STATE_HOME:-$HOME/.local/state}/crreview-trigger-neediest/candidates.txt
 #
-# A PR is considered only if CodeRabbit is enabled on it, as shown by its having
-# commented on or reviewed the PR.
+# Searching all PRs makes many network requests, so the candidates are kept in
+# a queue file:  the URLs of all PRs that need a review, one per line, neediest
+# first, such as "https://github.com/ORG/REPO/pull/123".  A run re-checks only
+# the first few PRs in the queue file, in one request.  The run requests a
+# review of the first of them that still needs one, and it removes from the
+# queue file the PRs before that one.  If none of them still needs a review,
+# the run removes them all and re-checks the next few.  A run searches for
+# candidates and writes the queue file only if the queue file does not exist or
+# is empty, or if re-checking removed every PR from it.
+# A PR whose review was requested stays first in the queue file, so the next
+# run re-checks it:  that run removes it if the review was performed or is still
+# pending, and requests a review again if CodeRabbit replied that it was rate
+# limited or that the PR changed.  Text after a PR's URL is removed from a line
+# of the queue file, so "https://github.com/ORG/REPO/pull/123/files" becomes
+# "https://github.com/ORG/REPO/pull/123"; any other line that is not a PR's URL
+# is removed, with a warning.
+#
+# A PR is considered only if its repository is not archived and CodeRabbit is
+# enabled on it, as shown by its having commented on or reviewed the PR.
 # A PR is skipped if CodeRabbit's most recent reply to a review request says
 # that the PR has too many files.  A PR is also skipped if a review was
 # requested after its last commit, unless CodeRabbit replied that it was rate
@@ -32,15 +55,25 @@ set -o errexit -o nounset -o pipefail
 
 dry_run=false
 verbose=false
-for arg in "$@"; do
-  case "$arg" in
+queue_file="${XDG_STATE_HOME:-$HOME/.local/state}/crreview-trigger-neediest/candidates.txt"
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --dry-run) dry_run=true ;;
     --verbose) verbose=true ;;
+    --file)
+      if [ "$#" -lt 2 ]; then
+        echo "${0##*/}: --file requires an argument" >&2
+        exit 2
+      fi
+      queue_file=$2
+      shift
+      ;;
     *)
-      echo "${0##*/}: unknown argument $arg" >&2
+      echo "${0##*/}: unknown argument $1" >&2
       exit 2
       ;;
   esac
+  shift
 done
 
 # shellcheck source=retry.sh
@@ -52,94 +85,214 @@ trap 'rm -rf "$tmpdir"' EXIT
 # The first comments include CodeRabbit's summary comment; only its id is
 # fetched here, because the summary comment is large.  The last comments
 # include requests for reviews and CodeRabbit's replies to them.
+pr_fields='fragment prFields on PullRequest {
+  id
+  url
+  state
+  isDraft
+  locked
+  repository { isArchived }
+  commits(last: 100) { nodes { commit { oid committedDate parents { totalCount } } } }
+  reviews(last: 20, author: "coderabbitai[bot]") { nodes { commit { oid } } }
+  firstComments: comments(first: 100) { nodes { id author { login } } }
+  lastComments: comments(last: 30) { nodes { author { login } createdAt body } }
+}'
 # shellcheck disable=SC2016 # "$q" and "$endCursor" are GraphQL variables
 search_query='query($q: String!, $endCursor: String) {
   search(query: $q, type: ISSUE, first: 20, after: $endCursor) {
     pageInfo { hasNextPage endCursor }
-    nodes {
-      ... on PullRequest {
-        id
-        url
-        locked
-        commits(last: 100) { nodes { commit { oid committedDate parents { totalCount } } } }
-        reviews(last: 20, author: "coderabbitai[bot]") { nodes { commit { oid } } }
-        firstComments: comments(first: 100) { nodes { id author { login } } }
-        lastComments: comments(last: 30) { nodes { author { login } createdAt body } }
-      }
-    }
+    nodes { ...prFields }
   }
-}'
-for qualifier in involves reviewed-by review-requested; do
-  retry gh api graphql --paginate -f q="is:pr is:open draft:false archived:false $qualifier:@me" -f query="$search_query"
-done | jq -s '[.[].data.search.nodes[]] | unique_by(.id)' > "$tmpdir/prs.json"
+}
+'"$pr_fields"
+# Write to "$tmpdir/prs.json" every open, non-draft PR that involves me, as a
+# JSON array of the objects that GitHub's GraphQL API returns for prFields.
+search_prs() {
+  for qualifier in involves reviewed-by review-requested; do
+    retry gh api graphql --paginate -f q="is:pr is:open draft:false archived:false $qualifier:@me" -f query="$search_query"
+  done | jq -s '[.[].data.search.nodes[]] | unique_by(.id)' > "$tmpdir/prs.json"
+}
 
-# Fetch the bodies of CodeRabbit's summary comments, 100 per request.
-jq -c '[.[].firstComments.nodes[] | select(.author.login == "coderabbitai") | .id]
-       | . as $ids | range(0; length; 100) | $ids[.:. + 100]
-       | {query: "query($ids: [ID!]!) { nodes(ids: $ids) { ... on IssueComment { id body } } }",
-          variables: {ids: .}}' "$tmpdir/prs.json" > "$tmpdir/summary-requests.jsonl"
-while IFS= read -r request; do
-  printf '%s\n' "$request" > "$tmpdir/request.json"
-  retry gh api graphql --input "$tmpdir/request.json"
-done < "$tmpdir/summary-requests.jsonl" |
-  jq -s '[.[].data.nodes[]] | map({(.id): .body}) | add // {}' > "$tmpdir/summaries.json"
+# How many queued PRs a run re-checks in one request.
+recheck_batch_size=10
 
-# CodeRabbit is enabled on a PR if CodeRabbit has commented on or reviewed the PR.
-jq 'map(.coderabbit_enabled = ((.reviews.nodes | length) > 0
-          or any(.firstComments.nodes[], .lastComments.nodes[]; .author.login == "coderabbitai")))' \
-  "$tmpdir/prs.json" > "$tmpdir/prs-coderabbit-enabled.json"
-if [ "$verbose" = true ]; then
-  jq -r 'sort_by(.url)[] | select(.coderabbit_enabled | not)
-         | "Ignoring \(.url): CodeRabbit is not enabled on it (it has never commented or reviewed)"' \
-    "$tmpdir/prs-coderabbit-enabled.json"
+# Write to "$tmpdir/prs.json" the PRs whose URLs are the first lines of
+# "$tmpdir/queue.txt", as a JSON array of the objects that GitHub's GraphQL API
+# returns for prFields, each with an added key "queue_index":  the 0-based
+# line number of its URL.  A URL that is not that of a PR is omitted, as is a
+# URL for which GitHub returns an error (with a warning).
+# $1: how many lines to read.
+fetch_queued_prs() {
+  head -n "$1" "$tmpdir/queue.txt" | awk '{ print NR - 1, $0 }' > "$tmpdir/batch.txt"
+  : > "$tmpdir/responses.jsonl"
+  if ! fetch_resources < "$tmpdir/batch.txt"; then
+    # GitHub fails the whole request if it fails for any one PR, as when an
+    # organization requires single sign-on.  Fetch each PR separately, so that
+    # one PR does not block the others.
+    while read -r index url; do
+      if ! fetch_resources <<< "$index $url"; then
+        echo "${0##*/}: skipping $url: GitHub returned an error for it" >&2
+      fi
+    done < "$tmpdir/batch.txt"
+  fi
+  jq -s 'map(.data | to_entries[])
+         | map(select(.value != null and .value.id != null)
+               | .value + {queue_index: (.key | ltrimstr("pr") | tonumber)})' \
+    "$tmpdir/responses.jsonl" > "$tmpdir/prs.json"
+}
+
+# Append to "$tmpdir/responses.jsonl" GitHub's GraphQL response for the PRs on
+# standard input.  Each line of standard input is a queue index and a URL, such
+# as "3 https://github.com/ORG/REPO/pull/123"; the response holds the PR under
+# the key "pr3".  Return a non-zero status, and append nothing, if the request fails.
+fetch_resources() {
+  # The query is "query($u3: URI!, ...) { pr3: resource(url: $u3) { ...prFields } ... }".
+  jq -R -s -c --arg fields "$pr_fields" '
+    [splits("\n") | select(. != "") | split(" ") | {index: .[0], url: .[1]}] as $prs
+    | {query: ("query(" + ($prs | map("$u\(.index): URI!") | join(", ")) + ") {\n"
+               + ($prs | map("  pr\(.index): resource(url: $u\(.index)) { ...prFields }\n") | add)
+               + "}\n" + $fields),
+       variables: ($prs | map({"u\(.index)": .url}) | add)}' > "$tmpdir/request.json" || return 1
+  retry gh api graphql --input "$tmpdir/request.json" > "$tmpdir/response.json" || return 1
+  cat "$tmpdir/response.json" >> "$tmpdir/responses.jsonl"
+}
+
+# Write to "$tmpdir/needy.json" the PRs in "$tmpdir/prs.json" that need a
+# review, as a JSON array of {url, count, oldest, queue_index}.  "queue_index"
+# is copied from "$tmpdir/prs.json", or null if absent there.  The array is in
+# queue order if the PRs have queue indexes, and otherwise neediest first.
+find_needy_prs() {
+  # Fetch the bodies of CodeRabbit's summary comments, 100 per request.
+  jq -c '[.[].firstComments.nodes[] | select(.author.login == "coderabbitai") | .id]
+         | . as $ids | range(0; length; 100) | $ids[.:. + 100]
+         | {query: "query($ids: [ID!]!) { nodes(ids: $ids) { ... on IssueComment { id body } } }",
+            variables: {ids: .}}' "$tmpdir/prs.json" > "$tmpdir/summary-requests.jsonl"
+  while IFS= read -r request; do
+    printf '%s\n' "$request" > "$tmpdir/request.json"
+    retry gh api graphql --input "$tmpdir/request.json"
+  done < "$tmpdir/summary-requests.jsonl" |
+    jq -s '[.[].data.nodes[]] | map({(.id): .body}) | add // {}' > "$tmpdir/summaries.json"
+
+  # CodeRabbit is enabled on a PR if CodeRabbit has commented on or reviewed the PR.
+  jq 'map(.coderabbit_enabled = ((.reviews.nodes | length) > 0
+            or any(.firstComments.nodes[], .lastComments.nodes[]; .author.login == "coderabbitai")))' \
+    "$tmpdir/prs.json" > "$tmpdir/prs-coderabbit-enabled.json"
+  if [ "$verbose" = true ]; then
+    jq -r 'sort_by(.url)[] | select(.coderabbit_enabled | not)
+           | "Ignoring \(.url): CodeRabbit is not enabled on it (it has never commented or reviewed)"' \
+      "$tmpdir/prs-coderabbit-enabled.json"
+  fi
+
+  jq --slurpfile summaries "$tmpdir/summaries.json" '
+    $summaries[0] as $summary_bodies
+    # The commits that a summary comment says CodeRabbit has reviewed.
+    | def summary_reviewed_oids:
+        (scan("final_review_risk_coverage:(\\{[^}]*\\})")[0]
+          | fromjson? | select(.kind == "reviewed") | .coveredCommitId),
+        (scan("(?s)<!-- recent_review_start -->(.*?)<!-- recent_review_end -->")[0]
+          | [scan("between [0-9a-f]{40} and ([0-9a-f]{40})")[0]] | last // empty),
+        (scan("Last reviewed commit: ([0-9a-f]{40})")[0]);
+    [ .[]
+      | select(.coderabbit_enabled and .state == "OPEN" and (.isDraft | not) and (.locked | not)
+               and (.repository.isArchived | not))
+      | ([.firstComments.nodes[] | select(.author.login == "coderabbitai")][0].id) as $summary_id
+      | [.lastComments.nodes[]
+          | select(.author.login == "coderabbitai"
+                   and (.body | test("Action performed|Action not completed")))] as $replies
+      | select(($replies | last | .body // "") | test("exceed the limit") | not)
+      | [.commits.nodes[].commit] as $commits
+      # The last review request made after the head commit.
+      | ([.lastComments.nodes[]
+          | select((.body | test("^\\s*@coderabbitai (full )?review\\s*$"))
+                   and .createdAt > $commits[-1].committedDate)] | last) as $request
+      | select($request == null
+               or (([$replies[] | select(.createdAt >= $request.createdAt)][0].body // "")
+                   | test("rate limited|base or head changed")))
+      | ([.reviews.nodes[].commit.oid]
+         + [($summary_bodies[$summary_id // ""] // "") | summary_reviewed_oids]) as $reviewed_oids
+      | ([$replies[] | select(.body | test("Review finished|Already reviewed the last commit"))
+          | .createdAt]) as $reviewed_times
+      | ([($commits | to_entries[] | select(.value.oid as $oid | $reviewed_oids | index($oid)) | .key),
+          ($reviewed_times[] as $time
+           | $commits | to_entries | map(select(.value.committedDate <= $time)) | last | .key // empty)]
+         | max // -1) as $last_reviewed
+      | [$commits[$last_reviewed + 1:][] | select(.parents.totalCount == 1)] as $unreviewed
+      | select($unreviewed | length > 0)
+      | {url, count: ($unreviewed | length), oldest: $unreviewed[0].committedDate, queue_index} ]
+    # Queue order; then most unreviewed commits first; among ties, the one that
+    # has waited longest.
+    | sort_by(.queue_index, -.count, .oldest)
+  ' "$tmpdir/prs-coderabbit-enabled.json" > "$tmpdir/needy.json"
+
+  if [ "$verbose" = true ]; then
+    jq -r '.[] | "\(.count)\t\(.url)"' "$tmpdir/needy.json"
+  fi
+}
+
+# Write the scratch copy of the queue to the queue file.
+save_queue() {
+  mkdir -p "$(dirname "$queue_file")"
+  cp "$tmpdir/queue.txt" "$queue_file.tmp"
+  mv "$queue_file.tmp" "$queue_file"
+}
+
+# Changes are made to a scratch copy of the queue, so that --dry-run can
+# discard them.  $removing describes a removal in diagnostics.  Whitespace (including carriage returns) and text after a PR's
+# URL, such as "/files" or "#issuecomment-123", are removed.  Lines that are not
+# PR URLs are discarded, because GitHub rejects them.
+if [ "$dry_run" = true ]; then
+  removing="would remove"
+else
+  removing="removing"
+fi
+: > "$tmpdir/queue.txt"
+if [ -f "$queue_file" ]; then
+  sed -E 's/[[:space:]]//g; s|^(https://github\.com/[^/]+/[^/]+/pull/[0-9]+)[/?#].*|\1|; /^$/d' \
+    "$queue_file" > "$tmpdir/queue-all.txt"
+  # Matches the URL of a PR, such as "https://github.com/ORG/REPO/pull/123".
+  pr_url_regex='^https://github\.com/[^/]+/[^/]+/pull/[0-9]+$'
+  grep -E -v "$pr_url_regex" "$tmpdir/queue-all.txt" |
+    sed "s|^|${0##*/}: $removing from the queue a line that is not a PR URL: |" >&2 || true
+  # Duplicate lines are removed too.
+  grep -E "$pr_url_regex" "$tmpdir/queue-all.txt" | awk '!seen[$0]++' > "$tmpdir/queue.txt" || true
 fi
 
-# Output: an array of {url, count, oldest}, neediest first.
-jq --slurpfile summaries "$tmpdir/summaries.json" '
-  $summaries[0] as $summary_bodies
-  # The commits that a summary comment says CodeRabbit has reviewed.
-  | def summary_reviewed_oids:
-      (scan("final_review_risk_coverage:(\\{[^}]*\\})")[0]
-        | fromjson? | select(.kind == "reviewed") | .coveredCommitId),
-      (scan("(?s)<!-- recent_review_start -->(.*?)<!-- recent_review_end -->")[0]
-        | [scan("between [0-9a-f]{40} and ([0-9a-f]{40})")[0]] | last // empty),
-      (scan("Last reviewed commit: ([0-9a-f]{40})")[0]);
-  [ .[]
-    | select(.coderabbit_enabled and (.locked | not))
-    | ([.firstComments.nodes[] | select(.author.login == "coderabbitai")][0].id) as $summary_id
-    | [.lastComments.nodes[]
-        | select(.author.login == "coderabbitai"
-                 and (.body | test("Action performed|Action not completed")))] as $replies
-    | select(($replies | last | .body // "") | test("exceed the limit") | not)
-    | [.commits.nodes[].commit] as $commits
-    # The last review request made after the head commit.
-    | ([.lastComments.nodes[]
-        | select((.body | test("^\\s*@coderabbitai (full )?review\\s*$"))
-                 and .createdAt > $commits[-1].committedDate)] | last) as $request
-    | select($request == null
-             or (([$replies[] | select(.createdAt >= $request.createdAt)][0].body // "")
-                 | test("rate limited|base or head changed")))
-    | ([.reviews.nodes[].commit.oid]
-       + [($summary_bodies[$summary_id // ""] // "") | summary_reviewed_oids]) as $reviewed_oids
-    | ([$replies[] | select(.body | test("Review finished|Already reviewed the last commit"))
-        | .createdAt]) as $reviewed_times
-    | ([($commits | to_entries[] | select(.value.oid as $oid | $reviewed_oids | index($oid)) | .key),
-        ($reviewed_times[] as $time
-         | $commits | to_entries | map(select(.value.committedDate <= $time)) | last | .key // empty)]
-       | max // -1) as $last_reviewed
-    | [$commits[$last_reviewed + 1:][] | select(.parents.totalCount == 1)] as $unreviewed
-    | select($unreviewed | length > 0)
-    | {url, count: ($unreviewed | length), oldest: $unreviewed[0].committedDate} ]
-  # Most unreviewed commits first; among ties, the one that has waited longest.
-  | sort_by(-.count, .oldest)
-' "$tmpdir/prs-coderabbit-enabled.json" > "$tmpdir/needy.json"
+# Remove queued PRs that no longer need a review, until the first one does.
+echo '[]' > "$tmpdir/needy.json"
+while [ -s "$tmpdir/queue.txt" ]; do
+  batch_size=$(head -n "$recheck_batch_size" "$tmpdir/queue.txt" | wc -l)
+  fetch_queued_prs "$batch_size"
+  find_needy_prs
+  # The queue index of the first queued PR that still needs a review, if any.
+  first_needy=$(jq -r '.[0].queue_index // empty' "$tmpdir/needy.json")
+  stale_count=${first_needy:-$batch_size}
+  if [ "$verbose" = true ]; then
+    head -n "$stale_count" "$tmpdir/queue.txt" |
+      awk -v removing="${removing^}" -v fetched="$(jq -r 'map(.queue_index) | join(" ")' "$tmpdir/prs.json")" '
+        BEGIN { split(fetched, indexes, " "); for (i in indexes) is_fetched[indexes[i]] = 1 }
+        { print removing " " $0 " from the queue: " \
+            ((NR - 1) in is_fetched ? "it no longer needs a review" : "GitHub did not return it as a PR") }'
+  fi
+  tail -n +"$((stale_count + 1))" "$tmpdir/queue.txt" > "$tmpdir/queue-rest.txt"
+  mv "$tmpdir/queue-rest.txt" "$tmpdir/queue.txt"
+  if [ -n "$first_needy" ]; then
+    break
+  fi
+done
 
-if [ "$verbose" = true ]; then
-  jq -r '.[] | "\(.count)\t\(.url)"' "$tmpdir/needy.json"
+# If the queue is empty, fill it.
+if [ ! -s "$tmpdir/queue.txt" ]; then
+  search_prs
+  find_needy_prs
+  jq -r '.[].url' "$tmpdir/needy.json" > "$tmpdir/queue.txt"
 fi
 
+# Now the first PR in the queue, if any, is the first element of needy.json.
 url=$(jq -r '.[0].url // empty' "$tmpdir/needy.json")
 if [ -z "$url" ]; then
+  if [ "$dry_run" = false ]; then
+    save_queue
+  fi
   exit 0
 fi
 count=$(jq -r '.[0].count' "$tmpdir/needy.json")
@@ -147,5 +300,7 @@ if [ "$dry_run" = true ]; then
   echo "Would request a CodeRabbit review of $url ($count unreviewed non-merge commits)"
   exit 0
 fi
+# The chosen PR stays first in the queue; the next run re-checks it.
+save_queue
 gh pr comment "$url" --body "@coderabbitai review" > /dev/null
 echo "Requested a CodeRabbit review of $url ($count unreviewed non-merge commits)"
