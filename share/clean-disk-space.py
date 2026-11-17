@@ -5,10 +5,14 @@ Usage:
   clean-disk-space.py [--dry-run] [--days DAYS] [--jdtls-days DAYS]
                       [--unused-days DAYS] [--no-sudo] [TMPDIR ...]
 
-The script performs these steps, each of which is skipped if the directory or
-command that it needs does not exist:
- * It cleans each TMPDIR, as described below.
- * It deletes the stale GNOME file-indexer database ~/.cache/tracker3.
+If TMPDIR arguments are given, the script cleans only those directories, as
+described below.  Otherwise, it performs these steps, each of which is skipped
+if the directory or command that it needs does not exist:
+ * It cleans each of /tmp/claude-$UID, $CLAUDE_CODE_TMPDIR/claude-$UID, and
+   ~/.cache/jdtls (on macOS, ~/Library/Caches/jdtls) as a TMPDIR.
+ * If no GNOME file indexer (localsearch or tracker-miner-fs) is running, it
+   deletes the file indexer's database ~/.cache/tracker3.  The indexer rebuilds
+   it when it next runs.
  * It runs `uv cache prune`, `prek cache gc`, and `npm cache clean --force`.
  * In the pip and gh caches, it deletes each file that has not been read for
    UNUSED-DAYS days (default 30).
@@ -16,21 +20,23 @@ command that it needs does not exist:
    copy directory:  each directory named "build" or "target", at most 3 levels
    below the working copy directory's top, that git ignores, that contains no
    tracked files, and in which nothing has changed for UNUSED-DAYS days.  The
-   next build regenerates it.
- * Unless --no-sudo is given, it runs these commands via sudo, which can prompt
-   for a password:  it shrinks the systemd journal to 500 MB, removes disabled
-   snap revisions and makes snapd retain only 2 revisions of each snap, and
-   deletes downloaded apt packages and the packages that `apt-get autoremove`
-   removes, such as old kernels.
+   next build regenerates it.  A git repository nested in a working copy
+   directory, such as a clone, is a working copy directory of its own:  the
+   nested repository, not the enclosing one, decides whether a directory in it
+   is build output.
+ * Unless --no-sudo is given, it runs these commands via sudo:  it shrinks the
+   systemd journal to 500 MB, removes disabled snap revisions and makes snapd
+   retain only 2 revisions of each snap, and deletes downloaded apt packages and
+   the packages that `apt-get autoremove` removes, such as old kernels.  sudo
+   can prompt for a password.  If sudo needs a password and standard input is
+   not a terminal, the script skips these commands and exits with status 1.
 
-TMPDIR defaults to each of /tmp/claude-$UID, $CLAUDE_CODE_TMPDIR/claude-$UID,
-and ~/.cache/jdtls (on macOS, ~/Library/Caches/jdtls) that exists.  The script
-cleans two kinds of subdirectory of a TMPDIR:
+The script cleans two kinds of subdirectory of a TMPDIR:
  * A Claude Code project subdirectory, whose name is the absolute path of a
    project directory with every non-alphanumeric character replaced by "-".
    For example, /home/mernst/.emacs.d becomes -home-mernst--emacs-d.  A project
    subdirectory corresponds to its project directory.  It contains one
-   subdirectory per session, which may contain a scratchpad directory.
+   subdirectory per session, which can contain a scratchpad directory.
  * A jdtls workspace, whose name starts with "jdtls-".  jdtls creates one
    workspace per basename of a directory in which jdtls was started, so
    directories with the same basename share a workspace.  A workspace corresponds
@@ -45,6 +51,8 @@ In a TMPDIR, this script deletes:
  * each jdtls workspace in which nothing has changed for JDTLS-DAYS days
    (default 2).  A deleted workspace is rebuilt when an editor next opens one of
    its projects.
+It never deletes a jdtls workspace that a running process uses, that is, one
+that a running process's command line names after "-data".
 It does not touch the TMPDIR's other files or directories.
 
 Because the Claude Code encoding is lossy, the script decodes a project
@@ -65,14 +73,17 @@ Options:
 """
 
 import argparse
+import collections
 import contextlib
 import functools
+import itertools
 import os
 import pathlib
 import platform
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -90,18 +101,27 @@ JDTLS_CACHE = (
     else pathlib.Path.home() / ".cache" / "jdtls"
 )
 
-# The directory that holds per-user caches, such as those of pip and gh.
-CACHE_HOME = (
-    pathlib.Path.home() / "Library" / "Caches"
-    if platform.system() == "Darwin"
-    else pathlib.Path(os.environ.get("XDG_CACHE_HOME") or pathlib.Path.home() / ".cache")
+# The XDG base directory for per-user caches, which gh and GNOME's file indexer use
+# on every platform.
+XDG_CACHE_HOME = pathlib.Path(os.environ.get("XDG_CACHE_HOME") or pathlib.Path.home() / ".cache")
+
+# The platform's directory for per-user caches, which pip uses.
+PLATFORM_CACHE_HOME = (
+    pathlib.Path.home() / "Library" / "Caches" if platform.system() == "Darwin" else XDG_CACHE_HOME
 )
+
+# The names of the programs of GNOME's file indexer:  localsearch-3, and
+# tracker-miner-fs-3 through GNOME 46.  Both keep their database in
+# XDG_CACHE_HOME/tracker3.
+FILE_INDEXER_PROGRAMS = {"localsearch-3", "tracker-miner-fs-3"}
 
 # The directories under which this script deletes the build output of git working
 # copy directories.
 BUILD_ROOTS = [pathlib.Path.home() / "research", pathlib.Path.home() / "java"]
 
-# How deep below a BUILD_ROOTS directory a working copy directory can be.
+# How deep below a BUILD_ROOTS directory this script looks for working copy
+# directories.  A working copy directory that is nested in another one can be
+# deeper.
 MAX_WORKING_COPY_DEPTH = 4
 
 # The names of build-output directories.
@@ -175,17 +195,22 @@ def corresponds_to_directory(name: str) -> bool:
     return exists_under(pathlib.Path("/"), name[1:], truncated)
 
 
-def changed_since(directory: pathlib.Path, cutoff: float) -> bool:
-    """Determine whether anything in a directory has changed since a time.
+def size_if_unchanged_since(directory: pathlib.Path, cutoff: float) -> int | None:
+    """Return the total size of the files under the given directory, if none has changed.
 
     A file's change time is the later of its modification time and its status
     change time, so that a file extracted from an archive counts as changed when
     it was extracted.
 
+    Args:
+        directory: a directory.
+        cutoff: a time, in seconds since the epoch.
+
     Returns:
-        True if the directory or any file under it changed after `cutoff`, which is
-        in seconds since the epoch.
+        The total size, in bytes, of the files under `directory`, or None if the
+        directory or any file or directory under it changed after `cutoff`.
     """
+    total = 0
     for dirpath, dirnames, filenames in directory.walk():
         for name in [".", *dirnames, *filenames]:
             try:
@@ -193,8 +218,10 @@ def changed_since(directory: pathlib.Path, cutoff: float) -> bool:
             except OSError:
                 continue
             if max(st.st_mtime, st.st_ctime) > cutoff:
-                return True
-    return False
+                return None
+            if not stat.S_ISDIR(st.st_mode):
+                total += st.st_size
+    return total
 
 
 def path_from_file_uri(uri: str) -> pathlib.Path | None:
@@ -302,17 +329,23 @@ def format_size(size: int) -> str:
     return f"{size / 1e6:.1f} MB"
 
 
-def delete(path: pathlib.Path, dry_run: bool) -> bool:
-    """Delete, or with `dry_run` report, a directory.
+def delete(path: pathlib.Path, dry_run: bool, size: int | None = None) -> bool:
+    """Delete, or with `dry_run` report, the given directory.
+
+    Args:
+        path: a directory.
+        dry_run: true if the directory should be reported, but not deleted.
+        size: the total size, in bytes, of the files under `path`, or None to
+            compute it; used for diagnostics.
 
     Returns:
         False if the deletion failed.
     """
-    size = format_size(size_of(path))
+    size_text = format_size(size_of(path) if size is None else size)
     if dry_run:
-        print(f"Would delete {path} ({size})")
+        print(f"Would delete {path} ({size_text})")
         return True
-    print(f"Deleting {path} ({size})")
+    print(f"Deleting {path} ({size_text})")
     try:
         shutil.rmtree(path)
     except OSError as e:
@@ -341,17 +374,63 @@ def clean_claude_project(project: pathlib.Path, cutoff: float, dry_run: bool) ->
         return delete(project, dry_run)
     ok = True
     for scratchpad in sorted(project.glob("*/scratchpad")):
-        if (
-            scratchpad.is_dir()
-            and not scratchpad.is_symlink()
-            and not changed_since(scratchpad, cutoff)
-        ):
-            ok &= delete(scratchpad, dry_run)
+        if scratchpad.is_dir() and not scratchpad.is_symlink():
+            size = size_if_unchanged_since(scratchpad, cutoff)
+            if size is not None:
+                ok &= delete(scratchpad, dry_run, size)
     return ok
 
 
+@functools.cache
+def process_command_lines() -> list[list[str]] | None:
+    """Return the command lines of the running processes.
+
+    A command line's arguments are split at whitespace, so an argument that
+    contains whitespace becomes several elements.
+
+    Returns:
+        Each running process's program and arguments, such as
+        ["/usr/bin/java", "-jar", "launcher.jar", "-data", "/home/me/ws"], or None
+        if `ps` does not exist or fails.
+    """
+    try:
+        ps = subprocess.run(
+            ["ps", "-A", "-ww", "-o", "args="], capture_output=True, text=True, check=False
+        )
+    except OSError:
+        return None
+    if ps.returncode != 0:
+        return None
+    return [line.split() for line in ps.stdout.splitlines()]
+
+
+def jdtls_workspace_in_use(workspace: pathlib.Path) -> bool:
+    """Return true if a running process uses the given jdtls workspace.
+
+    jdtls neither locks nor holds open any file in its workspace, so this checks
+    whether a running process's command line names the workspace after "-data".
+
+    Args:
+        workspace: a jdtls workspace, such as
+            ~/.cache/jdtls/jdtls-0a422631bbbc5fff4218961dc4439516f8308e91.
+
+    Returns:
+        True if a running process uses `workspace`, or if the running processes
+        cannot be listed.
+    """
+    command_lines = process_command_lines()
+    if command_lines is None:
+        return True
+    target = workspace.resolve()
+    return any(
+        arg == "-data" and pathlib.Path(value).resolve() == target
+        for args in command_lines
+        for arg, value in itertools.pairwise(args)
+    )
+
+
 def clean_jdtls_workspace(workspace: pathlib.Path, cutoff: float, dry_run: bool) -> bool:
-    """Delete, or with `dry_run` report, the given jdtls workspace if it is stale.
+    """Delete, or with `dry_run` report, the given jdtls workspace if it is stale and unused.
 
     Args:
         workspace: a jdtls workspace, such as
@@ -363,11 +442,15 @@ def clean_jdtls_workspace(workspace: pathlib.Path, cutoff: float, dry_run: bool)
     Returns:
         False if the deletion failed.
     """
+    if jdtls_workspace_in_use(workspace):
+        return True
     covered = jdtls_covered_paths(workspace)
     # If the workspace records no covered paths, its age alone decides.
-    orphaned = bool(covered) and not any(exists(path) for path in covered)
-    if orphaned or not changed_since(workspace, cutoff):
+    if covered and not any(exists(path) for path in covered):
         return delete(workspace, dry_run)
+    size = size_if_unchanged_since(workspace, cutoff)
+    if size is not None:
+        return delete(workspace, dry_run, size)
     return True
 
 
@@ -472,6 +555,21 @@ def delete_unread_files(directory: pathlib.Path, cutoff: float, dry_run: bool) -
     return ok
 
 
+def file_indexer_running() -> bool:
+    """Return true if GNOME's file indexer is running.
+
+    Returns:
+        True if a running process's program is in FILE_INDEXER_PROGRAMS, or if the
+        running processes cannot be listed.
+    """
+    command_lines = process_command_lines()
+    if command_lines is None:
+        return True
+    return any(
+        args and pathlib.Path(args[0]).name in FILE_INDEXER_PROGRAMS for args in command_lines
+    )
+
+
 def clean_tool_caches(unused_cutoff: float, dry_run: bool) -> bool:
     """Delete, or with `dry_run` report, the stale contents of tools' caches.
 
@@ -484,81 +582,111 @@ def clean_tool_caches(unused_cutoff: float, dry_run: bool) -> bool:
         False if a deletion or a command failed.
     """
     ok = True
-    # GNOME's file indexer, localsearch, does not use this directory.
-    tracker3 = CACHE_HOME / "tracker3"
-    if tracker3.is_dir():
+    tracker3 = XDG_CACHE_HOME / "tracker3"
+    if tracker3.is_dir() and not file_indexer_running():
         ok &= delete(tracker3, dry_run)
     ok &= run(["uv", "cache", "prune"], dry_run)
     ok &= run(["prek", "cache", "gc"], dry_run)
     ok &= run(["npm", "cache", "clean", "--force"], dry_run)
-    for name in ["pip", "gh"]:
-        ok &= delete_unread_files(CACHE_HOME / name, unused_cutoff, dry_run)
+    ok &= delete_unread_files(PLATFORM_CACHE_HOME / "pip", unused_cutoff, dry_run)
+    ok &= delete_unread_files(XDG_CACHE_HOME / "gh", unused_cutoff, dry_run)
     return ok
 
 
-def working_copy_directories(root: pathlib.Path) -> list[pathlib.Path]:
-    """Return the git working copy directories under the given directory.
+def build_output_candidates(root: pathlib.Path) -> dict[pathlib.Path, list[pathlib.Path]]:
+    """Return the candidate build-output directories under the given directory.
+
+    A working copy directory is a directory that contains a ".git" file or
+    directory and that is at most MAX_WORKING_COPY_DEPTH levels below `root`
+    (including `root` itself) or is nested in another working copy directory.
+    A candidate of a working copy directory is a directory that the working copy
+    directory is the innermost working copy directory to contain, whose name is
+    in BUILD_DIR_NAMES, that is at most MAX_BUILD_DIR_DEPTH levels below the
+    working copy directory, that is not itself a working copy directory, and
+    that is under no other candidate.
 
     Args:
         root: a directory, such as ~/research.
 
     Returns:
-        Each directory that contains a ".git" file or directory and is at most
-        MAX_WORKING_COPY_DEPTH levels below `root`, including `root` itself.
+        A dict that maps each working copy directory that has candidates, such as
+        ~/research/proj, to its candidates, such as [~/research/proj/build].
     """
-    result = []
+    result = collections.defaultdict(list)
+    # Maps each directory that the walk has yet to visit to the innermost working
+    # copy directory that contains it, or to None if none does.
+    owners: dict[pathlib.Path, pathlib.Path | None] = {root: None}
     for dirpath, dirnames, filenames in root.walk():
+        owner = owners.pop(dirpath)
         if ".git" in dirnames or ".git" in filenames:
-            result.append(dirpath)
-        if len(dirpath.relative_to(root).parts) >= MAX_WORKING_COPY_DEPTH:
-            dirnames.clear()
-        else:
-            dirnames[:] = [d for d in dirnames if d not in UNSEARCHED_DIR_NAMES | BUILD_DIR_NAMES]
+            owner = dirpath
+        # True if the walk visits subdirectories to look for working copy directories.
+        visit_for_working_copies = len(dirpath.relative_to(root).parts) < MAX_WORKING_COPY_DEPTH
+        # How deep below the owner the subdirectories are.
+        subdir_depth = None if owner is None else len(dirpath.relative_to(owner).parts) + 1
+        visited = []
+        for name in dirnames:
+            if name in UNSEARCHED_DIR_NAMES:
+                continue
+            subdir = dirpath / name
+            if name in BUILD_DIR_NAMES and not (subdir / ".git").exists():
+                if subdir_depth is not None and subdir_depth <= MAX_BUILD_DIR_DEPTH:
+                    result[owner].append(subdir)
+                continue
+            if visit_for_working_copies or (
+                subdir_depth is not None and subdir_depth < MAX_BUILD_DIR_DEPTH
+            ):
+                visited.append(name)
+                owners[subdir] = owner
+        dirnames[:] = visited
     return result
 
 
-def build_output_directories(working_copy: pathlib.Path) -> list[pathlib.Path]:
-    """Return the candidate build-output directories of the given working copy directory.
+def ignored_and_untracked(
+    working_copy: pathlib.Path, directories: list[pathlib.Path]
+) -> list[pathlib.Path]:
+    """Return the given directories that git ignores and under which it tracks no file.
 
     Args:
         working_copy: a git working copy directory.
+        directories: directories in the working copy directory.
 
     Returns:
-        Each directory whose name is in BUILD_DIR_NAMES and that is at most
-        MAX_BUILD_DIR_DEPTH levels below `working_copy`, except one that is under
-        another such directory.
+        Each element of `directories` that git ignores and under which it tracks
+        no file.  Returns no directories if git fails.
     """
-    result = []
-    for dirpath, dirnames, _ in working_copy.walk():
-        result.extend(dirpath / d for d in dirnames if d in BUILD_DIR_NAMES)
-        if len(dirpath.relative_to(working_copy).parts) + 1 >= MAX_BUILD_DIR_DEPTH:
-            dirnames.clear()
-        else:
-            dirnames[:] = [d for d in dirnames if d not in UNSEARCHED_DIR_NAMES | BUILD_DIR_NAMES]
-    return result
-
-
-def is_ignored_and_untracked(working_copy: pathlib.Path, path: pathlib.Path) -> bool:
-    """Return true if git ignores the given path and tracks no file under it.
-
-    Args:
-        working_copy: a git working copy directory.
-        path: a directory in the working copy directory.
-
-    Returns:
-        True if git ignores `path` and tracks no file under it.
-    """
-    relative = str(path.relative_to(working_copy))
     git = ["git", "-C", str(working_copy)]
-    ignored = subprocess.run(
-        [*git, "check-ignore", "-q", "--", relative], capture_output=True, check=False
-    )
-    if ignored.returncode != 0:
-        return False
-    tracked = subprocess.run(
-        [*git, "ls-files", "--", relative], capture_output=True, text=True, check=False
-    )
-    return tracked.returncode == 0 and tracked.stdout == ""
+    relative = [str(d.relative_to(working_copy)) for d in directories]
+    try:
+        check_ignore = subprocess.run(
+            [*git, "check-ignore", "--stdin", "-z"],
+            input="".join(f"{r}\0" for r in relative),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        # Exit status 1 means that git ignores none of the paths.
+        if check_ignore.returncode != 0:
+            return []
+        ignored = [r for r in check_ignore.stdout.split("\0") if r]
+        ls_files = subprocess.run(
+            [*git, "--literal-pathspecs", "ls-files", "-z", "--", *ignored],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return []
+    if ls_files.returncode != 0:
+        return []
+    # Each directory that contains a tracked file.
+    tracked_dirs = {
+        str(parent)
+        for tracked in ls_files.stdout.split("\0")
+        if tracked
+        for parent in pathlib.PurePath(tracked).parents
+    }
+    return [working_copy / r for r in ignored if r not in tracked_dirs]
 
 
 def clean_build_output(unused_cutoff: float, dry_run: bool) -> bool:
@@ -572,16 +700,17 @@ def clean_build_output(unused_cutoff: float, dry_run: bool) -> bool:
     Returns:
         False if a deletion failed.
     """
+    if shutil.which("git") is None:
+        return True
     ok = True
     for root in BUILD_ROOTS:
         if not root.is_dir():
             continue
-        for working_copy in working_copy_directories(root):
-            for build_dir in build_output_directories(working_copy):
-                if is_ignored_and_untracked(working_copy, build_dir) and not changed_since(
-                    build_dir, unused_cutoff
-                ):
-                    ok &= delete(build_dir, dry_run)
+        for working_copy, candidates in build_output_candidates(root).items():
+            for build_dir in ignored_and_untracked(working_copy, candidates):
+                size = size_if_unchanged_since(build_dir, unused_cutoff)
+                if size is not None:
+                    ok &= delete(build_dir, dry_run, size)
     return ok
 
 
@@ -592,8 +721,21 @@ def clean_system(dry_run: bool) -> bool:
         dry_run: true if the commands should be printed, but not run.
 
     Returns:
-        False if a command failed.
+        False if a command failed, or if sudo needs a password and standard input
+        is not a terminal.
     """
+    if (
+        not dry_run
+        and shutil.which("sudo") is not None
+        and not sys.stdin.isatty()
+        and subprocess.run(["sudo", "-n", "true"], capture_output=True, check=False).returncode != 0
+    ):
+        print(
+            "Skipping the sudo commands:  sudo needs a password, and standard input is not"
+            " a terminal.  Pass --no-sudo to skip them silently.",
+            file=sys.stderr,
+        )
+        return False
     ok = run(["sudo", "journalctl", "--vacuum-size=500M"], dry_run)
     if shutil.which("snap") is not None:
         ok &= run(["sudo", "snap", "set", "system", "refresh.retain=2"], dry_run)
@@ -605,7 +747,7 @@ def clean_system(dry_run: bool) -> bool:
             if len(fields) >= 6 and "disabled" in fields[-1].split(","):
                 ok &= run(["sudo", "snap", "remove", fields[0], f"--revision={fields[2]}"], dry_run)
     ok &= run(["sudo", "apt-get", "clean"], dry_run)
-    ok &= run(["sudo", "apt-get", "autoremove", "--purge"], dry_run)
+    ok &= run(["sudo", "apt-get", "autoremove", "--purge", "--yes"], dry_run)
     return ok
 
 
@@ -661,12 +803,12 @@ def main() -> None:
         type=pathlib.Path,
         metavar="TMPDIR",
         help="a directory that contains Claude Code project subdirectories or jdtls"
-        " workspaces (default: each of /tmp/claude-$UID, $CLAUDE_CODE_TMPDIR/claude-$UID,"
-        " and ~/.cache/jdtls (on macOS, ~/Library/Caches/jdtls) that exists)",
+        " workspaces; if any is given, clean only these directories",
     )
     args = parser.parse_args()
 
-    if args.tmpdirs:
+    only_tmpdirs = bool(args.tmpdirs)
+    if only_tmpdirs:
         tmpdirs = args.tmpdirs
         for tmpdir in tmpdirs:
             if not tmpdir.is_dir():
@@ -686,10 +828,11 @@ def main() -> None:
     ok = True
     for tmpdir in tmpdirs:
         ok &= clean_tmpdir(tmpdir, cutoff, jdtls_cutoff, args.dry_run)
-    ok &= clean_tool_caches(unused_cutoff, args.dry_run)
-    ok &= clean_build_output(unused_cutoff, args.dry_run)
-    if not args.no_sudo:
-        ok &= clean_system(args.dry_run)
+    if not only_tmpdirs:
+        ok &= clean_tool_caches(unused_cutoff, args.dry_run)
+        ok &= clean_build_output(unused_cutoff, args.dry_run)
+        if not args.no_sudo:
+            ok &= clean_system(args.dry_run)
     print_free_space()
     sys.exit(0 if ok else 1)
 
