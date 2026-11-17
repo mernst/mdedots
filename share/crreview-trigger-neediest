@@ -21,18 +21,20 @@
 #
 # Searching all PRs makes many network requests, so the candidates are kept in
 # a queue file:  the URLs of all PRs that need a review, one per line, neediest
-# first, such as "https://github.com/ORG/REPO/pull/123".  A run searches for
+# first, such as "https://github.com/ORG/REPO/pull/123".  A run re-checks only
+# the first few PRs in the queue file, in one request.  The run requests a
+# review of the first of them that still needs one, and it removes from the
+# queue file the PRs before that one.  If none of them still needs a review,
+# the run removes them all and re-checks the next few.  A run searches for
 # candidates and writes the queue file only if the queue file does not exist or
-# is empty.  Otherwise, a run re-checks only the first few PRs in the queue file,
-# in one request.  The run requests a review of the first of them that still
-# needs one, and it removes from the queue file the PRs before that one.  If
-# none of them still needs a review, the run removes them all and re-checks the
-# next few.
+# is empty, or if re-checking removed every PR from it.
 # A PR whose review was requested stays first in the queue file, so the next
 # run re-checks it:  that run removes it if the review was performed or is still
 # pending, and requests a review again if CodeRabbit replied that it was rate
-# limited or that the PR changed.  Lines of the queue file that are not PR URLs
-# are removed, with a warning.
+# limited or that the PR changed.  Text after a PR's URL is removed from a line
+# of the queue file, so "https://github.com/ORG/REPO/pull/123/files" becomes
+# "https://github.com/ORG/REPO/pull/123"; any other line that is not a PR's URL
+# is removed, with a warning.
 #
 # A PR is considered only if its repository is not archived and CodeRabbit is
 # enabled on it, as shown by its having commented on or reviewed the PR.
@@ -117,27 +119,48 @@ recheck_batch_size=10
 # Write to "$tmpdir/prs.json" the PRs whose URLs are the first lines of
 # "$tmpdir/queue.txt", as a JSON array of the objects that GitHub's GraphQL API
 # returns for prFields, each with an added key "queue_index":  the 0-based
-# line number of its URL.  A URL that is not that of a PR is omitted.
+# line number of its URL.  A URL that is not that of a PR is omitted, as is a
+# URL for which GitHub returns an error (with a warning).
 # $1: how many lines to read.
 fetch_queued_prs() {
-  # The query is "query($u0: URI!, ...) { pr0: resource(url: $u0) { ...prFields } ... }".
-  head -n "$1" "$tmpdir/queue.txt" |
-    jq -R -s -c --arg fields "$pr_fields" '
-      [splits("\n") | select(. != "")] as $urls
-      | [range($urls | length)] as $indexes
-      | {query: ("query(" + ($indexes | map("$u\(.): URI!") | join(", ")) + ") {\n"
-                 + ($indexes | map("  pr\(.): resource(url: $u\(.)) { ...prFields }\n") | add)
-                 + "}\n" + $fields),
-         variables: ($indexes | map({"u\(.)": $urls[.]}) | add)}' > "$tmpdir/request.json"
-  retry gh api graphql --input "$tmpdir/request.json" |
-    jq '.data | to_entries
-        | map(select(.value != null and .value.id != null)
-              | .value + {queue_index: (.key | ltrimstr("pr") | tonumber)})' > "$tmpdir/prs.json"
+  head -n "$1" "$tmpdir/queue.txt" | awk '{ print NR - 1, $0 }' > "$tmpdir/batch.txt"
+  : > "$tmpdir/responses.jsonl"
+  if ! fetch_resources < "$tmpdir/batch.txt"; then
+    # GitHub fails the whole request if it fails for any one PR, as when an
+    # organization requires single sign-on.  Fetch each PR separately, so that
+    # one PR does not block the others.
+    while read -r index url; do
+      if ! fetch_resources <<< "$index $url"; then
+        echo "${0##*/}: skipping $url: GitHub returned an error for it" >&2
+      fi
+    done < "$tmpdir/batch.txt"
+  fi
+  jq -s 'map(.data | to_entries[])
+         | map(select(.value != null and .value.id != null)
+               | .value + {queue_index: (.key | ltrimstr("pr") | tonumber)})' \
+    "$tmpdir/responses.jsonl" > "$tmpdir/prs.json"
+}
+
+# Append to "$tmpdir/responses.jsonl" GitHub's GraphQL response for the PRs on
+# standard input.  Each line of standard input is a queue index and a URL, such
+# as "3 https://github.com/ORG/REPO/pull/123"; the response holds the PR under
+# the key "pr3".  Return a non-zero status, and append nothing, if the request fails.
+fetch_resources() {
+  # The query is "query($u3: URI!, ...) { pr3: resource(url: $u3) { ...prFields } ... }".
+  jq -R -s -c --arg fields "$pr_fields" '
+    [splits("\n") | select(. != "") | split(" ") | {index: .[0], url: .[1]}] as $prs
+    | {query: ("query(" + ($prs | map("$u\(.index): URI!") | join(", ")) + ") {\n"
+               + ($prs | map("  pr\(.index): resource(url: $u\(.index)) { ...prFields }\n") | add)
+               + "}\n" + $fields),
+       variables: ($prs | map({"u\(.index)": .url}) | add)}' > "$tmpdir/request.json" || return 1
+  retry gh api graphql --input "$tmpdir/request.json" > "$tmpdir/response.json" || return 1
+  cat "$tmpdir/response.json" >> "$tmpdir/responses.jsonl"
 }
 
 # Write to "$tmpdir/needy.json" the PRs in "$tmpdir/prs.json" that need a
-# review, as a JSON array of {url, count, oldest, queue_index}, neediest first.
-# "queue_index" is copied from "$tmpdir/prs.json", or null if absent there.
+# review, as a JSON array of {url, count, oldest, queue_index}.  "queue_index"
+# is copied from "$tmpdir/prs.json", or null if absent there.  The array is in
+# queue order if the PRs have queue indexes, and otherwise neediest first.
 find_needy_prs() {
   # Fetch the bodies of CodeRabbit's summary comments, 100 per request.
   jq -c '[.[].firstComments.nodes[] | select(.author.login == "coderabbitai") | .id]
@@ -196,8 +219,9 @@ find_needy_prs() {
       | [$commits[$last_reviewed + 1:][] | select(.parents.totalCount == 1)] as $unreviewed
       | select($unreviewed | length > 0)
       | {url, count: ($unreviewed | length), oldest: $unreviewed[0].committedDate, queue_index} ]
-    # Most unreviewed commits first; among ties, the one that has waited longest.
-    | sort_by(-.count, .oldest)
+    # Queue order; then most unreviewed commits first; among ties, the one that
+    # has waited longest.
+    | sort_by(.queue_index, -.count, .oldest)
   ' "$tmpdir/prs-coderabbit-enabled.json" > "$tmpdir/needy.json"
 
   if [ "$verbose" = true ]; then
@@ -213,16 +237,24 @@ save_queue() {
 }
 
 # Changes are made to a scratch copy of the queue, so that --dry-run can
-# discard them.  Whitespace (including carriage returns) is removed, and lines
-# that are not PR URLs are discarded, because GitHub rejects them.
+# discard them.  $removing describes a removal in diagnostics.  Whitespace (including carriage returns) and text after a PR's
+# URL, such as "/files" or "#issuecomment-123", are removed.  Lines that are not
+# PR URLs are discarded, because GitHub rejects them.
+if [ "$dry_run" = true ]; then
+  removing="would remove"
+else
+  removing="removing"
+fi
 : > "$tmpdir/queue.txt"
 if [ -f "$queue_file" ]; then
-  sed 's/[[:space:]]//g; /^$/d' "$queue_file" > "$tmpdir/queue-all.txt"
+  sed -E 's/[[:space:]]//g; s|^(https://github\.com/[^/]+/[^/]+/pull/[0-9]+)[/?#].*|\1|; /^$/d' \
+    "$queue_file" > "$tmpdir/queue-all.txt"
   # Matches the URL of a PR, such as "https://github.com/ORG/REPO/pull/123".
   pr_url_regex='^https://github\.com/[^/]+/[^/]+/pull/[0-9]+$'
   grep -E -v "$pr_url_regex" "$tmpdir/queue-all.txt" |
-    sed "s|^|${0##*/}: removing from the queue a line that is not a PR URL: |" >&2 || true
-  grep -E "$pr_url_regex" "$tmpdir/queue-all.txt" > "$tmpdir/queue.txt" || true
+    sed "s|^|${0##*/}: $removing from the queue a line that is not a PR URL: |" >&2 || true
+  # Duplicate lines are removed too.
+  grep -E "$pr_url_regex" "$tmpdir/queue-all.txt" | awk '!seen[$0]++' > "$tmpdir/queue.txt" || true
 fi
 
 # Remove queued PRs that no longer need a review, until the first one does.
@@ -232,17 +264,14 @@ while [ -s "$tmpdir/queue.txt" ]; do
   fetch_queued_prs "$batch_size"
   find_needy_prs
   # The queue index of the first queued PR that still needs a review, if any.
-  first_needy=$(jq -r 'map(.queue_index) | min // empty' "$tmpdir/needy.json")
-  if [ -n "$first_needy" ]; then
-    jq --argjson i "$first_needy" 'map(select(.queue_index == $i))' "$tmpdir/needy.json" > "$tmpdir/needy-first.json"
-    mv "$tmpdir/needy-first.json" "$tmpdir/needy.json"
-    stale_count=$first_needy
-  else
-    stale_count=$batch_size
-  fi
+  first_needy=$(jq -r '.[0].queue_index // empty' "$tmpdir/needy.json")
+  stale_count=${first_needy:-$batch_size}
   if [ "$verbose" = true ]; then
     head -n "$stale_count" "$tmpdir/queue.txt" |
-      sed 's/.*/Removing & from the queue: it no longer needs a review/'
+      awk -v removing="${removing^}" -v fetched="$(jq -r 'map(.queue_index) | join(" ")' "$tmpdir/prs.json")" '
+        BEGIN { split(fetched, indexes, " "); for (i in indexes) is_fetched[indexes[i]] = 1 }
+        { print removing " " $0 " from the queue: " \
+            ((NR - 1) in is_fetched ? "it no longer needs a review" : "GitHub did not return it as a PR") }'
   fi
   tail -n +"$((stale_count + 1))" "$tmpdir/queue.txt" > "$tmpdir/queue-rest.txt"
   mv "$tmpdir/queue-rest.txt" "$tmpdir/queue.txt"
