@@ -1,0 +1,27 @@
+#!/bin/bash
+# jdtls:  run the Eclipse JDT language server, with JVM options that limit its memory.
+#
+# Usage:  jdtls [ARGUMENTS ...]
+# This wrapper runs the next jdtls on the PATH, passing it ARGUMENTS and these JVM
+# options:
+#  * -Xms256m:  let the heap shrink to 256 MB.  jdtls's launcher passes -Xms1G,
+#    which keeps at least 1 GB committed, even when far less is live.
+#  * -Xmx4G:  cap the heap at 4 GB.  Without a cap, the heap can grow to a quarter
+#    of RAM.  If jdtls needs more, it fails with OutOfMemoryError.
+#  * -XX:G1PeriodicGCInterval=300000:  after 5 minutes without a garbage collection,
+#    run one, so that an idle jdtls returns unused heap to the operating system.
+
+self=$(realpath "$0")
+IFS=: read -ra path_dirs <<< "$PATH"
+for dir in "${path_dirs[@]}"; do
+  candidate="$dir/jdtls"
+  if [ -x "$candidate" ] && [ "$(realpath "$candidate")" != "$self" ]; then
+    exec "$candidate" \
+      --jvm-arg=-Xms256m \
+      --jvm-arg=-Xmx4G \
+      --jvm-arg=-XX:G1PeriodicGCInterval=300000 \
+      "$@"
+  fi
+done
+echo "$0: no other jdtls is on the PATH" >&2
+exit 1
