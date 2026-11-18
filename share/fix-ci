@@ -1,7 +1,7 @@
 #!/bin/bash
-# claude-fix-ci:  make the CI of the current branch's pull request pass.
+# fix-ci:  make the CI of the current branch's pull request pass.
 #
-# Usage:  claude-fix-ci [CLAUDE-OPTION]...
+# Usage:  fix-ci [CLAUDE-OPTION]...
 #
 # If no CI check of the pull request has failed, because every check passed or some
 # are still running, this exits.  Otherwise, this runs `rerun-failed-ci`, which reruns
@@ -14,7 +14,7 @@
 #
 # `rerun-failed-ci` is in https://github.com/plume-lib/manage-git-branches .
 
-PROGRAM=claude-fix-ci
+PROGRAM=fix-ci
 
 # For each check of the pull request, one line:  "fail", "pending", or "other" (such as
 # a check that passed or was skipped).

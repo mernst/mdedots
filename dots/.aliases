@@ -166,7 +166,8 @@ alias gterm=gterminal
 
 alias claude-review='claude "/review $(pr-number)"'
 #
-alias claude-ci=claude-fix-ci
+alias claude-fix-ci=fix-ci
+alias claude-ci=fix-ci
 #
 alias claude-fix-merge-conflict='claude "If an AGENT-TODO.md file exists, follow its directions then delete it (except that often doing work in this session is better than resuming a previous session).  Fix merge conflict, commit, and push."'
 alias claude-merge-conflict=claude-fix-merge-conflict
