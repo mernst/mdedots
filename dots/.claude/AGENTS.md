@@ -133,6 +133,7 @@ If a branch can be pushed only to a URL, then its directory is the wrong one:  s
 * Never land a pull request unless explicitly asked.
 * Before creating a pull request, check other PRs (via `gh pr list`), remote branches, and sibling `<reponame>-branch-*` and `<reponame>-fork-*-branch-*` directories.  I often run several sessions at once on related work.  Just before `gh pr create`, fetch again and check whether a newly landed commit already covers the change.
 * If I tell you to commit and/or push, do not delay just because tests are running; do it in parallel with the tests.
+* To rerun the CI jobs of a pull request that failed for a transient reason, such as a network error or a CI runner that was lost or never started, run `rerun-failed-ci` (with no argument, it examines the pull request of the current branch).  It supports Azure Pipelines, CircleCI, and GitHub Actions.  If it reruns nothing but you judge a failure to be transient anyway, rerun the job some other way (unless `rerun-failed-ci` says that the job has already been run the maximum number of times), and tell me the log line that shows that the failure is transient, so that `rerun-failed-ci` can learn to recognize it.
 * Sometimes, the parent directory of the current working copy contains a file `pr-status.md` that describes other PRs that are open and may be related to the current one.
 * When describing dependences in a pull request, put them at the beginning of the description.  Use a regular, stylized format (in which any of the below groups may be absent):
 
