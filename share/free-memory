@@ -1,0 +1,259 @@
+#!/bin/bash
+# free-memory:  free RAM held by idle or orphaned development tools.
+#
+# Usage:  free-memory [-n] [--gc] [--all-jdtls]
+#   -n, --dry-run  Print what would be done, but do nothing.
+#   --gc           Also run a full garbage collection in every other JVM that you
+#                  own, so that each one returns unused heap to the operating system.
+#                  Each JVM pauses for about a second; running builds continue.
+#   --all-jdtls    Also stop every jdtls (Java language server), not only orphaned
+#                  ones.  Claude Code sessions might lose Java code navigation until
+#                  they are restarted.
+#
+# By default, this script stops:
+#  * Gradle daemons that are idle (not running a build).  A build that starts in
+#    the instant between the status check and the stop would fail.
+#  * Kotlin compile daemons, when every Gradle daemon is idle.
+#  * Orphaned jdtls processes and Gradle workers, whose parent process has exited.
+# It prints the memory that is available before and after, and the largest
+# remaining processes.
+
+set -u
+
+dry_run=false
+do_gc=false
+all_jdtls=false
+
+usage() { sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; }
+
+for arg in "$@"; do
+  case "$arg" in
+    -n | --dry-run) dry_run=true ;;
+    --gc) do_gc=true ;;
+    --all-jdtls) all_jdtls=true ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "$0: unknown argument: $arg" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+uid=$(id -u)
+
+# Print the memory that is available for new processes, in MB.
+mem_available_mb() { awk '/^MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo; }
+
+# Print the swap that is in use, in MB.
+swap_used_mb() { awk '/^SwapTotal:/ {t = $2} /^SwapFree:/ {f = $2} END {print int((t - f) / 1024)}' /proc/meminfo; }
+
+# Print the resident memory of a process, in KB, or nothing if it has exited.
+rss_kb() { ps -o rss= -p "$1" 2> /dev/null | tr -d ' '; }
+
+# Print the command line of a process, with arguments separated by spaces.
+args_of() { tr '\0' ' ' < "/proc/$1/cmdline" 2> /dev/null; }
+
+# Print the main class of a Java process, such as "org.example.Main", or the file
+# name of its jar file, such as "app.jar".
+java_main_of() {
+  local -a argv
+  local i=1
+  mapfile -d '' -t argv < "/proc/$1/cmdline" 2> /dev/null
+  # Some launchers, such as jdtls's, pass a JVM option as argv[0] instead of "java".
+  [[ ${argv[0]:-} == -* ]] && i=0
+  for (( ; i < ${#argv[@]}; i++)); do
+    case "${argv[i]}" in
+      -jar)
+        echo "${argv[i + 1]##*/}"
+        return
+        ;;
+      -m | --module)
+        echo "${argv[i + 1]}"
+        return
+        ;;
+      -cp | -classpath | --class-path | -p | --module-path | --upgrade-module-path | \
+        --add-opens | --add-exports | --add-reads | --add-modules | --patch-module | \
+        --limit-modules)
+        ((i++))
+        ;;
+      -* | @*) ;;
+      *)
+        echo "${argv[i]}"
+        return
+        ;;
+    esac
+  done
+}
+
+# Print a short name for the program that a process runs, such as "Gradle daemon",
+# "jdtls", or "java org.example.Main".
+program_of() {
+  local args comm
+  args=$(args_of "$1")
+  comm=$(ps -o comm= -p "$1")
+  case "$args" in
+    *org.gradle.launcher.daemon.bootstrap.GradleDaemon*) echo "Gradle daemon" ;;
+    *"Gradle Test Executor"*) echo "Gradle test worker" ;;
+    *GradleWorkerMain*) echo "Gradle worker" ;;
+    *org.jetbrains.kotlin.daemon.KotlinCompileDaemon*) echo "Kotlin daemon" ;;
+    *org.eclipse.jdt.ls.core*) echo "jdtls" ;;
+    *)
+      if [ "$comm" = java ]; then
+        echo "java $(java_main_of "$1")"
+      elif [ "$comm" = claude ]; then
+        echo "Claude Code"
+      else
+        echo "$comm"
+      fi
+      ;;
+  esac
+}
+
+# Print the working directory of a process, abbreviated:  "~" for the home
+# directory, and "SESSION scratchpad" for a Claude Code session's scratchpad
+# directory, where SESSION is the session's project directory with "/" replaced by "-".
+directory_of() {
+  local dir
+  dir=$(readlink "/proc/$1/cwd" 2> /dev/null)
+  dir=$(sed -E 's,^.*/claude-tmp/claude-[0-9]+/([^/]+)/[0-9a-f-]{36}/scratchpad,\1 scratchpad,' <<< "$dir")
+  echo "${dir/#$HOME/\~}"
+}
+
+# Return true if a process's parent has exited, so that the process was reparented
+# to init or to the per-user systemd instance.
+is_orphan() {
+  local ppid
+  ppid=$(ps -o ppid= -p "$1" | tr -d ' ')
+  [ -n "$ppid" ] || return 1
+  [ "$ppid" = 1 ] || [ "$(ps -o comm= -p "$ppid")" = systemd ]
+}
+
+to_stop=() # PIDs of processes to stop
+
+# Report a process and record it in to_stop.
+# Arguments:  a PID; what the process is, used for diagnostics.
+mark_for_stop() {
+  local pid=$1 reason=$2 rss verb
+  rss=$(rss_kb "$pid")
+  [ -n "$rss" ] || return
+  if $dry_run; then verb="Would stop"; else verb="Stopping"; fi
+  printf '%-10s %8d %6d MB  %s\n' "$verb" "$pid" $((rss / 1024)) "$reason"
+  to_stop+=("$pid")
+}
+
+echo "Before: $(mem_available_mb) MB available, $(swap_used_mb) MB of swap in use."
+
+## Gradle daemons
+
+daemon_pids=()
+declare -A gradle_homes=() # Gradle distributions of running daemons, such as .../gradle-9.9.1
+for pid in $(pgrep -u "$uid" -f 'org\.gradle\.launcher\.daemon\.bootstrap\.GradleDaemon'); do
+  daemon_pids+=("$pid")
+  jar=$(args_of "$pid" | grep -oE '[^ :]*/lib/gradle-(daemon-main|launcher)-[^ :/]*\.jar' | head -1)
+  [ -n "$jar" ] && gradle_homes[$(dirname "$(dirname "$jar")")]=1
+done
+
+# Each `gradle --status` reports only the daemons of its own Gradle version and
+# Gradle user home, so query every combination.
+mapfile -t user_homes < <(printf '%s\n' "${GRADLE_USER_HOME:-$HOME/.gradle}" "$HOME/.gradle" | sort -u)
+declare -A idle=() # PIDs of idle Gradle daemons
+for gradle_home in "${!gradle_homes[@]}"; do
+  for user_home in "${user_homes[@]}"; do
+    [ -d "$user_home/daemon" ] || continue
+    while read -r pid status _; do
+      [ "$status" = IDLE ] && idle[$pid]=1
+    done < <("$gradle_home/bin/gradle" --gradle-user-home "$user_home" --status 2> /dev/null)
+  done
+done
+
+all_gradle_idle=true
+for pid in "${daemon_pids[@]}"; do
+  if [ -n "${idle[$pid]:-}" ]; then
+    mark_for_stop "$pid" "idle Gradle daemon"
+  else
+    all_gradle_idle=false
+  fi
+done
+
+## Kotlin compile daemons
+
+for pid in $(pgrep -u "$uid" -f 'org\.jetbrains\.kotlin\.daemon\.KotlinCompileDaemon'); do
+  if $all_gradle_idle; then
+    mark_for_stop "$pid" "Kotlin compile daemon"
+  else
+    echo "Keeping Kotlin compile daemon $pid, because a Gradle build is running."
+  fi
+done
+
+## Orphaned Gradle workers and jdtls
+
+for pid in $(pgrep -u "$uid" -f 'GradleWorkerMain'); do
+  is_orphan "$pid" && mark_for_stop "$pid" "orphaned Gradle worker"
+done
+
+for pid in $(pgrep -u "$uid" -f 'org\.eclipse\.jdt\.ls\.core'); do
+  if is_orphan "$pid"; then
+    mark_for_stop "$pid" "orphaned jdtls"
+  elif $all_jdtls; then
+    mark_for_stop "$pid" "jdtls of $(ps -o comm= -p "$(ps -o ppid= -p "$pid")") process $(ps -o ppid= -p "$pid" | tr -d ' ')"
+  fi
+done
+
+[ ${#to_stop[@]} -eq 0 ] && echo "No idle or orphaned processes to stop."
+
+if ! $dry_run && [ ${#to_stop[@]} -gt 0 ]; then
+  kill "${to_stop[@]}" 2> /dev/null
+  pid_list=$(
+    IFS=,
+    echo "${to_stop[*]}"
+  )
+  for _ in $(seq 20); do
+    alive=$(ps -o pid= -p "$pid_list" | wc -l)
+    [ "$alive" -eq 0 ] && break
+    sleep 0.5
+  done
+  [ "$alive" -gt 0 ] && echo "Warning: $alive processes have not exited after 10 seconds: $(ps -o pid= -p "$pid_list" | tr '\n' ' ')"
+fi
+
+## Garbage collection in the remaining JVMs
+
+# Print the jcmd that belongs to the JDK of a Java process.
+jcmd_for() {
+  local dir
+  dir=$(dirname "$(readlink "/proc/$1/exe")")
+  if [ -x "$dir/jcmd" ]; then echo "$dir/jcmd"; else command -v jcmd; fi
+}
+
+if $do_gc; then
+  gc_pids=()
+  for pid in $(pgrep -u "$uid" -x java); do
+    [[ " ${to_stop[*]} " == *" $pid "* ]] || gc_pids+=("$pid")
+  done
+  if $dry_run; then
+    echo "Would garbage-collect ${#gc_pids[@]} JVMs."
+  else
+    echo "Garbage-collecting ${#gc_pids[@]} JVMs, one at a time ..."
+    for pid in "${gc_pids[@]}"; do
+      jcmd=$(jcmd_for "$pid")
+      [ -n "$jcmd" ] || continue
+      timeout 30 "$jcmd" "$pid" GC.run > /dev/null 2>&1
+      # Return freed C-heap memory to the OS; JDKs older than 17 lack this command.
+      timeout 30 "$jcmd" "$pid" System.trim_native_heap > /dev/null 2>&1
+    done
+  fi
+fi
+
+echo "After:  $(mem_available_mb) MB available, $(swap_used_mb) MB of swap in use."
+echo
+echo "Largest remaining processes:"
+width=$(tput cols 2> /dev/null || echo 160)
+printf '%8s %6s %11s  %-22s %s\n' PID MB ELAPSED PROGRAM DIRECTORY
+ps -u "$uid" -o pid=,rss=,etime= --sort=-rss | head -10 |
+  while read -r pid rss etime; do
+    printf '%8d %6d %11s  %-22s %s\n' "$pid" $((rss / 1024)) "$etime" "$(program_of "$pid")" "$(directory_of "$pid")" |
+      cut -c "1-$width"
+  done
