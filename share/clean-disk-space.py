@@ -480,13 +480,16 @@ def clean_tmpdir(tmpdir: pathlib.Path, cutoff: float, jdtls_cutoff: float, dry_r
     return ok
 
 
-def run(command: list[str], dry_run: bool) -> bool:
+def run(command: list[str], dry_run: bool, omit: re.Pattern[str] | None = None) -> bool:
     """Run, or with `dry_run` print, the given command, if its program exists.
 
     Args:
         command: a command and its arguments, such as ["uv", "cache", "prune"].  If
             command[0] is "sudo", command[1] is the program that must exist.
         dry_run: true if the command should be printed, but not run.
+        omit: matches the lines of the command's output that should not be printed;
+            if every line matches, the command itself is not printed either.  None
+            means to print the command, and then its output as it is produced.
 
     Returns:
         False if the command failed.
@@ -494,11 +497,28 @@ def run(command: list[str], dry_run: bool) -> bool:
     program = command[1] if command[0] == "sudo" else command[0]
     if shutil.which(program) is None:
         return True
-    print(f"+ {shlex.join(command)}", flush=True)
+    if dry_run or omit is None:
+        print(f"+ {shlex.join(command)}", flush=True)
     if dry_run:
         return True
     try:
-        status = subprocess.run(command, check=False).returncode
+        if omit is None:
+            status = subprocess.run(command, check=False).returncode
+        else:
+            # sudo writes its password prompt to the terminal, so capturing the output
+            # does not hide the prompt.
+            result = subprocess.run(command, capture_output=True, text=True, check=False)
+            status = result.returncode
+            kept = [
+                (line, stream)
+                for output, stream in ((result.stdout, sys.stdout), (result.stderr, sys.stderr))
+                for line in output.splitlines()
+                if not omit.search(line)
+            ]
+            if kept:
+                print(f"+ {shlex.join(command)}", flush=True)
+            for line, stream in kept:
+                print(line, file=stream)
     except OSError as e:
         print(f"Could not run {command[0]}: {e}", file=sys.stderr)
         return False
@@ -536,6 +556,8 @@ def delete_unread_files(directory: pathlib.Path, cutoff: float, dry_run: bool) -
             if st.st_atime < cutoff:
                 unread.append(path)
                 size += st.st_size
+    if not unread:
+        return True
     verb = "Would delete" if dry_run else "Deleting"
     print(f"{verb} {len(unread)} unread files ({format_size(size)}) under {directory}")
     if dry_run:
@@ -736,7 +758,11 @@ def clean_system(dry_run: bool) -> bool:
             file=sys.stderr,
         )
         return False
-    ok = run(["sudo", "journalctl", "--vacuum-size=500M"], dry_run)
+    ok = run(
+        ["sudo", "journalctl", "--vacuum-size=500M"],
+        dry_run,
+        omit=re.compile(r"^Vacuuming done, freed 0B "),
+    )
     if shutil.which("snap") is not None:
         ok &= run(["sudo", "snap", "set", "system", "refresh.retain=2"], dry_run)
         snaps = subprocess.run(
