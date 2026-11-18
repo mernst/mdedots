@@ -15,18 +15,18 @@ ready.
 
 For each ready PR, this program does the following in the PR's working copy
 directory (the first one, if it has several):
- 1. Run `git-pull-upstream` (alias `gpu`).
- 2. Write the diff that `git-diff-upstream --no-fetch` prints to file N.diff,
-    where N is the PR's number, as the alias `gduf` does (except that
-    `git-pull-upstream` has just fetched).
- 3. Simplify N.diff in place with the Emacs commands `diff-clean-tests` and
+ 1. Write the diff that `git-diff-upstream` prints to file N.diff, where N is
+    the PR's number, as the alias `gduf` does.
+ 2. Simplify N.diff in place with the Emacs commands `diff-clean-tests` and
     `diff-clean-imports`.
- 4. Run `difffontify` to convert N.diff to N.diff.pdf.
- 5. Move N.diff.pdf to ~/sync/to-print/REPO-USERNAME-N.diff.pdf, where REPO is
+ 3. Run `difffontify` to convert N.diff to N.diff.pdf.
+ 4. Move N.diff.pdf to ~/tmp/REPO-USERNAME-N.diff.pdf, where REPO is
     the repository's key in pr-status's config, such as "checker-framework", and
     USERNAME is the GitHub username of the person who opened the PR, such as
     "mernst", with each "/" replaced by "-", as in "app-dependabot".  `gh`
     supplies USERNAME before step 1, so it must be logged in to github.com.
+This program does not merge upstream changes into the working copy directory, so
+the diff is of the working tree as it is.
 A PR is skipped, with a message, if any step fails or if the simplified diff is
 empty; the other PRs are still processed.
 
@@ -37,7 +37,7 @@ If `pr-status` does not report the PRs of a DIR, this program prints a message a
 goes on to the next DIR.
 
 The exit status is 0 if `pr-status` reported the PRs of every DIR and every ready
-PR's PDF was moved to ~/sync/to-print/, and 1 otherwise.
+PR's PDF was moved to ~/tmp/, and 1 otherwise.
 """
 
 import argparse
@@ -49,8 +49,8 @@ import sys
 from pathlib import Path
 from typing import Any, NamedTuple
 
-# The directory that holds the PDFs to print.
-TO_PRINT = Path.home() / "sync" / "to-print"
+# The directory to which this program moves the PDFs.
+OUTPUT_DIR = Path.home() / "tmp"
 
 # The directory that holds this program, `difffontify`, and the sibling directory
 # "emacs".  This program might be run via a symbolic link.
@@ -193,14 +193,14 @@ def pr_author(pr: PullRequest) -> str | None:
 
 
 def print_pr(pr: PullRequest) -> str | None:
-    """Make the PDF of the given PR's diff and move it to TO_PRINT.
+    """Make the PDF of the given PR's diff and move it to OUTPUT_DIR.
 
     Args:
         pr: a PR that has a working copy directory.
 
     Returns:
-        None if the PDF was moved to TO_PRINT, or else the reason that it was not,
-        such as "git-pull-upstream failed".
+        None if the PDF was moved to OUTPUT_DIR, or else the reason that it was not,
+        such as "git-diff-upstream failed".
     """
     assert pr.directory is not None
     directory = pr.directory
@@ -209,11 +209,9 @@ def print_pr(pr: PullRequest) -> str | None:
     author = pr_author(pr)
     if author is None:
         return "gh cannot say who opened the PR"
-    if not run(["git-pull-upstream"], directory):
-        return "git-pull-upstream failed"
     diff_file = directory / f"{pr.number}.diff"
     with diff_file.open("w", encoding="utf-8") as out:
-        if not run(["git-diff-upstream", "--no-fetch"], directory, stdout=out):
+        if not run(["git-diff-upstream"], directory, stdout=out):
             return "git-diff-upstream failed"
     if not clean_diff(diff_file):
         return "Emacs diff-clean-tests or diff-clean-imports failed"
@@ -222,7 +220,7 @@ def print_pr(pr: PullRequest) -> str | None:
     if not run([str(SHARE / "difffontify"), diff_file.name], directory):
         return "difffontify failed"
     pdf_file = directory / f"{diff_file.name}.pdf"
-    destination = TO_PRINT / f"{pr.repo}-{author.replace('/', '-')}-{pdf_file.name}"
+    destination = OUTPUT_DIR / f"{pr.repo}-{author.replace('/', '-')}-{pdf_file.name}"
     shutil.move(pdf_file, destination)
     print(f"Wrote {destination}", flush=True)
     return None
@@ -264,7 +262,7 @@ def main() -> None:
                 ready.append(pr)
 
     if not args.dry_run:
-        TO_PRINT.mkdir(parents=True, exist_ok=True)
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     failed: list[tuple[PullRequest, str]] = []
     printed: list[PullRequest] = []
     for pr in ready:
@@ -283,7 +281,7 @@ def main() -> None:
 
     print("\n===== Summary =====")
     if not args.dry_run:
-        print(f"Moved to {TO_PRINT}: {', '.join(pr.label() for pr in printed) or '(none)'}")
+        print(f"Moved to {OUTPUT_DIR}: {', '.join(pr.label() for pr in printed) or '(none)'}")
     for directory, reason in failed_directories:
         print(f"Failed: {directory}: {reason}")
     for pr, reason in failed:
