@@ -3,8 +3,7 @@
 #
 # Usage:  free-memory [-n] [--gc] [--all-jdtls]
 #   -n, --dry-run  Print what would be done, but do nothing.
-#   --gc           Also run a full garbage collection in every other JVM that you
-#                  own, so that each one returns unused heap to the operating system.
+#   --gc           Garbage-collect every remaining JVM that you own, not only jdtls.
 #                  Each JVM pauses for about a second; running builds continue.
 #   --all-jdtls    Also stop every jdtls (Java language server), not only orphaned
 #                  ones.  Claude Code sessions might lose Java code navigation until
@@ -15,6 +14,10 @@
 #    the instant between the status check and the stop would fail.
 #  * Kotlin compile daemons, when every Gradle daemon is idle.
 #  * Orphaned jdtls processes and Gradle workers, whose parent process has exited.
+# Then it garbage-collects each remaining jdtls (Java language server), so that it
+# returns unused heap to the operating system.  It skips a JVM that could return
+# less than 512 MB, because a collection reads the whole heap, and so it can swap in
+# more memory than it frees.
 # It prints the memory that is available before and after, and the largest
 # remaining processes.
 
@@ -55,14 +58,14 @@ swap_used_mb() { awk '/^SwapTotal:/ {t = $2} /^SwapFree:/ {f = $2} END {print in
 rss_kb() { ps -o rss= -p "$1" 2> /dev/null | tr -d ' '; }
 
 # Print the command line of a process, with arguments separated by spaces.
-args_of() { tr '\0' ' ' < "/proc/$1/cmdline" 2> /dev/null; }
+args_of() { tr '\0' ' ' 2> /dev/null < "/proc/$1/cmdline"; }
 
 # Print the main class of a Java process, such as "org.example.Main", or the file
 # name of its jar file, such as "app.jar".
 java_main_of() {
   local -a argv
   local i=1
-  mapfile -d '' -t argv < "/proc/$1/cmdline" 2> /dev/null
+  mapfile -d '' -t argv 2> /dev/null < "/proc/$1/cmdline"
   # Some launchers, such as jdtls's, pass a JVM option as argv[0] instead of "java".
   [[ ${argv[0]:-} == -* ]] && i=0
   for (( ; i < ${#argv[@]}; i++)); do
@@ -228,24 +231,46 @@ jcmd_for() {
   if [ -x "$dir/jcmd" ]; then echo "$dir/jcmd"; else command -v jcmd; fi
 }
 
-if $do_gc; then
-  gc_pids=()
-  for pid in $(pgrep -u "$uid" -x java); do
-    [[ " ${to_stop[*]} " == *" $pid "* ]] || gc_pids+=("$pid")
-  done
+# Print how much heap, in MB, a garbage collection could return to the operating
+# system:  the JVM's committed heap minus its initial heap size, below which the JVM
+# does not shrink.  Print nothing if the JVM does not use the G1 collector, whose
+# report this parses.
+# Arguments:  a JVM's PID; the jcmd for the JVM.
+reclaimable_heap_mb() {
+  local pid=$1 jcmd=$2 committed_kb initial_bytes
+  committed_kb=$(timeout 30 "$jcmd" "$pid" GC.heap_info 2> /dev/null |
+    sed -nE 's/^ *garbage-first heap .* committed ([0-9]+)K.*/\1/p')
+  initial_bytes=$(timeout 30 "$jcmd" "$pid" VM.flags 2> /dev/null |
+    grep -oE 'InitialHeapSize=[0-9]+' | cut -d= -f2)
+  [ -n "$committed_kb" ] && [ -n "$initial_bytes" ] || return
+  echo $((committed_kb / 1024 - initial_bytes / 1048576))
+}
+
+min_reclaimable_mb=512
+
+gc_pids=()
+for pid in $(pgrep -u "$uid" -x java); do
+  [[ " ${to_stop[*]} " == *" $pid "* ]] && continue
+  if $do_gc || [ "$(program_of "$pid")" = jdtls ]; then gc_pids+=("$pid"); fi
+done
+for pid in "${gc_pids[@]}"; do
+  jcmd=$(jcmd_for "$pid")
+  [ -n "$jcmd" ] || continue
+  reclaimable=$(reclaimable_heap_mb "$pid" "$jcmd")
+  [ -n "$reclaimable" ] && [ "$reclaimable" -lt $min_reclaimable_mb ] && continue
+  label="$(program_of "$pid") $pid"
+  before=$(rss_kb "$pid")
+  [ -n "$before" ] || continue
   if $dry_run; then
-    echo "Would garbage-collect ${#gc_pids[@]} JVMs."
-  else
-    echo "Garbage-collecting ${#gc_pids[@]} JVMs, one at a time ..."
-    for pid in "${gc_pids[@]}"; do
-      jcmd=$(jcmd_for "$pid")
-      [ -n "$jcmd" ] || continue
-      timeout 30 "$jcmd" "$pid" GC.run > /dev/null 2>&1
-      # Return freed C-heap memory to the OS; JDKs older than 17 lack this command.
-      timeout 30 "$jcmd" "$pid" System.trim_native_heap > /dev/null 2>&1
-    done
+    echo "Would garbage-collect $label, which uses $((before / 1024)) MB."
+    continue
   fi
-fi
+  timeout 30 "$jcmd" "$pid" GC.run > /dev/null 2>&1
+  # Return freed C-heap memory to the OS; JDKs older than 17 lack this command.
+  timeout 30 "$jcmd" "$pid" System.trim_native_heap > /dev/null 2>&1
+  after=$(rss_kb "$pid")
+  echo "Garbage-collected $label:  $((before / 1024)) MB -> $((${after:-0} / 1024)) MB."
+done
 
 echo "After:  $(mem_available_mb) MB available, $(swap_used_mb) MB of swap in use."
 echo
