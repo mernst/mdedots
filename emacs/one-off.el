@@ -6,6 +6,7 @@
 (eval-when-compile
   (require 'etags)
   (require 'cc-cmds))
+(declare-function browse-url-file-url "browse-url" (file))
 (declare-function fileloop-continue "fileloop" ())
 
 
@@ -745,13 +746,15 @@ that is delimited by two lines starting with a colon."
 (defun pr-status ()
   "View PR status for six groups of repositories."
   (interactive)
-  (browse-url (substitute-in-file-name "$inv/pr-status.md"))
-  (browse-url (substitute-in-file-name "$t/pr-status.md"))
-  (browse-url (substitute-in-file-name "$test/pr-status.md"))
-  (browse-url (substitute-in-file-name "$h/pr-status.md"))
-  (browse-url (substitute-in-file-name "$pl/pr-status.md"))
-  (browse-url (substitute-in-file-name "~/bin/src/pr-status.md"))
-  )
+  (require 'browse-url)
+  (dolist (file '("$inv/pr-status.md" "$t/pr-status.md" "$test/pr-status.md"
+                  "$h/pr-status.md" "$pl/pr-status.md" "~/bin/src/pr-status.md"))
+    ;; Neither `browse-url' nor `browse-url-of-file' would work.  `browse-url'
+    ;; does not apply `browse-url-filename-alist', which maps file names to
+    ;; URLs that a browser outside WSL can read.  `browse-url-of-file' opens a
+    ;; non-HTML file in Emacs, via `browse-url-default-handlers'.
+    (funcall browse-url-browser-function
+             (browse-url-file-url (expand-file-name (substitute-in-file-name file))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
