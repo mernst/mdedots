@@ -13,7 +13,11 @@
 # no pull request, this runs `rerun-failed-ci` and Claude Code anyway.
 #
 # `rerun-failed-ci` is in https://github.com/plume-lib/manage-git-branches .  So is
-# `fix-ci-all`, which runs this command for each unblocked pull request whose CI failed.
+# `fix-ci-all`, which runs this command for each unblocked pull request whose CI failed,
+# that you opened, and that has a working copy directory.  An unblocked pull request is
+# one that depends on no other open pull request; for example, a pull request whose
+# branch is based on another pull request's branch is not unblocked.  `fix-ci-all --help`
+# gives the details.
 
 PROGRAM=fix-ci
 
