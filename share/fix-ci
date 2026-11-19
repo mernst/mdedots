@@ -68,6 +68,22 @@ else
   checked=""
 fi
 
+# Mark the current directory as trusted, so that Claude Code does not ask whether to
+# trust it.  The temporary file is in the same directory, so that `mv` replaces the
+# configuration file atomically, and it has a unique name, so that concurrent runs of
+# this script do not overwrite each other's temporary file.
+config_file=${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json
+if [ -f "$config_file" ] \
+  && ! jq -e --arg dir "$PWD" '.projects[$dir].hasTrustDialogAccepted == true' "$config_file" > /dev/null; then
+  config_tmp=$(mktemp "$config_file.XXXXXX")
+  if jq --arg dir "$PWD" '.projects[$dir].hasTrustDialogAccepted = true' "$config_file" > "$config_tmp"; then
+    mv "$config_tmp" "$config_file"
+  else
+    rm -f "$config_tmp"
+    echo "$PROGRAM: could not mark $PWD as trusted in $config_file." >&2
+  fi
+fi
+
 exec claude "$@" "Fix the CI failure, commit, and push.  ${checked}If a failure is \
 transient, such as a network error or a CI runner that was lost or never started, then \
 rerun the job rather than changing the code, and tell me the log line that shows that the \
