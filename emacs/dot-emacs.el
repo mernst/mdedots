@@ -1788,8 +1788,8 @@ This can make comparisons easier."
 
 (when system-is-wsl
   (setq
-   browse-url-generic-program  "/mnt/c/Windows/System32/cmd.exe"
-   browse-url-generic-args     '("/c" "start" "")
+   browse-url-generic-program  "/mnt/c/Program Files (x86)/Google/Chrome/Application/chrome.exe"
+   browse-url-generic-args     nil
    browse-url-browser-function 'browse-url-generic))
 
 (if (eq system-type 'darwin)

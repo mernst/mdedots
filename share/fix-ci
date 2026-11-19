@@ -1,0 +1,69 @@
+#!/bin/bash
+# fix-ci:  make the CI of the current branch's pull request pass.
+#
+# Usage:  fix-ci [CLAUDE-OPTION]...
+#
+# If no CI check of the pull request has failed, because every check passed or some
+# are still running, this exits.  Otherwise, this runs `rerun-failed-ci`, which reruns
+# each CI job that failed for a transient reason, such as a network error or a CI
+# runner that was lost or never started.  If that reran some job, this exits, because
+# the CI is running again.  Otherwise, this runs Claude Code to fix the failure,
+# commit, and push, and gives it the output of `rerun-failed-ci`.  Each CLAUDE-OPTION
+# is passed to `claude`.  If the checks cannot be read, as when the current branch has
+# no pull request, this runs `rerun-failed-ci` and Claude Code anyway.
+#
+# `rerun-failed-ci` is in https://github.com/plume-lib/manage-git-branches .
+
+PROGRAM=fix-ci
+
+# For each check of the pull request, one line:  "fail", "pending", or "other" (such as
+# a check that passed or was skipped).
+checks=$(gh pr view --json statusCheckRollup --jq '
+  .statusCheckRollup[]
+  | if .__typename == "CheckRun" then
+      if .status != "COMPLETED" then "pending"
+      elif (.conclusion | IN("FAILURE", "TIMED_OUT", "CANCELLED", "STARTUP_FAILURE")) then "fail"
+      else "other" end
+    else
+      if (.state | IN("PENDING", "EXPECTED")) then "pending"
+      elif (.state | IN("FAILURE", "ERROR")) then "fail"
+      else "other" end
+    end' 2> /dev/null)
+if [ -n "$checks" ] && ! grep -q -x fail <<< "$checks"; then
+  if grep -q -x pending <<< "$checks"; then
+    echo "$PROGRAM: no CI check has failed, but some are still running; not running Claude." >&2
+  else
+    echo "$PROGRAM: no CI check has failed; not running Claude." >&2
+  fi
+  exit 0
+fi
+
+if command -v rerun-failed-ci > /dev/null; then
+  # Show the output as it is printed, and also keep it for Claude.
+  output_file=$(mktemp)
+  trap 'rm -f "$output_file"' EXIT
+  rerun-failed-ci --exit-3-if-reran 2>&1 | tee "$output_file"
+  status=${PIPESTATUS[0]}
+  rerun_output=$(< "$output_file")
+  # The EXIT trap does not run after `exec`.
+  rm -f "$output_file"
+  if [ "$status" -eq 3 ]; then
+    echo "$PROGRAM: reran transiently failed CI jobs; not running Claude." >&2
+    exit 0
+  fi
+  echo "$PROGRAM: rerun-failed-ci reran nothing (exit status $status); running Claude." >&2
+  checked="Before you started, \`rerun-failed-ci\` ran and reran no CI job.  Its output \
+was:
+
+$rerun_output
+
+Do not rerun a job that it says has already been run the maximum number of times.  "
+else
+  echo "$PROGRAM: rerun-failed-ci is not on the PATH; running Claude." >&2
+  checked=""
+fi
+
+exec claude "$@" "Fix the CI failure, commit, and push.  ${checked}If a failure is \
+transient, such as a network error or a CI runner that was lost or never started, then \
+rerun the job rather than changing the code, and tell me the log line that shows that the \
+failure is transient, so that \`rerun-failed-ci\` can learn to recognize it."
