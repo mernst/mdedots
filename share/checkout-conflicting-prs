@@ -26,7 +26,8 @@
 # failed.
 #
 # With --dry-run, the script prints the `git-checkout-branch` commands that it
-# would run, but does not run them.  It still runs `pr-status` the first time.
+# would run, but does not run them.  It still runs
+# `pr-status --previous-arguments` the first time.
 
 set -e
 
