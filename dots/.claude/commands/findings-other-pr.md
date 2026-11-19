@@ -1,1 +1,1 @@
-/scratch/mernst/clones/bin/src/mdedots/dots/.agents/skills/findings-other-pr/SKILL.md
+../../.agents/skills/findings-other-pr/SKILL.md
