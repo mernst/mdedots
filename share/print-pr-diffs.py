@@ -10,8 +10,8 @@ default is the current directory.  In each DIR, this program first runs
 `pr-status --previous-arguments`, which regenerates pr-status.md (keeping the
 highlights of the previous run of `pr-status`) and records the PRs that are open
 now.  Then it reads the unblocked PRs that `pr-status --print-unblocked-prs`
-prints, which are the ones in the "Unblocked PRs" tables of pr-status.md.  An
-unblocked PR depends on no other open PR.  An unblocked PR is ready if it has a
+prints, which are the unblocked PRs that the most recent run of `pr-status`
+recorded.  An unblocked PR depends on no other open PR.  An unblocked PR is ready if it has a
 working copy directory and its CI has not failed.  A PR whose CI is still
 running, or whose CI results GitHub did not report, counts as ready.
 
@@ -35,14 +35,13 @@ the diff is of the working tree as it is.
 A PR is skipped, with a message, if any step fails or if the simplified diff is
 empty; the other PRs are still processed.
 
-With --dry-run, this program prints the ready PRs and the skipped PRs, but it runs
-no command other than `pr-status`.  It runs `pr-status` with `--no-documents`, so
-`pr-status` updates PR descriptions, renames working copy directories, and records
-the PRs, but it does not regenerate pr-status.md.
-
 With --no-pr-status, this program does not run `pr-status` other than as
 `pr-status --print-unblocked-prs`, so it uses the PRs that the most recent run of
 `pr-status` recorded.
+
+With --dry-run, this program prints the ready PRs and the skipped PRs, and it runs
+no command other than `pr-status --print-unblocked-prs`.  That is, --dry-run
+implies --no-pr-status.
 
 If `pr-status` does not report the PRs of a DIR, this program prints a message and
 goes on to the next DIR.
@@ -148,20 +147,17 @@ def read_snapshot(directory: Path) -> bytes | None:
         return None
 
 
-def run_pr_status(directory: Path, dry_run: bool) -> PrStatusOutcome:
+def run_pr_status(directory: Path) -> PrStatusOutcome:
     """Run `pr-status` in the given directory, so that it records the PRs that are open now.
 
     Args:
         directory: a directory in which `pr-status` runs, such as ~/research/types.
-        dry_run: True if `pr-status` should not regenerate pr-status.md.
 
     Returns:
         The outcome of the run.  The run recorded the PRs if it succeeded or if it
         changed the directory's PR_STATUS_SNAPSHOT.
     """
     cmd = ["pr-status", "-C", str(directory), "--previous-arguments"]
-    if dry_run:
-        cmd.append("--no-documents")
     command = shlex.join(cmd)
     print(f"+ {command}", flush=True)
     old_snapshot = read_snapshot(directory)
@@ -183,7 +179,7 @@ def unblocked_prs(directory: Path) -> list[PullRequest] | str:
         directory: a directory in which `pr-status` runs, such as ~/research/types.
 
     Returns:
-        The PRs, in the order of the "Unblocked PRs" tables of the directory's pr-status.md,
+        The PRs, in the order that `pr-status --print-unblocked-prs` prints them,
         or else the reason that `pr-status` did not report them, such as "pr-status:
         --print-unblocked-prs: .pr-status-snapshot.json does not record the unblocked PRs,
         ...".
@@ -287,7 +283,7 @@ def main() -> None:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="list the PRs; run only pr-status, which does not regenerate pr-status.md",
+        help="list the PRs; run only `pr-status --print-unblocked-prs` (implies --no-pr-status)",
     )
     parser.add_argument(
         "--no-pr-status",
@@ -307,13 +303,14 @@ def main() -> None:
     # A list of (PR, reason it was skipped), and the ready PRs.
     skipped: list[tuple[PullRequest, str]] = []
     ready: list[PullRequest] = []
-    # A list of (directory, reason that `pr-status` failed or did not report its PRs).
-    failed_directories: list[tuple[Path, str]] = []
+    # A map from each directory in which `pr-status` failed or did not report the PRs
+    # to the reasons, such as ["pr-status -C ~/research/types --previous-arguments failed"].
+    failed_directories: dict[Path, list[str]] = {}
     for directory in args.directories:
-        if not args.no_pr_status:
-            outcome = run_pr_status(directory, args.dry_run)
+        if not (args.no_pr_status or args.dry_run):
+            outcome = run_pr_status(directory)
             if outcome.failure is not None:
-                failed_directories.append((directory, outcome.failure))
+                failed_directories.setdefault(directory, []).append(outcome.failure)
                 if not outcome.recorded:
                     print(f"print-pr-diffs: {outcome.failure}", file=sys.stderr)
                     continue
@@ -324,7 +321,7 @@ def main() -> None:
         prs = unblocked_prs(directory)
         if isinstance(prs, str):
             print(f"print-pr-diffs: {prs}", file=sys.stderr)
-            failed_directories.append((directory, prs))
+            failed_directories.setdefault(directory, []).append(prs)
             continue
         for pr in prs:
             if pr.ci_failed:
@@ -355,8 +352,8 @@ def main() -> None:
     print("\n===== Summary =====")
     if not args.dry_run:
         print(f"Moved to {OUTPUT_DIR}: {', '.join(pr.label() for pr in printed) or '(none)'}")
-    for directory, reason in failed_directories:
-        print(f"Failed: {directory}: {reason}")
+    for directory, reasons in failed_directories.items():
+        print(f"Failed: {directory}: {'; '.join(reasons)}")
     for pr, reason in failed:
         print(f"Failed: {pr.label()}: {reason}")
     for pr, reason in skipped:
