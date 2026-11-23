@@ -16,6 +16,7 @@ When such a file has no entries left (only its header), delete the file.
 
 * Before responding to a user query, re-read any files that you previously read but have changed since then.
 * When asked to write a file or create a document, write it in the current directory.  Do not write it under `/tmp/`, and do not create a cloud document, unless explicitly instructed.
+* Never commit, nor ask about, a file named `NNNN.diff`, where NNNN is one or more digits.
 
 ## Shell commands
 
