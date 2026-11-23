@@ -57,7 +57,7 @@ if command -v rerun-failed-ci > /dev/null; then
     exit 0
   fi
   echo "$PROGRAM: rerun-failed-ci reran nothing (exit status $status); running Claude." >&2
-  checked="Before you started, \`rerun-failed-ci\` ran and reran no CI job.  Its output \
+  checked="Before you started, \`rerun-failed-ci\` ran; it reran no CI job.  Its output \
 was:
 
 $rerun_output
