@@ -11,9 +11,9 @@ default is the current directory.  In each DIR, this program first runs
 highlights of the previous run of `pr-status`) and records the PRs that are open
 now.  Then it reads the unblocked PRs that `pr-status --print-unblocked-prs`
 prints, which are the unblocked PRs that the most recent run of `pr-status`
-recorded.  An unblocked PR depends on no other open PR.  An unblocked PR is ready if it has a
-working copy directory and its CI has not failed.  A PR whose CI is still
-running, or whose CI results GitHub did not report, counts as ready.
+recorded.  An unblocked PR depends on no other open PR.  An unblocked PR is
+ready if it has a working copy directory and its CI has not failed.  A PR whose
+CI is still running, or whose CI results GitHub did not report, counts as ready.
 
 If `pr-status` fails after recording the PRs, as it does when it cannot update a
 PR's description, this program processes the PRs that it recorded.  If
