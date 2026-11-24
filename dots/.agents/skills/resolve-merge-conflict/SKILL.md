@@ -6,10 +6,13 @@ description: Resolve the conflicts of a git merge that is in progress, combining
 # Resolve a merge conflict
 
 Read the file `$HOME/bin/src/manage-git-branches/merge-conflict-instructions.md`, and follow it.
-It says how to learn what each side of the merge changed, how to combine the changes, and how to check that no change was lost.
 If that file does not exist, read it from <https://github.com/plume-lib/manage-git-branches/blob/main/merge-conflict-instructions.md> instead.
 If you can read neither, tell me.
 If your instructions already contain that file's contents, as when `git-push-to` asks you to resolve conflicts, follow them, and do not read the file.
+
+The file says how to learn what each side of the merge changed, how to combine the changes, and how to check that no change was lost.
+
+Be brief:  if you are able to resolve a conflict confidently, do not report exactly what you did.
 
 ## Other operations that stop with conflicts
 
