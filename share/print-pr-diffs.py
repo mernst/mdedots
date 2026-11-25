@@ -4,36 +4,14 @@
 
 Usage: print-pr-diffs.py [--dry-run] [--no-pr-status] [DIR ...]
 
-Each DIR is a directory in which the `pr-status` program runs, such as
-~/research/types:  it holds the working copy directories and pr-status.md.  The
-default is the current directory.  In each DIR, this program first runs
-`pr-status --previous-arguments`, which regenerates pr-status.md (keeping the
-highlights of the previous run of `pr-status`) and records the PRs that are open
-now.  Then it reads the unblocked PRs that `pr-status --print-unblocked-prs`
-prints, which are the unblocked PRs that the most recent run of `pr-status`
-recorded.  An unblocked PR depends on no other open PR.  An unblocked PR is
-ready if it has a working copy directory and its CI has not failed.  A PR whose
-CI is still running, or whose CI results GitHub did not report, counts as ready.
+A PR is ready if it is unblocked (it depends on no other open PR), it has a
+working copy directory under a DIR, and its CI has not failed.  A PR whose CI is
+still running, or whose CI results GitHub did not report, counts as ready.
 
-If `pr-status` fails after recording the PRs, as it does when it cannot update a
-PR's description, this program processes the PRs that it recorded.  If
-`pr-status` fails without recording them, this program skips the DIR.
-
-For each ready PR, this program does the following in the PR's working copy
-directory (the first one, if it has several):
- 1. Write the diff that `git-diff-upstream` prints to file N.diff, where N is
-    the PR's number, as the alias `gduf` does.
- 2. Simplify N.diff in place with the Emacs commands `diff-clean-tests` and
-    `diff-clean-imports`.
- 3. Run `difffontify` to convert N.diff to N.diff.pdf.
- 4. Move N.diff.pdf to ~/tmp/REPO-USERNAME-N.diff.pdf, where REPO is
-    the repository's key in pr-status's config, such as "checker-framework", and
-    USERNAME is the GitHub username of the person who opened the PR, such as
-    "mernst", with each "/" replaced by "-", as in "app-dependabot".
-This program does not merge upstream changes into the working copy directory, so
-the diff is of the working tree as it is.
-A PR is skipped, with a message, if any step fails or if the simplified diff is
-empty; the other PRs are still processed.
+For each ready PR, this program creates ~/tmp/REPO-USERNAME-N.diff.pdf, where
+REPO is the repository's key in pr-status's config, such as "checker-framework",
+and USERNAME is the GitHub username of the person who opened the PR, such as
+"mernst", with each "/" replaced by "-", as in "app-dependabot".
 
 With --no-pr-status, this program does not run `pr-status` other than as
 `pr-status --print-unblocked-prs`, so it uses the PRs that the most recent run of
@@ -48,6 +26,7 @@ goes on to the next DIR.
 
 The exit status is 0 if `pr-status` succeeded in every DIR and every ready PR's PDF
 was moved to ~/tmp/, and 1 otherwise.
+
 """
 
 import argparse
