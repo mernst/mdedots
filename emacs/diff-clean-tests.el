@@ -62,6 +62,62 @@ the start of the two blocks into a context line."
                                             "interleaved.diff" 2)
                    goal))))
 
+(defun diff-clean-tests--apply-to-string (function text &optional times)
+  "Return TEXT, a diff, after calling FUNCTION on it TIMES times.
+TIMES defaults to 1."
+  (with-temp-buffer
+    (insert text)
+    (dotimes (_ (or times 1))
+      (funcall function))
+    (buffer-string)))
+
+(ert-deftest diff-clean-tests-regroup-stops-at-file-header ()
+  "Regrouping does not take in the header of the next file's diff."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-regroup-interleaved
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n@@ -1,3 +1,3 @@\n"
+                          " /**\n-x\n }\n+y\n"
+                          "--- a/Bar.java\n+++ b/Bar.java\n@@ -1 +1 @@\n"
+                          "-p\n+q\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n@@ -1,3 +1,3 @@\n"
+                         "-/**\n-x\n-}\n+/**\n+}\n+y\n"
+                         "--- a/Bar.java\n+++ b/Bar.java\n@@ -1 +1 @@\n"
+                         "-p\n+q\n"))))
+
+(ert-deftest diff-clean-tests-regroup-no-newline-marker ()
+  "A \"\\ No newline at end of file\" line stays with the line before it."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-regroup-interleaved
+                  " /**\n+a\n }\n-}\n\\ No newline at end of file\n+}\n")
+                 (concat "-/**\n-}\n-}\n\\ No newline at end of file\n"
+                         "+/**\n+a\n+}\n+}\n"))))
+
+(ert-deftest diff-clean-tests-meaning-preserving-same-last-line ()
+  "Running `diff-clean-meaning-preserving' twice is the same as running it once.
+The regrouped old text and new text end with the same line, which
+`diff-clean-prefix-suffix' turns into a context line."
+  (let ((once (diff-clean-tests--apply-to-string
+               #'diff-clean-meaning-preserving " /**\n+a\n }\n-}\n")))
+    (should (equal once "-/**\n-}\n+/**\n+a\n }\n"))
+    (should (equal (diff-clean-tests--apply-to-string
+                    #'diff-clean-meaning-preserving " /**\n+a\n }\n-}\n" 2)
+                   once))))
+
+(ert-deftest diff-clean-tests-regroup-skips-combined-diff ()
+  "Regrouping leaves alone a hunk of a combined diff."
+  (let ((text "@@@ -1,2 -1,2 +1,4 @@@\n  /**\n+ * a\n  */\n+ }\n"))
+    (should (equal (diff-clean-tests--apply-to-string
+                    #'diff-clean-regroup-interleaved text)
+                   text))))
+
+(ert-deftest diff-clean-tests-prefix-suffix-match-before-replacement ()
+  "`diff-clean-prefix-suffix' makes a replacement that an earlier one enables.
+Turning \"-x\" ... \"+x\" into a context line makes \"-y\" adjacent to the
+added lines, which include \"+y\"."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-prefix-suffix "-y\n-x\n+w\n+y\n+x\n")
+                 "+w\n y\n x\n")))
+
 (provide 'diff-clean-tests)
 
 ;;; diff-clean-tests.el ends here
