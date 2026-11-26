@@ -59,7 +59,7 @@ class PrStatusOutcome(NamedTuple):
     # True if the run recorded the PRs, even if it failed afterward.
     recorded: bool
     # The reason that the run failed, such as "pr-status -C ~/research/types
-    # --previous-arguments failed", or None if it succeeded.
+    # --previous-arguments --no-change-report failed", or None if it succeeded.
     failure: str | None
 
 
@@ -136,7 +136,7 @@ def run_pr_status(directory: Path) -> PrStatusOutcome:
         The outcome of the run.  The run recorded the PRs if it succeeded or if it
         changed the directory's PR_STATUS_SNAPSHOT.
     """
-    cmd = ["pr-status", "-C", str(directory), "--previous-arguments"]
+    cmd = ["pr-status", "-C", str(directory), "--previous-arguments", "--no-change-report"]
     command = shlex.join(cmd)
     print(f"+ {command}", flush=True)
     old_snapshot = read_snapshot(directory)
@@ -283,7 +283,8 @@ def main() -> None:
     skipped: list[tuple[PullRequest, str]] = []
     ready: list[PullRequest] = []
     # A map from each directory in which `pr-status` failed or did not report the PRs
-    # to the reasons, such as ["pr-status -C ~/research/types --previous-arguments failed"].
+    # to the reasons, such as
+    # ["pr-status -C ~/research/types --previous-arguments --no-change-report failed"].
     failed_directories: dict[Path, list[str]] = {}
     for directory in args.directories:
         if not (args.no_pr_status or args.dry_run):

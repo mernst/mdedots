@@ -8,9 +8,11 @@
 # Run it in the directory that holds the working copy directories, which is
 # where `pr-status` runs, or pass that directory with "-C".
 #
-# The script first runs `pr-status --previous-arguments`, which regenerates
-# the PR status documents, with the highlights of the previous run of
-# `pr-status`, and records the conflicts and the working copies.  Then
+# The script first runs `pr-status --previous-arguments --no-change-report`,
+# which regenerates the PR status documents, with the highlights of the
+# previous run of `pr-status`, and records the conflicts and the working
+# copies.  `--no-change-report` leaves the report of changes to the next time
+# that a person runs `pr-status`.  Then
 # `pr-status --print-missing-branches` lists the branches that resolving the
 # conflicts needs, but that have no working copy.  For each one, the script
 # runs `git-checkout-branch OWNER:BRANCH` in the clone of the branch's
@@ -20,14 +22,14 @@
 # for each later branch of the same OWNER and clone, the script passes
 # `--no-pull`, because the first pull fetched that branch too.
 # A failure for one branch does not stop the others.  If any branch got a
-# working copy, the script runs `pr-status --previous-arguments` again, so
+# working copy, the script runs `pr-status` again, so
 # that the documents and the push chains include the new working copies.  The
 # script exits with status 1 if either run of `pr-status` or any branch
 # failed.
 #
 # With --dry-run, the script prints the `git-checkout-branch` commands that it
 # would run, but does not run them.  It still runs
-# `pr-status --previous-arguments` the first time.
+# `pr-status --previous-arguments --no-change-report` the first time.
 
 set -e
 
@@ -58,8 +60,8 @@ done
 
 cd "${directory}"
 
-if ! pr-status --previous-arguments; then
-  echo "${SCRIPT_NAME}: pr-status --previous-arguments failed in $(pwd)" >&2
+if ! pr-status --previous-arguments --no-change-report; then
+  echo "${SCRIPT_NAME}: pr-status --previous-arguments --no-change-report failed in $(pwd)" >&2
   exit 1
 fi
 branches=$(pr-status --print-missing-branches)
@@ -101,8 +103,8 @@ done << EOF
 ${branches}
 EOF
 
-if [ "${checked_out}" = true ] && ! pr-status --previous-arguments; then
-  echo "${SCRIPT_NAME}: pr-status --previous-arguments failed in $(pwd), after the checkouts" >&2
+if [ "${checked_out}" = true ] && ! pr-status --previous-arguments --no-change-report; then
+  echo "${SCRIPT_NAME}: pr-status --previous-arguments --no-change-report failed in $(pwd), after the checkouts" >&2
   exit 1
 fi
 
