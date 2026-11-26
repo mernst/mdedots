@@ -22,10 +22,14 @@
 # for each later branch of the same OWNER and clone, the script passes
 # `--no-pull`, because the first pull fetched that branch too.
 # A failure for one branch does not stop the others.  If any branch got a
-# working copy, the script runs `pr-status` again, so
-# that the documents and the push chains include the new working copies.  The
-# script exits with status 1 if either run of `pr-status` or any branch
-# failed.
+# working copy, the script runs
+# `pr-status --previous-arguments --no-change-report` again, so that the
+# documents and the push chains include the new working copies.
+#
+# If the first run of `pr-status` fails but writes .pr-status-snapshot.json
+# anyway, as it does when it cannot update a PR description, the script
+# continues.  The script exits with status 1 if either run of `pr-status` or
+# any branch failed.
 #
 # With --dry-run, the script prints the `git-checkout-branch` commands that it
 # would run, but does not run them.  It still runs
@@ -60,14 +64,28 @@ done
 
 cd "${directory}"
 
+# The file in which `pr-status` records the conflicts and the working copies.
+snapshot=.pr-status-snapshot.json
+# A copy of the snapshot from before the first run of `pr-status`, or an empty
+# file if there was none.
+old_snapshot=$(mktemp)
+trap 'rm -f "${old_snapshot}"' EXIT
+if [ -f "${snapshot}" ]; then
+  cp "${snapshot}" "${old_snapshot}"
+fi
+
+status=0
 if ! pr-status --previous-arguments --no-change-report; then
   echo "${SCRIPT_NAME}: pr-status --previous-arguments --no-change-report failed in $(pwd)" >&2
-  exit 1
+  if [ ! -f "${snapshot}" ] || cmp -s "${snapshot}" "${old_snapshot}"; then
+    exit 1
+  fi
+  status=1
 fi
 branches=$(pr-status --print-missing-branches)
 if [ -z "${branches}" ]; then
   echo "Every branch needed to resolve the conflicts has a working copy."
-  exit 0
+  exit "${status}"
 fi
 
 tab=$(printf '\t')
@@ -105,10 +123,12 @@ EOF
 
 if [ "${checked_out}" = true ] && ! pr-status --previous-arguments --no-change-report; then
   echo "${SCRIPT_NAME}: pr-status --previous-arguments --no-change-report failed in $(pwd), after the checkouts" >&2
-  exit 1
+  status=1
 fi
 
 if [ -n "${failed}" ]; then
   echo "${SCRIPT_NAME}: failed for:${failed}" >&2
-  exit 1
+  status=1
 fi
+
+exit "${status}"
