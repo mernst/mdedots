@@ -732,14 +732,15 @@ For example, convert \"short a2[]\" to \"short[] a2\", or
 (defun diff-clean-batch-tests-and-imports ()
   "Simplify each diff file named in `command-line-args-left', in place.
 Runs `diff-clean-tests' and then `diff-clean-imports' on each file, and
-saves it without a backup file.
+saves it without a backup file.  Does not ask whether to open a large file.
 Usage:
   emacs -Q --batch -L DIR -l diff-clean \\
     -f diff-clean-batch-tests-and-imports FILE.diff ...
 where DIR is the directory that holds diff-clean.el."
   (unless noninteractive
     (error "`diff-clean-batch-tests-and-imports' is only for batch mode"))
-  (let ((make-backup-files nil))
+  (let ((make-backup-files nil)
+        (large-file-warning-threshold nil))
     (dolist (file command-line-args-left)
       (with-current-buffer (find-file-noselect file)
         (diff-clean-tests)

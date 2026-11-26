@@ -211,6 +211,9 @@ def clean_diff(diff_file: Path) -> bool:
             "emacs",
             "-Q",
             "--batch",
+            # Load diff-clean.el rather than a stale diff-clean.elc.
+            "--eval",
+            "(setq load-prefer-newer t)",
             "-L",
             str(EMACS_LISP),
             "-l",
