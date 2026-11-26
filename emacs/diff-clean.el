@@ -487,10 +487,11 @@ to git."
 
     ;; Each of `diff-clean-prefix-suffix' and `diff-clean-regroup-interleaved'
     ;; can create text that the other one changes, so alternate them until
-    ;; neither changes anything; then running this function again changes
-    ;; nothing.  The iteration terminates:  each regrouping turns a context line
-    ;; that starts a Javadoc comment into a removed line and an added line, and
-    ;; `diff-clean-prefix-suffix' never creates such a context line.
+    ;; neither changes anything.  The iteration terminates:  each regrouping
+    ;; turns a context line that starts a Javadoc comment into a removed line
+    ;; and an added line that `diff-clean-prefix-suffix' leaves alone, and
+    ;; `diff-clean-prefix-suffix' creates such a context line only from a
+    ;; removed line and an added line that no regrouping created.
     (let ((tick nil))
       (while (not (eql tick (buffer-chars-modified-tick)))
         (setq tick (buffer-chars-modified-tick))
@@ -498,12 +499,6 @@ to git."
         (diff-clean-regroup-interleaved)))
     (diff-clean-empty-parts)
     ))
-
-
-(defconst diff-clean-javadoc-start-regexp
-  "\\`[ \t]*/\\*\\*[ \t]*\\'"
-  "Matches the text of a line that consists of the start of a Javadoc comment.
-An example is \"  /**\".  The text excludes the diff's indicator character.")
 
 
 (defun diff-clean-prefix-suffix ()
@@ -517,22 +512,21 @@ An example is \"  /**\".  The text excludes the diff's indicator character.")
   (let ((inhibit-read-only t)
         (case-fold-search nil))
     (save-excursion
-      ;; Each rule leaves alone a pair of lines that start a Javadoc comment,
-      ;; because `diff-clean-regroup-interleaved' puts such a line at the start
-      ;; of both of its blocks.  Otherwise, a later run of
-      ;; `diff-clean-meaning-preserving' would turn that pair into a context
-      ;; line.
+      ;; Each rule leaves alone the lines that `diff-clean-regroup-interleaved'
+      ;; creates.  Otherwise, it would turn the "/**" lines at the start of
+      ;; the regrouped old text and new text into a context line, and then
+      ;; `diff-clean-regroup-interleaved' would regroup the lines again.
       ;; First two lines are identical (one -, one +).
       (diff-clean-replace-iteratively-unless
-       "^-\\(.*\\)\n\\+\\1\n" " \\1\n" #'diff-clean-match-is-javadoc-start-p)
+       "^-\\(.*\\)\n\\+\\1\n" " \\1\n" #'diff-clean-match-is-regrouped-p)
       ;; First - line is identical to first + line
       (diff-clean-replace-iteratively-unless
        "^-\\(.*\\)\n\\(\\(-.*\n\\)+\\)\\+\\1\n" " \\1\n\\2"
-       #'diff-clean-match-is-javadoc-start-p)
+       #'diff-clean-match-is-regrouped-p)
       ;; Last - line is identical to last + line
       (diff-clean-replace-iteratively-unless
        "^-\\(.*\\)\n\\(\\(\\+.*\n\\)+\\)\\+\\1\n" "\\2 \\1\n"
-       #'diff-clean-match-is-javadoc-start-p)
+       #'diff-clean-match-is-regrouped-p)
       ;; There is no case for "last - line is identical to first + line": the
       ;; regexp for "first - line is identical to first + line", above,
       ;; already covers it.
@@ -547,13 +541,15 @@ An example is \"  /**\".  The text excludes the diff's indicator character.")
       ;; Should do the same as the above, with any number of different lines between them.
       )))
 
-(defun diff-clean-match-is-javadoc-start-p ()
-  "Return true if group 1 of the last match is the start of a Javadoc comment.
-That is, return true if it matches `diff-clean-javadoc-start-regexp'."
-  (string-match-p diff-clean-javadoc-start-regexp (match-string 1)))
+(defun diff-clean-match-is-regrouped-p ()
+  "Return true if the last match contains a marked line of a regrouping.
+The marked lines are the first removed line and the first added line that
+`diff-clean-regroup-interleaved' writes for a region, which have the text
+property `diff-clean-regrouped'."
+  (text-property-any (match-beginning 0) (match-end 0) 'diff-clean-regrouped t))
 
 (defun diff-clean-replace-iteratively-unless (regexp replacement keep-p)
-  "Replace matches for REGEXP in the buffer by REPLACEMENT, except some.
+  "Replace the matches for REGEXP in the current buffer by REPLACEMENT.
 A match is left unchanged if KEEP-P, a function of no arguments that is called
 with the match data of the match, returns true.  Like
 `replace-all-occurrrences-iteratively', iterate until every remaining match is
@@ -585,11 +581,37 @@ one that is left unchanged.  REPLACEMENT can refer to groups of REGEXP, as in
 An example is \"   /**\" followed by a line that starts with \"-\" or \"+\".
 Each such context line starts a region for `diff-clean-regroup-interleaved'.")
 
-(defconst diff-clean-file-header-regexp
-  "--- .*\n\\+\\+\\+ .*\n@@"
-  "Matches, at the start of a line, the header of a file's diff.
-An example is \"--- a/Foo.java\", then \"+++ b/Foo.java\", then the start of a
-hunk header such as \"@@ -1,3 +1,4 @@\".")
+(defconst diff-clean-unified-hunk-header-regexp
+  "@@ -[0-9]+\\(?:,\\([0-9]+\\)\\)? \\+[0-9]+\\(?:,\\([0-9]+\\)\\)? @@"
+  "Matches, at the start of a line, the header of a hunk of a unified diff.
+An example is \"@@ -10,7 +10,8 @@\", whose hunk has 7 old lines and 8 new lines.
+Group 1 is the number of old lines, and group 2 is the number of new lines.
+Each group is absent, as in \"@@ -10 +10,2 @@\", when its number is 1.")
+
+(defun diff-clean-hunk-remaining-counts ()
+  "Return the numbers of old and new lines of the current hunk that start at point.
+Point is at the start of a line.  The result is a cons such as (3 . 4), whose
+car counts the context and removed lines from point to the end of the hunk, and
+whose cdr counts the context and added lines.  It is computed from the line
+counts in the hunk's header.  The result is nil if point is not in a hunk of a
+unified diff; an example is a hunk of a combined diff, whose header starts with
+\"@@@\" and which has an indicator column for each parent of a merge."
+  (let ((line-begin (point)))
+    (save-excursion
+      (when (and (re-search-backward "^@@" nil t)
+                 (looking-at diff-clean-unified-hunk-header-regexp))
+        (let ((old (if (match-beginning 1) (string-to-number (match-string 1)) 1))
+              (new (if (match-beginning 2) (string-to-number (match-string 2)) 1)))
+          (forward-line 1)
+          (while (< (point) line-begin)
+            ;; An empty line is a blank context line.
+            (let ((indicator (char-after)))
+              (when (memq indicator '(?\s ?- ?\n))
+                (setq old (1- old)))
+              (when (memq indicator '(?\s ?+ ?\n))
+                (setq new (1- new))))
+            (forward-line 1))
+          (cons old new))))))
 
 (defconst diff-clean-regroup-filler-regexp
   "\\(?: [^[:alnum:]\n]*\\)?$"
@@ -598,20 +620,23 @@ Examples are \"    */\", \"   }\", and a blank line.  A blank context line can b
 empty, because editing a diff can strip the leading space from it.")
 
 (defun diff-clean-regroup-interleaved ()
-  "Regroup interleaved changes that follow the start of a Javadoc comment.
+  "Regroup the changes that follow each context line that starts a Javadoc comment.
 A region starts at a context line that consists of \"/**\" and that is followed
 by a removed or added line.  The region extends through the hunk's removed
 lines, added lines, and context lines that have no letter or digit, such as
 \"   }\" and \"    */\".  It ends at the last removed or added line before a
-context line that has a letter or digit, or before the end of the hunk.
+context line that has a letter or digit, or before the end of the hunk.  The
+end of the hunk is computed from the line counts in its header, and a hunk
+without such a header, such as a hunk of a combined diff, is left alone.
 If a context line separates two of the region's changes, then the changes are
 likely to be unrelated, and they share only short lines such as \"    */\";
 showing them interleaved is confusing.  So, replace the region by all of its
 old text as removed lines, followed by all of its new text as added lines.
 Each context line of the region, including the \"/**\" line, appears in both.
 A \"\\ No newline at end of file\" line just after the region stays with the
-line that precedes it.
-Leaves alone the hunks of a combined diff, whose headers start with \"@@@\".
+line that precedes it.  The first removed line and the first added line, which
+are the \"/**\" lines, get the text property `diff-clean-regrouped', so that
+`diff-clean-prefix-suffix' leaves the regrouped lines alone.
 Operates on the current buffer."
   (interactive)
   (let ((inhibit-read-only t)
@@ -620,75 +645,81 @@ Operates on the current buffer."
       (goto-char (point-min))
       (while (re-search-forward diff-clean-regroup-trigger-regexp nil t)
         (goto-char (match-beginning 0))
-        (if (diff-clean-in-combined-hunk-p)
-            (forward-line 1)
-          (let ((region-begin (point))
-                ;; The end of the region's last removed or added line.
-                (region-end nil)
-                ;; True if the region has a context line after a change.
-                (context-after-change nil)
-                ;; True if a context line separates two of the region's changes.
-                (interleaved nil))
-            (forward-line 1)
-            (while (and (not (eobp))
-                        (cond ((looking-at diff-clean-file-header-regexp)
-                               nil)
-                              ((looking-at "[-+]")
-                               (when context-after-change
-                                 (setq interleaved t))
-                               (setq region-end (line-beginning-position 2))
-                               t)
-                              ((looking-at diff-clean-regroup-filler-regexp)
-                               (when region-end
-                                 (setq context-after-change t))
-                               t)))
-              (forward-line 1))
-            (if (not interleaved)
-                (progn
+        (let ((counts (diff-clean-hunk-remaining-counts)))
+          (if (not (and counts (> (car counts) 0) (> (cdr counts) 0)))
+              (forward-line 1)
+            (let ((region-begin (point))
+                  ;; The end of the region's last removed or added line.
+                  (region-end nil)
+                  ;; The numbers of old and new lines of the hunk after the
+                  ;; current line.
+                  (old-remaining (1- (car counts)))
+                  (new-remaining (1- (cdr counts)))
+                  ;; True if the region has a context line after a change.
+                  (context-after-change nil)
+                  ;; True if a context line separates two of the region's changes.
+                  (interleaved nil))
+              (forward-line 1)
+              (while (and (not (eobp))
+                          (cond ((and (looking-at "-") (> old-remaining 0))
+                                 (setq old-remaining (1- old-remaining))
+                                 (when context-after-change
+                                   (setq interleaved t))
+                                 (setq region-end (line-beginning-position 2))
+                                 t)
+                                ((and (looking-at "\\+") (> new-remaining 0))
+                                 (setq new-remaining (1- new-remaining))
+                                 (when context-after-change
+                                   (setq interleaved t))
+                                 (setq region-end (line-beginning-position 2))
+                                 t)
+                                ((and (> old-remaining 0) (> new-remaining 0)
+                                      (looking-at diff-clean-regroup-filler-regexp))
+                                 (setq old-remaining (1- old-remaining))
+                                 (setq new-remaining (1- new-remaining))
+                                 (when region-end
+                                   (setq context-after-change t))
+                                 t)))
+                (forward-line 1))
+              (if (not interleaved)
+                  (progn
+                    (goto-char region-begin)
+                    (forward-line 1))
+                (let ((old-lines '())
+                      (new-lines '())
+                      ;; The indicator character of the previous line.
+                      (previous-indicator nil))
+                  ;; A "\ No newline at end of file" line belongs to the line
+                  ;; before it, so it moves along with that line.
+                  (when (save-excursion
+                          (goto-char region-end)
+                          (looking-at "\\\\"))
+                    (setq region-end (save-excursion
+                                       (goto-char region-end)
+                                       (line-beginning-position 2))))
+                  (dolist (line (split-string
+                                 (string-remove-suffix
+                                  "\n" (buffer-substring region-begin region-end))
+                                 "\n"))
+                    (let ((indicator (if (string-empty-p line) ?\s (aref line 0)))
+                          (text (if (string-empty-p line) "" (substring line 1))))
+                      (if (eq indicator ?\\)
+                          (if (eq previous-indicator ?-)
+                              (push line old-lines)
+                            (push line new-lines))
+                        (when (memq indicator '(?\s ?-))
+                          (push (concat "-" text) old-lines))
+                        (when (memq indicator '(?\s ?+))
+                          (push (concat "+" text) new-lines)))
+                      (setq previous-indicator indicator)))
+                  (delete-region region-begin region-end)
                   (goto-char region-begin)
-                  (forward-line 1))
-              (let ((old-lines '())
-                    (new-lines '())
-                    ;; The indicator character of the previous line.
-                    (previous-indicator nil))
-                ;; A "\ No newline at end of file" line belongs to the line
-                ;; before it, so it moves along with that line.
-                (when (save-excursion
-                        (goto-char region-end)
-                        (looking-at "\\\\"))
-                  (setq region-end (save-excursion
-                                     (goto-char region-end)
-                                     (line-beginning-position 2))))
-                (dolist (line (split-string
-                               (string-remove-suffix
-                                "\n" (buffer-substring region-begin region-end))
-                               "\n"))
-                  (let ((indicator (if (string-empty-p line) ?\s (aref line 0)))
-                        (text (if (string-empty-p line) "" (substring line 1))))
-                    (if (eq indicator ?\\)
-                        (if (eq previous-indicator ?-)
-                            (push line old-lines)
-                          (push line new-lines))
-                      (when (memq indicator '(?\s ?-))
-                        (push (concat "-" text) old-lines))
-                      (when (memq indicator '(?\s ?+))
-                        (push (concat "+" text) new-lines)))
-                    (setq previous-indicator indicator)))
-                (delete-region region-begin region-end)
-                (goto-char region-begin)
-                (dolist (line (nreverse old-lines))
-                  (insert line "\n"))
-                (dolist (line (nreverse new-lines))
-                  (insert line "\n"))))))))))
-
-(defun diff-clean-in-combined-hunk-p ()
-  "Return true if point is in a hunk of a combined diff.
-The header of such a hunk starts with \"@@@\", as in \"@@@ -1,2 -1,2 +1,3 @@@\".
-A combined diff, which `git diff' prints during a merge, has an indicator
-column for each parent."
-  (save-excursion
-    (and (re-search-backward "^@@" nil t)
-         (looking-at "@@@"))))
+                  (dolist (lines (list (nreverse old-lines)
+                                       (nreverse new-lines)))
+                    (insert (propertize (car lines) 'diff-clean-regrouped t)
+                            "\n")
+                    (dolist (line (cdr lines))
+                      (insert line "\n"))))))))))))
 
 (defun diff-clean-empty-parts ()
   "Remove empty parts of the file: empty hunks and empty file sections."
