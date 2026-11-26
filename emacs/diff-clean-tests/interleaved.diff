@@ -1,0 +1,32 @@
+diff --git a/Foo.java b/Foo.java
+index 1111111..2222222 100644
+--- a/Foo.java
++++ b/Foo.java
+@@ -1,17 +1,22 @@ class Foo {
+   }
+ 
+   /**
+-   * Returns the old thing.
++   * Returns the new thing, which is
++   * computed differently.
+    *
+-   * @return the old thing
++   * @param x an input
++   * @return the new thing
+    */
+-  int old() {
+-    return 1;
++  int newer(int x) {
++    if (x > 0) {
++      return x;
++    }
++    return 0;
+   }
+ 
+   /**
+-   * Returns a value.
++   * Returns a computed value.
+    *
+    * @param node a node
+    * @return a value
+    */

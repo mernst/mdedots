@@ -1,0 +1,12 @@
+diff --git a/Foo.java b/Foo.java
+index 1111111..2222222 100644
+--- a/Foo.java
++++ b/Foo.java
+@@ -1,6 +1,6 @@ class Foo {
+   }
+ 
+   /**
+-   * Returns the old thing.
++   * Returns the new thing.
+    *
+    * @return the thing
