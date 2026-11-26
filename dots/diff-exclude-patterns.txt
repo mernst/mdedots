@@ -108,3 +108,7 @@ ChicoryTest.log
 # Commons BCEL
 
 createdFiles.lst
+
+# Diffs
+
+[0-9]*[0-9].diff

@@ -375,6 +375,7 @@ export ch="$cf"/checker
 # Common typos
 export on="$qn"
 export cfm="$t"/checker-framework-branch-master
+export cfmernst="$t"/checker-framework-fork-mernst
 
 export gn="$HOME"/research/games/notes
 export VERIGAMES="$HOME"/research/games/verigames
