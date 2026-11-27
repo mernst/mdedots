@@ -219,12 +219,12 @@ class ConsolidateTest(unittest.TestCase):
         )
 
     def test_merged_region_has_no_common_prefix(self):
-        """A merged region's first old line and first new line are not compared."""
+        """A merged region's last old line and first new line are not compared."""
         self.assertEqual(
             diff_simplify.simplify_diff(
                 hunk(
                     "@@ -1,6 +1,6 @@",
-                    "+x = 1;",
+                    "+u = 1;",
                     "+y",
                     " x",
                     "-p",
@@ -244,7 +244,7 @@ class ConsolidateTest(unittest.TestCase):
                 "-s",
                 "-t",
                 "-u",
-                "+x = 1;",
+                "+u = 1;",
                 "+y",
                 "+x",
                 "+r",
@@ -377,8 +377,8 @@ class BlankCommonPrefixTest(unittest.TestCase):
         self.assertEqual(diff_simplify.simplify_diff(text), text)
 
     def test_only_adjacent_lines(self):
-        """Only the last "-" line and the first "+" line are compared."""
-        text = hunk("@@ -1,2 +1,2 @@", "-bc", "-a", "+bcd", "+ef")
+        """A "+" line that extends the last "-" line but follows another "+" line is unchanged."""
+        text = hunk("@@ -1,2 +1,2 @@", "-a", "-bc", "+ef", "+bcd")
         self.assertEqual(diff_simplify.simplify_diff(text), text)
 
     def test_first_old_line_is_not_compared(self):

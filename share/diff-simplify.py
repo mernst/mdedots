@@ -291,7 +291,7 @@ def merge_change_groups(body: list[Line], mark_blanked: bool = False) -> list[Li
     """Merge a hunk's change groups that are separated by short context.
 
     Also blanks out common prefixes, using blank_common_prefix, in each change group that is not
-    merged.  A merged region's first old line and first new line can come from different change
+    merged.  A merged region's last old line and first new line can come from different change
     groups, so they are not compared.
 
     Args:
