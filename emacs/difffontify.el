@@ -405,15 +405,15 @@ the file's lines at point, or if they split no line."
         (while lines
           (when (eobp)
             (throw 'mismatch nil))
-          (let* ((line (pop lines))
-                 (file-line (buffer-substring-no-properties
-                             (point) (line-end-position)))
-                 (next (car lines))
-                 (split (and next
-                             (difffontify--split line next file-line))))
+          (let ((line (pop lines))
+                (file-line (buffer-substring-no-properties
+                            (point) (line-end-position)))
+                split)
             (cond ((equal line file-line)
                    (push nil splits))
-                  (split
+                  ((and lines
+                        (setq split
+                              (difffontify--split line (car lines) file-line)))
                    (pop lines)
                    (push split splits))
                   (t (throw 'mismatch nil)))
@@ -434,19 +434,24 @@ The result is a list (LINE-LENGTH PREFIX-LENGTH BLANKED-LENGTH), as
 described in `difffontify--join-blanked', if LINE is FILE-LINE's prefix of
 length PREFIX-LENGTH, and NEXT is the replacement of that prefix (see
 `difffontify--blanked-prefix'), of length BLANKED-LENGTH, followed by the
-rest of FILE-LINE.  LINE can also end with a character in
-`difffontify--replaceable-punctuation' that follows that prefix.  For
+rest of FILE-LINE.  The prefix is not blank.  LINE can also end with a
+character in `difffontify--replaceable-punctuation' that follows that
+prefix, if the rest of FILE-LINE starts with a character in that list.  For
 example, \"x.\" and \"», y\" show \"x, y\", and the result is (2 1 1)."
-  (let ((line-length (length line)))
+  (let* ((line-length (length line))
+         (shortened-length (1- line-length)))
     (cl-loop for prefix-length
-             in (if (and (> line-length 1)
-                         (memq (aref line (1- line-length))
+             in (if (and (< 0 shortened-length (length file-line))
+                         (memq (aref line shortened-length)
+                               difffontify--replaceable-punctuation)
+                         (memq (aref file-line shortened-length)
                                difffontify--replaceable-punctuation))
-                    (list line-length (1- line-length))
+                    (list line-length shortened-length)
                   (list line-length))
              for prefix = (substring line 0 prefix-length)
              for blanked = (difffontify--blanked-prefix prefix)
-             when (and (string-prefix-p blanked next)
+             when (and (not (string-blank-p prefix))
+                       (string-prefix-p blanked next)
                        (equal file-line
                               (concat prefix
                                       (substring next (length blanked)))))
