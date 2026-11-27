@@ -37,9 +37,9 @@ The simplifications are:
    side of the hunk show text that is not in the new file.  With
    --mark-blanked, the blanked-out prefix starts with "»", so the "+" line
    looks like a continuation of the line before it.  A "-" line that consists
-   only of "/*" or "/**" is never extended:  a "+" line such as
-   "/** Do it. */" replaces a multi-line comment rather than continuing the
-   "/**" line.
+   only of a block comment opener (see BLOCK_COMMENT_OPENERS) and whitespace
+   is never extended:  a "+" line such as "/** Do it. */" usually replaces a
+   multi-line comment rather than continuing the "/**" line.
 
 Each hunk header's line counts are updated to match the hunk's lines.
 """
@@ -69,6 +69,11 @@ BLANKED_MARK = "»"
 # The punctuation characters that can end a "-" line whose "+" line replaces that character by
 # another punctuation character, possibly followed by more text.  See extended_length.
 PUNCTUATION = frozenset(".,;:?!")
+
+# The strings that open a block comment or docstring, such as "/**" in Java and '"""' in Python.
+# A "-" line that consists only of one of them, and whitespace, is not extended by any "+" line.
+# See extended_length.
+BLOCK_COMMENT_OPENERS = frozenset(["/*", "/**", '"""', "'''", "<!--", "(*", "{-"])
 
 # A line that consists only of closing brackets and punctuation, and that is not blank.
 CLOSING_LINE = re.compile(r"\s*[)\]};:,.][)\]};:,.\s]*")
@@ -393,9 +398,9 @@ def extended_length(old: str, new: str) -> int | None:
     "Stop, then go.", with a common prefix of length 4; and "Stop." extends to "Stop!", with a
     common prefix of length 4.
 
-    No line extends an old line that consists only of "/*" or "/**" and whitespace, because a new
-    line such as "/** Do it. */" usually replaces a multi-line comment that starts with that old
-    line.
+    No line extends an old line that consists only of a string in BLOCK_COMMENT_OPENERS and
+    whitespace, because a new line such as "/** Do it. */" usually replaces a multi-line comment
+    that starts with that old line.
 
     Args:
         old: a line, without its line terminator
@@ -404,7 +409,7 @@ def extended_length(old: str, new: str) -> int | None:
     Returns:
         the length of the common prefix, or None if the new line does not extend the old line
     """
-    if new == old or len(new) < len(old) or old.strip() in ("/*", "/**"):
+    if new == old or len(new) < len(old) or old.strip() in BLOCK_COMMENT_OPENERS:
         return None
     if len(new) > len(old) and old.strip() and new.startswith(old):
         return len(old)
