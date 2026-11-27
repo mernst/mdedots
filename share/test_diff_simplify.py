@@ -305,9 +305,9 @@ class BlankCommonPrefixTest(unittest.TestCase):
         """The prefix that a "+" line shares with the "-" line that it extends is blanked out."""
         self.assertEqual(
             diff_simplify.simplify_diff(
-                hunk("@@ -1,3 +1,3 @@", " a", "-# one two", "-three", "+# one two, and", "+four")
+                hunk("@@ -1,3 +1,3 @@", " a", "-three", "-# one two", "+# one two, and", "+four")
             ),
-            hunk("@@ -1,3 +1,4 @@", " a", " # one two", "-three", "+         , and", "+four"),
+            hunk("@@ -1,3 +1,4 @@", " a", "-three", " # one two", "+         , and", "+four"),
         )
 
     def test_tabs_are_kept(self):
@@ -376,10 +376,23 @@ class BlankCommonPrefixTest(unittest.TestCase):
         text = hunk("@@ -1 +1 @@", "-    foo(a);", "+    foo(b);")
         self.assertEqual(diff_simplify.simplify_diff(text), text)
 
-    def test_only_first_lines(self):
-        """Only the first "-" line and the first "+" line are compared."""
-        text = hunk("@@ -1,2 +1,2 @@", "-a", "-bc", "+bcd", "+ef")
+    def test_only_adjacent_lines(self):
+        """Only the last "-" line and the first "+" line are compared."""
+        text = hunk("@@ -1,2 +1,2 @@", "-bc", "-a", "+bcd", "+ef")
         self.assertEqual(diff_simplify.simplify_diff(text), text)
+
+    def test_first_old_line_is_not_compared(self):
+        """A "+" line that extends a "-" line that precedes other "-" lines is unchanged."""
+        text = hunk(
+            "@@ -1,4 +1,2 @@",
+            "-  /**",
+            "-   * Documentation.",
+            "-   */",
+            "-  void m() {}",
+            "+  /** Documentation. */",
+            "+  void n() {}",
+        )
+        self.assertEqual(diff_simplify.simplify_diff(text, mark_blanked=True), text)
 
     def test_replaced_punctuation(self):
         """A "+" line can replace the punctuation that ends the "-" line that it extends."""

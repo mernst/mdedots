@@ -2,14 +2,14 @@ diff --git a/git-new-branch b/git-new-branch
 index bb8c529..7e7f5ad 100755
 --- a/git-new-branch
 +++ b/git-new-branch
-@@ -27,9 +27,15 @@
+@@ -27,9 +27,14 @@
  # example, a program into which the build compiled the pathname of its
  # installation directory runs the files installed in the current directory,
  # and a build in the new directory may not recompile it, even after a
- # reconfiguration.  These modes warn about each file that git does not track
+-# reconfiguration.  These modes warn about each file that git does not track
 -# and that contains the current directory's pathname or is a symbolic link
 -# into the current directory.
-+                                                                            ,
++# reconfiguration.  These modes warn about each file that git does not track,
 +# including such a file in a submodule, and that contains the current
 +# directory's pathname or is a symbolic link into the current directory.  They
 +# delete such a file instead if it is in a `build/` directory or in Gradle's
