@@ -349,9 +349,13 @@ current buffer holds the file that the hunk is from, in its major mode.
 
 `difffontify--simplify' can split a line of the file into two lines of
 TEXT:  a prefix of the line, followed by the line with that prefix replaced
-by \"»\" and whitespace (see `difffontify--blanked-prefix').  Join each
-such pair of lines into the file's line, call ORIG on the result, and give
-each line of the pair the properties of its part of the file's line.  Look
+by \"»\" and whitespace (see `difffontify--blanked-prefix').  The first
+line of the pair can also end with a punctuation character that the file's
+line replaces by another one, as when \"Stop.\" becomes \"Stop, then go.\";
+then the second line shows the file's punctuation character, and the first
+line's punctuation character takes the properties of the file's one.  Join
+each such pair of lines into the file's line, call ORIG on the result, and
+give each line of the pair the properties of its part of the file's line.  Look
 for the result at line (car LINE-NB) of the file, and then anywhere in the
 file, as ORIG does.  Return nil if TEXT contains no such pair, or if the
 result is not in the file."
@@ -374,11 +378,12 @@ result is not in the file."
           (lambda (line-props split)
             (if (null split)
                 (list line-props)
-              (let ((prefix-length (car split)))
-                (list (difffontify--props-part line-props 0 prefix-length 0)
+              (cl-destructuring-bind (line-length prefix-length blanked-length)
+                  split
+                (list (difffontify--props-part line-props 0 line-length 0)
                       (difffontify--props-part
                        line-props prefix-length nil
-                       (- prefix-length (cdr split)))))))
+                       (- prefix-length blanked-length))))))
           props (cdr joined)))))
 
 (defun difffontify--join-blanked (lines)
@@ -387,10 +392,12 @@ In LINES, a line of the file can be split into two lines, as described in
 `difffontify--unblanked-props'.  The result is a cons (FILE-LINES . SPLITS).
 FILE-LINES are the lines of the file, starting at the line at point, that
 LINES show.  SPLITS has one element per element of FILE-LINES:  nil if the
-line is one of LINES, or a cons (PREFIX-LENGTH . BLANKED-LENGTH) if LINES
-show the line as a prefix of that length followed by a line that starts
-with the prefix's replacement, of length BLANKED-LENGTH.  Return nil if
-LINES do not show the file's lines at point, or if they split no line."
+line is one of LINES, or else a list (LINE-LENGTH PREFIX-LENGTH
+BLANKED-LENGTH) if LINES show the line as a line of length LINE-LENGTH
+that starts with a prefix of the file's line, of length PREFIX-LENGTH,
+followed by a line that starts with the prefix's replacement, of length
+BLANKED-LENGTH (see `difffontify--split').  Return nil if LINES do not show
+the file's lines at point, or if they split no line."
   (save-excursion
     (forward-line 0)
     (let (file-lines splits)
@@ -398,25 +405,57 @@ LINES do not show the file's lines at point, or if they split no line."
         (while lines
           (when (eobp)
             (throw 'mismatch nil))
-          (let* ((line (pop lines))
-                 (file-line (buffer-substring-no-properties
-                             (point) (line-end-position)))
-                 (next (car lines))
-                 (blanked (difffontify--blanked-prefix line)))
+          (let ((line (pop lines))
+                (file-line (buffer-substring-no-properties
+                            (point) (line-end-position)))
+                split)
             (cond ((equal line file-line)
                    (push nil splits))
-                  ((and next
-                        (string-prefix-p blanked next)
-                        (equal file-line
-                               (concat line
-                                       (substring next (length blanked)))))
+                  ((and lines
+                        (setq split
+                              (difffontify--split line (car lines) file-line)))
                    (pop lines)
-                   (push (cons (length line) (length blanked)) splits))
+                   (push split splits))
                   (t (throw 'mismatch nil)))
             (push file-line file-lines)
             (forward-line 1)))
         (and (cl-some #'identity splits)
              (cons (nreverse file-lines) (nreverse splits)))))))
+
+(defconst difffontify--replaceable-punctuation '(?. ?, ?\; ?: ?? ?!)
+  "The punctuation characters that can end a line that a simplified diff splits.
+A punctuation character that ends the first line of such a pair can be
+replaced by another one in the file's line.  It matches PUNCTUATION in
+diff-simplify.py.")
+
+(defun difffontify--split (line next file-line)
+  "Return how LINE and NEXT, two lines of a hunk, show FILE-LINE, or nil.
+The result is a list (LINE-LENGTH PREFIX-LENGTH BLANKED-LENGTH), as
+described in `difffontify--join-blanked', if LINE is FILE-LINE's prefix of
+length PREFIX-LENGTH, and NEXT is the replacement of that prefix (see
+`difffontify--blanked-prefix'), of length BLANKED-LENGTH, followed by the
+rest of FILE-LINE.  The prefix is not blank.  LINE can also end with a
+character in `difffontify--replaceable-punctuation' that follows that
+prefix, if the rest of FILE-LINE starts with a character in that list.  For
+example, \"x.\" and \"», y\" show \"x, y\", and the result is (2 1 1)."
+  (let* ((line-length (length line))
+         (shortened-length (1- line-length)))
+    (cl-loop for prefix-length
+             in (if (and (< 0 shortened-length (length file-line))
+                         (memq (aref line shortened-length)
+                               difffontify--replaceable-punctuation)
+                         (memq (aref file-line shortened-length)
+                               difffontify--replaceable-punctuation))
+                    (list line-length shortened-length)
+                  (list line-length))
+             for prefix = (substring line 0 prefix-length)
+             for blanked = (difffontify--blanked-prefix prefix)
+             when (and (not (string-blank-p prefix))
+                       (string-prefix-p blanked next)
+                       (equal file-line
+                              (concat prefix
+                                      (substring next (length blanked)))))
+             return (list line-length prefix-length (length blanked)))))
 
 (defun difffontify--props-part (line-props start end shift)
   "Return the part of LINE-PROPS from column START to END, moved left by SHIFT.
