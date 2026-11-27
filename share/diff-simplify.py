@@ -27,7 +27,7 @@ The simplifications are:
 
  * Blank out a common prefix.  If, in a change group that is not
    merged, a run of "-" lines is followed by a run of "+" lines, and the first
-   "+" line starts with all of the (non-blank) last "-" line, then the "-"
+   "+" line starts with all of the (non-blank) first "-" line, then the "-"
    line becomes a context line, and the common prefix in the "+" line becomes
    whitespace of the same display width.  So the "+" line shows only the text
    that was appended.  The two lines can differ in one punctuation character
@@ -36,7 +36,10 @@ The simplifications are:
    punctuation character, followed by any appended text.  This makes the new
    side of the hunk show text that is not in the new file.  With
    --mark-blanked, the blanked-out prefix starts with "»", so the "+" line
-   looks like a continuation of the line before it.
+   looks like a continuation of the line before it.  A "-" line that consists
+   only of "/*" or "/**" is never extended:  a "+" line such as
+   "/** Do it. */" replaces a multi-line comment rather than continuing the
+   "/**" line.
 
 Each hunk header's line counts are updated to match the hunk's lines.
 """
@@ -291,7 +294,7 @@ def merge_change_groups(body: list[Line], mark_blanked: bool = False) -> list[Li
     """Merge a hunk's change groups that are separated by short context.
 
     Also blanks out common prefixes, using blank_common_prefix, in each change group that is not
-    merged.  A merged region's last old line and first new line can come from different change
+    merged.  A merged region's first old line and first new line can come from different change
     groups, so they are not compared.
 
     Args:
@@ -345,12 +348,10 @@ def blank_common_prefix(group: list[Line], mark_blanked: bool = False) -> list[L
     """Blank out the prefix that a "+" line shares with a "-" line that the "+" line extends.
 
     If a run of "-" lines is followed by a run of "+" lines, and the first "+" line extends the
-    last "-" line (see extended_length), then the "-" line becomes a context line and the common
-    prefix in the "+" line becomes whitespace of the same display width.  Only the last "-" line
-    is compared, so that the "+" line, which shows only the appended text, directly follows the
-    line that it extends.  A line's trailing carriage return, as in a diff of a file with CRLF
-    line terminators, is not part of the comparison, but the two lines must both have one or both
-    lack one.
+    first "-" line (see extended_length), then the "-" line becomes a context line and the common
+    prefix in the "+" line becomes whitespace of the same display width.  A line's
+    trailing carriage return, as in a diff of a file with CRLF line terminators, is not part of
+    the comparison, but the two lines must both have one or both lack one.
 
     Args:
         group: a change group
@@ -360,9 +361,13 @@ def blank_common_prefix(group: list[Line], mark_blanked: bool = False) -> list[L
         the change group, with each common prefix blanked out
     """
     result = list(group)
-    for i, line in enumerate(group[:-1]):
-        first_new = i + 1
-        if line.kind != "-" or group[first_new].kind != "+":
+    for i, line in enumerate(group):
+        if line.kind != "-" or (i > 0 and group[i - 1].kind == "-"):
+            continue
+        first_new = i
+        while first_new < len(group) and group[first_new].kind == "-":
+            first_new += 1
+        if first_new == len(group) or group[first_new].kind != "+":
             continue
         old = line.content.removesuffix("\r")
         new = group[first_new].content
@@ -388,6 +393,10 @@ def extended_length(old: str, new: str) -> int | None:
     "Stop, then go.", with a common prefix of length 4; and "Stop." extends to "Stop!", with a
     common prefix of length 4.
 
+    No line extends an old line that consists only of "/*" or "/**" and whitespace, because a new
+    line such as "/** Do it. */" usually replaces a multi-line comment that starts with that old
+    line.
+
     Args:
         old: a line, without its line terminator
         new: another line, without its line terminator
@@ -395,7 +404,7 @@ def extended_length(old: str, new: str) -> int | None:
     Returns:
         the length of the common prefix, or None if the new line does not extend the old line
     """
-    if new == old or len(new) < len(old):
+    if new == old or len(new) < len(old) or old.strip() in ("/*", "/**"):
         return None
     if len(new) > len(old) and old.strip() and new.startswith(old):
         return len(old)
