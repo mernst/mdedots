@@ -13,12 +13,12 @@
 ⟨diff-file-header|diff -u -b -r old/Foo.java new/Foo.java⟩
 ⟨diff-file-header|--- old/Foo.java	2026-10-20 09:25:24.284526786 -0700⟩
 ⟨diff-file-header|+++ new/Foo.java	2026-10-20 09:25:24.288526768 -0700⟩
-@@ -10,7 +10,7 @@
+@@ -10,7 +10,8 @@
 ⟨diff-context| ⟩⟨comment+diff-context| * License line 9.⟩
 ⟨diff-context| ⟩⟨comment+diff-context| * License line 10.⟩
 ⟨diff-context| ⟩⟨comment+diff-context| * License line 11.⟩
-⟨diff-indicator-removed|-⟩⟨comment+diff-removed| * License line 12.⟩
-⟨diff-indicator-added|+⟩⟨comment+diff-added| * License line 12, revised.⟩
+⟨diff-context| ⟩⟨comment+diff-context| * License line 12.⟩
+⟨diff-indicator-added|+⟩⟨diff-added|»                 ⟩⟨comment+diff-added|, revised.⟩
 ⟨diff-context| ⟩⟨comment+diff-context| * License line 13.⟩
 ⟨diff-context| ⟩⟨comment+diff-context| * License line 14.⟩
 ⟨diff-context| ⟩⟨comment-delimiter+diff-context| */⟩

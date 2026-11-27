@@ -155,7 +155,7 @@ The caller must kill the buffer."
             (unwind-protect
                 (with-current-buffer prepared
                   (goto-char (point-min))
-                  (search-forward "License line 12, revised.")
+                  (search-forward ", revised.")
                   (should (memq 'font-lock-comment-face
                                 (get-text-property (match-beginning 0)
                                                    'face))))
@@ -172,7 +172,7 @@ The caller must kill the buffer."
             (unwind-protect
                 (with-current-buffer prepared
                   (goto-char (point-min))
-                  (search-forward "License line 12, revised.")
+                  (search-forward ", revised.")
                   (should (memq 'font-lock-comment-face
                                 (get-text-property (match-beginning 0)
                                                    'face))))
@@ -222,6 +222,26 @@ The hunk's line number is wrong, so the hunk is found by searching the file."
                        ((7 11 comment))
                        ((0 4 plain)))))
       (should (equal calls '((nil "中(x); // c\nmore" (1 3) nil)))))))
+
+(ert-deftest difffontify-tests-unblanked-props-punctuation ()
+  "A split line can end with a punctuation character that the file replaces.
+The first line's \".\" takes the properties of the file's \",\"."
+  (with-temp-buffer
+    (insert "/* Stop, go. */\n")
+    (let* ((orig (lambda (_file _text _line-nb &optional _hunk-only)
+                   (list '((0 15 comment)))))
+           (text "/* Stop.\n»      , go. */"))
+      (should (equal (difffontify--unblanked-props orig text '(1 1))
+                     '(((0 8 comment))
+                       ((7 15 comment))))))))
+
+(ert-deftest difffontify-tests-split ()
+  "A line's prefix, or all of it but a final punctuation character, is split."
+  (should (equal (difffontify--split "x" "» y" "x y") '(1 1 1)))
+  (should (equal (difffontify--split "x." "», y" "x, y") '(2 1 1)))
+  (should (equal (difffontify--split "x." "»  y" "x. y") '(2 2 2)))
+  (should-not (difffontify--split "x-" "», y" "x, y"))
+  (should-not (difffontify--split "x." "», y" "x; y")))
 
 (ert-deftest difffontify-tests-unblanked-props-none ()
   "A hunk that splits no line of the file is not fontified again."
