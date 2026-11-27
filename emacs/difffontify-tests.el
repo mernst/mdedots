@@ -639,6 +639,46 @@ backslash and parenthesis in a string is preceded by a backslash."
       (kill-buffer buffer)
       (delete-directory dir t))))
 
+(defun difffontify-tests--page-line-counts (text)
+  "Return the number of printed lines on each page, for a buffer holding TEXT.
+The result is a list with one element per page.  A line is counted if it
+has text, even if the text is whitespace."
+  (let* ((dir (make-temp-file "difffontify-tests-" t))
+         (ps (expand-file-name "out.ps" dir)))
+    (unwind-protect
+        (with-temp-buffer
+          (insert text)
+          (difffontify--write-ps (current-buffer) ps "x.diff" nil)
+          (erase-buffer)
+          (insert-file-contents ps)
+          (search-forward "%%EndProlog")
+          (let (counts)
+            (while (re-search-forward "^%%Page:" nil t)
+              (let ((end (save-excursion
+                           (if (re-search-forward "^%%Page:" nil t)
+                               (match-beginning 0)
+                             (point-max))))
+                    (count 0))
+                (while (re-search-forward "^(.*) S$" end t)
+                  (setq count (1+ count)))
+                (push count counts)))
+            (nreverse counts)))
+      (delete-directory dir t))))
+
+(ert-deftest difffontify-tests-no-empty-last-page ()
+  "Neither a newline that ends a full page nor trailing whitespace adds a page."
+  (let* ((per-page (car (difffontify-tests--page-line-counts
+                         (apply #'concat (make-list 200 "+line\n")))))
+         (page (apply #'concat (make-list per-page "+line\n"))))
+    (should (equal (difffontify-tests--page-line-counts page)
+                   (list per-page)))
+    (should (equal (difffontify-tests--page-line-counts
+                    (concat page " \n\n\f\n \t\n"))
+                   (list per-page)))
+    (should (equal (difffontify-tests--page-line-counts
+                    (concat page "+line\n \n"))
+                   (list per-page 1)))))
+
 (ert-deftest difffontify-tests-header-parts ()
   "The formal parameters are separate from the function name."
   (let ((difffontify--header-title "x.diff"))

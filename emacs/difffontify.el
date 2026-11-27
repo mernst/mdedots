@@ -1103,7 +1103,22 @@ TITLE is the page header.  Use color if COLOR is non-nil."
         ;; of each later page, but not to the start of the first page.
         (save-excursion
           (goto-char (point-min))
-          (ps-print-buffer-with-faces ps))))))
+          (ps-print-region-with-faces (point-min) (difffontify--print-end)
+                                      ps))))))
+
+(defun difffontify--print-end ()
+  "Return the position at which to stop printing the current buffer.
+It is the end of the last line that contains a non-whitespace character,
+before that line's newline.  `ps-print' starts a new page for a newline that
+ends a full page, even if nothing follows it, and for a form feed, so
+printing to the end of the buffer could produce a last page that is empty.
+Return the end of the buffer if the buffer contains only whitespace."
+  (save-excursion
+    (goto-char (point-max))
+    (skip-chars-backward " \t\n\r\f\v")
+    (if (bobp)
+        (point-max)
+      (line-end-position))))
 
 (provide 'difffontify)
 
