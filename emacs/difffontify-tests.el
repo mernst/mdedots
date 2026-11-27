@@ -155,6 +155,9 @@ The caller must kill the buffer."
             (unwind-protect
                 (with-current-buffer prepared
                   (goto-char (point-min))
+                  (search-forward "License line 12.")
+                  (should (memq 'font-lock-comment-face
+                                (get-text-property (1- (point)) 'face)))
                   (search-forward ", revised.")
                   (should (memq 'font-lock-comment-face
                                 (get-text-property (match-beginning 0)
@@ -172,6 +175,9 @@ The caller must kill the buffer."
             (unwind-protect
                 (with-current-buffer prepared
                   (goto-char (point-min))
+                  (search-forward "License line 12.")
+                  (should (memq 'font-lock-comment-face
+                                (get-text-property (1- (point)) 'face)))
                   (search-forward ", revised.")
                   (should (memq 'font-lock-comment-face
                                 (get-text-property (match-beginning 0)
@@ -241,7 +247,10 @@ The first line's \".\" takes the properties of the file's \",\"."
   (should (equal (difffontify--split "x." "», y" "x, y") '(2 1 1)))
   (should (equal (difffontify--split "x." "»  y" "x. y") '(2 2 2)))
   (should-not (difffontify--split "x-" "», y" "x, y"))
-  (should-not (difffontify--split "x." "», y" "x; y")))
+  (should-not (difffontify--split "x." "», y" "x; y"))
+  (should-not (difffontify--split "x." "»y" "xy"))
+  (should-not (difffontify--split " ." "», y" " , y"))
+  (should-not (difffontify--split " " "»y" " y")))
 
 (ert-deftest difffontify-tests-unblanked-props-none ()
   "A hunk that splits no line of the file is not fontified again."
