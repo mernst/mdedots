@@ -640,9 +640,10 @@ backslash and parenthesis in a string is preceded by a backslash."
       (delete-directory dir t))))
 
 (defun difffontify-tests--page-line-counts (text)
-  "Return the number of printed lines on each page, for a buffer holding TEXT.
-The result is a list with one element per page.  A line is counted if it
-has text, even if the text is whitespace."
+  "Return the number of printed lines on each page of the printout of TEXT.
+The result is a list with one element per page.  Every line is counted,
+including an empty line, except that a page that shows no text, not even
+whitespace, counts as 0."
   (let* ((dir (make-temp-file "difffontify-tests-" t))
          (ps (expand-file-name "out.ps" dir)))
     (unwind-protect
@@ -658,15 +659,26 @@ has text, even if the text is whitespace."
                            (if (re-search-forward "^%%Page:" nil t)
                                (match-beginning 0)
                              (point-max))))
-                    (count 0))
-                (while (re-search-forward "^(.*) S$" end t)
-                  (setq count (1+ count)))
-                (push count counts)))
+                    (shows-text nil)
+                    (line-breaks 0))
+                ;; `ps-print' shows text with "(...) S" and whitespace with
+                ;; "N W", and it separates consecutive lines with "PHL",
+                ;; "LHL", or "SL".
+                (while (re-search-forward
+                        "^\\(?:\\(([^\n]*) S\\|[0-9.]+ W\\)\\|PHL\\|LHL\\|SL\\)$"
+                        end t)
+                  (if (match-beginning 1)
+                      (setq shows-text t)
+                    (setq line-breaks (1+ line-breaks))))
+                (push (if (or shows-text (> line-breaks 0)) (1+ line-breaks) 0)
+                      counts)))
             (nreverse counts)))
       (delete-directory dir t))))
 
 (ert-deftest difffontify-tests-no-empty-last-page ()
-  "Neither a newline that ends a full page nor trailing whitespace adds a page."
+  "Neither a newline that ends a full page nor trailing whitespace adds a page.
+The trailing whitespace can include a form feed at the end of the last line
+that shows text."
   (let* ((per-page (car (difffontify-tests--page-line-counts
                          (apply #'concat (make-list 200 "+line\n")))))
          (page (apply #'concat (make-list per-page "+line\n"))))
@@ -677,7 +689,13 @@ has text, even if the text is whitespace."
                    (list per-page)))
     (should (equal (difffontify-tests--page-line-counts
                     (concat page "+line\n \n"))
-                   (list per-page 1)))))
+                   (list per-page 1)))
+    (should (equal (difffontify-tests--page-line-counts "+x\n+\f\n")
+                   '(2)))
+    (should (equal (difffontify-tests--page-line-counts "+x\n-\f\n \n")
+                   '(2)))
+    (should (equal (difffontify-tests--page-line-counts "+x\n\t\n\n+y\n")
+                   '(4)))))
 
 (ert-deftest difffontify-tests-header-parts ()
   "The formal parameters are separate from the function name."

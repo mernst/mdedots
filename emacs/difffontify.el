@@ -1108,17 +1108,17 @@ TITLE is the page header.  Use color if COLOR is non-nil."
 
 (defun difffontify--print-end ()
   "Return the position at which to stop printing the current buffer.
-It is the end of the last line that contains a non-whitespace character,
-before that line's newline.  `ps-print' starts a new page for a newline that
-ends a full page, even if nothing follows it, and for a form feed, so
-printing to the end of the buffer could produce a last page that is empty.
-Return the end of the buffer if the buffer contains only whitespace."
+It is just after the last non-whitespace character.  `ps-print' starts a new
+page for a newline that ends a full page, even if nothing follows it, and for
+a form feed, even one at the end of a line, so printing any whitespace after
+that character could produce a last page that is empty.  Return the end of
+the buffer if the buffer contains only whitespace."
   (save-excursion
     (goto-char (point-max))
     (skip-chars-backward " \t\n\r\f\v")
     (if (bobp)
         (point-max)
-      (line-end-position))))
+      (point))))
 
 (provide 'difffontify)
 
