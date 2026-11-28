@@ -820,24 +820,31 @@ INDICATOR-CHAR is \"+\" or \"-\"."
 
 
 (defun diff-clean-imports ()
-  "Cleans up a diff to remove changes in import statements.
+  "Cleans up a diff to remove changes in import and package statements.
 Deletes every added or removed line that is a Java or Python import
-statement, then runs `diff-clean'."
+statement or a Java package statement, along with the added or removed
+blank lines that immediately follow it and have the same indicator
+character, then runs `diff-clean'."
   (interactive)
   (let ((inhibit-read-only t))
     (save-excursion
-      ;; Remove import lines.
       (goto-char (point-min))
       (while (re-search-forward
-              (concat "^[-+]\\(?:"
+              (concat "^\\([-+]\\)\\(?:"
                       (string-join '("import .*;"              ; Java
+                                     "package .*;"             ; Java
                                      "import [[:alnum:]_., ]+" ; Python
                                      "from .* import .*")      ; Python
                                    "\\|")
                       "\\)$")
               nil t)
-	(delete-region (match-beginning 0)
-                       (min (point-max) (1+ (match-end 0))))))
+        (let ((start (match-beginning 0))
+              (blank-line-regexp
+               (concat (regexp-quote (match-string 1)) "[ \t]*$")))
+          (forward-line 1)
+          (while (and (not (eobp)) (looking-at blank-line-regexp))
+            (forward-line 1))
+          (delete-region start (point)))))
     ;; The deletions make the line counts in the hunk headers wrong.
     (diff-fixup-modifs (point-min) (point-max)))
   (diff-clean))

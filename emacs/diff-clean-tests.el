@@ -138,6 +138,47 @@ added lines, which include \"+y\"."
                   #'diff-clean-prefix-suffix "-  /**\n-   * a\n+  /**\n+   * b\n")
                  "   /**\n-   * a\n+   * b\n")))
 
+;;; diff-clean-imports
+
+(ert-deftest diff-clean-tests-imports-package-and-blank-lines ()
+  "`diff-clean-imports' removes package and import lines and the blank lines below them."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,8 +1,7 @@\n"
+                          "-package a;\n-\n+package b;\n+\n"
+                          " import c.D;\n"
+                          "-import e.F;\n-\n"
+                          "+import g.H;\n+import i.J;\n+  \n+\n"
+                          " class Foo {\n"
+                          "-  int x;\n+  int y;\n"
+                          " }\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -1,4 +1,4 @@\n"
+                         " import c.D;\n"
+                         " class Foo {\n"
+                         "-  int x;\n+  int y;\n"
+                         " }\n"))))
+
+(ert-deftest diff-clean-tests-imports-keeps-other-blank-lines ()
+  "`diff-clean-imports' keeps a blank line that a removed import line does not precede.
+A blank line with the opposite indicator character, or one that follows a
+context line, is retained."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,4 +1,4 @@\n"
+                          "-import e.F;\n+\n"
+                          " class Foo {\n"
+                          "+\n"
+                          " }\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -1,2 +1,4 @@\n"
+                         "+\n"
+                         " class Foo {\n"
+                         "+\n"
+                         " }\n"))))
+
 (provide 'diff-clean-tests)
 
 ;;; diff-clean-tests.el ends here

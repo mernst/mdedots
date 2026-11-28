@@ -1652,7 +1652,7 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
 (autoload 'diff-clean "diff-clean"
   "Cleans up a diff to remove uninteresting changes." t)
 (autoload 'diff-clean-imports "diff-clean"
-  "Cleans up a diff to remove uninteresting changes, including import statements." t)
+  "Cleans up a diff to remove uninteresting changes, including import and package statements." t)
 (autoload 'diff-clean-javadoc "diff-clean"
   "Cleans up a diff to remove uninteresting changes, including API documentation." t)
 (autoload 'diff-clean-json "diff-clean"
