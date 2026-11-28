@@ -1650,13 +1650,13 @@ This is the dual to `vc-annotate-revision-previous-to-line'."
   (require 'diff-clean)
   )
 (autoload 'diff-clean "diff-clean"
-  "Cleans up a diff to remove uninteresting changes." t)
+  "Clean up the current buffer's diff to remove uninteresting changes." t)
 (autoload 'diff-clean-imports "diff-clean"
   "Cleans up a diff to remove uninteresting changes, including import statements." t)
 (autoload 'diff-clean-javadoc "diff-clean"
-  "Cleans up a diff to remove uninteresting changes, including API documentation." t)
+  "Clean up the current buffer's diff and remove Javadoc files." t)
 (autoload 'diff-clean-json "diff-clean"
-  "Cleans up a diff to remove uninteresting changes, including .json files." t)
+  "Clean up the current buffer's diff and remove JSON files." t)
 ;; This is for pathnames.
 ;; For basenames (simple file names), use file ~/bin/src/mdedots/dots/diff-exclude-patterns.txt,
 ;; but that file isn't respected by `git diff`, only by `diff`.
