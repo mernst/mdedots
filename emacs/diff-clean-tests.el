@@ -154,8 +154,7 @@ added lines, which include \"+y\"."
                           "-  int x;\n+  int y;\n"
                           " }\n"))
                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
-                         "@@ -3,4 +3,4 @@\n"
-                         " import c.D;\n"
+                         "@@ -6,3 +8,3 @@\n"
                          " class Foo {\n"
                          "-  int x;\n+  int y;\n"
                          " }\n"))))
@@ -233,10 +232,44 @@ The first header says that its hunk has 2 new lines, but the hunk has 1."
                           "-  int a;\n+  int b;\n"
                           " y\n"))
                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
-                         "@@ -10,3 +9,3 @@\n"
-                         " x\n"
+                         "@@ -12,2 +10,2 @@\n"
                          "-  int a;\n+  int b;\n"
                          " y\n"))))
+
+(ert-deftest diff-clean-tests-imports-split-hunk ()
+  "`diff-clean-imports' splits a hunk so that every line keeps its line number.
+The split comes before the next remaining line on the side, old or new, of a
+deleted line that follows a remaining line on that side, so the added line
+\"+b\" stays with the removed line \"-a\"."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,4 +1,3 @@\n"
+                          "-a\n-import x.Y;\n+b\n"
+                          " c\n"
+                          "-d\n+e\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -1,1 +1,1 @@\n"
+                         "-a\n+b\n"
+                         "@@ -3,2 +2,2 @@\n"
+                         " c\n"
+                         "-d\n+e\n"))))
+
+(ert-deftest diff-clean-tests-imports-split-hunk-new-side ()
+  "`diff-clean-imports' splits a hunk after a deleted added line, too."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,3 +1,5 @@\n"
+                          "-a\n+b\n+import x.Y;\n+\n"
+                          " c\n"
+                          "-d\n+e\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -1,1 +1,1 @@\n"
+                         "-a\n+b\n"
+                         "@@ -2,2 +4,2 @@\n"
+                         " c\n"
+                         "-d\n+e\n"))))
 
 (provide 'diff-clean-tests)
 

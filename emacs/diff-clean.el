@@ -11,6 +11,7 @@
 (require 'subr-x)                       ; for `string-remove-suffix'
 
 (eval-when-compile
+  (require 'cl-lib)
   (require 'etags)
   (require 'util-mde))
 
@@ -842,10 +843,8 @@ statement or a Java package statement, along with the added or removed
 blank lines that immediately follow it and have the same indicator
 character, then runs `diff-clean'.  Only hunks of a unified diff are
 cleaned.  A \"\\ No newline at end of file\" line that follows a deleted
-line is deleted too.  The hunk headers are adjusted so that the first old
-line and the first new line of each hunk have the correct line numbers,
-but a line that follows a deleted line in the same hunk has a smaller
-line number than in the file, because the deleted line is not counted."
+line is deleted too.  Hunks are split and their headers are adjusted so
+that every remaining line has its line number from the file."
   (interactive)
   (let ((inhibit-read-only t)
         (case-fold-search nil))
@@ -869,79 +868,98 @@ The hunk is a hunk of a unified diff, and the statements are the lines that
 `diff-clean-import-regexp' matches.  Also deletes the blank lines that
 immediately follow each such line and have the same indicator character,
 and a \"\\ No newline at end of file\" line that follows the deleted lines.
-Changes each starting line number in the hunk's header to that of the first
-line that remains on its side, old or new; if no line remains on a side, its
-starting line number becomes that of the line before the hunk's deleted lines,
-as in \"@@ -5,0 +6,1 @@\".  Leaves the line counts unchanged.  Leaves point
-at the end of the hunk."
+Splits the hunk so that every remaining line has its line number from the
+file: a deleted old line that follows a remaining old line of the same hunk
+starts a new hunk at the next remaining old line, and likewise for new lines.
+Changes each starting line number in a header to that of the first line of
+its hunk on its side, old or new; if the hunk has no line on a side, its
+starting line number on that side becomes that of the preceding line, as in
+\"@@ -5,0 +6,1 @@\".  Leaves the line counts unchanged.  Leaves point at the
+end of the hunk."
   (looking-at diff-clean-unified-hunk-header-regexp)
-  (let* ((header-begin (point))
-         (old-start (string-to-number (match-string 3)))
-         (new-start (string-to-number (match-string 4)))
-         (old-remaining (if (match-beginning 1) (string-to-number (match-string 1)) 1))
-         (new-remaining (if (match-beginning 2) (string-to-number (match-string 2)) 1))
-         ;; The numbers of old and new lines deleted before the first old line
-         ;; and the first new line that remain.
-         (old-skipped 0)
-         (new-skipped 0)
-         ;; True if an old line, or a new line, remains before point.
-         (old-kept nil)
-         (new-kept nil))
-    (forward-line 1)
-    (while (and (or (> old-remaining 0) (> new-remaining 0)) (not (eobp)))
-      (if (looking-at diff-clean-import-regexp)
-          (let* ((removed (equal (match-string 1) "-"))
-                 (blank-line-regexp
-                  (concat (regexp-quote (match-string 1)) "[ \t]*\r?$"))
-                 (start (point))
-                 (deleted 1))
-            (forward-line 1)
-            (while (and (> (if removed old-remaining new-remaining) deleted)
-                        (not (eobp))
-                        (looking-at blank-line-regexp))
-              (setq deleted (1+ deleted))
-              (forward-line 1))
-            ;; The marker describes the last deleted line.
-            (when (looking-at "\\\\")
-              (forward-line 1))
-            (delete-region start (point))
-            (if removed
-                (progn
-                  (setq old-remaining (- old-remaining deleted))
-                  (unless old-kept
-                    (setq old-skipped (+ old-skipped deleted))))
-              (setq new-remaining (- new-remaining deleted))
-              (unless new-kept
-                (setq new-skipped (+ new-skipped deleted)))))
-        ;; An empty line is a blank context line.
-        (let ((indicator (char-after)))
-          (when (memq indicator '(?\s ?- ?\n))
-            (setq old-remaining (1- old-remaining)
-                  old-kept t))
-          (when (memq indicator '(?\s ?+ ?\n))
-            (setq new-remaining (1- new-remaining)
-                  new-kept t)))
-        (forward-line 1)))
-    ;; A "\ No newline at end of file" line that follows the hunk's last line
-    ;; belongs to the hunk.
-    (when (looking-at "\\\\")
-      (forward-line 1))
-    (let ((hunk-end (point-marker)))
-      (goto-char header-begin)
-      (looking-at diff-clean-unified-hunk-header-regexp)
-      ;; A side with no lines has the number of the line that precedes the
-      ;; hunk, as in "@@ -5,0 +6,1 @@".  Replace group 4 before group 3,
-      ;; because replacing group 4 does not move group 3.
-      (when (> new-skipped 0)
-        (replace-match (number-to-string
-                        (+ new-start new-skipped (if new-kept 0 -1)))
-                       t t nil 4))
-      (when (> old-skipped 0)
-        (replace-match (number-to-string
-                        (+ old-start old-skipped (if old-kept 0 -1)))
-                       t t nil 3))
-      (goto-char hunk-end)
-      (set-marker hunk-end nil))))
+  (let* ((old-count (if (match-beginning 1) (string-to-number (match-string 1)) 1))
+         (new-count (if (match-beginning 2) (string-to-number (match-string 2)) 1))
+         (old-remaining old-count)
+         (new-remaining new-count)
+         ;; The line numbers, in the old and new files, of the next old line
+         ;; and the next new line.  A side with no lines has the number of
+         ;; the line that precedes the hunk.
+         (old-line (+ (string-to-number (match-string 3)) (if (> old-count 0) 0 1)))
+         (new-line (+ (string-to-number (match-string 4)) (if (> new-count 0) 0 1)))
+         ;; The start of the header of the current hunk, which is the original
+         ;; hunk or the last hunk that splitting it created.
+         (header (point-marker))
+         ;; The line numbers of the current hunk's first old line and first new
+         ;; line, or nil if it has none yet.
+         (old-first nil)
+         (new-first nil)
+         ;; True if an old line, or a new line, was deleted after the current
+         ;; hunk's first old line, or first new line.
+         (old-deleted nil)
+         (new-deleted nil))
+    (cl-flet ((set-starts ()
+                ;; Set the starting line numbers in the current hunk's header.
+                (save-excursion
+                  (goto-char header)
+                  (looking-at diff-clean-unified-hunk-header-regexp)
+                  ;; Replace group 4 first, because that does not move group 3.
+                  (replace-match (number-to-string (or new-first (1- new-line)))
+                                 t t nil 4)
+                  (replace-match (number-to-string (or old-first (1- old-line)))
+                                 t t nil 3))))
+      (forward-line 1)
+      (while (and (or (> old-remaining 0) (> new-remaining 0)) (not (eobp)))
+        (if (looking-at diff-clean-import-regexp)
+            (let* ((removed (equal (match-string 1) "-"))
+                   (blank-line-regexp
+                    (concat (regexp-quote (match-string 1)) "[ \t]*\r?$"))
+                   (start (point))
+                   (deleted 1))
+              (forward-line 1)
+              (while (and (> (if removed old-remaining new-remaining) deleted)
+                          (not (eobp))
+                          (looking-at blank-line-regexp))
+                (setq deleted (1+ deleted))
+                (forward-line 1))
+              ;; The marker describes the last deleted line.
+              (when (looking-at "\\\\")
+                (forward-line 1))
+              (delete-region start (point))
+              (if removed
+                  (setq old-remaining (- old-remaining deleted)
+                        old-line (+ old-line deleted)
+                        old-deleted (or old-deleted (and old-first t)))
+                (setq new-remaining (- new-remaining deleted)
+                      new-line (+ new-line deleted)
+                      new-deleted (or new-deleted (and new-first t)))))
+          ;; An empty line is a blank context line.
+          (let* ((indicator (char-after))
+                 (old-side (memq indicator '(?\s ?- ?\n)))
+                 (new-side (memq indicator '(?\s ?+ ?\n))))
+            (when (or (and old-side old-deleted) (and new-side new-deleted))
+              ;; Start a new hunk at this line.
+              (set-starts)
+              (insert "@@ -0,0 +0,0 @@\n")
+              (set-marker header (line-beginning-position 0))
+              (setq old-first nil
+                    new-first nil
+                    old-deleted nil
+                    new-deleted nil))
+            (when old-side
+              (setq old-first (or old-first old-line)
+                    old-line (1+ old-line)
+                    old-remaining (1- old-remaining)))
+            (when new-side
+              (setq new-first (or new-first new-line)
+                    new-line (1+ new-line)
+                    new-remaining (1- new-remaining))))
+          (forward-line 1)))
+      ;; A "\ No newline at end of file" line that follows the hunk's last line
+      ;; belongs to the hunk.
+      (when (looking-at "\\\\")
+        (forward-line 1))
+      (set-starts)
+      (set-marker header nil))))
 
 
 ;; TODO: also define diff-clean-delete-matching-hunks, which can share a lot of
