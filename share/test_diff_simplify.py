@@ -381,6 +381,36 @@ class BlankCommonPrefixTest(unittest.TestCase):
         text = hunk("@@ -1,2 +1,2 @@", "-a", "-bc", "+bcd", "+ef")
         self.assertEqual(diff_simplify.simplify_diff(text), text)
 
+    def test_javadoc_opener_is_not_extended(self):
+        """A "+" line that starts with a "-" line that is only "/**" is unchanged."""
+        text = hunk(
+            "@@ -1,4 +1,2 @@",
+            "-  /**",
+            "-   * Documentation.",
+            "-   */",
+            "-  void m() {}",
+            "+  /** Documentation. */",
+            "+  void n() {}",
+        )
+        self.assertEqual(diff_simplify.simplify_diff(text, mark_blanked=True), text)
+
+    def test_block_comment_opener_is_not_extended(self):
+        """A "+" line that starts with a "-" line that is only "/*" is unchanged."""
+        text = hunk("@@ -1,3 +1,1 @@", "-  /*", "-   * Note.", "-   */", "+  /* Note. */")
+        self.assertEqual(diff_simplify.simplify_diff(text, mark_blanked=True), text)
+
+    def test_block_comment_opener_with_trailing_whitespace_is_not_extended(self):
+        """A "+" line that starts with a "-" line that is only "/**" and whitespace is unchanged."""
+        text = hunk("@@ -1,3 +1,1 @@", "-  /** ", "-   * Note.", "-   */", "+  /** Note. */")
+        self.assertEqual(diff_simplify.simplify_diff(text, mark_blanked=True), text)
+
+    def test_docstring_opener_is_not_extended(self):
+        """A "+" line that starts with a "-" line that is only a docstring opener is unchanged."""
+        text = hunk(
+            "@@ -1,3 +1,1 @@", '-    """', "-    Return x.", '-    """', '+    """Return x."""'
+        )
+        self.assertEqual(diff_simplify.simplify_diff(text, mark_blanked=True), text)
+
     def test_replaced_punctuation(self):
         """A "+" line can replace the punctuation that ends the "-" line that it extends."""
         self.assertEqual(
