@@ -138,6 +138,106 @@ added lines, which include \"+y\"."
                   #'diff-clean-prefix-suffix "-  /**\n-   * a\n+  /**\n+   * b\n")
                  "   /**\n-   * a\n+   * b\n")))
 
+;;; diff-clean-imports
+
+(ert-deftest diff-clean-tests-imports-package-and-blank-lines ()
+  "`diff-clean-imports' removes package and import lines and the blank lines below them."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,8 +1,10 @@\n"
+                          "-package a;\n-\n+package b;\n+\n"
+                          " import c.D;\n"
+                          "-import e.F;\n-\n"
+                          "+import g.H;\n+import i.J;\n+  \n+\n"
+                          " class Foo {\n"
+                          "-  int x;\n+  int y;\n"
+                          " }\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -3,4 +3,4 @@\n"
+                         " import c.D;\n"
+                         " class Foo {\n"
+                         "-  int x;\n+  int y;\n"
+                         " }\n"))))
+
+(ert-deftest diff-clean-tests-imports-keeps-other-blank-lines ()
+  "`diff-clean-imports' keeps a blank line that does not follow a same-side import.
+A blank line is retained if its indicator character differs from that of
+the removed import line just above it, or if it follows a context line."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,3 +1,4 @@\n"
+                          "-import e.F;\n+\n"
+                          " class Foo {\n"
+                          "+\n"
+                          " }\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -2,2 +1,4 @@\n"
+                         "+\n"
+                         " class Foo {\n"
+                         "+\n"
+                         " }\n"))))
+
+(ert-deftest diff-clean-tests-imports-no-newline-marker ()
+  "`diff-clean-imports' deletes the \"\\ No newline\" line of a deleted line."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,3 +1,1 @@\n"
+                          "-class Foo {}\n+class Bar {}\n"
+                          "-import a.B;\n-\n"
+                          "\\ No newline at end of file\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -1,1 +1,1 @@\n"
+                         "-class Foo {}\n+class Bar {}\n"))))
+
+(ert-deftest diff-clean-tests-imports-all-old-lines-deleted ()
+  "`diff-clean-imports' numbers a side with no remaining lines by the line before."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -4,2 +4,3 @@\n"
+                          "-import a.B;\n-import c.D;\n"
+                          "+import e.F;\n+\n+class X {}\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -5,0 +6,1 @@\n"
+                         "+class X {}\n"))))
+
+(ert-deftest diff-clean-tests-imports-crlf ()
+  "`diff-clean-imports' cleans a diff whose lines end with CRLF."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,3 +1,3 @@\n"
+                          "-import a.B;\r\n-\r\n+import c.D;\r\n"
+                          " class Foo {\r\n"
+                          "+  int y;\r\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -3,1 +2,2 @@\n"
+                         " class Foo {\r\n"
+                         "+  int y;\r\n"))))
+
+(ert-deftest diff-clean-tests-imports-stale-line-counts ()
+  "`diff-clean-imports' cleans every hunk even if a header has a stale line count.
+The first header says that its hunk has 2 new lines, but the hunk has 1."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,3 +1,2 @@\n"
+                          "-import e.F;\n-\n"
+                          " class Foo {\n"
+                          "@@ -10,4 +9,3 @@\n"
+                          " x\n"
+                          "-import z.Z;\n"
+                          "-  int a;\n+  int b;\n"
+                          " y\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -10,3 +9,3 @@\n"
+                         " x\n"
+                         "-  int a;\n+  int b;\n"
+                         " y\n"))))
+
 (provide 'diff-clean-tests)
 
 ;;; diff-clean-tests.el ends here
