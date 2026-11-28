@@ -502,8 +502,12 @@ to git."
     ))
 
 
-(defun diff-clean-prefix-suffix ()
+(defun diff-clean-prefix-suffix (&optional keep-p)
   "Simplify each hunk whose - and + lines share a prefix or suffix.
+Collapses a removed line and an identical added line into a context line.
+If KEEP-P is non-nil, it is a function that takes the text of such a line
+without its indicator character, such as \"int x;\", and returns true if the
+two lines are to be left alone.
 Operates on the diff in the current buffer."
   (interactive)
 
@@ -518,17 +522,22 @@ Operates on the diff in the current buffer."
       ;; creates.  Otherwise, it would turn the "/**" lines at the start of
       ;; the regrouped old text and new text into a context line, and then
       ;; `diff-clean-regroup-interleaved' would regroup the lines again.
-      ;; First two lines are identical (one -, one +).
-      (diff-clean-replace-iteratively-unless
-       "^-\\(.*\\)\n\\+\\1\n" " \\1\n" #'diff-clean-match-is-regrouped-p)
-      ;; First - line is identical to first + line
-      (diff-clean-replace-iteratively-unless
-       "^-\\(.*\\)\n\\(\\(-.*\n\\)+\\)\\+\\1\n" " \\1\n\\2"
-       #'diff-clean-match-is-regrouped-p)
-      ;; Last - line is identical to last + line
-      (diff-clean-replace-iteratively-unless
-       "^-\\(.*\\)\n\\(\\(\\+.*\n\\)+\\)\\+\\1\n" "\\2 \\1\n"
-       #'diff-clean-match-is-regrouped-p)
+      ;; In each regexp, group 1 is the text of the identical lines.
+      (let ((keep-match-p
+             (lambda ()
+               (or (diff-clean-match-is-regrouped-p)
+                   (and keep-p (funcall keep-p (match-string 1)))))))
+        ;; First two lines are identical (one -, one +).
+        (diff-clean-replace-iteratively-unless
+         "^-\\(.*\\)\n\\+\\1\n" " \\1\n" keep-match-p)
+        ;; First - line is identical to first + line
+        (diff-clean-replace-iteratively-unless
+         "^-\\(.*\\)\n\\(\\(-.*\n\\)+\\)\\+\\1\n" " \\1\n\\2"
+         keep-match-p)
+        ;; Last - line is identical to last + line
+        (diff-clean-replace-iteratively-unless
+         "^-\\(.*\\)\n\\(\\(\\+.*\n\\)+\\)\\+\\1\n" "\\2 \\1\n"
+         keep-match-p))
       ;; There is no case for "last - line is identical to first + line": the
       ;; regexp for "first - line is identical to first + line", above,
       ;; already covers it.
@@ -845,13 +854,28 @@ blank lines that immediately follow it and have the same indicator
 character, then runs `diff-clean'.  Only hunks of a unified diff are
 cleaned.  A \"\\ No newline at end of file\" line that follows a deleted
 line is deleted too.  Hunks are split and their headers are adjusted so
-that every remaining line has its line number from the file."
+that every remaining line has its line number from the file.  Before
+deleting, collapses each removed line and added line that are identical
+into a context line, as `diff-clean-prefix-suffix' does, so that a split
+does not separate the two lines of such a pair; but a pair of import or
+package statements, or of blank lines, is deleted instead."
   (interactive)
   (let ((inhibit-read-only t)
         (case-fold-search nil))
     ;; `diff-clean-imports-in-hunk' finds the end of each hunk from the line
     ;; counts in its header, which are stale if the diff has been edited.
     (diff-fixup-modifs (point-min) (point-max))
+    ;; A split puts the removed lines before a deleted line and the added lines
+    ;; after it into different hunks, and then `diff-clean-prefix-suffix' can
+    ;; no longer collapse a removed line and an identical added line, as in
+    ;; "-a", "-import x.Y;", "-b", "+a", "+b".  Collapsing such pairs does not
+    ;; change the line counts.  A pair of import lines or of blank lines is
+    ;; left alone, because a context line is not deleted.
+    (diff-clean-prefix-suffix
+     (lambda (text)
+       (or (string-match-p "\\`[ \t]*\r?\\'" text)
+           (string-match-p (concat "\\`" diff-clean-import-regexp)
+                           (concat "-" text)))))
     (save-excursion
       (goto-char (point-min))
       (while (re-search-forward "^@@" nil t)
@@ -859,7 +883,8 @@ that every remaining line has its line number from the file."
         (if (looking-at diff-clean-unified-hunk-header-regexp)
             (diff-clean-imports-in-hunk)
           (forward-line 1))))
-    ;; The deletions make the line counts in the hunk headers wrong.
+    ;; The deletions make the line counts in the hunk headers wrong, and the
+    ;; headers that splitting inserts have line counts of 0.
     (diff-fixup-modifs (point-min) (point-max)))
   (diff-clean))
 
@@ -876,8 +901,12 @@ Changes each starting line number in a header to that of the first line of
 its hunk on its side, old or new; if the hunk has no line on a side, its
 starting line number on that side becomes that of the last line of that
 side's file before the hunk, which can be a deleted line, as in
-\"@@ -5,0 +6,1 @@\" after old lines 4 and 5 are deleted.  Leaves the line
-counts unchanged.  Leaves point at the end of the hunk."
+\"@@ -5,0 +6,1 @@\" after old lines 4 and 5 are deleted.  Each header that
+splitting inserts gets the text that follows \"@@\" in the original header,
+such as the function context \"class Foo {\".  Does not correct the line
+counts:  the original header keeps its line counts, and each inserted header
+has line counts of 0, so the caller must recompute them, for example with
+`diff-fixup-modifs'.  Leaves point at the end of the hunk."
   (looking-at diff-clean-unified-hunk-header-regexp)
   (let* ((old-count (if (match-beginning 1) (string-to-number (match-string 1)) 1))
          (new-count (if (match-beginning 2) (string-to-number (match-string 2)) 1))
@@ -891,6 +920,8 @@ counts unchanged.  Leaves point at the end of the hunk."
          ;; The start of the header of the current hunk, which is the original
          ;; hunk or the last hunk that splitting it created.
          (header (point-marker))
+         ;; The text after the header's closing "@@", such as " class Foo {".
+         (header-suffix (buffer-substring (match-end 0) (line-end-position)))
          ;; The line numbers of the current hunk's first old line and first new
          ;; line, or nil if it has none yet.
          (old-first nil)
@@ -901,14 +932,18 @@ counts unchanged.  Leaves point at the end of the hunk."
          (new-deleted nil))
     (cl-flet ((set-starts ()
                 ;; Set the starting line numbers in the current hunk's header.
+                ;; A group is replaced only if its number changes, so that a
+                ;; hunk that needs no change leaves the buffer unmodified.
                 (save-excursion
                   (goto-char header)
                   (looking-at diff-clean-unified-hunk-header-regexp)
                   ;; Replace group 4 first, because that does not move group 3.
-                  (replace-match (number-to-string (or new-first (1- new-line)))
-                                 t t nil 4)
-                  (replace-match (number-to-string (or old-first (1- old-line)))
-                                 t t nil 3))))
+                  (dolist (group-and-start
+                           (list (cons 4 (or new-first (1- new-line)))
+                                 (cons 3 (or old-first (1- old-line)))))
+                    (let ((start (number-to-string (cdr group-and-start))))
+                      (unless (equal start (match-string (car group-and-start)))
+                        (replace-match start t t nil (car group-and-start))))))))
       (forward-line 1)
       (while (and (or (> old-remaining 0) (> new-remaining 0)) (not (eobp)))
         (if (looking-at diff-clean-import-regexp)
@@ -941,7 +976,7 @@ counts unchanged.  Leaves point at the end of the hunk."
             (when (or (and old-side old-deleted) (and new-side new-deleted))
               ;; Start a new hunk at this line.
               (set-starts)
-              (insert "@@ -0,0 +0,0 @@\n")
+              (insert "@@ -0,0 +0,0 @@" header-suffix "\n")
               (set-marker header (line-beginning-position 0))
               (setq old-first nil
                     new-first nil
