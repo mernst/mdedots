@@ -154,8 +154,7 @@ added lines, which include \"+y\"."
                           "-  int x;\n+  int y;\n"
                           " }\n"))
                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
-                         "@@ -3,4 +3,4 @@\n"
-                         " import c.D;\n"
+                         "@@ -6,3 +8,3 @@\n"
                          " class Foo {\n"
                          "-  int x;\n+  int y;\n"
                          " }\n"))))
@@ -233,10 +232,96 @@ The first header says that its hunk has 2 new lines, but the hunk has 1."
                           "-  int a;\n+  int b;\n"
                           " y\n"))
                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
-                         "@@ -10,3 +9,3 @@\n"
-                         " x\n"
+                         "@@ -12,2 +10,2 @@\n"
                          "-  int a;\n+  int b;\n"
                          " y\n"))))
+
+(ert-deftest diff-clean-tests-imports-split-hunk ()
+  "`diff-clean-imports' splits a hunk so that every line keeps its line number.
+The split comes before the next remaining line on the side, old or new, of a
+deleted line that follows a remaining line on that side, so the added line
+\"+b\" stays with the removed line \"-a\"."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,4 +1,3 @@\n"
+                          "-a\n-import x.Y;\n+b\n"
+                          " c\n"
+                          "-d\n+e\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -1,1 +1,1 @@\n"
+                         "-a\n+b\n"
+                         "@@ -3,2 +2,2 @@\n"
+                         " c\n"
+                         "-d\n+e\n"))))
+
+(ert-deftest diff-clean-tests-imports-split-hunk-new-side ()
+  "`diff-clean-imports' splits a hunk after a deleted added line, too."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,3 +1,5 @@\n"
+                          "-a\n+b\n+import x.Y;\n+\n"
+                          " c\n"
+                          "-d\n+e\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -1,1 +1,1 @@\n"
+                         "-a\n+b\n"
+                         "@@ -2,2 +4,2 @@\n"
+                         " c\n"
+                         "-d\n+e\n"))))
+
+(ert-deftest diff-clean-tests-imports-split-hunk-one-side ()
+  "A hunk that splitting creates can have lines on one side only.
+The first hunk has no new line, so its starting new line number is that of
+the new line that precedes it, which is 0 at the start of the file."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,3 +1,2 @@\n"
+                          "-a\n-import x;\n-b\n+c\n+d\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -1,1 +0,0 @@\n"
+                         "-a\n"
+                         "@@ -3,1 +1,2 @@\n"
+                         "-b\n+c\n+d\n"))))
+
+(ert-deftest diff-clean-tests-imports-split-hunk-keeps-identical-pairs ()
+  "Splitting a hunk does not keep a removed line and an identical added line apart.
+Without the deleted import, the old lines and the new lines are the same, so
+no hunk remains."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,3 +1,2 @@\n"
+                          "-a\n-import x.Y;\n-b\n+a\n+b\n"))
+                 "--- a/Foo.java\n+++ b/Foo.java\n")))
+
+(ert-deftest diff-clean-tests-imports-split-hunk-header-suffix ()
+  "Each hunk that splitting creates keeps the text after the header's \"@@\"."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,4 +1,3 @@ class Foo {\n"
+                          "-a\n-import x.Y;\n+b\n"
+                          " c\n"
+                          "-d\n+e\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -1,1 +1,1 @@ class Foo {\n"
+                         "-a\n+b\n"
+                         "@@ -3,2 +2,2 @@ class Foo {\n"
+                         " c\n"
+                         "-d\n+e\n"))))
+
+(ert-deftest diff-clean-tests-imports-in-hunk-unmodified ()
+  "`diff-clean-imports-in-hunk' does not modify a hunk that has no import."
+  (with-temp-buffer
+    (insert "--- a/Foo.java\n+++ b/Foo.java\n@@ -1,2 +1,2 @@\n x\n-a\n+b\n")
+    (set-buffer-modified-p nil)
+    (goto-char (point-min))
+    (forward-line 2)
+    (diff-clean-imports-in-hunk)
+    (should-not (buffer-modified-p))))
 
 (provide 'diff-clean-tests)
 
