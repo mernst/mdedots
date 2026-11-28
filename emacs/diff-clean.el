@@ -836,7 +836,7 @@ import statement or a Java package statement.  Group 1 is the indicator
 character, \"-\" or \"+\".")
 
 (defun diff-clean-imports ()
-  "Cleans up a diff to remove changes in import and package statements.
+  "Clean up the current buffer's diff to remove import and package statements.
 Deletes every added or removed line that is a Java or Python import
 statement or a Java package statement, along with the added or removed
 blank lines that immediately follow it and have the same indicator
@@ -849,6 +849,9 @@ line number than in the file, because the deleted line is not counted."
   (interactive)
   (let ((inhibit-read-only t)
         (case-fold-search nil))
+    ;; `diff-clean-imports-in-hunk' finds the end of each hunk from the line
+    ;; counts in its header, which are stale if the diff has been edited.
+    (diff-fixup-modifs (point-min) (point-max))
     (save-excursion
       (goto-char (point-min))
       (while (re-search-forward "^@@" nil t)
@@ -866,9 +869,11 @@ The hunk is a hunk of a unified diff, and the statements are the lines that
 `diff-clean-import-regexp' matches.  Also deletes the blank lines that
 immediately follow each such line and have the same indicator character,
 and a \"\\ No newline at end of file\" line that follows the deleted lines.
-Changes the starting line numbers in the hunk's header to those of the first
-old line and the first new line that remain, but leaves the line counts
-unchanged.  Leaves point at the end of the hunk."
+Changes each starting line number in the hunk's header to that of the first
+line that remains on its side, old or new; if no line remains on a side, its
+starting line number becomes that of the line before the hunk's deleted lines,
+as in \"@@ -5,0 +6,1 @@\".  Leaves the line counts unchanged.  Leaves point
+at the end of the hunk."
   (looking-at diff-clean-unified-hunk-header-regexp)
   (let* ((header-begin (point))
          (old-start (string-to-number (match-string 3)))

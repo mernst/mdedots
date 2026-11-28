@@ -218,6 +218,26 @@ context line, is retained."
                          " class Foo {\r\n"
                          "+  int y;\r\n"))))
 
+(ert-deftest diff-clean-tests-imports-stale-line-counts ()
+  "`diff-clean-imports' cleans every hunk even if a header has a stale line count.
+The first header says that its hunk has 2 new lines, but the hunk has 1."
+  (should (equal (diff-clean-tests--apply-to-string
+                  #'diff-clean-imports
+                  (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                          "@@ -1,3 +1,2 @@\n"
+                          "-import e.F;\n-\n"
+                          " class Foo {\n"
+                          "@@ -10,4 +9,3 @@\n"
+                          " x\n"
+                          "-import z.Z;\n"
+                          "-  int a;\n+  int b;\n"
+                          " y\n"))
+                 (concat "--- a/Foo.java\n+++ b/Foo.java\n"
+                         "@@ -10,3 +9,3 @@\n"
+                         " x\n"
+                         "-  int a;\n+  int b;\n"
+                         " y\n"))))
+
 (provide 'diff-clean-tests)
 
 ;;; diff-clean-tests.el ends here
