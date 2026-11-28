@@ -161,9 +161,9 @@ added lines, which include \"+y\"."
                          " }\n"))))
 
 (ert-deftest diff-clean-tests-imports-keeps-other-blank-lines ()
-  "`diff-clean-imports' keeps a blank line that a removed import line does not precede.
-A blank line with the opposite indicator character, or one that follows a
-context line, is retained."
+  "`diff-clean-imports' keeps a blank line that does not follow a same-side import.
+A blank line is retained if its indicator character differs from that of
+the removed import line just above it, or if it follows a context line."
   (should (equal (diff-clean-tests--apply-to-string
                   #'diff-clean-imports
                   (concat "--- a/Foo.java\n+++ b/Foo.java\n"

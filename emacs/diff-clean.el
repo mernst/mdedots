@@ -871,9 +871,9 @@ immediately follow each such line and have the same indicator character,
 and a \"\\ No newline at end of file\" line that follows the deleted lines.
 Changes each starting line number in the hunk's header to that of the first
 line that remains on its side, old or new; if no line remains on a side, its
-starting line number becomes that of the line before the hunk's deleted lines,
-as in \"@@ -5,0 +6,1 @@\".  Leaves the line counts unchanged.  Leaves point
-at the end of the hunk."
+starting line number becomes that of the last deleted line on that side, as in
+\"@@ -5,0 +6,1 @@\" after old lines 4 and 5 are deleted.  Leaves the line
+counts unchanged.  Leaves point at the end of the hunk."
   (looking-at diff-clean-unified-hunk-header-regexp)
   (let* ((header-begin (point))
          (old-start (string-to-number (match-string 3)))
