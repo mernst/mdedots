@@ -80,7 +80,7 @@ Bind `case-fold-search' to nil when using this regexp.")
 
 ;; TODO: This could perhaps use functions like `diff-hunk-kill'.
 (defun diff-clean (&optional dont-remove-gitignored)
-  "Clean up a diff to remove uninteresting changes.
+  "Clean up the current buffer's diff to remove uninteresting changes.
 Remove the files that git ignores, and the files that match
 `diff-clean-removed-files'.
 Remove trivial diffs, such as hunks or files with empty/no differences.
@@ -335,7 +335,7 @@ DONT-REMOVE-GITIGNORED is as in `diff-clean'."
   (diff-clean-more-files ".*/build/.*" dont-remove-gitignored))
 
 (defun diff-clean-backup (&optional dont-remove-gitignored)
-  "Remove backup files from a diff.
+  "Remove backup files from the current buffer's diff.
 DONT-REMOVE-GITIGNORED is as in `diff-clean'."
   (interactive "P")
   (diff-clean-more-files ".*~" dont-remove-gitignored))
@@ -503,7 +503,8 @@ to git."
 
 
 (defun diff-clean-prefix-suffix ()
-  "Simplify a diff when a hunk has identical prefix or suffix for - and +."
+  "Simplify each hunk whose - and + lines share a prefix or suffix.
+Operates on the diff in the current buffer."
   (interactive)
 
   ;; `case-fold-search' must be nil: otherwise the "\\1" back-references match
