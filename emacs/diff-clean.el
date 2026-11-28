@@ -873,9 +873,10 @@ file: a deleted old line that follows a remaining old line of the same hunk
 starts a new hunk at the next remaining old line, and likewise for new lines.
 Changes each starting line number in a header to that of the first line of
 its hunk on its side, old or new; if the hunk has no line on a side, its
-starting line number on that side becomes that of the preceding line, as in
-\"@@ -5,0 +6,1 @@\".  Leaves the line counts unchanged.  Leaves point at the
-end of the hunk."
+starting line number on that side becomes that of the last line of that
+side's file before the hunk, which can be a deleted line, as in
+\"@@ -5,0 +6,1 @@\" after old lines 4 and 5 are deleted.  Leaves the line
+counts unchanged.  Leaves point at the end of the hunk."
   (looking-at diff-clean-unified-hunk-header-regexp)
   (let* ((old-count (if (match-beginning 1) (string-to-number (match-string 1)) 1))
          (new-count (if (match-beginning 2) (string-to-number (match-string 2)) 1))
